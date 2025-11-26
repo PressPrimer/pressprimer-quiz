@@ -1,63 +1,60 @@
 <?php
 /**
- * Plugin Name: PressPrimer Quiz
- * Plugin URI: https://pressprimer.com/quiz
- * Description: Enterprise-grade quiz and assessment system for WordPress
- * Version: 0.1.0
- * Author: PressPrimer
- * Author URI: https://pressprimer.com
- * License: GPL v2 or later
- * License URI: https://www.gnu.org/licenses/gpl-2.0.html
- * Text Domain: pressprimer-quiz
- * Domain Path: /languages
+ * Plugin Name:       PressPrimer Quiz
+ * Plugin URI:        https://pressprimer.com/quiz
+ * Description:       Enterprise-grade quiz and assessment platform for WordPress educators.
+ * Version:           1.0.0
  * Requires at least: 6.0
- * Requires PHP: 7.4
+ * Requires PHP:      7.4
+ * Author:            PressPrimer
+ * Author URI:        https://pressprimer.com
+ * License:           GPL v2 or later
+ * License URI:       https://www.gnu.org/licenses/gpl-2.0.html
+ * Text Domain:       pressprimer-quiz
+ * Domain Path:       /languages
  *
- * @package PressPrimerQuiz
+ * @package PressPrimer_Quiz
+ * @since 1.0.0
  */
 
-// If this file is called directly, abort.
-if ( ! defined( 'WPINC' ) ) {
-	die;
+// Prevent direct access
+if ( ! defined( 'ABSPATH' ) ) {
+	exit;
 }
 
-/**
- * Currently plugin version.
- */
-define( 'PRESSPRIMER_QUIZ_VERSION', '0.1.0' );
+// Plugin constants
+define( 'PPQ_VERSION', '1.0.0' );
+define( 'PPQ_PLUGIN_FILE', __FILE__ );
+define( 'PPQ_PLUGIN_PATH', plugin_dir_path( __FILE__ ) );
+define( 'PPQ_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
+define( 'PPQ_PLUGIN_BASENAME', plugin_basename( __FILE__ ) );
+define( 'PPQ_DB_VERSION', '1.0.0' );
+
+// Autoloader
+require_once PPQ_PLUGIN_PATH . 'includes/class-ppq-autoloader.php';
+PPQ_Autoloader::register();
+
+// Activation/Deactivation hooks
+register_activation_hook( __FILE__, [ 'PPQ_Activator', 'activate' ] );
+register_deactivation_hook( __FILE__, [ 'PPQ_Deactivator', 'deactivate' ] );
 
 /**
- * Plugin directory path.
+ * Initialize plugin
+ *
+ * Loads text domain and initializes the main plugin class.
+ *
+ * @since 1.0.0
  */
-define( 'PRESSPRIMER_QUIZ_PATH', plugin_dir_path( __FILE__ ) );
+function ppq_init() {
+	// Load text domain
+	load_plugin_textdomain(
+		'pressprimer-quiz',
+		false,
+		dirname( PPQ_PLUGIN_BASENAME ) . '/languages'
+	);
 
-/**
- * Plugin directory URL.
- */
-define( 'PRESSPRIMER_QUIZ_URL', plugin_dir_url( __FILE__ ) );
-
-/**
- * The code that runs during plugin activation.
- */
-function activate_pressprimer_quiz() {
-	// Activation code here
+	// Initialize main plugin class
+	$plugin = PPQ_Plugin::get_instance();
+	$plugin->run();
 }
-
-/**
- * The code that runs during plugin deactivation.
- */
-function deactivate_pressprimer_quiz() {
-	// Deactivation code here
-}
-
-register_activation_hook( __FILE__, 'activate_pressprimer_quiz' );
-register_deactivation_hook( __FILE__, 'deactivate_pressprimer_quiz' );
-
-/**
- * Begins execution of the plugin.
- */
-function run_pressprimer_quiz() {
-	// Plugin initialization code here
-}
-
-run_pressprimer_quiz();
+add_action( 'plugins_loaded', 'ppq_init' );

@@ -1,0 +1,226 @@
+/**
+ * Admin styles for PressPrimer Quiz
+ *
+ * @package PressPrimer_Quiz
+ * @since 1.0.0
+ */
+
+/* Dashboard Layout */
+.ppq-dashboard {
+	margin-top: 20px;
+}
+
+.ppq-dashboard-welcome {
+	background: #fff;
+	border: 1px solid #c3c4c7;
+	border-left: 4px solid #2271b1;
+	padding: 20px;
+	margin-bottom: 20px;
+}
+
+.ppq-dashboard-welcome h2 {
+	margin-top: 0;
+}
+
+.ppq-dashboard-stats,
+.ppq-dashboard-actions {
+	background: #fff;
+	border: 1px solid #c3c4c7;
+	padding: 20px;
+	margin-bottom: 20px;
+}
+
+.ppq-dashboard-stats h3,
+.ppq-dashboard-actions h3 {
+	margin-top: 0;
+	border-bottom: 1px solid #c3c4c7;
+	padding-bottom: 10px;
+	margin-bottom: 15px;
+}
+
+/* General Admin Styles */
+.ppq-admin-container {
+	max-width: 1200px;
+	margin: 20px 0;
+}
+
+.ppq-admin-header {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	margin-bottom: 20px;
+}
+
+.ppq-admin-actions {
+	display: flex;
+	gap: 10px;
+}
+
+/* Form Styles */
+.ppq-form-table {
+	width: 100%;
+	max-width: 800px;
+}
+
+.ppq-form-table th {
+	width: 200px;
+	text-align: left;
+	padding: 15px 10px 15px 0;
+	vertical-align: top;
+}
+
+.ppq-form-table td {
+	padding: 15px 10px;
+}
+
+.ppq-form-field {
+	margin-bottom: 20px;
+}
+
+.ppq-form-field label {
+	display: block;
+	font-weight: 600;
+	margin-bottom: 5px;
+}
+
+.ppq-form-field input[type="text"],
+.ppq-form-field input[type="number"],
+.ppq-form-field textarea,
+.ppq-form-field select {
+	width: 100%;
+	max-width: 400px;
+}
+
+.ppq-form-field textarea {
+	height: 100px;
+}
+
+.ppq-form-field .description {
+	font-size: 12px;
+	color: #646970;
+	margin-top: 5px;
+}
+
+/* Button Styles */
+.ppq-button-group {
+	display: flex;
+	gap: 10px;
+	align-items: center;
+}
+
+/* Table Styles */
+.ppq-table {
+	width: 100%;
+	background: #fff;
+	border: 1px solid #c3c4c7;
+}
+
+.ppq-table th {
+	background: #f6f7f7;
+	font-weight: 600;
+	padding: 10px;
+	text-align: left;
+	border-bottom: 1px solid #c3c4c7;
+}
+
+.ppq-table td {
+	padding: 10px;
+	border-bottom: 1px solid #dcdcde;
+}
+
+.ppq-table tr:hover {
+	background: #f6f7f7;
+}
+
+/* Notice Styles */
+.ppq-notice {
+	padding: 12px;
+	margin: 15px 0;
+	border-left: 4px solid;
+}
+
+.ppq-notice.notice-info {
+	border-left-color: #2271b1;
+	background: #f0f6fc;
+}
+
+.ppq-notice.notice-success {
+	border-left-color: #00a32a;
+	background: #edfaef;
+}
+
+.ppq-notice.notice-warning {
+	border-left-color: #dba617;
+	background: #fcf9e8;
+}
+
+.ppq-notice.notice-error {
+	border-left-color: #d63638;
+	background: #fcf0f1;
+}
+
+/* Loading States */
+.ppq-loading {
+	opacity: 0.6;
+	pointer-events: none;
+}
+
+.ppq-spinner {
+	display: inline-block;
+	width: 16px;
+	height: 16px;
+	border: 2px solid #f3f3f3;
+	border-top: 2px solid #2271b1;
+	border-radius: 50%;
+	animation: ppq-spin 1s linear infinite;
+	vertical-align: middle;
+	margin-left: 5px;
+}
+
+@keyframes ppq-spin {
+	0% { transform: rotate(0deg); }
+	100% { transform: rotate(360deg); }
+}
+
+/* Responsive */
+@media screen and (max-width: 782px) {
+	.ppq-admin-header {
+		flex-direction: column;
+		align-items: flex-start;
+		gap: 10px;
+	}
+
+	.ppq-form-table th,
+	.ppq-form-table td {
+		display: block;
+		width: 100%;
+	}
+
+	.ppq-form-table th {
+		padding-bottom: 5px;
+	}
+}
+
+/* Utility Classes */
+.ppq-text-muted {
+	color: #646970;
+}
+
+.ppq-text-success {
+	color: #00a32a;
+}
+
+.ppq-text-error {
+	color: #d63638;
+}
+
+.ppq-text-warning {
+	color: #dba617;
+}
+
+.ppq-mt-0 { margin-top: 0; }
+.ppq-mb-0 { margin-bottom: 0; }
+.ppq-mt-10 { margin-top: 10px; }
+.ppq-mb-10 { margin-bottom: 10px; }
+.ppq-mt-20 { margin-top: 20px; }
+.ppq-mb-20 { margin-bottom: 20px; }

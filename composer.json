@@ -1,0 +1,35 @@
+{
+    "name": "pressprimer/quiz",
+    "description": "Enterprise-grade quiz and assessment system for WordPress",
+    "type": "wordpress-plugin",
+    "license": "GPL-2.0-or-later",
+    "authors": [
+        {
+            "name": "PressPrimer",
+            "homepage": "https://pressprimer.com"
+        }
+    ],
+    "require": {
+        "php": ">=7.4"
+    },
+    "require-dev": {
+        "phpunit/phpunit": "^9.0",
+        "wp-coding-standards/wpcs": "^3.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "PressPrimer\\Quiz\\": "includes/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "PressPrimer\\Quiz\\Tests\\": "tests/"
+        }
+    },
+    "config": {
+        "optimize-autoloader": true,
+        "sort-packages": true
+    },
+    "minimum-stability": "stable",
+    "prefer-stable": true
+}

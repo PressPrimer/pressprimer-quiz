@@ -158,14 +158,10 @@ class PPQ_Plugin {
 	 * @since 1.0.0
 	 */
 	private function init_rest_api() {
-		add_action(
-			'rest_api_init',
-			function() {
-				// REST API controller will be registered here
-				// $controller = new PPQ_REST_Controller();
-				// $controller->register_routes();
-			}
-		);
+		if ( class_exists( 'PPQ_REST_Controller' ) ) {
+			$controller = new PPQ_REST_Controller();
+			$controller->init();
+		}
 	}
 
 	/**

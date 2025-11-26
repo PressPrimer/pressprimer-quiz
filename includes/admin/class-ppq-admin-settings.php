@@ -286,7 +286,7 @@ class PPQ_Admin_Settings {
 				<?php esc_html_e( 'Tutorial Mode (immediate feedback)', 'pressprimer-quiz' ); ?>
 			</option>
 			<option value="timed" <?php selected( $value, 'timed' ); ?>>
-				<?php esc_html_e( 'Timed Mode (feedback at end)', 'pressprimer-quiz' ); ?>
+				<?php esc_html_e( 'Test Mode (feedback at end)', 'pressprimer-quiz' ); ?>
 			</option>
 		</select>
 		<p class="description">
@@ -345,9 +345,9 @@ class PPQ_Admin_Settings {
 	 * @since 1.0.0
 	 */
 	public function render_openai_api_key_field() {
-		$current_user_id = get_current_user_id();
-		$encrypted       = get_user_meta( $current_user_id, 'ppq_openai_api_key', true );
-		$has_key         = ! empty( $encrypted );
+		$settings = get_option( self::OPTION_NAME, [] );
+		$encrypted = isset( $settings['openai_api_key'] ) ? $settings['openai_api_key'] : '';
+		$has_key   = ! empty( $encrypted );
 		?>
 		<input
 			type="password"
@@ -375,7 +375,7 @@ class PPQ_Admin_Settings {
 		<?php endif; ?>
 		<p class="description">
 			<strong><?php esc_html_e( 'Note:', 'pressprimer-quiz' ); ?></strong>
-			<?php esc_html_e( 'API keys are stored per-user (not globally) and are encrypted in the database.', 'pressprimer-quiz' ); ?>
+			<?php esc_html_e( 'This API key is shared site-wide and is encrypted in the database.', 'pressprimer-quiz' ); ?>
 		</p>
 		<?php
 	}
@@ -469,7 +469,7 @@ class PPQ_Admin_Settings {
 			$sanitized['email_from_address'] = $email;
 		}
 
-		// Handle OpenAI API key (stored per-user, encrypted)
+		// Handle OpenAI API key (stored globally, encrypted)
 		if ( isset( $input['openai_api_key'] ) && ! empty( $input['openai_api_key'] ) ) {
 			$api_key = trim( $input['openai_api_key'] );
 
@@ -482,7 +482,7 @@ class PPQ_Admin_Settings {
 					'error'
 				);
 			} else {
-				// Encrypt and store per-user
+				// Encrypt and store globally
 				$encrypted = PPQ_Helpers::encrypt( $api_key );
 
 				if ( is_wp_error( $encrypted ) ) {
@@ -493,7 +493,7 @@ class PPQ_Admin_Settings {
 						'error'
 					);
 				} else {
-					update_user_meta( get_current_user_id(), 'ppq_openai_api_key', $encrypted );
+					$sanitized['openai_api_key'] = $encrypted;
 					add_settings_error(
 						self::OPTION_NAME,
 						'api_key_saved',
@@ -502,6 +502,9 @@ class PPQ_Admin_Settings {
 					);
 				}
 			}
+		} elseif ( isset( $existing['openai_api_key'] ) ) {
+			// Preserve existing key if not updating
+			$sanitized['openai_api_key'] = $existing['openai_api_key'];
 		}
 
 		// Sanitize remove data on uninstall
@@ -557,8 +560,29 @@ class PPQ_Admin_Settings {
 							<td><?php echo esc_html( get_bloginfo( 'version' ) ); ?></td>
 						</tr>
 						<tr>
+							<th><?php esc_html_e( 'WordPress Memory Limit', 'pressprimer-quiz' ); ?></th>
+							<td><?php echo esc_html( WP_MEMORY_LIMIT ); ?></td>
+						</tr>
+						<tr>
 							<th><?php esc_html_e( 'PHP Version', 'pressprimer-quiz' ); ?></th>
 							<td><?php echo esc_html( PHP_VERSION ); ?></td>
+						</tr>
+						<tr>
+							<th><?php esc_html_e( 'PHP Post Max Size', 'pressprimer-quiz' ); ?></th>
+							<td><?php echo esc_html( ini_get( 'post_max_size' ) ); ?></td>
+						</tr>
+						<tr>
+							<th><?php esc_html_e( 'PHP Time Limit', 'pressprimer-quiz' ); ?></th>
+							<td><?php echo esc_html( ini_get( 'max_execution_time' ) . ' ' . __( 'seconds', 'pressprimer-quiz' ) ); ?></td>
+						</tr>
+						<tr>
+							<th><?php esc_html_e( 'MySQL Version', 'pressprimer-quiz' ); ?></th>
+							<td>
+								<?php
+								global $wpdb;
+								echo esc_html( $wpdb->db_version() );
+								?>
+							</td>
 						</tr>
 					</tbody>
 				</table>

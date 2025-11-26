@@ -33,11 +33,30 @@ class PPQ_Admin {
 	public function init() {
 		add_action( 'admin_menu', [ $this, 'register_menus' ] );
 		add_action( 'admin_enqueue_scripts', [ $this, 'enqueue_assets' ] );
+		add_action( 'wp_ajax_ppq_search_questions', [ $this, 'ajax_search_questions' ] );
 
 		// Initialize settings
 		if ( class_exists( 'PPQ_Admin_Settings' ) ) {
 			$settings = new PPQ_Admin_Settings();
 			$settings->init();
+		}
+
+		// Initialize questions admin
+		if ( class_exists( 'PPQ_Admin_Questions' ) ) {
+			$questions = new PPQ_Admin_Questions();
+			$questions->init();
+		}
+
+		// Initialize banks admin
+		if ( class_exists( 'PPQ_Admin_Banks' ) ) {
+			$banks = new PPQ_Admin_Banks();
+			$banks->init();
+		}
+
+		// Initialize categories admin
+		if ( class_exists( 'PPQ_Admin_Categories' ) ) {
+			$categories = new PPQ_Admin_Categories();
+			$categories->init();
 		}
 	}
 
@@ -98,6 +117,26 @@ class PPQ_Admin {
 			'ppq_manage_own',
 			'ppq-banks',
 			[ $this, 'render_banks' ]
+		);
+
+		// Categories submenu
+		add_submenu_page(
+			'ppq',
+			__( 'Categories', 'pressprimer-quiz' ),
+			__( 'Categories', 'pressprimer-quiz' ),
+			'ppq_manage_own',
+			'ppq-categories',
+			[ $this, 'render_categories' ]
+		);
+
+		// Tags submenu
+		add_submenu_page(
+			'ppq',
+			__( 'Tags', 'pressprimer-quiz' ),
+			__( 'Tags', 'pressprimer-quiz' ),
+			'ppq_manage_own',
+			'ppq-tags',
+			[ $this, 'render_tags' ]
 		);
 
 		// Groups submenu
@@ -162,6 +201,21 @@ class PPQ_Admin {
 			PPQ_VERSION,
 			true
 		);
+
+		// Enqueue question builder on question pages
+		if ( isset( $_GET['page'] ) && 'ppq-questions' === $_GET['page'] ) {
+			// Enqueue jQuery UI for sortable
+			wp_enqueue_script( 'jquery-ui-sortable' );
+
+			// Enqueue question builder script
+			wp_enqueue_script(
+				'ppq-question-builder',
+				PPQ_PLUGIN_URL . 'assets/js/question-builder.js',
+				[ 'jquery', 'jquery-ui-sortable' ],
+				PPQ_VERSION,
+				true
+			);
+		}
 
 		// Localize script with data
 		wp_localize_script(
@@ -268,26 +322,10 @@ class PPQ_Admin {
 	 * @since 1.0.0
 	 */
 	public function render_questions() {
-		// Check capability
-		if ( ! current_user_can( 'ppq_manage_own' ) ) {
-			wp_die(
-				esc_html__( 'You do not have permission to access this page.', 'pressprimer-quiz' ),
-				esc_html__( 'Permission Denied', 'pressprimer-quiz' ),
-				[ 'response' => 403 ]
-			);
+		if ( class_exists( 'PPQ_Admin_Questions' ) ) {
+			$questions_admin = new PPQ_Admin_Questions();
+			$questions_admin->render();
 		}
-
-		?>
-		<div class="wrap">
-			<h1 class="wp-heading-inline"><?php esc_html_e( 'Questions', 'pressprimer-quiz' ); ?></h1>
-			<a href="<?php echo esc_url( admin_url( 'admin.php?page=ppq-questions&action=new' ) ); ?>" class="page-title-action">
-				<?php esc_html_e( 'Add New', 'pressprimer-quiz' ); ?>
-			</a>
-			<hr class="wp-header-end">
-
-			<p><em><?php esc_html_e( 'Question management will be implemented in Phase 2.', 'pressprimer-quiz' ); ?></em></p>
-		</div>
-		<?php
 	}
 
 	/**
@@ -298,26 +336,38 @@ class PPQ_Admin {
 	 * @since 1.0.0
 	 */
 	public function render_banks() {
-		// Check capability
-		if ( ! current_user_can( 'ppq_manage_own' ) ) {
-			wp_die(
-				esc_html__( 'You do not have permission to access this page.', 'pressprimer-quiz' ),
-				esc_html__( 'Permission Denied', 'pressprimer-quiz' ),
-				[ 'response' => 403 ]
-			);
+		if ( class_exists( 'PPQ_Admin_Banks' ) ) {
+			$banks_admin = new PPQ_Admin_Banks();
+			$banks_admin->render();
 		}
+	}
 
-		?>
-		<div class="wrap">
-			<h1 class="wp-heading-inline"><?php esc_html_e( 'Question Banks', 'pressprimer-quiz' ); ?></h1>
-			<a href="<?php echo esc_url( admin_url( 'admin.php?page=ppq-banks&action=new' ) ); ?>" class="page-title-action">
-				<?php esc_html_e( 'Add New', 'pressprimer-quiz' ); ?>
-			</a>
-			<hr class="wp-header-end">
+	/**
+	 * Render categories page
+	 *
+	 * Displays list and management interface for categories.
+	 *
+	 * @since 1.0.0
+	 */
+	public function render_categories() {
+		if ( class_exists( 'PPQ_Admin_Categories' ) ) {
+			$categories_admin = new PPQ_Admin_Categories();
+			$categories_admin->render();
+		}
+	}
 
-			<p><em><?php esc_html_e( 'Question bank management will be implemented in Phase 2.', 'pressprimer-quiz' ); ?></em></p>
-		</div>
-		<?php
+	/**
+	 * Render tags page
+	 *
+	 * Displays list and management interface for tags.
+	 *
+	 * @since 1.0.0
+	 */
+	public function render_tags() {
+		if ( class_exists( 'PPQ_Admin_Categories' ) ) {
+			$categories_admin = new PPQ_Admin_Categories();
+			$categories_admin->render_tags();
+		}
 	}
 
 	/**
@@ -388,5 +438,79 @@ class PPQ_Admin {
 			$settings = new PPQ_Admin_Settings();
 			$settings->render_page();
 		}
+	}
+
+	/**
+	 * AJAX handler for question search
+	 *
+	 * Searches questions for adding to banks.
+	 *
+	 * @since 1.0.0
+	 */
+	public function ajax_search_questions() {
+		// Verify nonce
+		if ( ! isset( $_POST['nonce'] ) || ! wp_verify_nonce( $_POST['nonce'], 'ppq_search_questions' ) ) {
+			wp_send_json_error( [ 'message' => __( 'Security check failed.', 'pressprimer-quiz' ) ] );
+		}
+
+		// Check capability
+		if ( ! current_user_can( 'ppq_manage_own' ) ) {
+			wp_send_json_error( [ 'message' => __( 'You do not have permission.', 'pressprimer-quiz' ) ] );
+		}
+
+		$search = isset( $_POST['search'] ) ? sanitize_text_field( wp_unslash( $_POST['search'] ) ) : '';
+		$bank_id = isset( $_POST['bank_id'] ) ? absint( $_POST['bank_id'] ) : 0;
+
+		if ( empty( $search ) ) {
+			wp_send_json_success( [ 'questions' => [] ] );
+		}
+
+		global $wpdb;
+
+		// Build search query
+		$questions_table = $wpdb->prefix . 'ppq_questions';
+		$revisions_table = $wpdb->prefix . 'ppq_question_revisions';
+
+		$search_term = '%' . $wpdb->esc_like( $search ) . '%';
+
+		// Get questions matching search
+		$sql = "SELECT q.id, q.type, q.difficulty, r.stem
+				FROM {$questions_table} q
+				INNER JOIN {$revisions_table} r ON q.current_revision_id = r.id
+				WHERE q.deleted_at IS NULL
+				AND r.stem LIKE %s";
+
+		$params = [ $search_term ];
+
+		// Filter by author if not admin
+		if ( ! current_user_can( 'ppq_manage_all' ) ) {
+			$sql .= ' AND q.author_id = %d';
+			$params[] = get_current_user_id();
+		}
+
+		// Exclude questions already in this bank
+		if ( $bank_id > 0 ) {
+			$membership_table = $wpdb->prefix . 'ppq_bank_memberships';
+			$sql .= " AND q.id NOT IN (SELECT question_id FROM {$membership_table} WHERE bank_id = %d)";
+			$params[] = $bank_id;
+		}
+
+		$sql .= ' LIMIT 20';
+
+		$results = $wpdb->get_results( $wpdb->prepare( $sql, $params ) );
+
+		$questions = [];
+		if ( ! empty( $results ) ) {
+			foreach ( $results as $row ) {
+				$questions[] = [
+					'id'           => absint( $row->id ),
+					'stem_preview' => wp_trim_words( wp_strip_all_tags( $row->stem ), 15 ),
+					'type'         => $row->type,
+					'difficulty'   => $row->difficulty,
+				];
+			}
+		}
+
+		wp_send_json_success( [ 'questions' => $questions ] );
 	}
 }

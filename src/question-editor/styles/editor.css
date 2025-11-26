@@ -1,0 +1,87 @@
+/**
+ * Question Editor Styles
+ *
+ * @package PressPrimer_Quiz
+ * @since 1.0.0
+ */
+
+.ppq-question-editor-container {
+	background: #f0f2f5;
+	min-height: 100vh;
+	padding: 24px;
+}
+
+.ppq-editor-header {
+	background: #fff;
+	padding: 24px;
+	border-radius: 8px;
+	margin-bottom: 24px;
+	box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+/* Ant Design customizations */
+.ant-card {
+	border-radius: 8px;
+	box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.ant-card-head {
+	background: linear-gradient(to bottom, #fafafa, #fff);
+	border-bottom: 2px solid #f0f0f0;
+}
+
+.ant-form-item-label > label {
+	font-weight: 600;
+}
+
+/* TinyMCE Container */
+#ppq-stem-editor {
+	border: 1px solid #d9d9d9;
+	border-radius: 4px;
+}
+
+/* Responsive adjustments */
+@media (max-width: 1200px) {
+	.ant-layout-sider {
+		position: static !important;
+		width: 100% !important;
+		max-width: 100% !important;
+		min-width: 100% !important;
+		flex: none !important;
+		margin-top: 24px;
+	}
+
+	.ant-layout-content {
+		padding-right: 0 !important;
+	}
+}
+
+/* Loading states */
+.ant-spin-nested-loading {
+	min-height: 125px;
+}
+
+/* Smooth transitions */
+.ant-card,
+.ant-btn,
+.ant-input,
+.ant-select-selector {
+	transition: all 0.3s cubic-bezier(0.645, 0.045, 0.355, 1);
+}
+
+/* Focus states */
+.ant-input:focus,
+.ant-select-focused .ant-select-selector {
+	border-color: #40a9ff;
+	box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.2);
+}
+
+/* Success states for correct answers */
+.ppq-correct-answer-card {
+	background: linear-gradient(to right, #f6ffed, #fff);
+}
+
+/* Sidebar height fix */
+aside.ant-layout-sider.ant-layout-sider-dark {
+	height: 1050px !important;
+}

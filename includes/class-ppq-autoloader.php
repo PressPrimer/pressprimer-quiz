@@ -31,6 +31,7 @@ class PPQ_Autoloader {
 	private static $directories = [
 		'models',
 		'admin',
+		'api',
 		'frontend',
 		'services',
 		'integrations',

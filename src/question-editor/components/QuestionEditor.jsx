@@ -316,6 +316,30 @@ const QuestionEditor = ({ questionData = {} }) => {
 								<Form.Item name="banks" noStyle shouldUpdate style={{ marginBottom: 0 }}>
 									<BankSelector />
 								</Form.Item>
+
+								<Divider style={{ margin: '16px 0' }} />
+
+								{/* Save/Cancel Buttons */}
+								<Space direction="vertical" style={{ width: '100%' }} size="small">
+									<Button
+										type="primary"
+										icon={<SaveOutlined />}
+										htmlType="submit"
+										loading={saving}
+										size="large"
+										block
+									>
+										{__('Save Question', 'pressprimer-quiz')}
+									</Button>
+									<Button
+										icon={<CloseOutlined />}
+										onClick={handleCancel}
+										size="large"
+										block
+									>
+										{__('Cancel', 'pressprimer-quiz')}
+									</Button>
+								</Space>
 							</Space>
 						</Sider>
 					</Layout>

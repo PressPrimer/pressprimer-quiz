@@ -503,20 +503,26 @@ class PPQ_Admin_Questions {
 		$wpdb->query( 'START TRANSACTION' );
 
 		try {
-			// Create new question
-			$new_question = new PPQ_Question();
-			$new_question->uuid = wp_generate_uuid4();
-			$new_question->type = $question->type;
-			$new_question->difficulty = $question->difficulty;
-			$new_question->time_limit = $question->time_limit;
-			$new_question->points = $question->points;
-			$new_question->author_id = get_current_user_id(); // Current user becomes author of duplicate
-			$new_question->status = 'draft'; // Start as draft
+			// Create new question using static create method
+			$new_question_id = PPQ_Question::create( [
+				'uuid'              => wp_generate_uuid4(),
+				'type'              => $question->type,
+				'difficulty_author' => $question->difficulty_author,
+				'expected_seconds'  => $question->expected_seconds,
+				'max_points'        => $question->max_points,
+				'author_id'         => get_current_user_id(), // Current user becomes author of duplicate
+				'status'            => 'draft', // Start as draft
+			] );
 
-			$result = $new_question->save();
+			if ( is_wp_error( $new_question_id ) ) {
+				throw new Exception( $new_question_id->get_error_message() );
+			}
 
-			if ( is_wp_error( $result ) ) {
-				throw new Exception( $result->get_error_message() );
+			// Load the newly created question
+			$new_question = PPQ_Question::get( $new_question_id );
+
+			if ( ! $new_question ) {
+				throw new Exception( __( 'Failed to load duplicated question.', 'pressprimer-quiz' ) );
 			}
 
 			// Create new revision with duplicated content
@@ -546,9 +552,8 @@ class PPQ_Admin_Questions {
 			$new_revision->question_id = $new_question->id;
 			$new_revision->version = 1;
 			$new_revision->stem = $duplicated_stem;
-			$new_revision->answers = wp_json_encode( $new_answers );
-			$new_revision->correct_answers = $revision->correct_answers;
-			$new_revision->settings = $revision->settings;
+			$new_revision->answers_json = wp_json_encode( $new_answers );
+			$new_revision->settings_json = $revision->settings_json;
 			$new_revision->feedback_correct = $revision->feedback_correct;
 			$new_revision->feedback_incorrect = $revision->feedback_incorrect;
 			$new_revision->content_hash = PPQ_Question_Revision::generate_hash( $new_revision->stem, $new_answers );
@@ -625,7 +630,7 @@ class PPQ_Admin_Questions {
 					[
 						'page' => 'ppq-questions',
 						'action' => 'edit',
-						'question_id' => $new_question->id,
+						'question' => $new_question->id,
 						'duplicated' => '1',
 					],
 					admin_url( 'admin.php' )

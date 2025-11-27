@@ -58,6 +58,12 @@ class PPQ_Admin {
 			$categories = new PPQ_Admin_Categories();
 			$categories->init();
 		}
+
+		// Initialize quizzes admin
+		if ( class_exists( 'PPQ_Admin_Quizzes' ) ) {
+			$quizzes = new PPQ_Admin_Quizzes();
+			$quizzes->init();
+		}
 	}
 
 	/**
@@ -292,26 +298,10 @@ class PPQ_Admin {
 	 * @since 1.0.0
 	 */
 	public function render_quizzes() {
-		// Check capability
-		if ( ! current_user_can( 'ppq_manage_own' ) ) {
-			wp_die(
-				esc_html__( 'You do not have permission to access this page.', 'pressprimer-quiz' ),
-				esc_html__( 'Permission Denied', 'pressprimer-quiz' ),
-				[ 'response' => 403 ]
-			);
+		if ( class_exists( 'PPQ_Admin_Quizzes' ) ) {
+			$quizzes_admin = new PPQ_Admin_Quizzes();
+			$quizzes_admin->render();
 		}
-
-		?>
-		<div class="wrap">
-			<h1 class="wp-heading-inline"><?php esc_html_e( 'Quizzes', 'pressprimer-quiz' ); ?></h1>
-			<a href="<?php echo esc_url( admin_url( 'admin.php?page=ppq-quizzes&action=new' ) ); ?>" class="page-title-action">
-				<?php esc_html_e( 'Add New', 'pressprimer-quiz' ); ?>
-			</a>
-			<hr class="wp-header-end">
-
-			<p><em><?php esc_html_e( 'Quiz management will be implemented in Phase 3.', 'pressprimer-quiz' ); ?></em></p>
-		</div>
-		<?php
 	}
 
 	/**

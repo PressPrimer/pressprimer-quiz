@@ -5,6 +5,7 @@ module.exports = {
 	...defaultConfig,
 	entry: {
 		'question-editor': path.resolve(process.cwd(), 'src', 'question-editor', 'index.js'),
+		'quiz-editor': path.resolve(process.cwd(), 'src', 'quiz-editor', 'index.js'),
 	},
 	output: {
 		path: path.resolve(process.cwd(), 'build'),

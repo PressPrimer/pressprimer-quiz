@@ -256,6 +256,8 @@ class PPQ_Admin_Quizzes {
 		// Route to appropriate view
 		if ( 'edit' === $action || 'new' === $action ) {
 			$this->render_edit();
+		} elseif ( 'preview' === $action ) {
+			$this->render_preview();
 		} else {
 			$this->render_list();
 		}
@@ -322,6 +324,290 @@ class PPQ_Admin_Quizzes {
 		?>
 		<!-- React Editor Root -->
 		<div id="ppq-quiz-editor-root"></div>
+		<?php
+	}
+
+	/**
+	 * Render quiz preview
+	 *
+	 * @since 1.0.0
+	 */
+	private function render_preview() {
+		$quiz_id = isset( $_GET['quiz'] ) ? absint( $_GET['quiz'] ) : 0;
+
+		if ( ! $quiz_id ) {
+			wp_die( esc_html__( 'Invalid quiz ID.', 'pressprimer-quiz' ) );
+		}
+
+		$quiz = PPQ_Quiz::get( $quiz_id );
+
+		if ( ! $quiz ) {
+			wp_die( esc_html__( 'Quiz not found.', 'pressprimer-quiz' ) );
+		}
+
+		// Check permission
+		if ( ! current_user_can( 'ppq_manage_all' ) && absint( $quiz->owner_id ) !== get_current_user_id() ) {
+			wp_die( esc_html__( 'You do not have permission to preview this quiz.', 'pressprimer-quiz' ) );
+		}
+
+		// Get questions for this quiz
+		$question_ids = $quiz->get_questions_for_attempt();
+
+		if ( empty( $question_ids ) ) {
+			wp_die( esc_html__( 'This quiz has no questions configured.', 'pressprimer-quiz' ) );
+		}
+
+		// Load questions
+		$questions = [];
+		foreach ( $question_ids as $question_id ) {
+			$question = PPQ_Question::get( $question_id );
+			if ( $question ) {
+				$revision = $question->get_current_revision();
+				if ( $revision ) {
+					$questions[] = [
+						'question' => $question,
+						'revision' => $revision,
+					];
+				}
+			}
+		}
+
+		// Enqueue preview styles
+		wp_enqueue_style(
+			'ppq-quiz-preview',
+			PPQ_PLUGIN_URL . 'assets/css/quiz-preview.css',
+			[],
+			PPQ_VERSION
+		);
+
+		// Render preview page
+		$this->render_preview_page( $quiz, $questions );
+	}
+
+	/**
+	 * Render preview page HTML
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param PPQ_Quiz $quiz Quiz object.
+	 * @param array    $questions Array of question/revision pairs.
+	 */
+	private function render_preview_page( $quiz, $questions ) {
+		?>
+		<div class="wrap ppq-quiz-preview-wrap">
+			<!-- Preview Mode Banner -->
+			<div class="ppq-preview-banner">
+				<strong><?php esc_html_e( 'PREVIEW MODE', 'pressprimer-quiz' ); ?></strong>
+				<?php esc_html_e( 'This is a preview - no data will be saved.', 'pressprimer-quiz' ); ?>
+				<a href="<?php echo esc_url( admin_url( 'admin.php?page=ppq-quizzes' ) ); ?>" class="button button-secondary">
+					<?php esc_html_e( 'Exit Preview', 'pressprimer-quiz' ); ?>
+				</a>
+			</div>
+
+			<!-- Quiz Landing Page Section -->
+			<div class="ppq-preview-section">
+				<h2><?php esc_html_e( 'Landing Page', 'pressprimer-quiz' ); ?></h2>
+				<div class="ppq-quiz-landing">
+					<h1 class="ppq-quiz-title"><?php echo esc_html( $quiz->title ); ?></h1>
+
+					<?php if ( ! empty( $quiz->description ) ) : ?>
+						<div class="ppq-quiz-description">
+							<?php echo wp_kses_post( $quiz->description ); ?>
+						</div>
+					<?php endif; ?>
+
+					<?php if ( $quiz->featured_image_id ) : ?>
+						<div class="ppq-quiz-featured-image">
+							<?php echo wp_get_attachment_image( $quiz->featured_image_id, 'large' ); ?>
+						</div>
+					<?php endif; ?>
+
+					<div class="ppq-quiz-info">
+						<div class="ppq-quiz-info-item">
+							<strong><?php esc_html_e( 'Questions:', 'pressprimer-quiz' ); ?></strong>
+							<?php echo esc_html( count( $questions ) ); ?>
+						</div>
+
+						<?php if ( $quiz->time_limit_seconds ) : ?>
+							<div class="ppq-quiz-info-item">
+								<strong><?php esc_html_e( 'Time Limit:', 'pressprimer-quiz' ); ?></strong>
+								<?php
+								$minutes = floor( $quiz->time_limit_seconds / 60 );
+								echo esc_html( sprintf( _n( '%d minute', '%d minutes', $minutes, 'pressprimer-quiz' ), $minutes ) );
+								?>
+							</div>
+						<?php endif; ?>
+
+						<div class="ppq-quiz-info-item">
+							<strong><?php esc_html_e( 'Passing Score:', 'pressprimer-quiz' ); ?></strong>
+							<?php echo esc_html( $quiz->pass_percent . '%' ); ?>
+						</div>
+
+						<div class="ppq-quiz-info-item">
+							<strong><?php esc_html_e( 'Mode:', 'pressprimer-quiz' ); ?></strong>
+							<?php echo 'tutorial' === $quiz->mode ? esc_html__( 'Tutorial', 'pressprimer-quiz' ) : esc_html__( 'Timed', 'pressprimer-quiz' ); ?>
+						</div>
+					</div>
+
+					<button class="button button-primary button-large" disabled>
+						<?php esc_html_e( 'Start Quiz (Preview Only)', 'pressprimer-quiz' ); ?>
+					</button>
+				</div>
+			</div>
+
+			<!-- Quiz Questions Section -->
+			<div class="ppq-preview-section">
+				<h2><?php esc_html_e( 'Questions', 'pressprimer-quiz' ); ?></h2>
+				<?php foreach ( $questions as $index => $item ) : ?>
+					<?php
+					$question = $item['question'];
+					$revision = $item['revision'];
+					$answers  = $revision->get_answers();
+					?>
+					<div class="ppq-preview-question">
+						<div class="ppq-question-number">
+							<?php
+							printf(
+								/* translators: 1: current question number, 2: total questions */
+								esc_html__( 'Question %1$d of %2$d', 'pressprimer-quiz' ),
+								$index + 1,
+								count( $questions )
+							);
+							?>
+						</div>
+
+						<div class="ppq-question-stem">
+							<?php echo wp_kses_post( $revision->stem ); ?>
+						</div>
+
+						<div class="ppq-question-meta">
+							<span class="ppq-question-type">
+								<?php
+								$types = [
+									'multiple_choice' => __( 'Multiple Choice', 'pressprimer-quiz' ),
+									'multiple_answer' => __( 'Multiple Answer', 'pressprimer-quiz' ),
+									'true_false'      => __( 'True/False', 'pressprimer-quiz' ),
+									// Handle abbreviated versions
+									'mc'              => __( 'Multiple Choice', 'pressprimer-quiz' ),
+									'ma'              => __( 'Multiple Answer', 'pressprimer-quiz' ),
+									'tf'              => __( 'True/False', 'pressprimer-quiz' ),
+								];
+								echo esc_html( $types[ $question->type ] ?? ucwords( str_replace( '_', ' ', $question->type ) ) );
+								?>
+							</span>
+							<span class="ppq-question-difficulty">
+								<?php echo esc_html( ucfirst( $question->difficulty_author ) ); ?>
+							</span>
+							<span class="ppq-question-points">
+								<?php
+								printf(
+									/* translators: %s: point value */
+									esc_html__( '%s points', 'pressprimer-quiz' ),
+									esc_html( $question->max_points )
+								);
+								?>
+							</span>
+						</div>
+
+						<div class="ppq-question-answers">
+							<?php foreach ( $answers as $answer_index => $answer ) : ?>
+								<div class="ppq-answer-option <?php echo $answer['is_correct'] ? 'ppq-answer-correct' : ''; ?>">
+									<?php if ( 'multiple_choice' === $question->type || 'true_false' === $question->type ) : ?>
+										<input type="radio" disabled>
+									<?php else : ?>
+										<input type="checkbox" disabled>
+									<?php endif; ?>
+									<span class="ppq-answer-text"><?php echo wp_kses_post( $answer['text'] ); ?></span>
+									<?php if ( $answer['is_correct'] ) : ?>
+										<span class="ppq-correct-indicator"><?php esc_html_e( '(Correct)', 'pressprimer-quiz' ); ?></span>
+									<?php endif; ?>
+								</div>
+							<?php endforeach; ?>
+						</div>
+
+						<?php if ( ! empty( $revision->feedback_correct ) || ! empty( $revision->feedback_incorrect ) ) : ?>
+							<div class="ppq-question-feedback">
+								<?php if ( ! empty( $revision->feedback_correct ) ) : ?>
+									<div class="ppq-feedback-correct">
+										<strong><?php esc_html_e( 'Correct Feedback:', 'pressprimer-quiz' ); ?></strong>
+										<?php echo wp_kses_post( $revision->feedback_correct ); ?>
+									</div>
+								<?php endif; ?>
+								<?php if ( ! empty( $revision->feedback_incorrect ) ) : ?>
+									<div class="ppq-feedback-incorrect">
+										<strong><?php esc_html_e( 'Incorrect Feedback:', 'pressprimer-quiz' ); ?></strong>
+										<?php echo wp_kses_post( $revision->feedback_incorrect ); ?>
+									</div>
+								<?php endif; ?>
+							</div>
+						<?php endif; ?>
+					</div>
+				<?php endforeach; ?>
+			</div>
+
+			<!-- Mock Results Section -->
+			<div class="ppq-preview-section">
+				<h2><?php esc_html_e( 'Mock Results', 'pressprimer-quiz' ); ?></h2>
+				<div class="ppq-preview-results">
+					<div class="ppq-results-score">
+						<div class="ppq-score-circle">
+							<span class="ppq-score-value">85%</span>
+						</div>
+						<div class="ppq-pass-status ppq-pass">
+							<?php esc_html_e( 'PASSED', 'pressprimer-quiz' ); ?>
+						</div>
+					</div>
+
+					<div class="ppq-results-details">
+						<div class="ppq-result-item">
+							<strong><?php esc_html_e( 'Correct:', 'pressprimer-quiz' ); ?></strong>
+							<?php
+							$correct = ceil( count( $questions ) * 0.85 );
+							printf(
+								/* translators: 1: correct count, 2: total questions */
+								esc_html__( '%1$d of %2$d', 'pressprimer-quiz' ),
+								$correct,
+								count( $questions )
+							);
+							?>
+						</div>
+						<div class="ppq-result-item">
+							<strong><?php esc_html_e( 'Time Spent:', 'pressprimer-quiz' ); ?></strong>
+							<?php esc_html_e( '15 minutes', 'pressprimer-quiz' ); ?>
+						</div>
+						<div class="ppq-result-item">
+							<strong><?php esc_html_e( 'Passing Score:', 'pressprimer-quiz' ); ?></strong>
+							<?php echo esc_html( $quiz->pass_percent . '%' ); ?>
+						</div>
+					</div>
+
+					<?php
+					// Show feedback for 85% score
+					$feedback = $quiz->get_feedback_for_score( 85 );
+					if ( ! empty( $feedback ) ) :
+						?>
+						<div class="ppq-results-feedback">
+							<h3><?php esc_html_e( 'Feedback', 'pressprimer-quiz' ); ?></h3>
+							<?php echo wp_kses_post( $feedback ); ?>
+						</div>
+					<?php endif; ?>
+
+					<p class="ppq-preview-note">
+						<em><?php esc_html_e( 'This is a sample result showing 85% score. Actual results will vary based on student performance.', 'pressprimer-quiz' ); ?></em>
+					</p>
+				</div>
+			</div>
+
+			<!-- Exit Preview Button -->
+			<div class="ppq-preview-footer">
+				<a href="<?php echo esc_url( admin_url( 'admin.php?page=ppq-quizzes' ) ); ?>" class="button button-secondary button-large">
+					<?php esc_html_e( 'Exit Preview', 'pressprimer-quiz' ); ?>
+				</a>
+				<a href="<?php echo esc_url( admin_url( 'admin.php?page=ppq-quizzes&action=edit&quiz=' . $quiz->id ) ); ?>" class="button button-primary button-large">
+					<?php esc_html_e( 'Edit Quiz', 'pressprimer-quiz' ); ?>
+				</a>
+			</div>
+		</div>
 		<?php
 	}
 
@@ -1154,13 +1440,6 @@ class PPQ_Quizzes_List_Table extends WP_List_Table {
 			esc_html__( 'Duplicate', 'pressprimer-quiz' )
 		);
 
-		// Preview action (placeholder for now)
-		$actions['preview'] = sprintf(
-			'<a href="%s" target="_blank">%s</a>',
-			'#', // Will be implemented with quiz shortcode/block
-			esc_html__( 'Preview', 'pressprimer-quiz' )
-		);
-
 		// Delete action
 		$actions['delete'] = sprintf(
 			'<a href="%s" class="submitdelete" onclick="return confirm(\'%s\')">%s</a>',
@@ -1179,6 +1458,22 @@ class PPQ_Quizzes_List_Table extends WP_List_Table {
 			),
 			esc_js( __( 'Are you sure you want to delete this quiz?', 'pressprimer-quiz' ) ),
 			esc_html__( 'Delete', 'pressprimer-quiz' )
+		);
+
+		// Preview action
+		$actions['preview'] = sprintf(
+			'<a href="%s" target="_blank">%s</a>',
+			esc_url(
+				add_query_arg(
+					[
+						'page'   => 'ppq-quizzes',
+						'action' => 'preview',
+						'quiz'   => $item->id,
+					],
+					admin_url( 'admin.php' )
+				)
+			),
+			esc_html__( 'Preview', 'pressprimer-quiz' )
 		);
 
 		// Build output

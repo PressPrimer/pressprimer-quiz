@@ -19,15 +19,23 @@ import {
 	Empty,
 	Typography,
 	Card,
+	Input,
+	Select,
+	Row,
+	Col,
+	Tooltip,
 } from 'antd';
 import {
 	PlusOutlined,
 	DeleteOutlined,
+	EditOutlined,
 	HolderOutlined,
+	SearchOutlined,
 } from '@ant-design/icons';
 import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd';
 
 const { Text } = Typography;
+const { Search } = Input;
 
 /**
  * Questions Panel Component
@@ -43,6 +51,15 @@ const QuestionsPanel = ({ quizId, generationMode }) => {
 	const [availableQuestions, setAvailableQuestions] = useState([]);
 	const [selectedQuestionIds, setSelectedQuestionIds] = useState([]);
 	const [totalPoints, setTotalPoints] = useState(0);
+	const [searchQuery, setSearchQuery] = useState('');
+	const [filterType, setFilterType] = useState('');
+	const [filterDifficulty, setFilterDifficulty] = useState('');
+	const [filterCategory, setFilterCategory] = useState('');
+	const [filterBank, setFilterBank] = useState('');
+	const [pagination, setPagination] = useState({ current: 1, pageSize: 10, total: 0 });
+	const [loadingQuestions, setLoadingQuestions] = useState(false);
+	const [categories, setCategories] = useState([]);
+	const [banks, setBanks] = useState([]);
 
 	// Load quiz items
 	useEffect(() => {
@@ -53,7 +70,9 @@ const QuestionsPanel = ({ quizId, generationMode }) => {
 
 	// Calculate total points
 	useEffect(() => {
-		const total = items.reduce((sum, item) => sum + (parseFloat(item.weight) || 0), 0);
+		const total = items
+			.filter(item => item && item.weight !== undefined)
+			.reduce((sum, item) => sum + (parseFloat(item.weight) || 0), 0);
 		setTotalPoints(total);
 	}, [items]);
 
@@ -77,20 +96,68 @@ const QuestionsPanel = ({ quizId, generationMode }) => {
 	/**
 	 * Load available questions for modal
 	 */
-	const loadAvailableQuestions = async () => {
+	const loadAvailableQuestions = async (page = 1) => {
 		try {
+			setLoadingQuestions(true);
+
+			// Build query params
+			const params = new URLSearchParams({
+				per_page: pagination.pageSize.toString(),
+				page: page.toString(),
+			});
+
+			if (searchQuery) {
+				params.append('search', searchQuery);
+			}
+			if (filterType) {
+				params.append('type', filterType);
+			}
+			if (filterDifficulty) {
+				params.append('difficulty', filterDifficulty);
+			}
+			if (filterCategory) {
+				params.append('category_id', filterCategory);
+			}
+			if (filterBank) {
+				params.append('bank_id', filterBank);
+			}
+
 			const response = await apiFetch({
-				path: `/ppq/v1/questions?per_page=100&status=published`,
+				path: `/ppq/v1/questions?${params.toString()}`,
 			});
 
 			// Filter out questions already in quiz
 			const existingQuestionIds = items.map(item => item.question_id);
-			const filtered = response.filter(q => !existingQuestionIds.includes(q.id));
+			const filtered = response.questions.filter(q => !existingQuestionIds.includes(q.id));
 
 			setAvailableQuestions(filtered);
+			setPagination({
+				...pagination,
+				current: page,
+				total: response.total,
+			});
 		} catch (error) {
 			console.error('Failed to load questions:', error);
 			message.error(__('Failed to load questions', 'pressprimer-quiz'));
+		} finally {
+			setLoadingQuestions(false);
+		}
+	};
+
+	/**
+	 * Load filter options (categories and banks)
+	 */
+	const loadFilterOptions = async () => {
+		try {
+			// Load categories
+			const categoriesResponse = await apiFetch({ path: '/ppq/v1/taxonomies?type=category' });
+			setCategories(categoriesResponse || []);
+
+			// Load banks
+			const banksResponse = await apiFetch({ path: '/ppq/v1/banks' });
+			setBanks(banksResponse || []);
+		} catch (error) {
+			console.error('Failed to load filter options:', error);
 		}
 	};
 
@@ -98,9 +165,41 @@ const QuestionsPanel = ({ quizId, generationMode }) => {
 	 * Open add questions modal
 	 */
 	const handleAddQuestions = () => {
-		loadAvailableQuestions();
-		setModalVisible(true);
+		// Reset filters
+		setSearchQuery('');
+		setFilterType('');
+		setFilterDifficulty('');
+		setFilterCategory('');
+		setFilterBank('');
+		setPagination({ current: 1, pageSize: 10, total: 0 });
 		setSelectedQuestionIds([]);
+		setModalVisible(true);
+		loadFilterOptions();
+		loadAvailableQuestions(1);
+	};
+
+	/**
+	 * Handle search
+	 */
+	const handleSearch = (value) => {
+		setSearchQuery(value);
+		setPagination({ ...pagination, current: 1 });
+		loadAvailableQuestions(1);
+	};
+
+	/**
+	 * Handle filter change
+	 */
+	const handleFilterChange = () => {
+		setPagination({ ...pagination, current: 1 });
+		loadAvailableQuestions(1);
+	};
+
+	/**
+	 * Handle pagination change
+	 */
+	const handleTableChange = (newPagination) => {
+		loadAvailableQuestions(newPagination.current);
 	};
 
 	/**
@@ -174,31 +273,55 @@ const QuestionsPanel = ({ quizId, generationMode }) => {
 	/**
 	 * Handle drag end
 	 */
-	const handleDragEnd = async (result) => {
+	const handleDragEnd = (result) => {
+		// Always clear any drag state, even if we don't process the drop
 		if (!result.destination) {
+			// User dropped outside the list or cancelled
+			return;
+		}
+
+		// Don't process if source and destination are the same
+		if (result.source.index === result.destination.index) {
+			return;
+		}
+
+		// Validate items array and indices
+		if (!items || items.length === 0) {
+			return;
+		}
+
+		if (result.source.index >= items.length || result.destination.index >= items.length) {
+			console.error('Invalid drag indices');
 			return;
 		}
 
 		const reorderedItems = Array.from(items);
 		const [removed] = reorderedItems.splice(result.source.index, 1);
+
+		// Validate removed item
+		if (!removed || !removed.id) {
+			console.error('Invalid item removed during drag');
+			return;
+		}
+
 		reorderedItems.splice(result.destination.index, 0, removed);
 
+		// Optimistically update UI - this triggers re-render which clears drag state
 		setItems(reorderedItems);
 
-		// Save new order to backend
-		try {
-			await apiFetch({
-				path: `/ppq/v1/quizzes/${quizId}/items/reorder`,
-				method: 'POST',
-				data: {
-					item_ids: reorderedItems.map(item => item.id),
-				},
-			});
-		} catch (error) {
+		// Save new order to backend (async, but not awaited to avoid blocking UI)
+		apiFetch({
+			path: `/ppq/v1/quizzes/${quizId}/items/reorder`,
+			method: 'POST',
+			data: {
+				item_ids: reorderedItems.map(item => item.id),
+			},
+		}).catch((error) => {
 			console.error('Failed to reorder items:', error);
 			message.error(__('Failed to save order', 'pressprimer-quiz'));
-			loadQuizItems(); // Reload to reset
-		}
+			// Reload to reset
+			loadQuizItems();
+		});
 	};
 
 	if (generationMode !== 'fixed') {
@@ -226,7 +349,12 @@ const QuestionsPanel = ({ quizId, generationMode }) => {
 			title: '',
 			key: 'drag',
 			width: 40,
-			render: () => <HolderOutlined style={{ cursor: 'move', color: '#999' }} />,
+			className: 'drag-handle-cell',
+			render: () => (
+				<div style={{ cursor: 'grab', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+					<HolderOutlined style={{ color: '#999', fontSize: 16 }} />
+				</div>
+			),
 		},
 		{
 			title: __('Question', 'pressprimer-quiz'),
@@ -262,18 +390,32 @@ const QuestionsPanel = ({ quizId, generationMode }) => {
 			key: 'actions',
 			width: 100,
 			render: (_, record) => (
-				<Popconfirm
-					title={__('Remove this question?', 'pressprimer-quiz')}
-					onConfirm={() => handleRemove(record.id)}
-					okText={__('Yes', 'pressprimer-quiz')}
-					cancelText={__('No', 'pressprimer-quiz')}
-				>
-					<Button
-						type="text"
-						danger
-						icon={<DeleteOutlined />}
-					/>
-				</Popconfirm>
+				<Space size="small">
+					<Tooltip title={__('Edit question', 'pressprimer-quiz')}>
+						<Button
+							type="text"
+							icon={<EditOutlined />}
+							onClick={() => {
+								const editUrl = `${window.ppqAdmin.adminUrl}admin.php?page=ppq-questions&action=edit&question=${record.question_id}`;
+								window.open(editUrl, '_blank');
+							}}
+						/>
+					</Tooltip>
+					<Popconfirm
+						title={__('Remove this question?', 'pressprimer-quiz')}
+						onConfirm={() => handleRemove(record.id)}
+						okText={__('Yes', 'pressprimer-quiz')}
+						cancelText={__('No', 'pressprimer-quiz')}
+					>
+						<Tooltip title={__('Remove from quiz', 'pressprimer-quiz')}>
+							<Button
+								type="text"
+								danger
+								icon={<DeleteOutlined />}
+							/>
+						</Tooltip>
+					</Popconfirm>
+				</Space>
 			),
 		},
 	];
@@ -283,14 +425,36 @@ const QuestionsPanel = ({ quizId, generationMode }) => {
 			title: __('Question', 'pressprimer-quiz'),
 			dataIndex: 'stem',
 			key: 'stem',
-			render: (text) => <Text ellipsis>{text}</Text>,
+			ellipsis: {
+				showTitle: false,
+			},
+			render: (text, record) => (
+				<Tooltip placement="topLeft" title={record.stem_full || text}>
+					<span>{text}</span>
+				</Tooltip>
+			),
 		},
 		{
 			title: __('Type', 'pressprimer-quiz'),
 			dataIndex: 'type',
 			key: 'type',
-			width: 80,
-			render: (type) => type.toUpperCase(),
+			width: 100,
+			render: (type) => type ? type.toUpperCase() : '',
+		},
+		{
+			title: __('Date', 'pressprimer-quiz'),
+			dataIndex: 'created_at',
+			key: 'created_at',
+			width: 120,
+			render: (date) => {
+				if (!date) return '';
+				const d = new Date(date);
+				return d.toLocaleDateString(undefined, {
+					year: 'numeric',
+					month: 'short',
+					day: 'numeric'
+				});
+			},
 		},
 	];
 
@@ -321,44 +485,83 @@ const QuestionsPanel = ({ quizId, generationMode }) => {
 				<DragDropContext onDragEnd={handleDragEnd}>
 					<Droppable droppableId="questions">
 						{(provided) => (
-							<div {...provided.droppableProps} ref={provided.innerRef}>
-								<Table
-									loading={loading}
-									dataSource={items}
-									columns={columns}
-									rowKey="id"
-									pagination={false}
-									locale={{
-										emptyText: __('No questions added yet. Click "Add Questions" to get started.', 'pressprimer-quiz'),
-									}}
-									components={{
-										body: {
-											wrapper: ({ children }) => (
-												<tbody>
-													{children.map((child, index) => (
-														<Draggable
-															key={child.key}
-															draggableId={String(child.key)}
-															index={index}
-														>
-															{(provided) => (
-																<tr
-																	ref={provided.innerRef}
-																	{...provided.draggableProps}
-																	{...provided.dragHandleProps}
-																>
-																	{child}
-																</tr>
-															)}
-														</Draggable>
-													))}
-													{provided.placeholder}
-												</tbody>
-											),
+							<Table
+								key={items.map(i => i.id).join('-')}
+								loading={loading}
+								dataSource={items}
+								columns={columns}
+								rowKey="id"
+								pagination={false}
+								locale={{
+									emptyText: (
+										<div style={{ padding: '40px 20px', textAlign: 'center', maxWidth: 600, margin: '0 auto' }}>
+											<span style={{ color: 'rgba(0, 0, 0, 0.45)', fontSize: 14 }}>
+												{__('No questions added yet. Click "Add Questions" to get started.', 'pressprimer-quiz')}
+											</span>
+										</div>
+									),
+								}}
+								components={{
+									body: {
+										wrapper: (props) => (
+											<tbody
+												{...props}
+												{...provided.droppableProps}
+												ref={provided.innerRef}
+											>
+												{props.children}
+												{provided.placeholder}
+											</tbody>
+										),
+										row: ({ children, ...props }) => {
+											const index = props['data-row-key'];
+											const itemIndex = items.findIndex(item => String(item.id) === String(index));
+
+											if (itemIndex === -1) {
+												return <tr {...props}>{children}</tr>;
+											}
+
+											return (
+												<Draggable
+													draggableId={String(index)}
+													index={itemIndex}
+												>
+													{(provided, snapshot) => {
+														// Build the style object properly
+														const baseStyle = provided.draggableProps.style || {};
+														const customStyle = {
+															background: snapshot.isDragging ? '#e6f7ff' : 'inherit',
+															boxShadow: snapshot.isDragging ? '0 8px 16px rgba(0,0,0,0.2)' : 'none',
+															cursor: snapshot.isDragging ? 'grabbing' : 'inherit',
+															opacity: snapshot.isDragging ? 0.9 : 1,
+														};
+
+														// Don't add transition while dragging to avoid conflicts
+														if (!snapshot.isDragging) {
+															customStyle.transition = 'background 0.2s ease, box-shadow 0.2s ease, opacity 0.2s ease';
+														}
+
+														return (
+															<tr
+																ref={provided.innerRef}
+																{...provided.draggableProps}
+																{...provided.dragHandleProps}
+																{...props}
+																style={{
+																	...baseStyle,
+																	...customStyle,
+																}}
+															>
+																{children}
+															</tr>
+														);
+													}}
+												</Draggable>
+											);
 										},
-									}}
-								/>
-							</div>
+									},
+								}}
+							/>
 						)}
 					</Droppable>
 				</DragDropContext>
@@ -372,14 +575,107 @@ const QuestionsPanel = ({ quizId, generationMode }) => {
 				onOk={handleAddSelected}
 				okText={__('Add Selected', 'pressprimer-quiz')}
 				cancelText={__('Cancel', 'pressprimer-quiz')}
-				width={800}
+				width={900}
 			>
+				<Space direction="vertical" style={{ width: '100%', marginBottom: 16 }} size="middle">
+					{/* Search */}
+					<Search
+						placeholder={__('Search questions...', 'pressprimer-quiz')}
+						allowClear
+						enterButton={<SearchOutlined />}
+						size="large"
+						onSearch={handleSearch}
+						value={searchQuery}
+						onChange={(e) => setSearchQuery(e.target.value)}
+					/>
+
+					{/* Filters */}
+					<Row gutter={8}>
+						<Col span={6}>
+							<Select
+								placeholder={__('Type', 'pressprimer-quiz')}
+								allowClear
+								style={{ width: '100%' }}
+								value={filterType || undefined}
+								onChange={(value) => {
+									setFilterType(value || '');
+									handleFilterChange();
+								}}
+								options={[
+									{ value: 'mcq', label: __('Multiple Choice', 'pressprimer-quiz') },
+									{ value: 'tf', label: __('True/False', 'pressprimer-quiz') },
+									{ value: 'essay', label: __('Essay', 'pressprimer-quiz') },
+								]}
+							/>
+						</Col>
+						<Col span={6}>
+							<Select
+								placeholder={__('Difficulty', 'pressprimer-quiz')}
+								allowClear
+								style={{ width: '100%' }}
+								value={filterDifficulty || undefined}
+								onChange={(value) => {
+									setFilterDifficulty(value || '');
+									handleFilterChange();
+								}}
+								options={[
+									{ value: 'beginner', label: __('Beginner', 'pressprimer-quiz') },
+									{ value: 'intermediate', label: __('Intermediate', 'pressprimer-quiz') },
+									{ value: 'advanced', label: __('Advanced', 'pressprimer-quiz') },
+									{ value: 'expert', label: __('Expert', 'pressprimer-quiz') },
+								]}
+							/>
+						</Col>
+						<Col span={6}>
+							<Select
+								placeholder={__('Category', 'pressprimer-quiz')}
+								allowClear
+								style={{ width: '100%' }}
+								value={filterCategory || undefined}
+								onChange={(value) => {
+									setFilterCategory(value || '');
+									handleFilterChange();
+								}}
+								options={categories.map(cat => ({
+									value: cat.id.toString(),
+									label: cat.name,
+								}))}
+							/>
+						</Col>
+						<Col span={6}>
+							<Select
+								placeholder={__('Bank', 'pressprimer-quiz')}
+								allowClear
+								style={{ width: '100%' }}
+								value={filterBank || undefined}
+								onChange={(value) => {
+									setFilterBank(value || '');
+									handleFilterChange();
+								}}
+								options={banks.map(bank => ({
+									value: bank.id.toString(),
+									label: bank.name,
+								}))}
+							/>
+						</Col>
+					</Row>
+				</Space>
+
 				<Table
+					loading={loadingQuestions}
 					dataSource={availableQuestions}
 					columns={questionColumns}
 					rowKey="id"
 					rowSelection={rowSelection}
-					pagination={{ pageSize: 10 }}
+					scroll={{ x: 'max-content' }}
+					pagination={{
+						current: pagination.current,
+						pageSize: pagination.pageSize,
+						total: pagination.total,
+						showSizeChanger: true,
+						showTotal: (total) => __('Total', 'pressprimer-quiz') + `: ${total}`,
+					}}
+					onChange={handleTableChange}
 					locale={{
 						emptyText: __('No questions available', 'pressprimer-quiz'),
 					}}

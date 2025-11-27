@@ -187,7 +187,7 @@ class PPQ_Admin {
 	 */
 	public function enqueue_assets( $hook ) {
 		// Only load on PPQ admin pages
-		if ( 0 !== strpos( $hook, 'ppq' ) && 'toplevel_page_ppq' !== $hook ) {
+		if ( false === strpos( $hook, 'ppq' ) ) {
 			return;
 		}
 

@@ -31,3 +31,43 @@
 	border-radius: 8px;
 	box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
 }
+
+/* Drag and Drop Styles */
+.drag-handle {
+	cursor: grab !important;
+}
+
+.drag-handle:active {
+	cursor: grabbing !important;
+}
+
+/* Add visual feedback for drag target area */
+tbody tr {
+	transition: all 0.2s ease;
+}
+
+tbody tr:hover {
+	background-color: #fafafa;
+}
+
+/* Dragging state styles */
+tbody tr[data-rbd-dragging-over-with] {
+	background-color: #f0f7ff !important;
+}
+
+/* Style for the placeholder that shows where item will drop */
+[data-rbd-placeholder-context-id] {
+	background-color: #e6f7ff;
+	border: 2px dashed #1890ff;
+	border-radius: 4px;
+}
+
+/* Make drag handle more obvious */
+.drag-handle .anticon {
+	transition: all 0.2s ease;
+}
+
+.drag-handle:hover .anticon {
+	color: #1890ff !important;
+	transform: scale(1.1);
+}

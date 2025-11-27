@@ -28,6 +28,8 @@ import {
 
 import SettingsPanel from './SettingsPanel';
 import QuestionsPanel from './QuestionsPanel';
+import RulesPanel from './RulesPanel';
+import FeedbackPanel from './FeedbackPanel';
 
 const { Content } = Layout;
 const { Title, Paragraph } = Typography;
@@ -45,6 +47,7 @@ const QuizEditor = ({ quizData = {} }) => {
 	const [generationMode, setGenerationMode] = useState(quizData.generation_mode || 'fixed');
 	const [activeTab, setActiveTab] = useState('settings');
 	const [currentQuizId, setCurrentQuizId] = useState(quizData.id || null);
+	const [feedbackBands, setFeedbackBands] = useState([]);
 
 	const isNew = !currentQuizId;
 
@@ -78,6 +81,18 @@ const QuizEditor = ({ quizData = {} }) => {
 			if (quizData.generation_mode) {
 				setGenerationMode(quizData.generation_mode);
 			}
+
+			// Load feedback bands
+			if (quizData.band_feedback_json) {
+				try {
+					const bands = typeof quizData.band_feedback_json === 'string'
+						? JSON.parse(quizData.band_feedback_json)
+						: quizData.band_feedback_json;
+					setFeedbackBands(bands);
+				} catch (error) {
+					console.error('Failed to parse feedback bands:', error);
+				}
+			}
 		}
 	}, [quizData, form]);
 
@@ -92,6 +107,7 @@ const QuizEditor = ({ quizData = {} }) => {
 			const quizPayload = {
 				...values,
 				id: quizData.id || null,
+				band_feedback_json: JSON.stringify(feedbackBands),
 			};
 
 			console.log('Submitting quiz payload:', quizPayload);
@@ -147,6 +163,7 @@ const QuizEditor = ({ quizData = {} }) => {
 			const quizPayload = {
 				...values,
 				id: currentQuizId || null,
+				band_feedback_json: JSON.stringify(feedbackBands),
 			};
 
 			console.log('Auto-saving quiz:', quizPayload);
@@ -202,6 +219,7 @@ const QuizEditor = ({ quizData = {} }) => {
 				setActiveTab(newTab);
 			}
 		} else {
+			// Allow switching freely between Settings and Feedback
 			setActiveTab(newTab);
 		}
 	};
@@ -214,8 +232,15 @@ const QuizEditor = ({ quizData = {} }) => {
 		},
 		{
 			key: 'questions',
-			label: __('Questions', 'pressprimer-quiz'),
-			children: <QuestionsPanel quizId={currentQuizId} generationMode={generationMode} />,
+			label: generationMode === 'fixed' ? __('Questions', 'pressprimer-quiz') : __('Rules', 'pressprimer-quiz'),
+			children: generationMode === 'fixed'
+				? <QuestionsPanel quizId={currentQuizId} generationMode={generationMode} />
+				: <RulesPanel quizId={currentQuizId} generationMode={generationMode} />,
+		},
+		{
+			key: 'feedback',
+			label: __('Feedback', 'pressprimer-quiz'),
+			children: <FeedbackPanel value={feedbackBands} onChange={setFeedbackBands} />,
 		},
 	];
 
@@ -280,10 +305,10 @@ const QuizEditor = ({ quizData = {} }) => {
 								description={
 									<>
 										<Paragraph style={{ marginBottom: 8 }}>
-											{__('Create engaging quizzes for your students. Configure settings, add questions, and customize the experience.', 'pressprimer-quiz')}
+											{__('Create engaging quizzes for your students. Configure settings, add questions or rules, and customize the experience.', 'pressprimer-quiz')}
 										</Paragraph>
 										<Paragraph style={{ marginBottom: 0 }}>
-											<strong>{__('Pro Tip:', 'pressprimer-quiz')}</strong> {__('Use fixed mode for specific questions or dynamic mode to pull from question banks.', 'pressprimer-quiz')}
+											<strong>{__('Pro Tip:', 'pressprimer-quiz')}</strong> {__('Use Fixed mode to select specific questions (same for everyone), or Dynamic mode with rules to randomly select from question banks (different for each student).', 'pressprimer-quiz')}
 										</Paragraph>
 									</>
 								}

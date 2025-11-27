@@ -518,3 +518,8 @@
 		flex: 1;
 	}
 }
+
+/* Quiz List Table - Fix Preview Link Position */
+.row-actions .preview {
+	float: none !important;
+}

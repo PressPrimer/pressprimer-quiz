@@ -523,3 +523,9 @@
 .row-actions .preview {
 	float: none !important;
 }
+
+/* Quiz List Table - ID Column Width */
+.wp-list-table .column-id {
+	width: 60px;
+	text-align: center;
+}

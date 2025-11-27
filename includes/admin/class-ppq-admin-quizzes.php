@@ -1224,6 +1224,7 @@ class PPQ_Quizzes_List_Table extends WP_List_Table {
 	public function get_columns() {
 		return [
 			'cb'        => '<input type="checkbox" />',
+			'id'        => __( 'ID', 'pressprimer-quiz' ),
 			'title'     => __( 'Title', 'pressprimer-quiz' ),
 			'questions' => __( 'Questions', 'pressprimer-quiz' ),
 			'mode'      => __( 'Mode', 'pressprimer-quiz' ),
@@ -1391,6 +1392,18 @@ class PPQ_Quizzes_List_Table extends WP_List_Table {
 	 */
 	public function column_cb( $item ) {
 		return sprintf( '<input type="checkbox" name="quizzes[]" value="%d" />', $item->id );
+	}
+
+	/**
+	 * Render ID column
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param PPQ_Quiz $item Quiz object.
+	 * @return string Column content.
+	 */
+	public function column_id( $item ) {
+		return sprintf( '<strong>%d</strong>', $item->id );
 	}
 
 	/**

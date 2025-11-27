@@ -108,12 +108,17 @@ class PPQ_Plugin {
 	 * @since 1.0.0
 	 */
 	private function init_frontend() {
-		// Frontend functionality will be initialized here
-		// $frontend = new PPQ_Frontend();
-		// $frontend->init();
-		//
-		// $shortcodes = new PPQ_Shortcodes();
-		// $shortcodes->init();
+		// Initialize shortcodes
+		if ( class_exists( 'PPQ_Shortcodes' ) ) {
+			$shortcodes = new PPQ_Shortcodes();
+			$shortcodes->init();
+		}
+
+		// Initialize AJAX handlers
+		if ( class_exists( 'PPQ_AJAX_Handler' ) ) {
+			$ajax_handler = new PPQ_AJAX_Handler();
+			$ajax_handler->init();
+		}
 	}
 
 	/**

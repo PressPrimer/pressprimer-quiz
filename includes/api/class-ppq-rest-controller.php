@@ -138,7 +138,7 @@ class PPQ_REST_Controller {
 		global $wpdb;
 		$bank_ids = $wpdb->get_col(
 			$wpdb->prepare(
-				"SELECT bank_id FROM {$wpdb->prefix}ppq_bank_memberships WHERE question_id = %d",
+				"SELECT bank_id FROM {$wpdb->prefix}ppq_bank_questions WHERE question_id = %d",
 				$question_id
 			)
 		);
@@ -146,9 +146,9 @@ class PPQ_REST_Controller {
 		$data = [
 			'id'                => $question->id,
 			'type'              => $question->type,
-			'difficulty'        => $question->difficulty,
-			'timeLimit'         => $question->time_limit,
-			'points'            => $question->points,
+			'difficulty'        => $question->difficulty_author,
+			'timeLimit'         => $question->expected_seconds,
+			'points'            => $question->max_points,
 			'stem'              => $revision ? $revision->stem : '',
 			'answers'           => $revision ? $revision->get_answers() : [],
 			'feedbackCorrect'   => $revision ? $revision->feedback_correct : '',
@@ -172,39 +172,56 @@ class PPQ_REST_Controller {
 	public function create_question( $request ) {
 		$data = $request->get_json_params();
 
+		// Debug logging
+		error_log( 'PPQ Create Question - Received data: ' . print_r( $data, true ) );
+
 		global $wpdb;
 		$wpdb->query( 'START TRANSACTION' );
 
 		try {
-			// Create question
-			$question = new PPQ_Question();
-			$question->uuid = wp_generate_uuid4();
-			$question->type = sanitize_key( $data['type'] );
-			$question->difficulty = sanitize_key( $data['difficulty'] );
-			$question->time_limit = absint( $data['timeLimit'] );
-			$question->points = floatval( $data['points'] );
-			$question->author_id = get_current_user_id();
-			$question->status = 'draft';
+			// Create question using static create method
+			$question_id = PPQ_Question::create( [
+				'uuid'              => wp_generate_uuid4(),
+				'type'              => sanitize_key( $data['type'] ),
+				'difficulty_author' => sanitize_key( $data['difficulty'] ?? '' ),
+				'expected_seconds'  => absint( $data['timeLimit'] ?? 0 ),
+				'max_points'        => floatval( $data['points'] ?? 1 ),
+				'author_id'         => get_current_user_id(),
+				'status'            => 'draft',
+			] );
 
-			$result = $question->save();
-
-			if ( is_wp_error( $result ) ) {
-				throw new Exception( $result->get_error_message() );
+			if ( is_wp_error( $question_id ) ) {
+				throw new Exception( $question_id->get_error_message() );
 			}
+
+			// Load the newly created question
+			$question = PPQ_Question::get( $question_id );
+
+			if ( ! $question ) {
+				throw new Exception( __( 'Failed to load created question.', 'pressprimer-quiz' ) );
+			}
+
+			// Convert answer format from React (isCorrect) to database (is_correct)
+			$answers = array_map( function( $answer ) {
+				return [
+					'id'         => $answer['id'] ?? '',
+					'text'       => $answer['text'] ?? '',
+					'is_correct' => $answer['isCorrect'] ?? false,
+					'feedback'   => $answer['feedback'] ?? '',
+					'order'      => $answer['order'] ?? 1,
+				];
+			}, $data['answers'] ?? [] );
 
 			// Create revision
 			$revision = new PPQ_Question_Revision();
 			$revision->question_id = $question->id;
 			$revision->version = 1;
-			$revision->stem = wp_kses_post( $data['stem'] );
-			$revision->answers = wp_json_encode( $data['answers'] );
-			$revision->correct_answers = wp_json_encode( array_values( array_filter( array_map( function( $answer ) {
-				return $answer['isCorrect'] ? $answer['id'] : null;
-			}, $data['answers'] ) ) ) );
-			$revision->settings = wp_json_encode( [] );
+			$revision->stem = wp_kses_post( $data['stem'] ?? '' );
+			$revision->answers_json = wp_json_encode( $answers );
+			$revision->settings_json = wp_json_encode( [] );
 			$revision->feedback_correct = wp_kses_post( $data['feedbackCorrect'] ?? '' );
 			$revision->feedback_incorrect = wp_kses_post( $data['feedbackIncorrect'] ?? '' );
-			$revision->content_hash = PPQ_Question_Revision::generate_hash( $revision->stem, $data['answers'] );
+			$revision->content_hash = PPQ_Question_Revision::generate_hash( $revision->stem, $answers );
 			$revision->created_by = get_current_user_id();
 
 			$result = $revision->save();
@@ -238,6 +255,10 @@ class PPQ_REST_Controller {
 
 			$wpdb->query( 'COMMIT' );
 
+			// Debug: Log what was actually saved
+			error_log( 'PPQ Create Question - Successfully created question ID: ' . $question->id );
+			error_log( 'PPQ Create Question - Stem saved: ' . $revision->stem );
+
 			return new WP_REST_Response( [ 'id' => $question->id ], 201 );
 
 		} catch ( Exception $e ) {
@@ -258,6 +279,9 @@ class PPQ_REST_Controller {
 		$question_id = absint( $request['id'] );
 		$data = $request->get_json_params();
 
+		// Debug logging
+		error_log( 'PPQ Update Question - Received data: ' . print_r( $data, true ) );
+
 		$question = PPQ_Question::get( $question_id );
 
 		if ( ! $question ) {
@@ -275,9 +299,9 @@ class PPQ_REST_Controller {
 		try {
 			// Update question metadata
 			$question->type = sanitize_key( $data['type'] );
-			$question->difficulty = sanitize_key( $data['difficulty'] );
-			$question->time_limit = absint( $data['timeLimit'] );
-			$question->points = floatval( $data['points'] );
+			$question->difficulty_author = sanitize_key( $data['difficulty'] );
+			$question->expected_seconds = absint( $data['timeLimit'] );
+			$question->max_points = floatval( $data['points'] );
 
 			$result = $question->save();
 
@@ -285,21 +309,29 @@ class PPQ_REST_Controller {
 				throw new Exception( $result->get_error_message() );
 			}
 
+			// Convert answer format from React (isCorrect) to database (is_correct)
+			$answers = array_map( function( $answer ) {
+				return [
+					'id'         => $answer['id'] ?? '',
+					'text'       => $answer['text'] ?? '',
+					'is_correct' => $answer['isCorrect'] ?? false,
+					'feedback'   => $answer['feedback'] ?? '',
+					'order'      => $answer['order'] ?? 1,
+				];
+			}, $data['answers'] ?? [] );
+
 			// Check if content changed (create new revision if it did)
 			$current_revision = $question->get_current_revision();
-			$new_hash = PPQ_Question_Revision::generate_hash( $data['stem'], $data['answers'] );
+			$new_hash = PPQ_Question_Revision::generate_hash( $data['stem'], $answers );
 
 			if ( ! $current_revision || $current_revision->content_hash !== $new_hash ) {
 				// Create new revision
 				$revision = new PPQ_Question_Revision();
 				$revision->question_id = $question->id;
 				$revision->version = $current_revision ? $current_revision->version + 1 : 1;
-				$revision->stem = wp_kses_post( $data['stem'] );
-				$revision->answers = wp_json_encode( $data['answers'] );
-				$revision->correct_answers = wp_json_encode( array_values( array_filter( array_map( function( $answer ) {
-					return $answer['isCorrect'] ? $answer['id'] : null;
-				}, $data['answers'] ) ) ) );
-				$revision->settings = wp_json_encode( [] );
+				$revision->stem = wp_kses_post( $data['stem'] ?? '' );
+				$revision->answers_json = wp_json_encode( $answers );
+				$revision->settings_json = wp_json_encode( [] );
 				$revision->feedback_correct = wp_kses_post( $data['feedbackCorrect'] ?? '' );
 				$revision->feedback_incorrect = wp_kses_post( $data['feedbackIncorrect'] ?? '' );
 				$revision->content_hash = $new_hash;
@@ -323,7 +355,7 @@ class PPQ_REST_Controller {
 			// Update banks (this requires more complex logic to handle adds/removes)
 			$current_banks = $wpdb->get_col(
 				$wpdb->prepare(
-					"SELECT bank_id FROM {$wpdb->prefix}ppq_bank_memberships WHERE question_id = %d",
+					"SELECT bank_id FROM {$wpdb->prefix}ppq_bank_questions WHERE question_id = %d",
 					$question_id
 				)
 			);
@@ -347,6 +379,12 @@ class PPQ_REST_Controller {
 			}
 
 			$wpdb->query( 'COMMIT' );
+
+			// Debug: Log what was actually saved
+			error_log( 'PPQ Update Question - Successfully updated question ID: ' . $question->id );
+			if ( isset( $revision ) ) {
+				error_log( 'PPQ Update Question - Stem saved: ' . $revision->stem );
+			}
 
 			return new WP_REST_Response( [ 'id' => $question->id ], 200 );
 

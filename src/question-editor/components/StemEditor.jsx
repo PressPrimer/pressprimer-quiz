@@ -99,6 +99,18 @@ const StemEditor = ({ value, onChange }) => {
 		};
 	}, []);
 
+	// Update editor content when value prop changes
+	useEffect(() => {
+		if (isInitialized && editorInstanceRef.current && value !== undefined) {
+			const currentContent = editorInstanceRef.current.getContent();
+			// Only update if the content is different to avoid cursor jumps
+			if (currentContent !== value) {
+				console.log('StemEditor: Updating content from value prop:', value);
+				editorInstanceRef.current.setContent(value || '');
+			}
+		}
+	}, [value, isInitialized]);
+
 	const percentUsed = (charCount / maxChars) * 100;
 	const strokeColor = percentUsed > 90 ? '#ff4d4f' : percentUsed > 75 ? '#faad14' : '#52c41a';
 

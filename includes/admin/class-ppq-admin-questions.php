@@ -29,6 +29,14 @@ if ( ! class_exists( 'WP_List_Table' ) ) {
 class PPQ_Admin_Questions {
 
 	/**
+	 * List table instance
+	 *
+	 * @since 1.0.0
+	 * @var PPQ_Questions_List_Table
+	 */
+	private $list_table;
+
+	/**
 	 * Initialize questions admin
 	 *
 	 * @since 1.0.0
@@ -36,6 +44,79 @@ class PPQ_Admin_Questions {
 	public function init() {
 		add_action( 'admin_init', [ $this, 'handle_actions' ] );
 		add_action( 'admin_notices', [ $this, 'admin_notices' ] );
+
+		// Add screen options on the right hook
+		add_action( 'current_screen', [ $this, 'maybe_add_screen_options' ] );
+	}
+
+	/**
+	 * Maybe add screen options based on current screen
+	 *
+	 * @since 1.0.0
+	 */
+	public function maybe_add_screen_options() {
+		$screen = get_current_screen();
+
+		// Only add screen options on the questions list page
+		if ( $screen && $screen->id === 'pressprimer-quiz_page_ppq-questions' ) {
+			$this->screen_options();
+		}
+	}
+
+	/**
+	 * Set up screen options
+	 *
+	 * @since 1.0.0
+	 */
+	public function screen_options() {
+		// Only on list view
+		$action = isset( $_GET['action'] ) ? sanitize_key( $_GET['action'] ) : '';
+		if ( in_array( $action, [ 'new', 'edit' ], true ) ) {
+			return;
+		}
+
+		// Add per page option
+		add_screen_option( 'per_page', [
+			'label'   => __( 'Questions per page', 'pressprimer-quiz' ),
+			'default' => 100,
+			'option'  => 'ppq_questions_per_page',
+		] );
+
+		// Instantiate the table and store it
+		$this->list_table = new PPQ_Questions_List_Table();
+
+		// Get screen and register columns with it
+		$screen = get_current_screen();
+		if ( $screen ) {
+			// Get columns from the table
+			$columns = $this->list_table->get_columns();
+
+			// Register columns with the screen
+			add_filter( "manage_{$screen->id}_columns", function() use ( $columns ) {
+				return $columns;
+			} );
+		}
+
+		// Set up filter for saving screen option
+		add_filter( 'set-screen-option', [ $this, 'set_screen_option' ], 10, 3 );
+	}
+
+	/**
+	 * Set screen option
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param mixed  $status Screen option value.
+	 * @param string $option Option name.
+	 * @param mixed  $value  Option value.
+	 * @return mixed
+	 */
+	public function set_screen_option( $status, $option, $value ) {
+		if ( 'ppq_questions_per_page' === $option ) {
+			return $value;
+		}
+
+		return $status;
 	}
 
 	/**
@@ -111,8 +192,12 @@ class PPQ_Admin_Questions {
 	 * @since 1.0.0
 	 */
 	private function render_list() {
-		$list_table = new PPQ_Questions_List_Table();
-		$list_table->prepare_items();
+		// Reuse the list table instance if it exists, otherwise create new one
+		if ( ! $this->list_table ) {
+			$this->list_table = new PPQ_Questions_List_Table();
+		}
+
+		$this->list_table->prepare_items();
 
 		?>
 		<div class="wrap">
@@ -122,13 +207,13 @@ class PPQ_Admin_Questions {
 			</a>
 			<hr class="wp-header-end">
 
-			<?php $list_table->views(); ?>
+			<?php $this->list_table->views(); ?>
 
 			<form method="get">
 				<input type="hidden" name="page" value="ppq-questions">
 				<?php
-				$list_table->search_box( __( 'Search Questions', 'pressprimer-quiz' ), 'ppq-question' );
-				$list_table->display();
+				$this->list_table->search_box( __( 'Search Questions', 'pressprimer-quiz' ), 'ppq-question' );
+				$this->list_table->display();
 				?>
 			</form>
 		</div>
@@ -213,11 +298,18 @@ class PPQ_Admin_Questions {
 				$categories = $question->get_categories();
 				$tags = $question->get_tags();
 
+				// Debug: Log what we're loading
+				error_log( 'PPQ Loading Question ID: ' . $question_id );
+				error_log( 'PPQ Revision loaded: ' . ( $revision ? 'Yes (ID: ' . $revision->id . ')' : 'No' ) );
+				if ( $revision ) {
+					error_log( 'PPQ Revision stem: ' . $revision->stem );
+				}
+
 				// Get bank memberships
 				global $wpdb;
 				$bank_ids = $wpdb->get_col(
 					$wpdb->prepare(
-						"SELECT bank_id FROM {$wpdb->prefix}ppq_bank_memberships WHERE question_id = %d",
+						"SELECT bank_id FROM {$wpdb->prefix}ppq_bank_questions WHERE question_id = %d",
 						$question_id
 					)
 				);
@@ -238,9 +330,9 @@ class PPQ_Admin_Questions {
 				$question_data = [
 					'id'                => $question->id,
 					'type'              => $question->type,
-					'difficulty'        => $question->difficulty,
-					'timeLimit'         => $question->time_limit,
-					'points'            => $question->points,
+					'difficulty'        => $question->difficulty_author,
+					'timeLimit'         => $question->expected_seconds,
+					'points'            => $question->max_points,
 					'stem'              => $revision ? $revision->stem : '',
 					'answers'           => $react_answers,
 					'feedbackCorrect'   => $revision ? $revision->feedback_correct : '',
@@ -250,6 +342,11 @@ class PPQ_Admin_Questions {
 					'banks'             => array_map( 'absint', $bank_ids ),
 				];
 			}
+		}
+
+		// Debug: Log what we're passing to JavaScript
+		if ( ! empty( $question_data ) ) {
+			error_log( 'PPQ Passing to JavaScript - stem value: ' . ( $question_data['stem'] ?? 'NOT SET' ) );
 		}
 
 		// Localize script with data
@@ -490,7 +587,7 @@ class PPQ_Admin_Questions {
 			}
 
 			// Duplicate bank memberships
-			$bank_memberships_table = $wpdb->prefix . 'ppq_bank_memberships';
+			$bank_memberships_table = $wpdb->prefix . 'ppq_bank_questions';
 			$memberships = $wpdb->get_results(
 				$wpdb->prepare(
 					"SELECT bank_id FROM {$bank_memberships_table} WHERE question_id = %d",
@@ -587,6 +684,25 @@ class PPQ_Questions_List_Table extends WP_List_Table {
 	}
 
 	/**
+	 * Get default hidden columns
+	 *
+	 * @since 1.0.0
+	 *
+	 * @return array Hidden columns.
+	 */
+	public function get_hidden_columns() {
+		// Get user's hidden columns preference
+		$hidden = get_user_option( 'managepressprimer-quiz_page_ppq-questionscolumnshidden' );
+
+		// If not set, return default hidden columns (none hidden by default)
+		if ( false === $hidden ) {
+			return [];
+		}
+
+		return $hidden;
+	}
+
+	/**
 	 * Get sortable columns
 	 *
 	 * @since 1.0.0
@@ -624,7 +740,7 @@ class PPQ_Questions_List_Table extends WP_List_Table {
 	public function prepare_items() {
 		global $wpdb;
 
-		$per_page     = 20;
+		$per_page     = $this->get_items_per_page( 'ppq_questions_per_page', 100 );
 		$current_page = $this->get_pagenum();
 		$offset       = ( $current_page - 1 ) * $per_page;
 
@@ -641,8 +757,30 @@ class PPQ_Questions_List_Table extends WP_List_Table {
 
 		// Filter by difficulty
 		if ( ! empty( $_GET['difficulty'] ) ) {
-			$where_clauses[] = 'difficulty_author = %s';
+			$where_clauses[] = 'difficulty = %s';
 			$where_values[]  = sanitize_key( $_GET['difficulty'] );
+		}
+
+		// Filter by category
+		if ( ! empty( $_GET['category'] ) ) {
+			$taxonomy_table = $wpdb->prefix . 'ppq_question_tax';
+			$category_id    = absint( $_GET['category'] );
+
+			$where_clauses[] = "id IN (
+				SELECT question_id FROM {$taxonomy_table} WHERE category_id = %d
+			)";
+			$where_values[] = $category_id;
+		}
+
+		// Filter by bank
+		if ( ! empty( $_GET['bank'] ) ) {
+			$bank_questions_table = $wpdb->prefix . 'ppq_bank_questions';
+			$bank_id              = absint( $_GET['bank'] );
+
+			$where_clauses[] = "id IN (
+				SELECT question_id FROM {$bank_questions_table} WHERE bank_id = %d
+			)";
+			$where_values[] = $bank_id;
 		}
 
 		// Filter by author
@@ -707,7 +845,7 @@ class PPQ_Questions_List_Table extends WP_List_Table {
 		// Set columns
 		$this->_column_headers = [
 			$this->get_columns(),
-			[],
+			$this->get_hidden_columns(),
 			$this->get_sortable_columns(),
 		];
 	}
@@ -728,6 +866,8 @@ class PPQ_Questions_List_Table extends WP_List_Table {
 		<div class="alignleft actions">
 			<?php $this->render_type_filter(); ?>
 			<?php $this->render_difficulty_filter(); ?>
+			<?php $this->render_category_filter(); ?>
+			<?php $this->render_bank_filter(); ?>
 			<?php if ( current_user_can( 'ppq_manage_all' ) ) : ?>
 				<?php $this->render_author_filter(); ?>
 			<?php endif; ?>
@@ -771,15 +911,69 @@ class PPQ_Questions_List_Table extends WP_List_Table {
 		?>
 		<select name="difficulty">
 			<option value=""><?php esc_html_e( 'All Difficulties', 'pressprimer-quiz' ); ?></option>
-			<option value="easy" <?php selected( $current_difficulty, 'easy' ); ?>>
-				<?php esc_html_e( 'Easy', 'pressprimer-quiz' ); ?>
+			<option value="beginner" <?php selected( $current_difficulty, 'beginner' ); ?>>
+				<?php esc_html_e( 'Beginner', 'pressprimer-quiz' ); ?>
 			</option>
-			<option value="medium" <?php selected( $current_difficulty, 'medium' ); ?>>
-				<?php esc_html_e( 'Medium', 'pressprimer-quiz' ); ?>
+			<option value="intermediate" <?php selected( $current_difficulty, 'intermediate' ); ?>>
+				<?php esc_html_e( 'Intermediate', 'pressprimer-quiz' ); ?>
 			</option>
-			<option value="hard" <?php selected( $current_difficulty, 'hard' ); ?>>
-				<?php esc_html_e( 'Hard', 'pressprimer-quiz' ); ?>
+			<option value="advanced" <?php selected( $current_difficulty, 'advanced' ); ?>>
+				<?php esc_html_e( 'Advanced', 'pressprimer-quiz' ); ?>
 			</option>
+			<option value="expert" <?php selected( $current_difficulty, 'expert' ); ?>>
+				<?php esc_html_e( 'Expert', 'pressprimer-quiz' ); ?>
+			</option>
+		</select>
+		<?php
+	}
+
+	/**
+	 * Render category filter
+	 *
+	 * @since 1.0.0
+	 */
+	private function render_category_filter() {
+		$current_category = ! empty( $_GET['category'] ) ? absint( $_GET['category'] ) : 0;
+		$categories       = PPQ_Category::get_all( 'category' );
+
+		if ( empty( $categories ) ) {
+			return;
+		}
+
+		?>
+		<select name="category">
+			<option value=""><?php esc_html_e( 'All Categories', 'pressprimer-quiz' ); ?></option>
+			<?php foreach ( $categories as $category ) : ?>
+				<option value="<?php echo esc_attr( $category->id ); ?>" <?php selected( $current_category, $category->id ); ?>>
+					<?php echo esc_html( $category->name ); ?>
+				</option>
+			<?php endforeach; ?>
+		</select>
+		<?php
+	}
+
+	/**
+	 * Render bank filter
+	 *
+	 * @since 1.0.0
+	 */
+	private function render_bank_filter() {
+		$current_bank = ! empty( $_GET['bank'] ) ? absint( $_GET['bank'] ) : 0;
+		$user_id      = get_current_user_id();
+		$banks        = PPQ_Bank::get_for_user( $user_id );
+
+		if ( empty( $banks ) ) {
+			return;
+		}
+
+		?>
+		<select name="bank">
+			<option value=""><?php esc_html_e( 'All Banks', 'pressprimer-quiz' ); ?></option>
+			<?php foreach ( $banks as $bank ) : ?>
+				<option value="<?php echo esc_attr( $bank->id ); ?>" <?php selected( $current_bank, $bank->id ); ?>>
+					<?php echo esc_html( $bank->name ); ?>
+				</option>
+			<?php endforeach; ?>
 		</select>
 		<?php
 	}
@@ -839,8 +1033,21 @@ class PPQ_Questions_List_Table extends WP_List_Table {
 		$revision = $item->get_current_revision();
 		$stem     = $revision ? $revision->stem : __( '(No content)', 'pressprimer-quiz' );
 
-		// Truncate to 100 characters
-		$truncated = PPQ_Helpers::truncate( $stem, 100 );
+		// Strip HTML tags and get plain text
+		$plain_text = wp_strip_all_tags( $stem );
+
+		// Get first sentence (up to first period, question mark, or exclamation)
+		if ( preg_match( '/^.+?[.!?](?:\s|$)/', $plain_text, $matches ) ) {
+			$first_sentence = trim( $matches[0] );
+		} else {
+			// If no sentence ending found, use the whole text
+			$first_sentence = $plain_text;
+		}
+
+		// Truncate to 150 characters if still too long
+		$truncated = mb_strlen( $first_sentence ) > 150
+			? mb_substr( $first_sentence, 0, 150 ) . '...'
+			: $first_sentence;
 
 		// Build row actions
 		$actions = [];
@@ -918,9 +1125,10 @@ class PPQ_Questions_List_Table extends WP_List_Table {
 		}
 
 		$difficulties = [
-			'easy'   => __( 'Easy', 'pressprimer-quiz' ),
-			'medium' => __( 'Medium', 'pressprimer-quiz' ),
-			'hard'   => __( 'Hard', 'pressprimer-quiz' ),
+			'beginner'     => __( 'Beginner', 'pressprimer-quiz' ),
+			'intermediate' => __( 'Intermediate', 'pressprimer-quiz' ),
+			'advanced'     => __( 'Advanced', 'pressprimer-quiz' ),
+			'expert'       => __( 'Expert', 'pressprimer-quiz' ),
 		];
 
 		return isset( $difficulties[ $item->difficulty_author ] )

@@ -47,6 +47,7 @@ const QuestionEditor = ({ questionData = {} }) => {
 	const [loading, setLoading] = useState(false);
 	const [saving, setSaving] = useState(false);
 	const [questionType, setQuestionType] = useState(questionData.type || 'mc');
+	const [stem, setStem] = useState(questionData.stem || '');
 	const [answers, setAnswers] = useState(questionData.answers || [
 		{ id: 'a1', text: '', isCorrect: false, feedback: '', order: 1 },
 		{ id: 'a2', text: '', isCorrect: false, feedback: '', order: 2 },
@@ -57,6 +58,7 @@ const QuestionEditor = ({ questionData = {} }) => {
 	// Initialize form with question data
 	useEffect(() => {
 		if (questionData.id) {
+			console.log('Loading question data:', questionData);
 			form.setFieldsValue({
 				stem: questionData.stem || '',
 				type: questionData.type || 'mc',
@@ -69,6 +71,10 @@ const QuestionEditor = ({ questionData = {} }) => {
 				tags: questionData.tags || [],
 				banks: questionData.banks || [],
 			});
+
+			if (questionData.stem) {
+				setStem(questionData.stem);
+			}
 
 			if (questionData.answers) {
 				setAnswers(questionData.answers);
@@ -105,9 +111,12 @@ const QuestionEditor = ({ questionData = {} }) => {
 			const questionPayload = {
 				...values,
 				type: questionType,
+				stem: stem,
 				answers: answers,
 				id: questionData.id || null,
 			};
+
+			console.log('Submitting question payload:', questionPayload);
 
 			// Submit via REST API
 			const endpoint = questionData.id
@@ -178,8 +187,15 @@ const QuestionEditor = ({ questionData = {} }) => {
 					onFinish={handleSubmit}
 					initialValues={{
 						type: 'mc',
+						difficulty: undefined,
 						timeLimit: 0,
-						points: 1,
+						points: 1.0,
+						stem: '',
+						feedbackCorrect: '',
+						feedbackIncorrect: '',
+						categories: [],
+						tags: [],
+						banks: [],
 					}}
 				>
 					{/* Header */}
@@ -244,8 +260,12 @@ const QuestionEditor = ({ questionData = {} }) => {
 
 							{/* Question Stem */}
 							<StemEditor
-								value={form.getFieldValue('stem')}
-								onChange={(value) => form.setFieldsValue({ stem: value })}
+								value={stem}
+								onChange={(value) => {
+									console.log('StemEditor onChange received in QuestionEditor:', value);
+									setStem(value);
+									form.setFieldsValue({ stem: value });
+								}}
 							/>
 
 							{/* Answers */}

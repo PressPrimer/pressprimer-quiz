@@ -245,10 +245,10 @@ class PPQ_Question extends PPQ_Model {
 		}
 
 		// Validate difficulty
-		if ( ! empty( $data['difficulty_author'] ) && ! in_array( $data['difficulty_author'], [ 'easy', 'medium', 'hard' ], true ) ) {
+		if ( ! empty( $data['difficulty_author'] ) && ! in_array( $data['difficulty_author'], [ 'beginner', 'intermediate', 'advanced', 'expert' ], true ) ) {
 			return new WP_Error(
 				'ppq_invalid_difficulty',
-				__( 'Invalid difficulty. Must be easy, medium, or hard.', 'pressprimer-quiz' )
+				__( 'Invalid difficulty. Must be beginner, intermediate, advanced, or expert.', 'pressprimer-quiz' )
 			);
 		}
 

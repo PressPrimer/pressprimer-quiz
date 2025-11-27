@@ -6,8 +6,16 @@
  */
 
 import { render } from '@wordpress/element';
+import { message } from 'antd';
 import QuestionEditor from './components/QuestionEditor';
 import './styles/editor.css';
+
+// Configure Ant Design message component
+message.config({
+	top: 50, // Position below WordPress admin bar (32px height + some padding)
+	duration: 10, // Show messages for 10 seconds
+	maxCount: 3, // Show max 3 messages at once
+});
 
 // Wait for DOM to be ready
 document.addEventListener('DOMContentLoaded', () => {
@@ -15,6 +23,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
 	if (root) {
 		const questionData = window.ppqQuestionData || {};
+
+		console.log('Question Editor - Received questionData from PHP:', questionData);
+		console.log('Question Editor - Stem value:', questionData.stem);
 
 		render(
 			<QuestionEditor questionData={questionData} />,

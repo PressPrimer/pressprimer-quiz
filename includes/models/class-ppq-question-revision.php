@@ -156,7 +156,7 @@ class PPQ_Question_Revision extends PPQ_Model {
 	 * @param array $data        Revision data (stem, answers, feedback, settings).
 	 * @return int|WP_Error Revision ID on success, WP_Error on failure.
 	 */
-	public static function create( $question_id, array $data ) {
+	public static function create_for_question( $question_id, array $data ) {
 		$question_id = absint( $question_id );
 
 		if ( 0 === $question_id ) {
@@ -542,6 +542,45 @@ class PPQ_Question_Revision extends PPQ_Model {
 	 * @return WP_Error Always returns error.
 	 */
 	public function save() {
+		global $wpdb;
+
+		// If this is a new revision (no ID), insert it
+		if ( empty( $this->id ) ) {
+			// Build data array from fillable fields
+			$fillable = static::get_fillable_fields();
+			$data     = [];
+
+			foreach ( $fillable as $field ) {
+				if ( property_exists( $this, $field ) ) {
+					$data[ $field ] = $this->$field;
+				}
+			}
+
+			if ( empty( $data ) ) {
+				return new WP_Error(
+					'ppq_no_data',
+					__( 'No valid data to save.', 'pressprimer-quiz' )
+				);
+			}
+
+			$table = static::get_full_table_name();
+
+			// Insert record
+			$result = $wpdb->insert( $table, $data );
+
+			if ( false === $result ) {
+				return new WP_Error(
+					'ppq_db_error',
+					__( 'Database error: Failed to create revision.', 'pressprimer-quiz' ),
+					[ 'db_error' => $wpdb->last_error ]
+				);
+			}
+
+			$this->id = $wpdb->insert_id;
+			return true;
+		}
+
+		// Otherwise, revisions are immutable
 		return new WP_Error(
 			'ppq_revision_immutable',
 			__( 'Revisions cannot be updated. Create a new revision instead.', 'pressprimer-quiz' )

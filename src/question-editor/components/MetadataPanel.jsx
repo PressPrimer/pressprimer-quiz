@@ -130,11 +130,18 @@ const MetadataPanel = ({ form }) => {
 				}
 				rules={[
 					{ required: true, message: __('Please set point value', 'pressprimer-quiz') },
-					{ type: 'number', min: 0, message: __('Points must be positive', 'pressprimer-quiz') },
+					{
+						validator: (_, value) => {
+							if (value && value >= 0.01) {
+								return Promise.resolve();
+							}
+							return Promise.reject(new Error(__('Points must be positive', 'pressprimer-quiz')));
+						},
+					},
 				]}
 			>
 				<InputNumber
-					min={0}
+					min={0.01}
 					max={1000}
 					step={0.5}
 					size="small"

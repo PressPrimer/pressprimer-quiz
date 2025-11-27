@@ -75,7 +75,7 @@ class PPQ_Schema {
 			author_id BIGINT UNSIGNED NOT NULL,
 			type ENUM('mc', 'ma', 'tf') NOT NULL DEFAULT 'mc',
 			expected_seconds SMALLINT UNSIGNED DEFAULT NULL,
-			difficulty_author ENUM('easy', 'medium', 'hard') DEFAULT NULL,
+			difficulty_author ENUM('beginner', 'intermediate', 'advanced', 'expert') DEFAULT NULL,
 			max_points DECIMAL(5,2) NOT NULL DEFAULT 1.00,
 			status ENUM('draft', 'published', 'archived') NOT NULL DEFAULT 'published',
 			current_revision_id BIGINT UNSIGNED DEFAULT NULL,
@@ -167,8 +167,10 @@ class PPQ_Schema {
 		return "CREATE TABLE {$wpdb->prefix}ppq_question_tax (
 			question_id BIGINT UNSIGNED NOT NULL,
 			category_id BIGINT UNSIGNED NOT NULL,
+			taxonomy ENUM('category', 'tag') NOT NULL DEFAULT 'category',
 			PRIMARY KEY  (question_id, category_id),
-			KEY category_id (category_id)
+			KEY category_id (category_id),
+			KEY taxonomy (taxonomy)
 		) $charset_collate;\n";
 	}
 

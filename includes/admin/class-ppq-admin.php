@@ -34,6 +34,7 @@ class PPQ_Admin {
 		add_action( 'admin_menu', [ $this, 'register_menus' ] );
 		add_action( 'admin_enqueue_scripts', [ $this, 'enqueue_assets' ] );
 		add_action( 'wp_ajax_ppq_search_questions', [ $this, 'ajax_search_questions' ] );
+		add_action( 'wp_ajax_ppq_get_recent_questions', [ $this, 'ajax_get_recent_questions' ] );
 
 		// Initialize settings
 		if ( class_exists( 'PPQ_Admin_Settings' ) ) {
@@ -450,27 +451,62 @@ class PPQ_Admin {
 
 		$search = isset( $_POST['search'] ) ? sanitize_text_field( wp_unslash( $_POST['search'] ) ) : '';
 		$bank_id = isset( $_POST['bank_id'] ) ? absint( $_POST['bank_id'] ) : 0;
-
-		if ( empty( $search ) ) {
-			wp_send_json_success( [ 'questions' => [] ] );
-		}
+		$type = isset( $_POST['type'] ) ? sanitize_key( $_POST['type'] ) : '';
+		$difficulty = isset( $_POST['difficulty'] ) ? sanitize_key( $_POST['difficulty'] ) : '';
+		$category_id = isset( $_POST['category_id'] ) ? absint( $_POST['category_id'] ) : 0;
+		$tag_id = isset( $_POST['tag_id'] ) ? absint( $_POST['tag_id'] ) : 0;
 
 		global $wpdb;
 
 		// Build search query
 		$questions_table = $wpdb->prefix . 'ppq_questions';
 		$revisions_table = $wpdb->prefix . 'ppq_question_revisions';
+		$taxonomy_table = $wpdb->prefix . 'ppq_question_taxonomy';
 
-		$search_term = '%' . $wpdb->esc_like( $search ) . '%';
-
-		// Get questions matching search
-		$sql = "SELECT q.id, q.type, q.difficulty, r.stem
+		// Start with base query
+		$sql = "SELECT DISTINCT q.id, q.type, q.difficulty_author, r.stem
 				FROM {$questions_table} q
-				INNER JOIN {$revisions_table} r ON q.current_revision_id = r.id
-				WHERE q.deleted_at IS NULL
-				AND r.stem LIKE %s";
+				INNER JOIN {$revisions_table} r ON q.current_revision_id = r.id";
 
-		$params = [ $search_term ];
+		// Add taxonomy join if filtering by category or tag
+		if ( $category_id > 0 || $tag_id > 0 ) {
+			$sql .= " INNER JOIN {$taxonomy_table} qt ON q.id = qt.question_id";
+		}
+
+		$sql .= " WHERE q.deleted_at IS NULL";
+
+		$params = [];
+
+		// Search filter
+		if ( ! empty( $search ) ) {
+			$search_term = '%' . $wpdb->esc_like( $search ) . '%';
+			$sql .= ' AND r.stem LIKE %s';
+			$params[] = $search_term;
+		}
+
+		// Type filter
+		if ( ! empty( $type ) ) {
+			$sql .= ' AND q.type = %s';
+			$params[] = $type;
+		}
+
+		// Difficulty filter
+		if ( ! empty( $difficulty ) ) {
+			$sql .= ' AND q.difficulty_author = %s';
+			$params[] = $difficulty;
+		}
+
+		// Category filter
+		if ( $category_id > 0 ) {
+			$sql .= ' AND qt.category_id = %d';
+			$params[] = $category_id;
+		}
+
+		// Tag filter
+		if ( $tag_id > 0 ) {
+			$sql .= ' AND qt.category_id = %d';
+			$params[] = $tag_id;
+		}
 
 		// Filter by author if not admin
 		if ( ! current_user_can( 'ppq_manage_all' ) ) {
@@ -480,14 +516,19 @@ class PPQ_Admin {
 
 		// Exclude questions already in this bank
 		if ( $bank_id > 0 ) {
-			$membership_table = $wpdb->prefix . 'ppq_bank_memberships';
-			$sql .= " AND q.id NOT IN (SELECT question_id FROM {$membership_table} WHERE bank_id = %d)";
+			$bank_questions_table = $wpdb->prefix . 'ppq_bank_questions';
+			$sql .= " AND q.id NOT IN (SELECT question_id FROM {$bank_questions_table} WHERE bank_id = %d)";
 			$params[] = $bank_id;
 		}
 
-		$sql .= ' LIMIT 20';
+		$sql .= ' LIMIT 50';
 
-		$results = $wpdb->get_results( $wpdb->prepare( $sql, $params ) );
+		// Execute query
+		if ( ! empty( $params ) ) {
+			$results = $wpdb->get_results( $wpdb->prepare( $sql, $params ) );
+		} else {
+			$results = $wpdb->get_results( $sql );
+		}
 
 		$questions = [];
 		if ( ! empty( $results ) ) {
@@ -496,11 +537,136 @@ class PPQ_Admin {
 					'id'           => absint( $row->id ),
 					'stem_preview' => wp_trim_words( wp_strip_all_tags( $row->stem ), 15 ),
 					'type'         => $row->type,
-					'difficulty'   => $row->difficulty,
+					'difficulty'   => $row->difficulty_author,
 				];
 			}
 		}
 
 		wp_send_json_success( [ 'questions' => $questions ] );
+	}
+
+	/**
+	 * AJAX handler for getting recent questions
+	 *
+	 * Gets recent questions for display in the bank detail page.
+	 *
+	 * @since 1.0.0
+	 */
+	public function ajax_get_recent_questions() {
+		// Verify nonce
+		if ( ! isset( $_POST['nonce'] ) || ! wp_verify_nonce( $_POST['nonce'], 'ppq_get_recent_questions' ) ) {
+			wp_send_json_error( [ 'message' => __( 'Security check failed.', 'pressprimer-quiz' ) ] );
+		}
+
+		// Check capability
+		if ( ! current_user_can( 'ppq_manage_own' ) ) {
+			wp_send_json_error( [ 'message' => __( 'You do not have permission.', 'pressprimer-quiz' ) ] );
+		}
+
+		$bank_id = isset( $_POST['bank_id'] ) ? absint( $_POST['bank_id'] ) : 0;
+		$page = isset( $_POST['page'] ) ? absint( $_POST['page'] ) : 1;
+		$per_page = 10;
+		$offset = ( $page - 1 ) * $per_page;
+
+		global $wpdb;
+
+		$questions_table = $wpdb->prefix . 'ppq_questions';
+		$revisions_table = $wpdb->prefix . 'ppq_question_revisions';
+		$bank_questions_table = $wpdb->prefix . 'ppq_bank_questions';
+
+		// Build query for recent questions
+		$sql = "SELECT q.id, q.type, q.difficulty_author, r.stem
+				FROM {$questions_table} q
+				INNER JOIN {$revisions_table} r ON q.current_revision_id = r.id
+				WHERE q.deleted_at IS NULL
+				AND q.author_id = %d";
+
+		$params = [ get_current_user_id() ];
+
+		// Exclude questions already in this bank
+		if ( $bank_id > 0 ) {
+			$sql .= " AND q.id NOT IN (SELECT question_id FROM {$bank_questions_table} WHERE bank_id = %d)";
+			$params[] = $bank_id;
+		}
+
+		$sql .= ' ORDER BY q.created_at DESC';
+
+		// Get total count (use same WHERE conditions)
+		$count_sql = "SELECT COUNT(DISTINCT q.id)
+				FROM {$questions_table} q
+				WHERE q.deleted_at IS NULL
+				AND q.author_id = %d";
+
+		$count_params = [ get_current_user_id() ];
+
+		if ( $bank_id > 0 ) {
+			$count_sql .= " AND q.id NOT IN (SELECT question_id FROM {$bank_questions_table} WHERE bank_id = %d)";
+			$count_params[] = $bank_id;
+		}
+
+		$total_items = absint( $wpdb->get_var( $wpdb->prepare( $count_sql, $count_params ) ) );
+
+		// Add pagination
+		$sql .= ' LIMIT %d OFFSET %d';
+		$params[] = $per_page;
+		$params[] = $offset;
+
+		$results = $wpdb->get_results( $wpdb->prepare( $sql, $params ) );
+
+		$questions = [];
+		if ( ! empty( $results ) ) {
+			foreach ( $results as $row ) {
+				// Type labels
+				$type_labels = [
+					'mc' => __( 'Multiple Choice', 'pressprimer-quiz' ),
+					'ma' => __( 'Multiple Answer', 'pressprimer-quiz' ),
+					'tf' => __( 'True/False', 'pressprimer-quiz' ),
+				];
+				$type_label = isset( $type_labels[ $row->type ] ) ? $type_labels[ $row->type ] : $row->type;
+
+				// Difficulty labels
+				$difficulty_labels = [
+					'beginner' => __( 'Beginner', 'pressprimer-quiz' ),
+					'intermediate' => __( 'Intermediate', 'pressprimer-quiz' ),
+					'advanced' => __( 'Advanced', 'pressprimer-quiz' ),
+					'expert' => __( 'Expert', 'pressprimer-quiz' ),
+				];
+				$difficulty_label = isset( $difficulty_labels[ $row->difficulty_author ] ) ? $difficulty_labels[ $row->difficulty_author ] : $row->difficulty_author;
+
+				// Get categories for this question
+				$categories = [];
+				$category_names = [];
+				if ( class_exists( 'PPQ_Question' ) ) {
+					$question = PPQ_Question::get( $row->id );
+					if ( $question ) {
+						$question_categories = $question->get_categories();
+						foreach ( $question_categories as $cat ) {
+							if ( 'category' === $cat->taxonomy ) {
+								$category_names[] = $cat->name;
+							}
+						}
+					}
+				}
+
+				$questions[] = [
+					'id'           => absint( $row->id ),
+					'stem_preview' => wp_trim_words( wp_strip_all_tags( $row->stem ), 20 ),
+					'type'         => $row->type,
+					'type_label'   => $type_label,
+					'difficulty'   => $row->difficulty_author,
+					'difficulty_label' => $difficulty_label,
+					'category'     => ! empty( $category_names ) ? implode( ', ', $category_names ) : __( 'None', 'pressprimer-quiz' ),
+				];
+			}
+		}
+
+		$total_pages = ceil( $total_items / $per_page );
+
+		wp_send_json_success( [
+			'questions' => $questions,
+			'total_items' => $total_items,
+			'total_pages' => $total_pages,
+			'current_page' => $page,
+		] );
 	}
 }

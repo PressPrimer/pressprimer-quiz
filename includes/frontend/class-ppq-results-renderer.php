@@ -25,6 +25,91 @@ if ( ! defined( 'ABSPATH' ) ) {
 class PPQ_Results_Renderer {
 
 	/**
+	 * Initialize Open Graph meta tags
+	 *
+	 * Hooks into wp_head to add OG tags when viewing quiz results.
+	 *
+	 * @since 1.0.0
+	 */
+	public static function init_og_tags() {
+		add_action( 'wp_head', [ __CLASS__, 'output_og_tags' ] );
+	}
+
+	/**
+	 * Output Open Graph meta tags
+	 *
+	 * Adds OG tags to <head> when viewing quiz results for better social sharing.
+	 *
+	 * @since 1.0.0
+	 */
+	public static function output_og_tags() {
+		// Check if we're viewing a quiz attempt
+		if ( ! isset( $_GET['attempt'] ) ) {
+			return;
+		}
+
+		$attempt_id = absint( $_GET['attempt'] );
+		if ( ! $attempt_id ) {
+			return;
+		}
+
+		// Load attempt
+		$attempt = PPQ_Attempt::get( $attempt_id );
+		if ( ! $attempt || 'submitted' !== $attempt->status ) {
+			return;
+		}
+
+		// Load quiz
+		$quiz = $attempt->get_quiz();
+		if ( ! $quiz ) {
+			return;
+		}
+
+		// Get settings
+		$settings        = get_option( 'ppq_settings', [] );
+		$include_score   = isset( $settings['social_sharing_include_score'] ) ? $settings['social_sharing_include_score'] : true;
+		$message_template = isset( $settings['social_sharing_message'] ) ? $settings['social_sharing_message'] : 'I just completed {quiz_title}!';
+
+		// Build title and description
+		$title = $quiz->title;
+		$description = str_replace(
+			[ '{quiz_title}', '{pass_status}', '{score}' ],
+			[
+				$quiz->title,
+				$attempt->passed ? __( 'Passed', 'pressprimer-quiz' ) : __( 'Failed', 'pressprimer-quiz' ),
+				$include_score ? round( (float) $attempt->score_percent, 1 ) . '%' : '',
+			],
+			$message_template
+		);
+
+		// Clean up extra spaces if score wasn't included
+		$description = preg_replace( '/\s+/', ' ', $description );
+		$description = trim( $description );
+
+		// Get current URL
+		$url = ( is_ssl() ? 'https://' : 'http://' ) . $_SERVER['HTTP_HOST'] . $_SERVER['REQUEST_URI'];
+
+		// Get site name
+		$site_name = get_bloginfo( 'name' );
+
+		// Output OG tags
+		?>
+<!-- PressPrimer Quiz Open Graph Tags -->
+<meta property="og:type" content="article" />
+<meta property="og:title" content="<?php echo esc_attr( $title ); ?>" />
+<meta property="og:description" content="<?php echo esc_attr( $description ); ?>" />
+<meta property="og:url" content="<?php echo esc_url( $url ); ?>" />
+<meta property="og:site_name" content="<?php echo esc_attr( $site_name ); ?>" />
+		<?php
+		// Add Twitter card tags
+		?>
+<meta name="twitter:card" content="summary" />
+<meta name="twitter:title" content="<?php echo esc_attr( $title ); ?>" />
+<meta name="twitter:description" content="<?php echo esc_attr( $description ); ?>" />
+		<?php
+	}
+
+	/**
 	 * Render results page
 	 *
 	 * Displays comprehensive results after quiz submission.
@@ -53,6 +138,7 @@ class PPQ_Results_Renderer {
 		?>
 		<div class="ppq-results-container">
 			<?php $this->render_results_header( $attempt, $quiz, $results ); ?>
+			<?php $this->render_guest_token_notice( $attempt ); ?>
 			<?php $this->render_score_summary( $attempt, $quiz, $results ); ?>
 			<?php $this->render_category_breakdown( $results ); ?>
 			<?php $this->render_confidence_calibration( $results ); ?>
@@ -82,6 +168,54 @@ class PPQ_Results_Renderer {
 	}
 
 	/**
+	 * Render guest token expiry notice
+	 *
+	 * Shows a notice to guest users about token expiration.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param PPQ_Attempt $attempt Attempt object.
+	 */
+	private function render_guest_token_notice( $attempt ) {
+		// Only show for guest attempts
+		if ( $attempt->user_id || ! $attempt->guest_token ) {
+			return;
+		}
+
+		// Don't show if already expired (they're viewing it now, so it's still valid)
+		if ( $attempt->is_token_expired() ) {
+			return;
+		}
+
+		// Calculate days until expiration
+		if ( $attempt->token_expires_at ) {
+			$now = current_time( 'timestamp' );
+			$expires = strtotime( $attempt->token_expires_at );
+			$days_remaining = max( 0, ceil( ( $expires - $now ) / DAY_IN_SECONDS ) );
+
+			?>
+			<div class="ppq-guest-notice">
+				<p>
+					<strong><?php esc_html_e( 'Save this link:', 'pressprimer-quiz' ); ?></strong>
+					<?php
+					printf(
+						/* translators: %d: number of days */
+						esc_html( _n(
+							'You can access your results for %d more day using this unique link.',
+							'You can access your results for %d more days using this unique link.',
+							$days_remaining,
+							'pressprimer-quiz'
+						) ),
+						(int) $days_remaining
+					);
+					?>
+				</p>
+			</div>
+			<?php
+		}
+	}
+
+	/**
 	 * Render score summary
 	 *
 	 * @since 1.0.0
@@ -100,7 +234,7 @@ class PPQ_Results_Renderer {
 		<div class="ppq-score-summary <?php echo esc_attr( $passed_class ); ?>">
 			<div class="ppq-score-display">
 				<div class="ppq-score-percentage">
-					<?php echo esc_html( round( $attempt->score_percent, 1 ) ); ?>%
+					<?php echo esc_html( round( (float) $attempt->score_percent, 1 ) ); ?>%
 				</div>
 				<div class="ppq-score-details">
 					<?php
@@ -292,8 +426,187 @@ class PPQ_Results_Renderer {
 					<?php esc_html_e( 'Retake Quiz', 'pressprimer-quiz' ); ?>
 				</a>
 			<?php endif; ?>
+
+			<?php
+			// Email results button
+			$this->render_email_button( $attempt );
+			?>
+		</div>
+
+		<?php
+		// Social sharing buttons
+		$this->render_social_sharing( $attempt, $quiz );
+		?>
+		<?php
+	}
+
+	/**
+	 * Render email results button
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param PPQ_Attempt $attempt Attempt object.
+	 */
+	private function render_email_button( $attempt ) {
+		// Get email address
+		$email = '';
+		if ( $attempt->user_id ) {
+			$user = get_userdata( $attempt->user_id );
+			if ( $user ) {
+				$email = $user->user_email;
+			}
+		} elseif ( $attempt->guest_email ) {
+			$email = $attempt->guest_email;
+		}
+
+		if ( ! $email ) {
+			return; // No email available
+		}
+
+		?>
+		<button
+			type="button"
+			class="ppq-button ppq-email-button"
+			data-attempt-id="<?php echo esc_attr( $attempt->id ); ?>"
+			data-email="<?php echo esc_attr( $email ); ?>"
+		>
+			<span class="ppq-email-icon">✉</span>
+			<?php esc_html_e( 'Email Results', 'pressprimer-quiz' ); ?>
+		</button>
+		<div class="ppq-email-status" style="display: none;"></div>
+		<?php
+	}
+
+	/**
+	 * Render social sharing buttons
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param PPQ_Attempt $attempt Attempt object.
+	 * @param PPQ_Quiz    $quiz Quiz object.
+	 */
+	private function render_social_sharing( $attempt, $quiz ) {
+		// Get social sharing settings
+		$settings        = get_option( 'ppq_settings', [] );
+		$twitter_enabled = isset( $settings['social_sharing_twitter'] ) && $settings['social_sharing_twitter'];
+		$facebook_enabled = isset( $settings['social_sharing_facebook'] ) && $settings['social_sharing_facebook'];
+		$linkedin_enabled = isset( $settings['social_sharing_linkedin'] ) && $settings['social_sharing_linkedin'];
+
+		// Check if any network is enabled
+		if ( ! $twitter_enabled && ! $facebook_enabled && ! $linkedin_enabled ) {
+			return;
+		}
+
+		$include_score = isset( $settings['social_sharing_include_score'] ) ? $settings['social_sharing_include_score'] : true;
+		$message_template = isset( $settings['social_sharing_message'] ) ? $settings['social_sharing_message'] : 'I just completed {quiz_title}!';
+
+		// Build share message
+		$share_message = $this->build_share_message( $message_template, $attempt, $quiz, $include_score );
+		$share_url     = $this->get_share_url();
+
+		?>
+		<div class="ppq-social-sharing">
+			<h3 class="ppq-social-title"><?php esc_html_e( 'Share Your Results', 'pressprimer-quiz' ); ?></h3>
+			<div class="ppq-social-buttons">
+				<?php if ( $twitter_enabled ) : ?>
+					<?php
+					$twitter_url = add_query_arg(
+						[
+							'text' => rawurlencode( $share_message ),
+							'url'  => rawurlencode( $share_url ),
+						],
+						'https://twitter.com/intent/tweet'
+					);
+					?>
+					<a href="<?php echo esc_url( $twitter_url ); ?>" target="_blank" rel="noopener noreferrer" class="ppq-social-button ppq-twitter">
+						<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+							<path d="M23 3a10.9 10.9 0 01-3.14 1.53 4.48 4.48 0 00-7.86 3v1A10.66 10.66 0 013 4s-4 9 5 13a11.64 11.64 0 01-7 2c9 5 20 0 20-11.5a4.5 4.5 0 00-.08-.83A7.72 7.72 0 0023 3z"></path>
+						</svg>
+						<?php esc_html_e( 'Twitter', 'pressprimer-quiz' ); ?>
+					</a>
+				<?php endif; ?>
+
+				<?php if ( $facebook_enabled ) : ?>
+					<?php
+					$facebook_url = add_query_arg(
+						[
+							'u' => rawurlencode( $share_url ),
+						],
+						'https://www.facebook.com/sharer/sharer.php'
+					);
+					?>
+					<a href="<?php echo esc_url( $facebook_url ); ?>" target="_blank" rel="noopener noreferrer" class="ppq-social-button ppq-facebook">
+						<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+							<path d="M18 2h-3a5 5 0 00-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 011-1h3z"></path>
+						</svg>
+						<?php esc_html_e( 'Facebook', 'pressprimer-quiz' ); ?>
+					</a>
+				<?php endif; ?>
+
+				<?php if ( $linkedin_enabled ) : ?>
+					<?php
+					$linkedin_url = add_query_arg(
+						[
+							'mini'  => 'true',
+							'url'   => rawurlencode( $share_url ),
+							'title' => rawurlencode( $share_message ),
+						],
+						'https://www.linkedin.com/shareArticle'
+					);
+					?>
+					<a href="<?php echo esc_url( $linkedin_url ); ?>" target="_blank" rel="noopener noreferrer" class="ppq-social-button ppq-linkedin">
+						<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+							<path d="M16 8a6 6 0 016 6v7h-4v-7a2 2 0 00-2-2 2 2 0 00-2 2v7h-4v-7a6 6 0 016-6zM2 9h4v12H2z"></path>
+							<circle cx="4" cy="4" r="2"></circle>
+						</svg>
+						<?php esc_html_e( 'LinkedIn', 'pressprimer-quiz' ); ?>
+					</a>
+				<?php endif; ?>
+			</div>
 		</div>
 		<?php
+	}
+
+	/**
+	 * Build share message from template
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param string      $template Message template.
+	 * @param PPQ_Attempt $attempt Attempt object.
+	 * @param PPQ_Quiz    $quiz Quiz object.
+	 * @param bool        $include_score Include score in message.
+	 * @return string Formatted message.
+	 */
+	private function build_share_message( $template, $attempt, $quiz, $include_score ) {
+		$replacements = [
+			'{quiz_title}'  => $quiz->title,
+			'{pass_status}' => $attempt->passed ? __( 'Passed', 'pressprimer-quiz' ) : __( 'Failed', 'pressprimer-quiz' ),
+		];
+
+		if ( $include_score ) {
+			$replacements['{score}'] = round( (float) $attempt->score_percent, 1 ) . '%';
+		} else {
+			// Remove score token if not including score
+			$replacements['{score}'] = '';
+		}
+
+		return str_replace( array_keys( $replacements ), array_values( $replacements ), $template );
+	}
+
+	/**
+	 * Get share URL
+	 *
+	 * @since 1.0.0
+	 *
+	 * @return string Current page URL.
+	 */
+	private function get_share_url() {
+		// Get current URL
+		$url = ( is_ssl() ? 'https://' : 'http://' ) . $_SERVER['HTTP_HOST'] . $_SERVER['REQUEST_URI'];
+
+		// Remove attempt parameter to share clean quiz URL
+		return remove_query_arg( 'attempt', $url );
 	}
 
 	/**
@@ -472,21 +785,28 @@ class PPQ_Results_Renderer {
 				$classes[] = 'ppq-correct-answer';
 			}
 
-			// Determine indicator icon
+			// Determine indicator icon and label
 			$indicator = '';
+			$label = '';
 			if ( $is_selected ) {
 				if ( $is_correct ) {
 					$indicator = '<span class="ppq-answer-indicator ppq-correct">✓</span>';
+					$label = '<span class="ppq-answer-label ppq-your-answer-correct">' . esc_html__( 'Your answer (Correct)', 'pressprimer-quiz' ) . '</span>';
 				} else {
 					$indicator = '<span class="ppq-answer-indicator ppq-incorrect">✗</span>';
+					$label = '<span class="ppq-answer-label ppq-your-answer-incorrect">' . esc_html__( 'Your answer (Incorrect)', 'pressprimer-quiz' ) . '</span>';
 				}
 			} elseif ( $show_correct_answers && $is_correct ) {
 				$indicator = '<span class="ppq-answer-indicator ppq-correct-marker">→</span>';
+				$label = '<span class="ppq-answer-label ppq-correct-answer-label">' . esc_html__( 'Correct answer', 'pressprimer-quiz' ) . '</span>';
 			}
 
 			?>
 			<div class="<?php echo esc_attr( implode( ' ', $classes ) ); ?>">
-				<?php echo $indicator; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
+				<div class="ppq-answer-header">
+					<?php echo $indicator; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
+					<?php echo $label; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
+				</div>
 				<div class="ppq-answer-text">
 					<?php echo wp_kses_post( $answer['text'] ); ?>
 				</div>
@@ -509,7 +829,8 @@ class PPQ_Results_Renderer {
 			<div class="ppq-answers-hidden-notice">
 				<?php esc_html_e( 'Correct answers are not shown for this quiz.', 'pressprimer-quiz' ); ?>
 			</div>
-		<?php endif; ?>
+		<?php
+		endif;
 	}
 
 	/**

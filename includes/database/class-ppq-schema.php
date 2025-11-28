@@ -195,11 +195,13 @@ class PPQ_Schema {
 			question_count INT UNSIGNED NOT NULL DEFAULT 0,
 			created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
 			updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+			deleted_at DATETIME DEFAULT NULL,
 			PRIMARY KEY  (id),
 			UNIQUE KEY uuid (uuid),
 			KEY owner_id (owner_id),
 			KEY visibility (visibility),
-			KEY name (name)
+			KEY name (name),
+			KEY deleted_at (deleted_at)
 		) $charset_collate;\n";
 	}
 
@@ -414,7 +416,9 @@ class PPQ_Schema {
 			quiz_id BIGINT UNSIGNED NOT NULL,
 			user_id BIGINT UNSIGNED DEFAULT NULL,
 			guest_email VARCHAR(100) DEFAULT NULL,
+			guest_name VARCHAR(100) DEFAULT NULL,
 			guest_token CHAR(64) DEFAULT NULL,
+			token_expires_at DATETIME DEFAULT NULL,
 			started_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
 			finished_at DATETIME DEFAULT NULL,
 			elapsed_ms INT UNSIGNED DEFAULT NULL,
@@ -434,7 +438,8 @@ class PPQ_Schema {
 			KEY guest_token (guest_token),
 			KEY status (status),
 			KEY started_at (started_at),
-			KEY finished_at (finished_at)
+			KEY finished_at (finished_at),
+			KEY token_expires_at (token_expires_at)
 		) $charset_collate;\n";
 	}
 

@@ -91,6 +91,14 @@ class PPQ_Admin_Settings {
 			'ppq-settings'
 		);
 
+		// Social Sharing Section
+		add_settings_section(
+			'ppq_social_sharing_section',
+			__( 'Social Sharing', 'pressprimer-quiz' ),
+			[ $this, 'render_social_sharing_section' ],
+			'ppq-settings'
+		);
+
 		// Advanced Section
 		add_settings_section(
 			'ppq_advanced_section',
@@ -104,6 +112,7 @@ class PPQ_Admin_Settings {
 		$this->register_quiz_default_fields();
 		$this->register_email_fields();
 		$this->register_api_key_fields();
+		$this->register_social_sharing_fields();
 		$this->register_advanced_fields();
 	}
 
@@ -158,9 +167,36 @@ class PPQ_Admin_Settings {
 
 		// Email from address
 		add_settings_field(
-			'email_from_address',
+			'email_from_email',
 			__( 'From Email Address', 'pressprimer-quiz' ),
 			[ $this, 'render_email_from_address_field' ],
+			'ppq-settings',
+			'ppq_email_section'
+		);
+
+		// Auto-send results on completion
+		add_settings_field(
+			'email_results_auto_send',
+			__( 'Auto-send Results', 'pressprimer-quiz' ),
+			[ $this, 'render_email_auto_send_field' ],
+			'ppq-settings',
+			'ppq_email_section'
+		);
+
+		// Email results subject
+		add_settings_field(
+			'email_results_subject',
+			__( 'Results Email Subject', 'pressprimer-quiz' ),
+			[ $this, 'render_email_subject_field' ],
+			'ppq-settings',
+			'ppq_email_section'
+		);
+
+		// Email results body
+		add_settings_field(
+			'email_results_body',
+			__( 'Results Email Body', 'pressprimer-quiz' ),
+			[ $this, 'render_email_body_field' ],
 			'ppq-settings',
 			'ppq_email_section'
 		);
@@ -179,6 +215,58 @@ class PPQ_Admin_Settings {
 			[ $this, 'render_openai_api_key_field' ],
 			'ppq-settings',
 			'ppq_api_keys_section'
+		);
+	}
+
+	/**
+	 * Register social sharing fields
+	 *
+	 * @since 1.0.0
+	 */
+	private function register_social_sharing_fields() {
+		// Enable Twitter sharing
+		add_settings_field(
+			'social_sharing_twitter',
+			__( 'Enable Twitter', 'pressprimer-quiz' ),
+			[ $this, 'render_social_twitter_field' ],
+			'ppq-settings',
+			'ppq_social_sharing_section'
+		);
+
+		// Enable Facebook sharing
+		add_settings_field(
+			'social_sharing_facebook',
+			__( 'Enable Facebook', 'pressprimer-quiz' ),
+			[ $this, 'render_social_facebook_field' ],
+			'ppq-settings',
+			'ppq_social_sharing_section'
+		);
+
+		// Enable LinkedIn sharing
+		add_settings_field(
+			'social_sharing_linkedin',
+			__( 'Enable LinkedIn', 'pressprimer-quiz' ),
+			[ $this, 'render_social_linkedin_field' ],
+			'ppq-settings',
+			'ppq_social_sharing_section'
+		);
+
+		// Include score in share
+		add_settings_field(
+			'social_sharing_include_score',
+			__( 'Include Score in Share', 'pressprimer-quiz' ),
+			[ $this, 'render_social_include_score_field' ],
+			'ppq-settings',
+			'ppq_social_sharing_section'
+		);
+
+		// Share message template
+		add_settings_field(
+			'social_sharing_message',
+			__( 'Share Message Template', 'pressprimer-quiz' ),
+			[ $this, 'render_social_message_field' ],
+			'ppq-settings',
+			'ppq_social_sharing_section'
 		);
 	}
 
@@ -232,6 +320,15 @@ class PPQ_Admin_Settings {
 	 */
 	public function render_api_keys_section() {
 		echo '<p>' . esc_html__( 'API keys for third-party integrations. All keys are encrypted before storage.', 'pressprimer-quiz' ) . '</p>';
+	}
+
+	/**
+	 * Render social sharing section description
+	 *
+	 * @since 1.0.0
+	 */
+	public function render_social_sharing_section() {
+		echo '<p>' . esc_html__( 'Control which social networks students can share their quiz results to. All options are disabled by default.', 'pressprimer-quiz' ) . '</p>';
 	}
 
 	/**
@@ -324,17 +421,111 @@ class PPQ_Admin_Settings {
 	 */
 	public function render_email_from_address_field() {
 		$settings = get_option( self::OPTION_NAME, [] );
-		$value    = isset( $settings['email_from_address'] ) ? $settings['email_from_address'] : get_bloginfo( 'admin_email' );
+		$value    = isset( $settings['email_from_email'] ) ? $settings['email_from_email'] : get_bloginfo( 'admin_email' );
 		?>
 		<input
 			type="email"
-			name="<?php echo esc_attr( self::OPTION_NAME . '[email_from_address]' ); ?>"
-			id="email_from_address"
+			name="<?php echo esc_attr( self::OPTION_NAME . '[email_from_email]' ); ?>"
+			id="email_from_email"
 			value="<?php echo esc_attr( $value ); ?>"
 			class="regular-text"
 		/>
 		<p class="description">
 			<?php esc_html_e( 'Email address shown in the "From" field of emails sent by the plugin.', 'pressprimer-quiz' ); ?>
+		</p>
+		<?php
+	}
+
+	/**
+	 * Render email auto-send field
+	 *
+	 * @since 1.0.0
+	 */
+	public function render_email_auto_send_field() {
+		$settings = get_option( self::OPTION_NAME, [] );
+		$value    = isset( $settings['email_results_auto_send'] ) ? $settings['email_results_auto_send'] : false;
+		?>
+		<label>
+			<input
+				type="checkbox"
+				name="<?php echo esc_attr( self::OPTION_NAME . '[email_results_auto_send]' ); ?>"
+				id="email_results_auto_send"
+				value="1"
+				<?php checked( $value, true ); ?>
+			/>
+			<?php esc_html_e( 'Automatically email results to students when they complete a quiz', 'pressprimer-quiz' ); ?>
+		</label>
+		<p class="description">
+			<?php esc_html_e( 'If enabled, students will receive an email with their results immediately after completing a quiz.', 'pressprimer-quiz' ); ?>
+		</p>
+		<?php
+	}
+
+	/**
+	 * Render email subject field
+	 *
+	 * @since 1.0.0
+	 */
+	public function render_email_subject_field() {
+		$settings = get_option( self::OPTION_NAME, [] );
+		$value    = isset( $settings['email_results_subject'] ) ? $settings['email_results_subject'] : __( 'Your results for {quiz_title}', 'pressprimer-quiz' );
+		?>
+		<input
+			type="text"
+			name="<?php echo esc_attr( self::OPTION_NAME . '[email_results_subject]' ); ?>"
+			id="email_results_subject"
+			value="<?php echo esc_attr( $value ); ?>"
+			class="large-text"
+		/>
+		<p class="description">
+			<?php esc_html_e( 'Subject line for results emails. Available tokens:', 'pressprimer-quiz' ); ?>
+			<br>
+			<code>{student_name}</code> - <?php esc_html_e( 'Student name', 'pressprimer-quiz' ); ?><br>
+			<code>{quiz_title}</code> - <?php esc_html_e( 'Quiz name', 'pressprimer-quiz' ); ?><br>
+			<code>{score}</code> - <?php esc_html_e( 'Score percentage', 'pressprimer-quiz' ); ?><br>
+			<code>{passed}</code> - <?php esc_html_e( '"Passed" or "Failed"', 'pressprimer-quiz' ); ?>
+		</p>
+		<?php
+	}
+
+	/**
+	 * Render email body field
+	 *
+	 * @since 1.0.0
+	 */
+	public function render_email_body_field() {
+		$settings = get_option( self::OPTION_NAME, [] );
+		$default = __( 'Hi {student_name},
+
+You recently completed the quiz "{quiz_title}".
+
+Here are your results:
+- Score: {score}
+- Status: {passed}
+- Date: {date}
+
+Click the button below to view your full results and review your answers.
+
+Good luck with your studies!', 'pressprimer-quiz' );
+		$value = isset( $settings['email_results_body'] ) ? $settings['email_results_body'] : $default;
+		?>
+		<textarea
+			name="<?php echo esc_attr( self::OPTION_NAME . '[email_results_body]' ); ?>"
+			id="email_results_body"
+			rows="10"
+			class="large-text code"
+		><?php echo esc_textarea( $value ); ?></textarea>
+		<p class="description">
+			<?php esc_html_e( 'Email body for results emails. Available tokens:', 'pressprimer-quiz' ); ?>
+			<br>
+			<code>{student_name}</code> - <?php esc_html_e( 'Student name', 'pressprimer-quiz' ); ?><br>
+			<code>{quiz_title}</code> - <?php esc_html_e( 'Quiz name', 'pressprimer-quiz' ); ?><br>
+			<code>{score}</code> - <?php esc_html_e( 'Score percentage', 'pressprimer-quiz' ); ?><br>
+			<code>{passed}</code> - <?php esc_html_e( '"Passed" or "Failed"', 'pressprimer-quiz' ); ?><br>
+			<code>{date}</code> - <?php esc_html_e( 'Completion date', 'pressprimer-quiz' ); ?><br>
+			<code>{points}</code> - <?php esc_html_e( 'Points earned', 'pressprimer-quiz' ); ?><br>
+			<code>{max_points}</code> - <?php esc_html_e( 'Maximum points', 'pressprimer-quiz' ); ?><br>
+			<code>{results_url}</code> - <?php esc_html_e( 'Link to view full results (optional)', 'pressprimer-quiz' ); ?>
 		</p>
 		<?php
 	}
@@ -376,6 +567,122 @@ class PPQ_Admin_Settings {
 		<p class="description">
 			<strong><?php esc_html_e( 'Note:', 'pressprimer-quiz' ); ?></strong>
 			<?php esc_html_e( 'This API key is shared site-wide and is encrypted in the database.', 'pressprimer-quiz' ); ?>
+		</p>
+		<?php
+	}
+
+	/**
+	 * Render social Twitter field
+	 *
+	 * @since 1.0.0
+	 */
+	public function render_social_twitter_field() {
+		$settings = get_option( self::OPTION_NAME, [] );
+		$value    = isset( $settings['social_sharing_twitter'] ) ? $settings['social_sharing_twitter'] : false;
+		?>
+		<label>
+			<input
+				type="checkbox"
+				name="<?php echo esc_attr( self::OPTION_NAME . '[social_sharing_twitter]' ); ?>"
+				id="social_sharing_twitter"
+				value="1"
+				<?php checked( $value, true ); ?>
+			/>
+			<?php esc_html_e( 'Allow students to share results on Twitter', 'pressprimer-quiz' ); ?>
+		</label>
+		<?php
+	}
+
+	/**
+	 * Render social Facebook field
+	 *
+	 * @since 1.0.0
+	 */
+	public function render_social_facebook_field() {
+		$settings = get_option( self::OPTION_NAME, [] );
+		$value    = isset( $settings['social_sharing_facebook'] ) ? $settings['social_sharing_facebook'] : false;
+		?>
+		<label>
+			<input
+				type="checkbox"
+				name="<?php echo esc_attr( self::OPTION_NAME . '[social_sharing_facebook]' ); ?>"
+				id="social_sharing_facebook"
+				value="1"
+				<?php checked( $value, true ); ?>
+			/>
+			<?php esc_html_e( 'Allow students to share results on Facebook', 'pressprimer-quiz' ); ?>
+		</label>
+		<?php
+	}
+
+	/**
+	 * Render social LinkedIn field
+	 *
+	 * @since 1.0.0
+	 */
+	public function render_social_linkedin_field() {
+		$settings = get_option( self::OPTION_NAME, [] );
+		$value    = isset( $settings['social_sharing_linkedin'] ) ? $settings['social_sharing_linkedin'] : false;
+		?>
+		<label>
+			<input
+				type="checkbox"
+				name="<?php echo esc_attr( self::OPTION_NAME . '[social_sharing_linkedin]' ); ?>"
+				id="social_sharing_linkedin"
+				value="1"
+				<?php checked( $value, true ); ?>
+			/>
+			<?php esc_html_e( 'Allow students to share results on LinkedIn', 'pressprimer-quiz' ); ?>
+		</label>
+		<?php
+	}
+
+	/**
+	 * Render social include score field
+	 *
+	 * @since 1.0.0
+	 */
+	public function render_social_include_score_field() {
+		$settings = get_option( self::OPTION_NAME, [] );
+		$value    = isset( $settings['social_sharing_include_score'] ) ? $settings['social_sharing_include_score'] : true;
+		?>
+		<label>
+			<input
+				type="checkbox"
+				name="<?php echo esc_attr( self::OPTION_NAME . '[social_sharing_include_score]' ); ?>"
+				id="social_sharing_include_score"
+				value="1"
+				<?php checked( $value, true ); ?>
+			/>
+			<?php esc_html_e( 'Include score percentage in shared message', 'pressprimer-quiz' ); ?>
+		</label>
+		<p class="description">
+			<?php esc_html_e( 'If enabled, the share message will include the student\'s score.', 'pressprimer-quiz' ); ?>
+		</p>
+		<?php
+	}
+
+	/**
+	 * Render social message field
+	 *
+	 * @since 1.0.0
+	 */
+	public function render_social_message_field() {
+		$settings = get_option( self::OPTION_NAME, [] );
+		$value    = isset( $settings['social_sharing_message'] ) ? $settings['social_sharing_message'] : 'I just completed {quiz_title}!';
+		?>
+		<textarea
+			name="<?php echo esc_attr( self::OPTION_NAME . '[social_sharing_message]' ); ?>"
+			id="social_sharing_message"
+			rows="3"
+			class="large-text"
+		><?php echo esc_textarea( $value ); ?></textarea>
+		<p class="description">
+			<?php esc_html_e( 'Customize the message that appears when students share their results. Available tokens:', 'pressprimer-quiz' ); ?>
+			<br>
+			<code>{quiz_title}</code> - <?php esc_html_e( 'Quiz name', 'pressprimer-quiz' ); ?><br>
+			<code>{score}</code> - <?php esc_html_e( 'Score percentage (only if "Include Score" is enabled)', 'pressprimer-quiz' ); ?><br>
+			<code>{pass_status}</code> - <?php esc_html_e( '"Passed" or "Failed"', 'pressprimer-quiz' ); ?>
 		</p>
 		<?php
 	}
@@ -455,8 +762,8 @@ class PPQ_Admin_Settings {
 		}
 
 		// Sanitize email from address
-		if ( isset( $input['email_from_address'] ) ) {
-			$email = sanitize_email( $input['email_from_address'] );
+		if ( isset( $input['email_from_email'] ) ) {
+			$email = sanitize_email( $input['email_from_email'] );
 			if ( ! is_email( $email ) ) {
 				add_settings_error(
 					self::OPTION_NAME,
@@ -466,7 +773,31 @@ class PPQ_Admin_Settings {
 				);
 				$email = get_bloginfo( 'admin_email' );
 			}
-			$sanitized['email_from_address'] = $email;
+			$sanitized['email_from_email'] = $email;
+		}
+
+		// Sanitize email auto-send
+		$sanitized['email_results_auto_send'] = isset( $input['email_results_auto_send'] ) && '1' === $input['email_results_auto_send'];
+
+		// Sanitize email subject
+		if ( isset( $input['email_results_subject'] ) ) {
+			$sanitized['email_results_subject'] = sanitize_text_field( $input['email_results_subject'] );
+		}
+
+		// Sanitize email body
+		if ( isset( $input['email_results_body'] ) ) {
+			$sanitized['email_results_body'] = wp_kses_post( $input['email_results_body'] );
+		}
+
+		// Sanitize social sharing fields
+		$sanitized['social_sharing_twitter'] = isset( $input['social_sharing_twitter'] ) && '1' === $input['social_sharing_twitter'];
+		$sanitized['social_sharing_facebook'] = isset( $input['social_sharing_facebook'] ) && '1' === $input['social_sharing_facebook'];
+		$sanitized['social_sharing_linkedin'] = isset( $input['social_sharing_linkedin'] ) && '1' === $input['social_sharing_linkedin'];
+		$sanitized['social_sharing_include_score'] = isset( $input['social_sharing_include_score'] ) && '1' === $input['social_sharing_include_score'];
+
+		// Sanitize social sharing message
+		if ( isset( $input['social_sharing_message'] ) ) {
+			$sanitized['social_sharing_message'] = sanitize_textarea_field( $input['social_sharing_message'] );
 		}
 
 		// Handle OpenAI API key (stored globally, encrypted)

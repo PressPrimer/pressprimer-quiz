@@ -57,12 +57,28 @@ class PPQ_Attempt extends PPQ_Model {
 	public $guest_email;
 
 	/**
+	 * Guest name
+	 *
+	 * @since 1.0.0
+	 * @var string|null
+	 */
+	public $guest_name;
+
+	/**
 	 * Guest token (for session/resume)
 	 *
 	 * @since 1.0.0
 	 * @var string|null
 	 */
 	public $guest_token;
+
+	/**
+	 * Token expiration timestamp
+	 *
+	 * @since 1.0.0
+	 * @var string|null
+	 */
+	public $token_expires_at;
 
 	/**
 	 * Start timestamp
@@ -469,17 +485,21 @@ class PPQ_Attempt extends PPQ_Model {
 		// Generate secure token (64 character random string)
 		$token = bin2hex( random_bytes( 32 ) );
 
+		// Set token expiration to 30 days from now
+		$token_expires = gmdate( 'Y-m-d H:i:s', strtotime( '+30 days' ) );
+
 		// Create attempt
 		$attempt_data = [
-			'uuid'           => wp_generate_uuid4(),
-			'quiz_id'        => $quiz_id,
-			'user_id'        => null,
-			'guest_email'    => $email,
-			'guest_token'    => $token,
-			'status'         => 'in_progress',
-			'current_position' => 0,
-			'questions_json' => wp_json_encode( $questions_data ),
-			'started_at'     => current_time( 'mysql' ),
+			'uuid'              => wp_generate_uuid4(),
+			'quiz_id'           => $quiz_id,
+			'user_id'           => null,
+			'guest_email'       => $email,
+			'guest_token'       => $token,
+			'token_expires_at'  => $token_expires,
+			'status'            => 'in_progress',
+			'current_position'  => 0,
+			'questions_json'    => wp_json_encode( $questions_data ),
+			'started_at'        => current_time( 'mysql' ),
 		];
 
 		$attempt_id = static::create( $attempt_data );
@@ -934,5 +954,89 @@ class PPQ_Attempt extends PPQ_Model {
 		);
 
 		return $row ? static::from_row( $row ) : null;
+	}
+
+	/**
+	 * Check if guest token is expired
+	 *
+	 * @since 1.0.0
+	 *
+	 * @return bool True if token is expired, false otherwise.
+	 */
+	public function is_token_expired() {
+		// Logged-in users don't have token expiration
+		if ( $this->user_id ) {
+			return false;
+		}
+
+		// No expiration date set
+		if ( ! $this->token_expires_at ) {
+			return false;
+		}
+
+		// Check if current time is past expiration
+		$now = current_time( 'timestamp' );
+		$expires = strtotime( $this->token_expires_at );
+
+		return $now > $expires;
+	}
+
+	/**
+	 * Get results URL for this attempt
+	 *
+	 * Returns a URL that can be used to view results for this attempt.
+	 * For guests, includes the secure token. For logged-in users, uses attempt ID.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param string $base_url Optional base URL. Defaults to current page.
+	 * @return string Results URL.
+	 */
+	public function get_results_url( $base_url = '' ) {
+		// Use home URL as fallback
+		if ( empty( $base_url ) ) {
+			$base_url = home_url( '/' );
+		}
+
+		// For logged-in users, use attempt ID
+		if ( $this->user_id ) {
+			return add_query_arg( 'attempt', $this->id, $base_url );
+		}
+
+		// For guests, use secure token
+		if ( $this->guest_token ) {
+			return add_query_arg(
+				[
+					'attempt' => $this->id,
+					'token'   => $this->guest_token,
+				],
+				$base_url
+			);
+		}
+
+		// Fallback to attempt ID only
+		return add_query_arg( 'attempt', $this->id, $base_url );
+	}
+
+	/**
+	 * Regenerate guest token with new expiration
+	 *
+	 * Useful for extending access to results.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @return bool True on success, false on failure.
+	 */
+	public function regenerate_token() {
+		// Only for guest attempts
+		if ( $this->user_id ) {
+			return false;
+		}
+
+		// Generate new token
+		$this->guest_token = bin2hex( random_bytes( 32 ) );
+		$this->token_expires_at = gmdate( 'Y-m-d H:i:s', strtotime( '+30 days' ) );
+
+		return $this->save();
 	}
 }

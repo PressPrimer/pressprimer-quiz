@@ -1,0 +1,13 @@
+/**
+ * Frontend styles for My Attempts block
+ *
+ * The main styles are loaded from assets/css/results.css
+ * This file is for any block-specific overrides.
+ *
+ * @package PressPrimer_Quiz
+ * @since 1.0.0
+ */
+
+.wp-block-pressprimer-quiz-my-attempts {
+	margin: 2em 0;
+}

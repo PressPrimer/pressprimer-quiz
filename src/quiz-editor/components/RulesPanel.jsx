@@ -66,9 +66,19 @@ const RulesPanel = ({ quizId, generationMode }) => {
 	 * Load quiz rules
 	 */
 	const loadRules = async () => {
-		// TODO: Implement REST API call when endpoints are ready
-		// For now, start with empty rules
-		setRules([]);
+		try {
+			setLoading(true);
+			console.log('Loading rules for quiz:', quizId);
+			const response = await apiFetch({ path: `/ppq/v1/quizzes/${quizId}/rules` });
+			console.log('Rules loaded:', response);
+			setRules(response || []);
+		} catch (error) {
+			console.error('Failed to load quiz rules:', error);
+			message.error(__('Failed to load quiz rules', 'pressprimer-quiz'));
+			setRules([]);
+		} finally {
+			setLoading(false);
+		}
 	};
 
 	/**
@@ -96,7 +106,7 @@ const RulesPanel = ({ quizId, generationMode }) => {
 	/**
 	 * Add new rule
 	 */
-	const handleAddRule = () => {
+	const handleAddRule = async () => {
 		const newRule = {
 			id: `temp-${Date.now()}`,
 			bank_id: null,
@@ -108,28 +118,118 @@ const RulesPanel = ({ quizId, generationMode }) => {
 		};
 
 		setRules([...rules, newRule]);
+
+		// Auto-save the new rule immediately with the rule data
+		saveRuleData(newRule.id, newRule);
 	};
 
 	/**
 	 * Update rule field
 	 */
-	const handleUpdateRule = (ruleId, field, value) => {
+	const handleUpdateRule = async (ruleId, field, value) => {
 		setRules(rules.map(rule =>
 			rule.id === ruleId ? { ...rule, [field]: value } : rule
 		));
+
+		// Auto-save if this is an existing rule (not a temp ID)
+		if (!String(ruleId).startsWith('temp-')) {
+			await saveRule(ruleId, { [field]: value });
+		}
 	};
 
 	/**
 	 * Remove rule
 	 */
-	const handleRemoveRule = (ruleId) => {
+	const handleRemoveRule = async (ruleId) => {
+		// Delete from server if it's an existing rule
+		if (!String(ruleId).startsWith('temp-')) {
+			try {
+				await apiFetch({
+					path: `/ppq/v1/quizzes/${quizId}/rules/${ruleId}`,
+					method: 'DELETE',
+				});
+				message.success(__('Rule deleted', 'pressprimer-quiz'));
+			} catch (error) {
+				console.error('Failed to delete rule:', error);
+				message.error(__('Failed to delete rule', 'pressprimer-quiz'));
+				return;
+			}
+		}
+
 		setRules(rules.filter(rule => rule.id !== ruleId));
+	};
+
+	/**
+	 * Save rule data directly (used when rule might not be in state yet)
+	 */
+	const saveRuleData = async (ruleId, ruleObject, updates = {}) => {
+		const ruleData = {
+			bank_id: ruleObject.bank_id,
+			category_ids: ruleObject.category_ids,
+			tag_ids: ruleObject.tag_ids,
+			difficulties: ruleObject.difficulties,
+			question_count: ruleObject.question_count,
+			...updates,
+		};
+
+		console.log('Saving rule:', ruleId, 'Data:', ruleData);
+
+		try {
+			// If it's a temp rule, create it
+			if (String(ruleId).startsWith('temp-')) {
+				console.log('Creating new rule...');
+				const response = await apiFetch({
+					path: `/ppq/v1/quizzes/${quizId}/rules`,
+					method: 'POST',
+					data: ruleData,
+				});
+
+				console.log('Rule created, response:', response);
+
+				// Replace temp ID with real ID
+				setRules(currentRules => currentRules.map(r =>
+					r.id === ruleId ? { ...r, id: response.id } : r
+				));
+
+				// Reload to get matching count
+				loadRules();
+			} else {
+				// Update existing rule
+				console.log('Updating existing rule...');
+				await apiFetch({
+					path: `/ppq/v1/quizzes/${quizId}/rules/${ruleId}`,
+					method: 'PUT',
+					data: ruleData,
+				});
+
+				console.log('Rule updated');
+
+				// Reload to get updated matching count
+				loadRules();
+			}
+		} catch (error) {
+			console.error('Failed to save rule:', error);
+			message.error(__('Failed to save rule', 'pressprimer-quiz'));
+		}
+	};
+
+	/**
+	 * Save a single rule (looks up from state)
+	 */
+	const saveRule = async (ruleId, updates = {}) => {
+		const rule = rules.find(r => r.id === ruleId);
+		if (!rule) {
+			console.log('Rule not found for saving:', ruleId);
+			return;
+		}
+
+		await saveRuleData(ruleId, rule, updates);
 	};
 
 	/**
 	 * Handle drag end
 	 */
-	const handleDragEnd = (result) => {
+	const handleDragEnd = async (result) => {
 		if (!result.destination) {
 			return;
 		}
@@ -139,6 +239,19 @@ const RulesPanel = ({ quizId, generationMode }) => {
 		reorderedRules.splice(result.destination.index, 0, removed);
 
 		setRules(reorderedRules);
+
+		// Save new order to server
+		try {
+			const ruleOrder = reorderedRules.map(r => r.id);
+			await apiFetch({
+				path: `/ppq/v1/quizzes/${quizId}/rules/reorder`,
+				method: 'POST',
+				data: { rule_order: ruleOrder },
+			});
+		} catch (error) {
+			console.error('Failed to save rule order:', error);
+			message.error(__('Failed to save rule order', 'pressprimer-quiz'));
+		}
 	};
 
 	/**

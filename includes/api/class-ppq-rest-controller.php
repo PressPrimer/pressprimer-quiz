@@ -79,9 +79,34 @@ class PPQ_REST_Controller {
 
 		// Banks endpoints
 		register_rest_route( 'ppq/v1', '/banks', [
-			'methods'             => WP_REST_Server::READABLE,
-			'callback'            => [ $this, 'get_banks' ],
-			'permission_callback' => [ $this, 'check_permission' ],
+			[
+				'methods'             => WP_REST_Server::READABLE,
+				'callback'            => [ $this, 'get_banks' ],
+				'permission_callback' => [ $this, 'check_permission' ],
+			],
+			[
+				'methods'             => WP_REST_Server::CREATABLE,
+				'callback'            => [ $this, 'create_bank' ],
+				'permission_callback' => [ $this, 'check_permission' ],
+			],
+		] );
+
+		register_rest_route( 'ppq/v1', '/banks/(?P<id>\d+)', [
+			[
+				'methods'             => WP_REST_Server::READABLE,
+				'callback'            => [ $this, 'get_bank' ],
+				'permission_callback' => [ $this, 'check_permission' ],
+			],
+			[
+				'methods'             => WP_REST_Server::EDITABLE,
+				'callback'            => [ $this, 'update_bank' ],
+				'permission_callback' => [ $this, 'check_permission' ],
+			],
+			[
+				'methods'             => WP_REST_Server::DELETABLE,
+				'callback'            => [ $this, 'delete_bank' ],
+				'permission_callback' => [ $this, 'check_permission' ],
+			],
 		] );
 
 		// Quizzes endpoints
@@ -379,7 +404,7 @@ class PPQ_REST_Controller {
 				'expected_seconds'  => absint( $data['timeLimit'] ?? 0 ),
 				'max_points'        => floatval( $data['points'] ?? 1 ),
 				'author_id'         => get_current_user_id(),
-				'status'            => 'draft',
+				'status'            => 'published',
 			] );
 
 			if ( is_wp_error( $question_id ) ) {
@@ -649,17 +674,206 @@ class PPQ_REST_Controller {
 	 */
 	public function get_banks( $request ) {
 		$user_id = get_current_user_id();
-		$banks = PPQ_Bank::get_for_user( $user_id );
+
+		// Admins can see all banks, others see only their own
+		if ( current_user_can( 'ppq_manage_all' ) ) {
+			$banks = PPQ_Bank::get_all();
+		} else {
+			$banks = PPQ_Bank::get_for_user( $user_id );
+		}
 
 		$data = array_map( function( $bank ) {
 			return [
-				'id'          => $bank->id,
-				'name'        => $bank->name,
-				'description' => $bank->description,
+				'id'              => $bank->id,
+				'uuid'            => $bank->uuid,
+				'name'            => $bank->name,
+				'description'     => $bank->description,
+				'owner_id'        => $bank->owner_id,
+				'visibility'      => $bank->visibility,
+				'question_count'  => $bank->question_count,
+				'created_at'      => $bank->created_at,
+				'updated_at'      => $bank->updated_at,
 			];
 		}, $banks );
 
 		return new WP_REST_Response( $data, 200 );
+	}
+
+	/**
+	 * Get single bank
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param WP_REST_Request $request Request object.
+	 * @return WP_REST_Response|WP_Error Response or error.
+	 */
+	public function get_bank( $request ) {
+		$bank_id = absint( $request['id'] );
+		$bank = PPQ_Bank::get( $bank_id );
+
+		if ( ! $bank ) {
+			return new WP_Error( 'not_found', __( 'Bank not found.', 'pressprimer-quiz' ), [ 'status' => 404 ] );
+		}
+
+		// Check access
+		if ( ! $bank->can_access( get_current_user_id() ) ) {
+			return new WP_Error( 'forbidden', __( 'You do not have permission to access this bank.', 'pressprimer-quiz' ), [ 'status' => 403 ] );
+		}
+
+		return new WP_REST_Response( [
+			'id'              => $bank->id,
+			'uuid'            => $bank->uuid,
+			'name'            => $bank->name,
+			'description'     => $bank->description,
+			'owner_id'        => $bank->owner_id,
+			'visibility'      => $bank->visibility,
+			'question_count'  => $bank->question_count,
+			'created_at'      => $bank->created_at,
+			'updated_at'      => $bank->updated_at,
+		], 200 );
+	}
+
+	/**
+	 * Create bank
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param WP_REST_Request $request Request object.
+	 * @return WP_REST_Response|WP_Error Response or error.
+	 */
+	public function create_bank( $request ) {
+		$params = $request->get_json_params();
+
+		// Validate required fields
+		if ( empty( $params['name'] ) ) {
+			return new WP_Error( 'invalid_data', __( 'Bank name is required.', 'pressprimer-quiz' ), [ 'status' => 400 ] );
+		}
+
+		// Create bank
+		$result = PPQ_Bank::create( [
+			'name'        => sanitize_text_field( $params['name'] ),
+			'description' => isset( $params['description'] ) ? sanitize_textarea_field( $params['description'] ) : null,
+			'visibility'  => isset( $params['visibility'] ) && in_array( $params['visibility'], [ 'private', 'shared' ] ) ? $params['visibility'] : 'private',
+			'owner_id'    => get_current_user_id(),
+		] );
+
+		if ( is_wp_error( $result ) ) {
+			return $result;
+		}
+
+		// Get the created bank
+		$bank = PPQ_Bank::get( $result );
+
+		if ( ! $bank ) {
+			return new WP_Error( 'creation_failed', __( 'Failed to create bank.', 'pressprimer-quiz' ), [ 'status' => 500 ] );
+		}
+
+		return new WP_REST_Response( [
+			'id'              => $bank->id,
+			'uuid'            => $bank->uuid,
+			'name'            => $bank->name,
+			'description'     => $bank->description,
+			'owner_id'        => $bank->owner_id,
+			'visibility'      => $bank->visibility,
+			'question_count'  => $bank->question_count,
+			'created_at'      => $bank->created_at,
+			'updated_at'      => $bank->updated_at,
+		], 201 );
+	}
+
+	/**
+	 * Update bank
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param WP_REST_Request $request Request object.
+	 * @return WP_REST_Response|WP_Error Response or error.
+	 */
+	public function update_bank( $request ) {
+		$bank_id = absint( $request['id'] );
+		$params = $request->get_json_params();
+
+		$bank = PPQ_Bank::get( $bank_id );
+
+		if ( ! $bank ) {
+			return new WP_Error( 'not_found', __( 'Bank not found.', 'pressprimer-quiz' ), [ 'status' => 404 ] );
+		}
+
+		// Check ownership
+		$user_id = get_current_user_id();
+		if ( ! current_user_can( 'ppq_manage_all' ) && absint( $bank->owner_id ) !== $user_id ) {
+			return new WP_Error( 'forbidden', __( 'You do not have permission to edit this bank.', 'pressprimer-quiz' ), [ 'status' => 403 ] );
+		}
+
+		// Update fields
+		if ( isset( $params['name'] ) ) {
+			$bank->name = sanitize_text_field( $params['name'] );
+		}
+
+		if ( isset( $params['description'] ) ) {
+			$bank->description = sanitize_textarea_field( $params['description'] );
+		}
+
+		if ( isset( $params['visibility'] ) && in_array( $params['visibility'], [ 'private', 'shared' ] ) ) {
+			$bank->visibility = $params['visibility'];
+		}
+
+		// Save bank
+		$result = $bank->save();
+
+		if ( is_wp_error( $result ) ) {
+			return $result;
+		}
+
+		// Refresh to get updated data
+		$bank->refresh();
+
+		return new WP_REST_Response( [
+			'id'              => $bank->id,
+			'uuid'            => $bank->uuid,
+			'name'            => $bank->name,
+			'description'     => $bank->description,
+			'owner_id'        => $bank->owner_id,
+			'visibility'      => $bank->visibility,
+			'question_count'  => $bank->question_count,
+			'created_at'      => $bank->created_at,
+			'updated_at'      => $bank->updated_at,
+		], 200 );
+	}
+
+	/**
+	 * Delete bank
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param WP_REST_Request $request Request object.
+	 * @return WP_REST_Response|WP_Error Response or error.
+	 */
+	public function delete_bank( $request ) {
+		$bank_id = absint( $request['id'] );
+		$bank = PPQ_Bank::get( $bank_id );
+
+		if ( ! $bank ) {
+			return new WP_Error( 'not_found', __( 'Bank not found.', 'pressprimer-quiz' ), [ 'status' => 404 ] );
+		}
+
+		// Check ownership
+		$user_id = get_current_user_id();
+		if ( ! current_user_can( 'ppq_manage_all' ) && absint( $bank->owner_id ) !== $user_id ) {
+			return new WP_Error( 'forbidden', __( 'You do not have permission to delete this bank.', 'pressprimer-quiz' ), [ 'status' => 403 ] );
+		}
+
+		// Delete bank
+		$result = $bank->delete();
+
+		if ( is_wp_error( $result ) ) {
+			return $result;
+		}
+
+		return new WP_REST_Response( [
+			'deleted' => true,
+			'id'      => $bank_id,
+		], 200 );
 	}
 
 	/**
@@ -1013,7 +1227,13 @@ class PPQ_REST_Controller {
 		$quiz_id = absint( $request['quiz_id'] );
 		$rules = PPQ_Quiz_Rule::get_for_quiz( $quiz_id );
 
+		error_log( 'PPQ API: Loading rules for quiz ' . $quiz_id . ', found ' . count( $rules ) . ' rules' );
+
 		$data = array_map( function( $rule ) {
+			error_log( 'PPQ API: Rule ' . $rule->id . ' bank_id=' . $rule->bank_id );
+			$matching_count = $rule->get_matching_count();
+			error_log( 'PPQ API: Rule ' . $rule->id . ' matching_count=' . $matching_count );
+
 			return [
 				'id'             => $rule->id,
 				'rule_order'     => $rule->rule_order,
@@ -1022,7 +1242,7 @@ class PPQ_REST_Controller {
 				'tag_ids'        => $rule->get_tag_ids(),
 				'difficulties'   => $rule->get_difficulties(),
 				'question_count' => $rule->question_count,
-				'matching_count' => $rule->get_matching_count(),
+				'matching_count' => $matching_count,
 			];
 		}, $rules );
 

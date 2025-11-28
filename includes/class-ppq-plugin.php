@@ -119,6 +119,11 @@ class PPQ_Plugin {
 			$ajax_handler = new PPQ_AJAX_Handler();
 			$ajax_handler->init();
 		}
+
+		// Initialize Open Graph tags for results pages
+		if ( class_exists( 'PPQ_Results_Renderer' ) ) {
+			PPQ_Results_Renderer::init_og_tags();
+		}
 	}
 
 	/**
@@ -177,19 +182,9 @@ class PPQ_Plugin {
 	 * @since 1.0.0
 	 */
 	private function init_blocks() {
-		add_action(
-			'init',
-			function() {
-				// Blocks will be registered here
-				// Quiz block
-				// register_block_type( PPQ_PLUGIN_PATH . 'blocks/quiz' );
-				//
-				// My Attempts block
-				// register_block_type( PPQ_PLUGIN_PATH . 'blocks/my-attempts' );
-				//
-				// Assigned Quizzes block
-				// register_block_type( PPQ_PLUGIN_PATH . 'blocks/assigned-quizzes' );
-			}
-		);
+		if ( class_exists( 'PPQ_Blocks' ) ) {
+			$blocks = new PPQ_Blocks();
+			$blocks->init();
+		}
 	}
 }

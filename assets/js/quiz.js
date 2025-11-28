@@ -752,7 +752,8 @@
 					action: 'ppq_submit_quiz',
 					nonce: ppqQuiz.nonce,
 					attempt_id: this.attemptId,
-					timed_out: this.isAutoSubmit
+					timed_out: this.isAutoSubmit,
+					current_url: window.location.href
 				},
 				success: (response) => {
 					if (response.success && response.data.redirect_url) {

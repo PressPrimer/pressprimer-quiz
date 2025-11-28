@@ -24,6 +24,14 @@ if ( ! defined( 'ABSPATH' ) ) {
 class PPQ_Admin_Banks {
 
 	/**
+	 * List table instance
+	 *
+	 * @since 1.0.0
+	 * @var PPQ_Banks_List_Table
+	 */
+	private $list_table;
+
+	/**
 	 * Initialize admin functionality
 	 *
 	 * @since 1.0.0
@@ -34,6 +42,80 @@ class PPQ_Admin_Banks {
 		add_action( 'admin_post_ppq_add_question_to_bank', [ $this, 'handle_add_question' ] );
 		add_action( 'admin_post_ppq_remove_question_from_bank', [ $this, 'handle_remove_question' ] );
 		add_action( 'admin_notices', [ $this, 'admin_notices' ] );
+
+		// Add screen options on the right hook
+		add_action( 'current_screen', [ $this, 'maybe_add_screen_options' ] );
+	}
+
+	/**
+	 * Maybe add screen options based on current screen
+	 *
+	 * @since 1.0.0
+	 */
+	public function maybe_add_screen_options() {
+		$screen = get_current_screen();
+
+		// Only add screen options on the banks list page
+		if ( $screen && 'pressprimer-quiz_page_ppq-banks' === $screen->id ) {
+			$this->screen_options();
+		}
+	}
+
+	/**
+	 * Set up screen options
+	 *
+	 * @since 1.0.0
+	 */
+	public function screen_options() {
+		// Only on list view
+		$action = isset( $_GET['action'] ) ? sanitize_key( $_GET['action'] ) : '';
+		if ( in_array( $action, [ 'new', 'edit', 'view' ], true ) ) {
+			return;
+		}
+
+		// Add per page option
+		add_screen_option( 'per_page', [
+			'label'   => __( 'Banks per page', 'pressprimer-quiz' ),
+			'default' => 20,
+			'option'  => 'ppq_banks_per_page',
+		] );
+
+		// Instantiate the table and store it
+		require_once __DIR__ . '/class-ppq-banks-list-table.php';
+		$this->list_table = new PPQ_Banks_List_Table();
+
+		// Get screen and register columns with it
+		$screen = get_current_screen();
+		if ( $screen ) {
+			// Get columns from the table
+			$columns = $this->list_table->get_columns();
+
+			// Register columns with the screen
+			add_filter( "manage_{$screen->id}_columns", function() use ( $columns ) {
+				return $columns;
+			} );
+		}
+
+		// Set up filter for saving screen option
+		add_filter( 'set-screen-option', [ $this, 'set_screen_option' ], 10, 3 );
+	}
+
+	/**
+	 * Save screen option
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param mixed  $status Screen option value.
+	 * @param string $option Option name.
+	 * @param mixed  $value  Option value.
+	 * @return mixed Screen option value.
+	 */
+	public function set_screen_option( $status, $option, $value ) {
+		if ( 'ppq_banks_per_page' === $option ) {
+			return $value;
+		}
+
+		return $status;
 	}
 
 	/**
@@ -76,9 +158,13 @@ class PPQ_Admin_Banks {
 	 * @since 1.0.0
 	 */
 	private function render_list() {
-		require_once __DIR__ . '/class-ppq-banks-list-table.php';
-		$list_table = new PPQ_Banks_List_Table();
-		$list_table->prepare_items();
+		// Reuse the list table instance if it exists, otherwise create new one
+		if ( ! $this->list_table ) {
+			require_once __DIR__ . '/class-ppq-banks-list-table.php';
+			$this->list_table = new PPQ_Banks_List_Table();
+		}
+
+		$this->list_table->prepare_items();
 
 		?>
 		<div class="wrap">
@@ -91,8 +177,8 @@ class PPQ_Admin_Banks {
 			<form method="get">
 				<input type="hidden" name="page" value="ppq-banks">
 				<?php
-				$list_table->search_box( __( 'Search Banks', 'pressprimer-quiz' ), 'ppq-bank' );
-				$list_table->display();
+				$this->list_table->search_box( __( 'Search Banks', 'pressprimer-quiz' ), 'ppq-banks' );
+				$this->list_table->display();
 				?>
 			</form>
 		</div>
@@ -100,7 +186,7 @@ class PPQ_Admin_Banks {
 	}
 
 	/**
-	 * Render bank editor
+	 * Render bank editor (React version)
 	 *
 	 * @since 1.0.0
 	 *
@@ -108,7 +194,6 @@ class PPQ_Admin_Banks {
 	 */
 	private function render_editor( $bank_id = 0 ) {
 		$bank = null;
-		$is_new = true;
 
 		if ( $bank_id > 0 ) {
 			if ( class_exists( 'PPQ_Bank' ) ) {
@@ -124,83 +209,89 @@ class PPQ_Admin_Banks {
 			}
 
 			// Check ownership
-			if ( ! current_user_can( 'ppq_manage_all' ) && absint( $bank->author_id ) !== get_current_user_id() ) {
+			if ( ! current_user_can( 'ppq_manage_all' ) && absint( $bank->owner_id ) !== get_current_user_id() ) {
 				wp_die(
 					esc_html__( 'You do not have permission to edit this bank.', 'pressprimer-quiz' ),
 					esc_html__( 'Permission Denied', 'pressprimer-quiz' ),
 					[ 'response' => 403 ]
 				);
 			}
-
-			$is_new = false;
 		}
 
-		// Default values
-		$name = $bank ? $bank->name : '';
-		$description = $bank ? $bank->description : '';
+		// Enqueue React editor
+		$this->enqueue_react_editor( $bank_id );
 
 		?>
-		<div class="wrap">
-			<h1><?php echo $is_new ? esc_html__( 'Add Question Bank', 'pressprimer-quiz' ) : esc_html__( 'Edit Question Bank', 'pressprimer-quiz' ); ?></h1>
-
-			<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" id="ppq-bank-form">
-				<?php wp_nonce_field( 'ppq_save_bank', 'ppq_bank_nonce' ); ?>
-				<input type="hidden" name="action" value="ppq_save_bank">
-				<input type="hidden" name="bank_id" value="<?php echo esc_attr( $bank_id ); ?>">
-
-				<table class="form-table ppq-form-table">
-					<tbody>
-						<tr>
-							<th scope="row">
-								<label for="bank_name"><?php esc_html_e( 'Name', 'pressprimer-quiz' ); ?> <span class="required">*</span></label>
-							</th>
-							<td>
-								<input
-									type="text"
-									id="bank_name"
-									name="bank_name"
-									value="<?php echo esc_attr( $name ); ?>"
-									class="regular-text"
-									required
-									maxlength="200"
-								>
-								<p class="description">
-									<?php esc_html_e( 'A descriptive name for this question bank.', 'pressprimer-quiz' ); ?>
-								</p>
-							</td>
-						</tr>
-
-						<tr>
-							<th scope="row">
-								<label for="bank_description"><?php esc_html_e( 'Description', 'pressprimer-quiz' ); ?></label>
-							</th>
-							<td>
-								<textarea
-									id="bank_description"
-									name="bank_description"
-									rows="5"
-									class="large-text"
-									maxlength="2000"
-								><?php echo esc_textarea( $description ); ?></textarea>
-								<p class="description">
-									<?php esc_html_e( 'Optional description of the bank\'s purpose or contents.', 'pressprimer-quiz' ); ?>
-								</p>
-							</td>
-						</tr>
-					</tbody>
-				</table>
-
-				<p class="submit">
-					<button type="submit" class="button button-primary">
-						<?php echo $is_new ? esc_html__( 'Create Bank', 'pressprimer-quiz' ) : esc_html__( 'Update Bank', 'pressprimer-quiz' ); ?>
-					</button>
-					<a href="<?php echo esc_url( admin_url( 'admin.php?page=ppq-banks' ) ); ?>" class="button button-secondary">
-						<?php esc_html_e( 'Cancel', 'pressprimer-quiz' ); ?>
-					</a>
-				</p>
-			</form>
-		</div>
+		<!-- React Editor Root -->
+		<div id="ppq-bank-editor-root"></div>
 		<?php
+	}
+
+	/**
+	 * Enqueue React editor assets
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param int $bank_id Bank ID.
+	 */
+	private function enqueue_react_editor( $bank_id ) {
+		// Enqueue Ant Design CSS
+		wp_enqueue_style(
+			'antd',
+			'https://cdn.jsdelivr.net/npm/antd@5.12.0/dist/reset.css',
+			[],
+			'5.12.0'
+		);
+
+		// Enqueue the built React bundle
+		wp_enqueue_script(
+			'ppq-bank-editor',
+			PPQ_PLUGIN_URL . 'build/bank-editor.js',
+			[ 'wp-element', 'wp-i18n', 'wp-api-fetch' ],
+			PPQ_VERSION,
+			true
+		);
+
+		wp_enqueue_style(
+			'ppq-bank-editor',
+			PPQ_PLUGIN_URL . 'build/style-bank-editor.css',
+			[],
+			PPQ_VERSION
+		);
+
+		// Prepare bank data for JavaScript
+		$bank_data = [];
+
+		if ( $bank_id > 0 ) {
+			$bank = PPQ_Bank::get( $bank_id );
+
+			if ( $bank ) {
+				$bank_data = [
+					'id'          => $bank->id,
+					'uuid'        => $bank->uuid,
+					'name'        => $bank->name,
+					'description' => $bank->description,
+					'owner_id'    => $bank->owner_id,
+					'visibility'  => $bank->visibility,
+					'question_count' => $bank->question_count,
+					'created_at'  => $bank->created_at,
+					'updated_at'  => $bank->updated_at,
+				];
+			}
+		}
+
+		// Add user capabilities
+		$bank_data['userCan'] = [
+			'manage_all' => current_user_can( 'ppq_manage_all' ),
+			'manage_own' => current_user_can( 'ppq_manage_own' ),
+		];
+
+		// Localize script with data
+		wp_localize_script(
+			'ppq-bank-editor',
+			'ppqBankData',
+			$bank_data
+		);
 	}
 
 	/**
@@ -267,16 +358,37 @@ class PPQ_Admin_Banks {
 				</a>
 			</h1>
 
-			<?php if ( $bank->description ) : ?>
-				<p class="description"><?php echo esc_html( $bank->description ); ?></p>
-			<?php endif; ?>
-
-			<p>
-				<strong><?php esc_html_e( 'Total Questions:', 'pressprimer-quiz' ); ?></strong>
-				<?php echo absint( $total_count ); ?>
-			</p>
-
 			<hr class="wp-header-end">
+
+			<!-- Bank Info Section -->
+			<div class="ppq-form-section">
+				<h2><?php esc_html_e( 'Bank Information', 'pressprimer-quiz' ); ?></h2>
+
+				<div style="background: #fff; border: 1px solid #c3c4c7; padding: 20px; display: grid; grid-template-columns: 1fr auto; gap: 30px; align-items: start;">
+					<div>
+						<h3 style="margin: 0 0 10px 0; font-size: 15px; font-weight: 600; color: #1d2327;">
+							<?php esc_html_e( 'Description', 'pressprimer-quiz' ); ?>
+						</h3>
+						<?php if ( $bank->description ) : ?>
+							<p style="margin: 0; font-size: 14px; line-height: 1.8; color: #3c434a;">
+								<?php echo esc_html( $bank->description ); ?>
+							</p>
+						<?php else : ?>
+							<p style="margin: 0; font-size: 14px; color: #646970; font-style: italic;">
+								<?php esc_html_e( 'No description provided for this bank.', 'pressprimer-quiz' ); ?>
+							</p>
+						<?php endif; ?>
+					</div>
+					<div style="text-align: center; min-width: 140px; padding: 20px; background: #f6f7f7; border: 1px solid #dcdcde; border-radius: 3px;">
+						<div style="font-size: 48px; font-weight: 700; color: #2271b1; line-height: 1; margin-bottom: 8px;">
+							<?php echo absint( $total_count ); ?>
+						</div>
+						<div style="font-size: 13px; color: #50575e; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">
+							<?php esc_html_e( 'Total Questions', 'pressprimer-quiz' ); ?>
+						</div>
+					</div>
+				</div>
+			</div>
 
 			<!-- Add Question Section -->
 			<div class="ppq-form-section">
@@ -287,17 +399,114 @@ class PPQ_Admin_Banks {
 					<input type="hidden" name="action" value="ppq_add_question_to_bank">
 					<input type="hidden" name="bank_id" value="<?php echo esc_attr( $bank_id ); ?>">
 
-					<p>
-						<label for="question_search"><?php esc_html_e( 'Search Questions:', 'pressprimer-quiz' ); ?></label>
-						<input
-							type="text"
-							id="question_search"
-							class="regular-text"
-							placeholder="<?php esc_attr_e( 'Type to search questions...', 'pressprimer-quiz' ); ?>"
-						>
-					</p>
+					<!-- Filter Section -->
+					<div class="ppq-question-filters" style="background: #f9f9f9; padding: 15px; margin-bottom: 15px; border: 1px solid #ddd; border-radius: 4px;">
+						<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px; margin-bottom: 10px;">
+							<div>
+								<label for="filter_question_type" style="display: block; margin-bottom: 5px; font-weight: 600;"><?php esc_html_e( 'Type:', 'pressprimer-quiz' ); ?></label>
+								<select id="filter_question_type" class="ppq-question-filter" style="width: 100%;">
+									<option value=""><?php esc_html_e( 'All Types', 'pressprimer-quiz' ); ?></option>
+									<option value="mc"><?php esc_html_e( 'Multiple Choice', 'pressprimer-quiz' ); ?></option>
+									<option value="ma"><?php esc_html_e( 'Multiple Answer', 'pressprimer-quiz' ); ?></option>
+									<option value="tf"><?php esc_html_e( 'True/False', 'pressprimer-quiz' ); ?></option>
+								</select>
+							</div>
 
-					<div id="ppq-question-search-results" style="display: none; background: #fff; border: 1px solid #c3c4c7; padding: 10px; margin-bottom: 15px; max-height: 300px; overflow-y: auto;">
+							<div>
+								<label for="filter_question_difficulty" style="display: block; margin-bottom: 5px; font-weight: 600;"><?php esc_html_e( 'Difficulty:', 'pressprimer-quiz' ); ?></label>
+								<select id="filter_question_difficulty" class="ppq-question-filter" style="width: 100%;">
+									<option value=""><?php esc_html_e( 'All Difficulties', 'pressprimer-quiz' ); ?></option>
+									<option value="beginner"><?php esc_html_e( 'Beginner', 'pressprimer-quiz' ); ?></option>
+									<option value="intermediate"><?php esc_html_e( 'Intermediate', 'pressprimer-quiz' ); ?></option>
+									<option value="advanced"><?php esc_html_e( 'Advanced', 'pressprimer-quiz' ); ?></option>
+									<option value="expert"><?php esc_html_e( 'Expert', 'pressprimer-quiz' ); ?></option>
+								</select>
+							</div>
+
+							<div>
+								<label for="filter_question_category" style="display: block; margin-bottom: 5px; font-weight: 600;"><?php esc_html_e( 'Category:', 'pressprimer-quiz' ); ?></label>
+								<select id="filter_question_category" class="ppq-question-filter" style="width: 100%;">
+									<option value=""><?php esc_html_e( 'All Categories', 'pressprimer-quiz' ); ?></option>
+									<?php
+									// Get categories
+									if ( class_exists( 'PPQ_Category' ) ) {
+										$categories = PPQ_Category::find( [
+											'where' => [ 'taxonomy' => 'category' ],
+											'order_by' => 'name',
+											'order' => 'ASC',
+										] );
+										foreach ( $categories as $category ) {
+											echo '<option value="' . esc_attr( $category->id ) . '">' . esc_html( $category->name ) . '</option>';
+										}
+									}
+									?>
+								</select>
+							</div>
+
+							<div>
+								<label for="filter_question_tag" style="display: block; margin-bottom: 5px; font-weight: 600;"><?php esc_html_e( 'Tag:', 'pressprimer-quiz' ); ?></label>
+								<select id="filter_question_tag" class="ppq-question-filter" style="width: 100%;">
+									<option value=""><?php esc_html_e( 'All Tags', 'pressprimer-quiz' ); ?></option>
+									<?php
+									// Get tags
+									if ( class_exists( 'PPQ_Category' ) ) {
+										$tags = PPQ_Category::find( [
+											'where' => [ 'taxonomy' => 'tag' ],
+											'order_by' => 'name',
+											'order' => 'ASC',
+										] );
+										foreach ( $tags as $tag ) {
+											echo '<option value="' . esc_attr( $tag->id ) . '">' . esc_html( $tag->name ) . '</option>';
+										}
+									}
+									?>
+								</select>
+							</div>
+						</div>
+
+						<div>
+							<label for="question_search" style="display: block; margin-bottom: 5px; font-weight: 600;"><?php esc_html_e( 'Search:', 'pressprimer-quiz' ); ?></label>
+							<input
+								type="text"
+								id="question_search"
+								class="ppq-question-filter regular-text"
+								placeholder="<?php esc_attr_e( 'Search question text...', 'pressprimer-quiz' ); ?>"
+								style="width: 100%;"
+							>
+						</div>
+
+						<p style="margin: 10px 0 0 0;">
+							<button type="button" id="ppq-search-questions" class="button">
+								<?php esc_html_e( 'Search Questions', 'pressprimer-quiz' ); ?>
+							</button>
+							<button type="button" id="ppq-reset-filters" class="button">
+								<?php esc_html_e( 'Reset Filters', 'pressprimer-quiz' ); ?>
+							</button>
+						</p>
+					</div>
+
+					<!-- Most Recent Questions Section -->
+					<div class="ppq-recent-questions-section" style="background: #f0f6fc; border: 1px solid #c3c4c7; padding: 15px; margin-bottom: 15px; border-radius: 4px;">
+						<h3 style="margin-top: 0; font-size: 14px; font-weight: 600;">
+							<?php esc_html_e( 'Most Recent Questions You Created', 'pressprimer-quiz' ); ?>
+						</h3>
+						<p style="margin: 5px 0 15px; color: #646970; font-size: 13px;">
+							<?php esc_html_e( 'Quick access to your recently created questions. Select the ones you want to add to this bank.', 'pressprimer-quiz' ); ?>
+						</p>
+
+						<div id="ppq-recent-questions-list">
+							<p style="text-align: center; padding: 20px;">
+								<span class="spinner is-active" style="float: none; margin: 0;"></span>
+								<?php esc_html_e( 'Loading recent questions...', 'pressprimer-quiz' ); ?>
+							</p>
+						</div>
+
+						<div id="ppq-recent-questions-pagination" style="margin-top: 10px; text-align: center; display: none;">
+							<!-- Pagination controls populated via JavaScript -->
+						</div>
+					</div>
+
+					<div id="ppq-question-search-results" style="display: none; background: #fff; border: 1px solid #c3c4c7; padding: 10px; margin-bottom: 15px; max-height: 400px; overflow-y: auto;">
 						<!-- Results populated via JavaScript -->
 					</div>
 
@@ -363,6 +572,7 @@ class PPQ_Admin_Banks {
 								<th><?php esc_html_e( 'Question', 'pressprimer-quiz' ); ?></th>
 								<th><?php esc_html_e( 'Type', 'pressprimer-quiz' ); ?></th>
 								<th><?php esc_html_e( 'Difficulty', 'pressprimer-quiz' ); ?></th>
+								<th><?php esc_html_e( 'Category', 'pressprimer-quiz' ); ?></th>
 								<th><?php esc_html_e( 'Actions', 'pressprimer-quiz' ); ?></th>
 							</tr>
 						</thead>
@@ -387,7 +597,17 @@ class PPQ_Admin_Banks {
 									'advanced' => __( 'Advanced', 'pressprimer-quiz' ),
 									'expert' => __( 'Expert', 'pressprimer-quiz' ),
 								];
-								$difficulty_label = isset( $difficulty_labels[ $question->difficulty ] ) ? $difficulty_labels[ $question->difficulty ] : $question->difficulty;
+								$difficulty_label = isset( $difficulty_labels[ $question->difficulty_author ] ) ? $difficulty_labels[ $question->difficulty_author ] : $question->difficulty_author;
+
+								// Get categories
+								$categories = $question->get_categories();
+								$category_names = [];
+								foreach ( $categories as $cat ) {
+									if ( 'category' === $cat->taxonomy ) {
+										$category_names[] = $cat->name;
+									}
+								}
+								$category_display = ! empty( $category_names ) ? implode( ', ', $category_names ) : '<span class="ppq-text-muted">' . esc_html__( 'None', 'pressprimer-quiz' ) . '</span>';
 								?>
 								<tr>
 									<td>
@@ -407,6 +627,7 @@ class PPQ_Admin_Banks {
 									</td>
 									<td><?php echo esc_html( $type_label ); ?></td>
 									<td><?php echo esc_html( $difficulty_label ); ?></td>
+									<td><?php echo $category_display; // Already escaped above ?></td>
 									<td>
 										<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" style="display: inline;">
 											<?php wp_nonce_field( 'ppq_remove_question_from_bank', 'ppq_remove_question_nonce' ); ?>
@@ -434,7 +655,175 @@ class PPQ_Admin_Banks {
 		jQuery(document).ready(function($) {
 			var searchTimeout;
 			var selectedQuestions = [];
+			var currentRecentPage = 1;
 
+			// Function to perform question search with filters
+			function searchQuestions() {
+				var searchTerm = $('#question_search').val();
+				var type = $('#filter_question_type').val();
+				var difficulty = $('#filter_question_difficulty').val();
+				var categoryId = $('#filter_question_category').val();
+				var tagId = $('#filter_question_tag').val();
+
+				console.log('Search parameters:', {
+					search: searchTerm,
+					type: type,
+					difficulty: difficulty,
+					category_id: categoryId,
+					tag_id: tagId
+				});
+
+				// AJAX search for questions
+				$.ajax({
+					url: ajaxurl,
+					type: 'POST',
+					data: {
+						action: 'ppq_search_questions',
+						nonce: '<?php echo esc_js( wp_create_nonce( 'ppq_search_questions' ) ); ?>',
+						search: searchTerm,
+						type: type,
+						difficulty: difficulty,
+						category_id: categoryId,
+						tag_id: tagId,
+						bank_id: <?php echo absint( $bank_id ); ?>
+					},
+					success: function(response) {
+						console.log('Search AJAX response:', response);
+						if (response.success && response.data.questions) {
+							var html = '';
+							if (response.data.questions.length === 0) {
+								html = '<p><em><?php esc_html_e( 'No questions found.', 'pressprimer-quiz' ); ?></em></p>';
+							} else {
+								html = '<div style="max-height: 250px; overflow-y: auto;">';
+								$.each(response.data.questions, function(i, q) {
+									var checked = selectedQuestions.indexOf(q.id) !== -1 ? ' checked' : '';
+									html += '<label style="display: block; padding: 5px; border-bottom: 1px solid #ddd;">';
+									html += '<input type="checkbox" name="question_ids[]" value="' + q.id + '" class="ppq-question-checkbox"' + checked + '> ';
+									html += '<strong>' + q.stem_preview + '</strong> ';
+									html += '<span style="color: #646970;">(' + q.type + ', ' + q.difficulty + ')</span>';
+									html += '</label>';
+								});
+								html += '</div>';
+							}
+							$('#ppq-question-search-results').html(html).show();
+						} else {
+							console.error('Search failed or no data:', response);
+						}
+					},
+					error: function(xhr, status, error) {
+						console.error('Search AJAX error:', {
+							status: status,
+							error: error,
+							response: xhr.responseText
+						});
+						$('#ppq-question-search-results').html('<p style="color: #d63638;"><?php esc_html_e( 'Error searching questions. Please try again.', 'pressprimer-quiz' ); ?></p>').show();
+					}
+				});
+			}
+
+			// Function to load recent questions
+			function loadRecentQuestions(page) {
+				currentRecentPage = page || 1;
+
+				$.ajax({
+					url: ajaxurl,
+					type: 'POST',
+					data: {
+						action: 'ppq_get_recent_questions',
+						nonce: '<?php echo esc_js( wp_create_nonce( 'ppq_get_recent_questions' ) ); ?>',
+						bank_id: <?php echo absint( $bank_id ); ?>,
+						page: currentRecentPage
+					},
+					success: function(response) {
+						if (response.success && response.data.questions) {
+							var html = '';
+							var data = response.data;
+
+							if (data.questions.length === 0) {
+								html = '<p style="text-align: center; color: #646970; padding: 20px;"><em><?php esc_html_e( 'No questions found. Create some questions first!', 'pressprimer-quiz' ); ?></em></p>';
+								$('#ppq-recent-questions-list').html(html);
+								$('#ppq-recent-questions-pagination').hide();
+							} else {
+								// Build table
+								html = '<table class="widefat" style="margin: 0;">';
+								html += '<thead><tr>';
+								html += '<th style="width: 40px; text-align: center;"><?php esc_html_e( 'Select', 'pressprimer-quiz' ); ?></th>';
+								html += '<th><?php esc_html_e( 'Question', 'pressprimer-quiz' ); ?></th>';
+								html += '<th style="width: 150px;"><?php esc_html_e( 'Type', 'pressprimer-quiz' ); ?></th>';
+								html += '<th style="width: 120px;"><?php esc_html_e( 'Difficulty', 'pressprimer-quiz' ); ?></th>';
+								html += '<th style="width: 150px;"><?php esc_html_e( 'Category', 'pressprimer-quiz' ); ?></th>';
+								html += '</tr></thead><tbody>';
+
+								$.each(data.questions, function(i, q) {
+									var checked = selectedQuestions.indexOf(q.id) !== -1 ? ' checked' : '';
+									html += '<tr>';
+									html += '<td style="text-align: center;"><input type="checkbox" name="question_ids[]" value="' + q.id + '" class="ppq-question-checkbox"' + checked + '></td>';
+									html += '<td><strong>' + q.stem_preview + '</strong></td>';
+									html += '<td>' + q.type_label + '</td>';
+									html += '<td>' + q.difficulty_label + '</td>';
+									html += '<td>' + q.category + '</td>';
+									html += '</tr>';
+								});
+
+								html += '</tbody></table>';
+								$('#ppq-recent-questions-list').html(html);
+
+								// Build pagination
+								if (data.total_pages > 1) {
+									var pagHtml = '<div class="tablenav-pages">';
+									pagHtml += '<span class="displaying-num">' + data.total_items + ' <?php esc_html_e( 'items', 'pressprimer-quiz' ); ?></span>';
+									pagHtml += '<span class="pagination-links">';
+
+									// First page
+									if (currentRecentPage > 1) {
+										pagHtml += '<a class="button ppq-recent-page-nav" data-page="1" title="<?php esc_attr_e( 'First page', 'pressprimer-quiz' ); ?>">&laquo;</a> ';
+										pagHtml += '<a class="button ppq-recent-page-nav" data-page="' + (currentRecentPage - 1) + '" title="<?php esc_attr_e( 'Previous page', 'pressprimer-quiz' ); ?>">&lsaquo;</a> ';
+									} else {
+										pagHtml += '<span class="button disabled">&laquo;</span> ';
+										pagHtml += '<span class="button disabled">&lsaquo;</span> ';
+									}
+
+									pagHtml += '<span class="paging-input">' + currentRecentPage + ' <?php esc_html_e( 'of', 'pressprimer-quiz' ); ?> ' + data.total_pages + '</span> ';
+
+									// Last page
+									if (currentRecentPage < data.total_pages) {
+										pagHtml += '<a class="button ppq-recent-page-nav" data-page="' + (currentRecentPage + 1) + '" title="<?php esc_attr_e( 'Next page', 'pressprimer-quiz' ); ?>">&rsaquo;</a> ';
+										pagHtml += '<a class="button ppq-recent-page-nav" data-page="' + data.total_pages + '" title="<?php esc_attr_e( 'Last page', 'pressprimer-quiz' ); ?>">&raquo;</a>';
+									} else {
+										pagHtml += '<span class="button disabled">&rsaquo;</span> ';
+										pagHtml += '<span class="button disabled">&raquo;</span>';
+									}
+
+									pagHtml += '</span></div>';
+									$('#ppq-recent-questions-pagination').html(pagHtml).show();
+								} else {
+									$('#ppq-recent-questions-pagination').hide();
+								}
+							}
+						}
+					},
+					error: function(xhr, status, error) {
+						console.error('Recent questions AJAX error:', {
+							status: status,
+							error: error,
+							response: xhr.responseText
+						});
+						$('#ppq-recent-questions-list').html('<p style="color: #d63638; text-align: center;"><?php esc_html_e( 'Error loading questions. Please refresh the page.', 'pressprimer-quiz' ); ?></p>');
+					}
+				});
+			}
+
+			// Load recent questions on page load
+			loadRecentQuestions(1);
+
+			// Handle pagination clicks
+			$(document).on('click', '.ppq-recent-page-nav', function(e) {
+				e.preventDefault();
+				var page = parseInt($(this).data('page'));
+				loadRecentQuestions(page);
+			});
+
+			// Search on keyup with debounce
 			$('#question_search').on('keyup', function() {
 				var searchTerm = $(this).val();
 
@@ -446,38 +835,43 @@ class PPQ_Admin_Banks {
 				}
 
 				searchTimeout = setTimeout(function() {
-					// AJAX search for questions
-					$.ajax({
-						url: ajaxurl,
-						type: 'POST',
-						data: {
-							action: 'ppq_search_questions',
-							nonce: '<?php echo esc_js( wp_create_nonce( 'ppq_search_questions' ) ); ?>',
-							search: searchTerm,
-							bank_id: <?php echo absint( $bank_id ); ?>
-						},
-						success: function(response) {
-							if (response.success && response.data.questions) {
-								var html = '';
-								if (response.data.questions.length === 0) {
-									html = '<p><em><?php esc_html_e( 'No questions found.', 'pressprimer-quiz' ); ?></em></p>';
-								} else {
-									html = '<div style="max-height: 250px; overflow-y: auto;">';
-									$.each(response.data.questions, function(i, q) {
-										var checked = selectedQuestions.indexOf(q.id) !== -1 ? ' checked' : '';
-										html += '<label style="display: block; padding: 5px; border-bottom: 1px solid #ddd;">';
-										html += '<input type="checkbox" name="question_ids[]" value="' + q.id + '" class="ppq-question-checkbox"' + checked + '> ';
-										html += '<strong>' + q.stem_preview + '</strong> ';
-										html += '<span style="color: #646970;">(' + q.type + ', ' + q.difficulty + ')</span>';
-										html += '</label>';
-									});
-									html += '</div>';
-								}
-								$('#ppq-question-search-results').html(html).show();
-							}
-						}
-					});
+					searchQuestions();
 				}, 300);
+			});
+
+			// Search button click
+			$('#ppq-search-questions').on('click', function(e) {
+				e.preventDefault();
+				console.log('Search button clicked');
+
+				// Show results container even if empty
+				$('#ppq-question-search-results').show();
+
+				searchQuestions();
+			});
+
+			// Reset filters button click
+			$('#ppq-reset-filters').on('click', function(e) {
+				e.preventDefault();
+				$('#question_search').val('');
+				$('#filter_question_type').val('');
+				$('#filter_question_difficulty').val('');
+				$('#filter_question_category').val('');
+				$('#filter_question_tag').val('');
+				$('#ppq-question-search-results').hide();
+				selectedQuestions = [];
+				$('#ppq-add-selected-questions').prop('disabled', true);
+			});
+
+			// Also trigger search when filters change
+			$('.ppq-question-filter').on('change', function() {
+				if ($('#question_search').val().length >= 2 ||
+					$('#filter_question_type').val() ||
+					$('#filter_question_difficulty').val() ||
+					$('#filter_question_category').val() ||
+					$('#filter_question_tag').val()) {
+					searchQuestions();
+				}
 			});
 
 			// Update selected questions and button state
@@ -530,7 +924,7 @@ class PPQ_Admin_Banks {
 				wp_die( esc_html__( 'Bank not found.', 'pressprimer-quiz' ) );
 			}
 
-			if ( ! current_user_can( 'ppq_manage_all' ) && absint( $bank->author_id ) !== get_current_user_id() ) {
+			if ( ! current_user_can( 'ppq_manage_all' ) && absint( $bank->owner_id ) !== get_current_user_id() ) {
 				wp_die( esc_html__( 'You do not have permission to edit this bank.', 'pressprimer-quiz' ) );
 			}
 
@@ -543,7 +937,7 @@ class PPQ_Admin_Banks {
 			$bank = new PPQ_Bank();
 			$bank->name = $name;
 			$bank->description = $description;
-			$bank->author_id = get_current_user_id();
+			$bank->owner_id = get_current_user_id();
 			$result = $bank->save();
 
 			if ( ! is_wp_error( $result ) ) {
@@ -602,7 +996,7 @@ class PPQ_Admin_Banks {
 		}
 
 		// Check ownership
-		if ( ! current_user_can( 'ppq_manage_all' ) && absint( $bank->author_id ) !== get_current_user_id() ) {
+		if ( ! current_user_can( 'ppq_manage_all' ) && absint( $bank->owner_id ) !== get_current_user_id() ) {
 			wp_die( esc_html__( 'You do not have permission to delete this bank.', 'pressprimer-quiz' ) );
 		}
 
@@ -645,6 +1039,10 @@ class PPQ_Admin_Banks {
 		$bank_id = isset( $_POST['bank_id'] ) ? absint( $_POST['bank_id'] ) : 0;
 		$question_ids = isset( $_POST['question_ids'] ) ? array_map( 'absint', (array) $_POST['question_ids'] ) : [];
 
+		error_log( '=== PPQ Add Questions Handler ===' );
+		error_log( 'Bank ID: ' . $bank_id );
+		error_log( 'Question IDs received: ' . print_r( $question_ids, true ) );
+
 		if ( ! $bank_id || empty( $question_ids ) ) {
 			wp_die( esc_html__( 'Invalid bank or question IDs.', 'pressprimer-quiz' ) );
 		}
@@ -659,17 +1057,23 @@ class PPQ_Admin_Banks {
 		}
 
 		// Check ownership
-		if ( ! current_user_can( 'ppq_manage_all' ) && absint( $bank->author_id ) !== get_current_user_id() ) {
+		if ( ! current_user_can( 'ppq_manage_all' ) && absint( $bank->owner_id ) !== get_current_user_id() ) {
 			wp_die( esc_html__( 'You do not have permission to edit this bank.', 'pressprimer-quiz' ) );
 		}
 
 		// Add questions to bank
 		foreach ( $question_ids as $question_id ) {
-			$bank->add_question( $question_id );
+			$result = $bank->add_question( $question_id );
+			if ( is_wp_error( $result ) ) {
+				error_log( 'Failed to add question ' . $question_id . ': ' . $result->get_error_message() );
+			} else {
+				error_log( 'Successfully added question ' . $question_id . ' to bank ' . $bank_id );
+			}
 		}
 
 		// Update count
 		$bank->update_question_count();
+		error_log( 'Updated question count for bank ' . $bank_id );
 
 		// Redirect with success message
 		wp_safe_redirect(
@@ -719,7 +1123,7 @@ class PPQ_Admin_Banks {
 		}
 
 		// Check ownership
-		if ( ! current_user_can( 'ppq_manage_all' ) && absint( $bank->author_id ) !== get_current_user_id() ) {
+		if ( ! current_user_can( 'ppq_manage_all' ) && absint( $bank->owner_id ) !== get_current_user_id() ) {
 			wp_die( esc_html__( 'You do not have permission to edit this bank.', 'pressprimer-quiz' ) );
 		}
 
@@ -765,6 +1169,9 @@ class PPQ_Admin_Banks {
 		switch ( $message ) {
 			case 'bank_saved':
 				$text = __( 'Bank saved successfully.', 'pressprimer-quiz' );
+				break;
+			case 'bank_created':
+				$text = __( 'Bank created successfully! You can now add questions to it.', 'pressprimer-quiz' );
 				break;
 			case 'bank_deleted':
 				$text = __( 'Bank deleted successfully.', 'pressprimer-quiz' );

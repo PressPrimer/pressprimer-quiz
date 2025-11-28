@@ -88,6 +88,14 @@ class PPQ_Bank extends PPQ_Model {
 	public $updated_at = '';
 
 	/**
+	 * Deleted timestamp (soft delete)
+	 *
+	 * @since 1.0.0
+	 * @var string|null
+	 */
+	public $deleted_at = null;
+
+	/**
 	 * Get table name
 	 *
 	 * @since 1.0.0

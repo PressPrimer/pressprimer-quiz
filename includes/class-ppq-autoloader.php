@@ -37,6 +37,7 @@ class PPQ_Autoloader {
 		'integrations',
 		'database',
 		'utilities',
+		'blocks',
 	];
 
 	/**

@@ -41,6 +41,10 @@ class PPQ_AJAX_Handler {
 		// Submit quiz (logged in and guests)
 		add_action( 'wp_ajax_ppq_submit_quiz', [ $this, 'submit_quiz' ] );
 		add_action( 'wp_ajax_nopriv_ppq_submit_quiz', [ $this, 'submit_quiz' ] );
+
+		// Email results (logged in and guests)
+		add_action( 'wp_ajax_ppq_email_results', [ $this, 'email_results' ] );
+		add_action( 'wp_ajax_nopriv_ppq_email_results', [ $this, 'email_results' ] );
 	}
 
 	/**
@@ -261,11 +265,24 @@ class PPQ_AJAX_Handler {
 			] );
 		}
 
-		// Get quiz for redirect URL
-		$quiz = $attempt->get_quiz();
+		// Send email if auto-send is enabled
+		if ( class_exists( 'PPQ_Email_Service' ) ) {
+			PPQ_Email_Service::maybe_send_on_completion( $attempt->id );
+		}
 
-		// Build results URL
-		$redirect_url = add_query_arg( 'attempt', $attempt->id, get_permalink( $quiz->id ) );
+		// Build results URL (includes token for guests)
+		$current_url = isset( $_POST['current_url'] ) ? esc_url_raw( $_POST['current_url'] ) : '';
+
+		// Remove any existing attempt/token parameters and rebuild clean URL
+		if ( $current_url ) {
+			$base_url = remove_query_arg( [ 'attempt', 'token' ], $current_url );
+		} else {
+			// Fallback: try to use HTTP referer
+			$base_url = remove_query_arg( [ 'attempt', 'token' ], wp_get_referer() );
+		}
+
+		// Use attempt's get_results_url which handles tokens for guests
+		$redirect_url = $attempt->get_results_url( $base_url );
 
 		// Add timed_out flag if applicable
 		if ( isset( $_POST['timed_out'] ) && $_POST['timed_out'] ) {
@@ -311,5 +328,80 @@ class PPQ_AJAX_Handler {
 		}
 
 		return false;
+	}
+
+	/**
+	 * Email quiz results
+	 *
+	 * Sends quiz results to specified email address.
+	 *
+	 * @since 1.0.0
+	 */
+	public function email_results() {
+		// Verify nonce
+		if ( ! check_ajax_referer( 'ppq_email_results', 'nonce', false ) ) {
+			wp_send_json_error( [
+				'message' => __( 'Security check failed. Please refresh the page and try again.', 'pressprimer-quiz' ),
+			] );
+		}
+
+		// Get parameters
+		$attempt_id = isset( $_POST['attempt_id'] ) ? absint( $_POST['attempt_id'] ) : 0;
+		$email      = isset( $_POST['email'] ) ? sanitize_email( $_POST['email'] ) : '';
+
+		// Validate parameters
+		if ( ! $attempt_id ) {
+			wp_send_json_error( [
+				'message' => __( 'Invalid attempt ID.', 'pressprimer-quiz' ),
+			] );
+		}
+
+		if ( ! is_email( $email ) ) {
+			wp_send_json_error( [
+				'message' => __( 'Invalid email address.', 'pressprimer-quiz' ),
+			] );
+		}
+
+		// Load attempt
+		$attempt = PPQ_Attempt::get( $attempt_id );
+
+		if ( ! $attempt ) {
+			wp_send_json_error( [
+				'message' => __( 'Attempt not found.', 'pressprimer-quiz' ),
+			] );
+		}
+
+		// Verify user can access this attempt
+		if ( ! $this->can_access_attempt( $attempt ) ) {
+			wp_send_json_error( [
+				'message' => __( 'You do not have permission to email these results.', 'pressprimer-quiz' ),
+			] );
+		}
+
+		// Verify attempt is submitted
+		if ( 'submitted' !== $attempt->status ) {
+			wp_send_json_error( [
+				'message' => __( 'Results are not available for this attempt.', 'pressprimer-quiz' ),
+			] );
+		}
+
+		// Send email
+		if ( ! class_exists( 'PPQ_Email_Service' ) ) {
+			wp_send_json_error( [
+				'message' => __( 'Email service is not available.', 'pressprimer-quiz' ),
+			] );
+		}
+
+		$sent = PPQ_Email_Service::send_results( $attempt_id, $email );
+
+		if ( $sent ) {
+			wp_send_json_success( [
+				'message' => __( 'Results emailed successfully!', 'pressprimer-quiz' ),
+			] );
+		} else {
+			wp_send_json_error( [
+				'message' => __( 'Failed to send email. Please try again later.', 'pressprimer-quiz' ),
+			] );
+		}
 	}
 }

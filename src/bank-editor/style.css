@@ -1,0 +1,35 @@
+/**
+ * Bank Editor Styles
+ *
+ * @package PressPrimer_Quiz
+ * @since 1.0.0
+ */
+
+.ppq-bank-editor {
+	background: #f0f0f1;
+	min-height: calc(100vh - 32px);
+}
+
+.ppq-bank-editor .ant-layout-content {
+	background: transparent;
+}
+
+.ppq-bank-editor .ant-card {
+	box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+	border-radius: 4px;
+}
+
+.ppq-bank-editor .ant-form-item-label > label {
+	font-weight: 600;
+	font-size: 14px;
+}
+
+.ppq-bank-editor .ant-form-item-extra {
+	font-size: 13px;
+	color: #646970;
+}
+
+/* Success message positioning */
+.ant-message {
+	z-index: 999999;
+}

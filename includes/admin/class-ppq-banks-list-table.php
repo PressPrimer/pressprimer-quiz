@@ -70,7 +70,7 @@ class PPQ_Banks_List_Table extends WP_List_Table {
 		return [
 			'name'      => [ 'name', false ],
 			'questions' => [ 'question_count', false ],
-			'author'    => [ 'author_id', false ],
+			'author'    => [ 'owner_id', false ],
 			'date'      => [ 'created_at', true ],
 		];
 	}
@@ -105,12 +105,12 @@ class PPQ_Banks_List_Table extends WP_List_Table {
 
 		// Columns
 		$columns = $this->get_columns();
-		$hidden = [];
+		$hidden = get_hidden_columns( $this->screen );
 		$sortable = $this->get_sortable_columns();
 		$this->_column_headers = [ $columns, $hidden, $sortable ];
 
 		// Pagination
-		$per_page = 20;
+		$per_page = $this->get_items_per_page( 'ppq_banks_per_page', 20 );
 		$current_page = $this->get_pagenum();
 		$offset = ( $current_page - 1 ) * $per_page;
 
@@ -128,12 +128,12 @@ class PPQ_Banks_List_Table extends WP_List_Table {
 			$where_values[] = $search;
 		}
 
-		// Author filter (only show user's own if not admin)
+		// Owner filter (only show user's own if not admin)
 		if ( ! current_user_can( 'ppq_manage_all' ) ) {
-			$where[] = 'author_id = %d';
+			$where[] = 'owner_id = %d';
 			$where_values[] = get_current_user_id();
 		} elseif ( ! empty( $_REQUEST['author'] ) ) {
-			$where[] = 'author_id = %d';
+			$where[] = 'owner_id = %d';
 			$where_values[] = absint( $_REQUEST['author'] );
 		}
 
@@ -147,7 +147,7 @@ class PPQ_Banks_List_Table extends WP_List_Table {
 		$order = ! empty( $_REQUEST['order'] ) ? sanitize_key( $_REQUEST['order'] ) : 'DESC';
 
 		// Validate orderby
-		$allowed_orderby = [ 'name', 'question_count', 'author_id', 'created_at' ];
+		$allowed_orderby = [ 'name', 'question_count', 'owner_id', 'created_at' ];
 		if ( ! in_array( $orderby, $allowed_orderby, true ) ) {
 			$orderby = 'created_at';
 		}
@@ -318,7 +318,7 @@ class PPQ_Banks_List_Table extends WP_List_Table {
 		$actions['view'] = '<a href="' . esc_url( $view_url ) . '">' . __( 'View', 'pressprimer-quiz' ) . '</a>';
 
 		// Check ownership for edit/delete
-		if ( current_user_can( 'ppq_manage_all' ) || absint( $item->author_id ) === get_current_user_id() ) {
+		if ( current_user_can( 'ppq_manage_all' ) || absint( $item->owner_id ) === get_current_user_id() ) {
 			$actions['edit'] = '<a href="' . esc_url( $edit_url ) . '">' . __( 'Edit', 'pressprimer-quiz' ) . '</a>';
 			$actions['delete'] = '<a href="' . esc_url( $delete_url ) . '" onclick="return confirm(\'' . esc_js( __( 'Are you sure you want to delete this bank?', 'pressprimer-quiz' ) ) . '\');">' . __( 'Delete', 'pressprimer-quiz' ) . '</a>';
 		}
@@ -351,7 +351,7 @@ class PPQ_Banks_List_Table extends WP_List_Table {
 	 * @return string Author column HTML.
 	 */
 	protected function column_author( $item ) {
-		$author = get_userdata( $item->author_id );
+		$author = get_userdata( $item->owner_id );
 		if ( ! $author ) {
 			return '<span class="ppq-text-muted">' . esc_html__( '(unknown)', 'pressprimer-quiz' ) . '</span>';
 		}
@@ -361,7 +361,7 @@ class PPQ_Banks_List_Table extends WP_List_Table {
 			$filter_url = add_query_arg(
 				[
 					'page' => 'ppq-banks',
-					'author' => $item->author_id,
+					'author' => $item->owner_id,
 				],
 				admin_url( 'admin.php' )
 			);
@@ -397,5 +397,31 @@ class PPQ_Banks_List_Table extends WP_List_Table {
 	 */
 	public function no_items() {
 		esc_html_e( 'No question banks found.', 'pressprimer-quiz' );
+	}
+
+	/**
+	 * Display search box (overridden to always show, even with 0 items)
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param string $text     The 'submit' button label.
+	 * @param string $input_id ID attribute value for the search input field.
+	 */
+	public function search_box( $text, $input_id ) {
+		$input_id = $input_id . '-search-input';
+
+		if ( ! empty( $_REQUEST['orderby'] ) ) {
+			echo '<input type="hidden" name="orderby" value="' . esc_attr( sanitize_key( $_REQUEST['orderby'] ) ) . '" />';
+		}
+		if ( ! empty( $_REQUEST['order'] ) ) {
+			echo '<input type="hidden" name="order" value="' . esc_attr( sanitize_key( $_REQUEST['order'] ) ) . '" />';
+		}
+		?>
+		<p class="search-box">
+			<label class="screen-reader-text" for="<?php echo esc_attr( $input_id ); ?>"><?php echo esc_html( $text ); ?>:</label>
+			<input type="search" id="<?php echo esc_attr( $input_id ); ?>" name="s" value="<?php _admin_search_query(); ?>" />
+			<?php submit_button( $text, '', '', false, array( 'id' => 'search-submit' ) ); ?>
+		</p>
+		<?php
 	}
 }

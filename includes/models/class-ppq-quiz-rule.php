@@ -390,9 +390,45 @@ class PPQ_Quiz_Rule extends PPQ_Model {
 		$tax_table = $wpdb->prefix . 'ppq_question_tax';
 		$bank_questions_table = $wpdb->prefix . 'ppq_bank_questions';
 
-		// Start with base query - only published, non-deleted questions
+		// Debug: Check bank_questions table
+		if ( ! empty( $this->bank_id ) ) {
+			error_log( '=== PPQ Rule Debug for bank_id=' . $this->bank_id . ' ===' );
+
+			// Check how many records exist in bank_questions for this bank
+			$bank_count = $wpdb->get_var(
+				$wpdb->prepare(
+					"SELECT COUNT(*) FROM {$bank_questions_table} WHERE bank_id = %d",
+					$this->bank_id
+				)
+			);
+			error_log( 'Total records in bank_questions for bank ' . $this->bank_id . ': ' . $bank_count );
+
+			// Get question IDs in this bank
+			$bank_question_ids = $wpdb->get_col(
+				$wpdb->prepare(
+					"SELECT question_id FROM {$bank_questions_table} WHERE bank_id = %d",
+					$this->bank_id
+				)
+			);
+			error_log( 'Question IDs in bank: ' . print_r( $bank_question_ids, true ) );
+
+			// For each question, check its status and deleted_at
+			if ( ! empty( $bank_question_ids ) ) {
+				foreach ( $bank_question_ids as $q_id ) {
+					$q_data = $wpdb->get_row(
+						$wpdb->prepare(
+							"SELECT id, status, deleted_at FROM {$questions_table} WHERE id = %d",
+							$q_id
+						)
+					);
+					error_log( 'Question ' . $q_id . ' data: ' . print_r( $q_data, true ) );
+				}
+			}
+		}
+
+		// Start with base query - published and draft questions, non-deleted
 		$where_clauses = [
-			"q.status = 'published'",
+			"q.status IN ('published', 'draft')",
 			'q.deleted_at IS NULL',
 		];
 		$join_clauses = [];
@@ -444,7 +480,12 @@ class PPQ_Quiz_Rule extends PPQ_Model {
 			$query = $wpdb->prepare( $query, $where_values ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
 		}
 
+		error_log( 'PPQ Rule Query: ' . $query );
+
 		$results = $wpdb->get_col( $query ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
+
+		error_log( 'PPQ Rule Results: ' . print_r( $results, true ) );
+		error_log( 'PPQ Rule Count: ' . count( $results ) );
 
 		return $results ? array_map( 'absint', $results ) : [];
 	}

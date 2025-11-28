@@ -635,3 +635,203 @@
 	width: 60px;
 	text-align: center;
 }
+
+/* Bank Detail - Add Questions Tabs */
+.ppq-bank-add-tabs {
+	background: #fff;
+	border: 1px solid #c3c4c7;
+	margin-bottom: 20px;
+}
+
+.ppq-bank-tabs-nav {
+	display: flex;
+	gap: 0;
+	background: #f6f7f7;
+	border-bottom: 1px solid #c3c4c7;
+}
+
+.ppq-bank-tab {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	padding: 15px 25px;
+	background: transparent;
+	border: none;
+	border-bottom: 3px solid transparent;
+	margin-bottom: -1px;
+	cursor: pointer;
+	font-size: 14px;
+	font-weight: 500;
+	color: #50575e;
+	transition: all 0.2s;
+}
+
+.ppq-bank-tab:hover {
+	background: #fff;
+	color: #2271b1;
+}
+
+.ppq-bank-tab--active {
+	background: #fff;
+	color: #1d2327;
+	border-bottom-color: #2271b1;
+	font-weight: 600;
+}
+
+.ppq-bank-tab .dashicons {
+	font-size: 18px;
+	width: 18px;
+	height: 18px;
+}
+
+.ppq-bank-tab-content {
+	display: none;
+	padding: 20px;
+}
+
+.ppq-bank-tab-content--active {
+	display: block;
+}
+
+.ppq-bank-tab-content h3 {
+	margin-top: 0;
+	margin-bottom: 15px;
+	padding-bottom: 10px;
+	border-bottom: 1px solid #dcdcde;
+}
+
+/* Modal Styles */
+.ppq-modal-overlay {
+	position: fixed;
+	top: 0;
+	left: 0;
+	right: 0;
+	bottom: 0;
+	background: rgba(0, 0, 0, 0.6);
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	z-index: 100100;
+	opacity: 0;
+	transition: opacity 0.2s ease;
+}
+
+.ppq-modal-overlay--visible {
+	opacity: 1;
+}
+
+.ppq-modal {
+	background: #fff;
+	border-radius: 8px;
+	box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+	max-width: 420px;
+	width: 90%;
+	max-height: 90vh;
+	overflow: hidden;
+	transform: scale(0.9);
+	transition: transform 0.2s ease;
+}
+
+.ppq-modal-overlay--visible .ppq-modal {
+	transform: scale(1);
+}
+
+.ppq-modal-header {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	padding: 16px 20px;
+	border-bottom: 1px solid #dcdcde;
+	background: #f6f7f7;
+}
+
+.ppq-modal-title {
+	margin: 0;
+	font-size: 16px;
+	font-weight: 600;
+	color: #1d2327;
+}
+
+.ppq-modal-close {
+	background: none;
+	border: none;
+	cursor: pointer;
+	color: #646970;
+	padding: 4px;
+	line-height: 1;
+	border-radius: 4px;
+	transition: all 0.15s ease;
+}
+
+.ppq-modal-close:hover {
+	background: #dcdcde;
+	color: #1d2327;
+}
+
+.ppq-modal-close .dashicons {
+	font-size: 20px;
+	width: 20px;
+	height: 20px;
+}
+
+.ppq-modal-body {
+	padding: 24px 20px;
+	text-align: center;
+}
+
+.ppq-modal-icon {
+	margin-bottom: 16px;
+}
+
+.ppq-modal-icon .dashicons {
+	font-size: 48px;
+	width: 48px;
+	height: 48px;
+}
+
+.ppq-modal-icon--info .dashicons {
+	color: #2271b1;
+}
+
+.ppq-modal-icon--warning .dashicons {
+	color: #dba617;
+}
+
+.ppq-modal-icon--error .dashicons {
+	color: #d63638;
+}
+
+.ppq-modal-icon--success .dashicons {
+	color: #00a32a;
+}
+
+.ppq-modal-message {
+	font-size: 14px;
+	line-height: 1.6;
+	color: #3c434a;
+	white-space: pre-wrap;
+}
+
+.ppq-modal-footer {
+	display: flex;
+	justify-content: center;
+	gap: 12px;
+	padding: 16px 20px;
+	background: #f6f7f7;
+	border-top: 1px solid #dcdcde;
+}
+
+.ppq-modal-footer .button {
+	min-width: 90px;
+	justify-content: center;
+}
+
+/* Danger/destructive button style for confirms */
+.ppq-modal-footer .ppq-modal-confirm {
+	/* Keep primary styling by default */
+}
+
+/* Optional: Make cancel button more subtle */
+.ppq-modal-footer .ppq-modal-cancel {
+	background: #fff;
+}

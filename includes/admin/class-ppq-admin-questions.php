@@ -298,13 +298,6 @@ class PPQ_Admin_Questions {
 				$categories = $question->get_categories();
 				$tags = $question->get_tags();
 
-				// Debug: Log what we're loading
-				error_log( 'PPQ Loading Question ID: ' . $question_id );
-				error_log( 'PPQ Revision loaded: ' . ( $revision ? 'Yes (ID: ' . $revision->id . ')' : 'No' ) );
-				if ( $revision ) {
-					error_log( 'PPQ Revision stem: ' . $revision->stem );
-				}
-
 				// Get bank memberships
 				global $wpdb;
 				$bank_ids = $wpdb->get_col(
@@ -317,13 +310,15 @@ class PPQ_Admin_Questions {
 				$answers = $revision ? $revision->get_answers() : [];
 
 				// Convert answer format for React
-				$react_answers = array_map( function( $answer ) {
+				$answer_index = 0;
+				$react_answers = array_map( function( $answer ) use ( &$answer_index ) {
+					$answer_index++;
 					return [
-						'id'        => $answer['id'],
-						'text'      => $answer['text'],
+						'id'        => $answer['id'] ?? 'answer_' . $answer_index,
+						'text'      => $answer['text'] ?? '',
 						'isCorrect' => $answer['is_correct'] ?? false,
 						'feedback'  => $answer['feedback'] ?? '',
-						'order'     => $answer['order'] ?? 1,
+						'order'     => $answer['order'] ?? $answer_index,
 					];
 				}, $answers );
 
@@ -342,11 +337,6 @@ class PPQ_Admin_Questions {
 					'banks'             => array_map( 'absint', $bank_ids ),
 				];
 			}
-		}
-
-		// Debug: Log what we're passing to JavaScript
-		if ( ! empty( $question_data ) ) {
-			error_log( 'PPQ Passing to JavaScript - stem value: ' . ( $question_data['stem'] ?? 'NOT SET' ) );
 		}
 
 		// Localize script with data

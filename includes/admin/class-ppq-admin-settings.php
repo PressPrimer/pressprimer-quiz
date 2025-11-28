@@ -40,6 +40,12 @@ class PPQ_Admin_Settings {
 	 */
 	public function init() {
 		add_action( 'admin_init', [ $this, 'register_settings' ] );
+
+		// AJAX handlers for API key management
+		add_action( 'wp_ajax_ppq_save_user_api_key', [ $this, 'ajax_save_user_api_key' ] );
+		add_action( 'wp_ajax_ppq_validate_api_key', [ $this, 'ajax_validate_api_key' ] );
+		add_action( 'wp_ajax_ppq_clear_user_api_key', [ $this, 'ajax_clear_user_api_key' ] );
+		add_action( 'wp_ajax_ppq_get_api_models', [ $this, 'ajax_get_api_models' ] );
 	}
 
 	/**
@@ -319,7 +325,7 @@ class PPQ_Admin_Settings {
 	 * @since 1.0.0
 	 */
 	public function render_api_keys_section() {
-		echo '<p>' . esc_html__( 'API keys for third-party integrations. All keys are encrypted before storage.', 'pressprimer-quiz' ) . '</p>';
+		echo '<p>' . esc_html__( 'Configure your personal OpenAI API key for AI-powered question generation. Your key is stored securely and encrypted.', 'pressprimer-quiz' ) . '</p>';
 	}
 
 	/**
@@ -533,42 +539,568 @@ Good luck with your studies!', 'pressprimer-quiz' );
 	/**
 	 * Render OpenAI API key field
 	 *
+	 * Displays comprehensive per-user API key management interface.
+	 *
 	 * @since 1.0.0
 	 */
 	public function render_openai_api_key_field() {
-		$settings = get_option( self::OPTION_NAME, [] );
-		$encrypted = isset( $settings['openai_api_key'] ) ? $settings['openai_api_key'] : '';
-		$has_key   = ! empty( $encrypted );
+		$user_id    = get_current_user_id();
+		$key_status = PPQ_AI_Service::get_api_key_status( $user_id );
+		$model_pref = PPQ_AI_Service::get_model_preference( $user_id );
+		$usage_data = $this->get_user_usage_data( $user_id );
+
+		// Enqueue inline styles for the API key section
+		$this->enqueue_api_key_styles();
 		?>
-		<input
-			type="password"
-			name="<?php echo esc_attr( self::OPTION_NAME . '[openai_api_key]' ); ?>"
-			id="openai_api_key"
-			value=""
-			class="regular-text"
-			placeholder="<?php echo $has_key ? esc_attr__( '••••••••••••••••', 'pressprimer-quiz' ) : ''; ?>"
-			autocomplete="off"
-		/>
-		<?php if ( $has_key ) : ?>
-			<p class="description">
-				<?php esc_html_e( 'API key is currently set. Enter a new key to replace it, or leave blank to keep current key.', 'pressprimer-quiz' ); ?>
-			</p>
-		<?php else : ?>
-			<p class="description">
-				<?php
-				printf(
-					/* translators: %s: OpenAI API keys URL */
-					esc_html__( 'Your OpenAI API key for AI question generation. Get your key from %s.', 'pressprimer-quiz' ),
-					'<a href="https://platform.openai.com/api-keys" target="_blank" rel="noopener">OpenAI</a>'
-				);
-				?>
-			</p>
-		<?php endif; ?>
-		<p class="description">
-			<strong><?php esc_html_e( 'Note:', 'pressprimer-quiz' ); ?></strong>
-			<?php esc_html_e( 'This API key is shared site-wide and is encrypted in the database.', 'pressprimer-quiz' ); ?>
-		</p>
+		<div class="ppq-api-key-manager" id="ppq-api-key-manager">
+			<!-- Key Status Indicator -->
+			<div class="ppq-api-key-status <?php echo $key_status['configured'] ? 'ppq-api-key-status--configured' : 'ppq-api-key-status--not-set'; ?>">
+				<?php if ( $key_status['configured'] ) : ?>
+					<span class="dashicons dashicons-yes-alt ppq-api-key-status-icon"></span>
+					<span class="ppq-api-key-status-text">
+						<?php
+						printf(
+							/* translators: %s: masked API key */
+							esc_html__( 'API Key Configured: %s', 'pressprimer-quiz' ),
+							'<code>' . esc_html( $key_status['masked_key'] ) . '</code>'
+						);
+						?>
+					</span>
+					<button type="button" class="button button-small ppq-api-key-validate" id="ppq-validate-key">
+						<?php esc_html_e( 'Validate', 'pressprimer-quiz' ); ?>
+					</button>
+					<button type="button" class="button button-small button-link-delete ppq-api-key-clear" id="ppq-clear-key">
+						<?php esc_html_e( 'Clear Key', 'pressprimer-quiz' ); ?>
+					</button>
+				<?php else : ?>
+					<span class="dashicons dashicons-warning ppq-api-key-status-icon"></span>
+					<span class="ppq-api-key-status-text">
+						<?php esc_html_e( 'No API Key Configured', 'pressprimer-quiz' ); ?>
+					</span>
+				<?php endif; ?>
+			</div>
+
+			<!-- Validation Result Area -->
+			<div class="ppq-api-key-validation-result" id="ppq-validation-result" style="display: none;"></div>
+
+			<!-- Key Input Section -->
+			<div class="ppq-api-key-input-section">
+				<label for="ppq-api-key-input">
+					<?php echo $key_status['configured'] ? esc_html__( 'Enter New API Key:', 'pressprimer-quiz' ) : esc_html__( 'Enter Your OpenAI API Key:', 'pressprimer-quiz' ); ?>
+				</label>
+				<div class="ppq-api-key-input-wrapper">
+					<input
+						type="password"
+						id="ppq-api-key-input"
+						class="regular-text"
+						placeholder="sk-..."
+						autocomplete="off"
+					/>
+					<button type="button" class="button ppq-api-key-toggle-visibility" id="ppq-toggle-key-visibility" title="<?php esc_attr_e( 'Show/Hide', 'pressprimer-quiz' ); ?>">
+						<span class="dashicons dashicons-visibility"></span>
+					</button>
+					<button type="button" class="button button-primary ppq-api-key-save" id="ppq-save-key">
+						<?php esc_html_e( 'Save Key', 'pressprimer-quiz' ); ?>
+					</button>
+				</div>
+				<p class="description">
+					<?php
+					printf(
+						/* translators: %s: OpenAI API keys URL */
+						esc_html__( 'Get your API key from %s. Keys start with "sk-".', 'pressprimer-quiz' ),
+						'<a href="https://platform.openai.com/api-keys" target="_blank" rel="noopener">OpenAI Platform</a>'
+					);
+					?>
+				</p>
+			</div>
+
+			<!-- Model Selection -->
+			<?php if ( $key_status['configured'] ) :
+				// Fetch available models
+				$api_key = PPQ_AI_Service::get_api_key( $user_id );
+				$available_models = [];
+				if ( ! is_wp_error( $api_key ) && ! empty( $api_key ) ) {
+					$fetched_models = PPQ_AI_Service::get_available_models( $api_key );
+					if ( ! is_wp_error( $fetched_models ) ) {
+						$available_models = $fetched_models;
+					}
+				}
+				// If we couldn't fetch models, use the stored preference as fallback
+				if ( empty( $available_models ) && ! empty( $model_pref ) ) {
+					$available_models = [ $model_pref ];
+				}
+			?>
+			<div class="ppq-api-model-section">
+				<label for="ppq-api-model"><?php esc_html_e( 'Preferred Model:', 'pressprimer-quiz' ); ?></label>
+				<select id="ppq-api-model" class="ppq-api-model-select">
+					<?php if ( empty( $available_models ) ) : ?>
+						<option value=""><?php esc_html_e( '-- Click refresh to load models --', 'pressprimer-quiz' ); ?></option>
+					<?php else : ?>
+						<?php foreach ( $available_models as $model ) : ?>
+							<option value="<?php echo esc_attr( $model ); ?>" <?php selected( $model_pref, $model ); ?>>
+								<?php echo esc_html( $model ); ?>
+							</option>
+						<?php endforeach; ?>
+					<?php endif; ?>
+				</select>
+				<button type="button" class="button ppq-api-model-refresh" id="ppq-refresh-models" title="<?php esc_attr_e( 'Refresh available models', 'pressprimer-quiz' ); ?>">
+					<span class="dashicons dashicons-update"></span>
+				</button>
+				<p class="description">
+					<?php esc_html_e( 'Select the OpenAI model to use for question generation. Models are fetched from your OpenAI account.', 'pressprimer-quiz' ); ?>
+				</p>
+			</div>
+			<?php endif; ?>
+
+			<!-- Usage Statistics -->
+			<?php if ( $key_status['configured'] && $usage_data ) : ?>
+			<div class="ppq-api-usage-section">
+				<h4><?php esc_html_e( 'Usage This Hour', 'pressprimer-quiz' ); ?></h4>
+				<div class="ppq-api-usage-stats">
+					<div class="ppq-api-usage-stat">
+						<span class="ppq-api-usage-value"><?php echo esc_html( $usage_data['requests_this_hour'] ); ?></span>
+						<span class="ppq-api-usage-label"><?php esc_html_e( 'Requests', 'pressprimer-quiz' ); ?></span>
+					</div>
+					<div class="ppq-api-usage-stat">
+						<span class="ppq-api-usage-value"><?php echo esc_html( $usage_data['requests_remaining'] ); ?></span>
+						<span class="ppq-api-usage-label"><?php esc_html_e( 'Remaining', 'pressprimer-quiz' ); ?></span>
+					</div>
+					<div class="ppq-api-usage-progress">
+						<div class="ppq-api-usage-progress-bar" style="width: <?php echo esc_attr( $usage_data['usage_percent'] ); ?>%;"></div>
+					</div>
+				</div>
+				<p class="description">
+					<?php
+					printf(
+						/* translators: %d: rate limit per hour */
+						esc_html__( 'Rate limit: %d requests per hour. Resets automatically.', 'pressprimer-quiz' ),
+						PPQ_AI_Service::RATE_LIMIT_PER_HOUR
+					);
+					?>
+				</p>
+			</div>
+			<?php endif; ?>
+
+			<!-- Security Notice -->
+			<div class="ppq-api-security-notice">
+				<span class="dashicons dashicons-lock"></span>
+				<span>
+					<?php esc_html_e( 'Your API key is encrypted using AES-256-CBC before storage and is only accessible to your account.', 'pressprimer-quiz' ); ?>
+				</span>
+			</div>
+		</div>
+
 		<?php
+		// Add inline JavaScript
+		$this->enqueue_api_key_script();
+	}
+
+	/**
+	 * Enqueue API key management styles
+	 *
+	 * @since 1.0.0
+	 */
+	private function enqueue_api_key_styles() {
+		?>
+		<style>
+			.ppq-api-key-manager {
+				max-width: 700px;
+			}
+			.ppq-api-key-status {
+				display: flex;
+				align-items: center;
+				gap: 10px;
+				padding: 12px 15px;
+				border-radius: 4px;
+				margin-bottom: 15px;
+			}
+			.ppq-api-key-status--configured {
+				background: #d1e7dd;
+				border: 1px solid #0f5132;
+			}
+			.ppq-api-key-status--not-set {
+				background: #fff3cd;
+				border: 1px solid #856404;
+			}
+			.ppq-api-key-status-icon {
+				font-size: 20px;
+			}
+			.ppq-api-key-status--configured .ppq-api-key-status-icon {
+				color: #0f5132;
+			}
+			.ppq-api-key-status--not-set .ppq-api-key-status-icon {
+				color: #856404;
+			}
+			.ppq-api-key-status-text {
+				flex: 1;
+			}
+			.ppq-api-key-status-text code {
+				background: rgba(0,0,0,0.1);
+				padding: 2px 6px;
+				border-radius: 3px;
+			}
+			.ppq-api-key-validation-result {
+				padding: 10px 15px;
+				border-radius: 4px;
+				margin-bottom: 15px;
+			}
+			.ppq-api-key-validation-result.success {
+				background: #d1e7dd;
+				border: 1px solid #0f5132;
+				color: #0f5132;
+			}
+			.ppq-api-key-validation-result.error {
+				background: #f8d7da;
+				border: 1px solid #842029;
+				color: #842029;
+			}
+			.ppq-api-key-input-section {
+				margin-bottom: 20px;
+			}
+			.ppq-api-key-input-section label {
+				display: block;
+				font-weight: 600;
+				margin-bottom: 5px;
+			}
+			.ppq-api-key-input-wrapper {
+				display: flex;
+				gap: 5px;
+				align-items: center;
+				margin-bottom: 5px;
+			}
+			.ppq-api-key-input-wrapper input {
+				flex: 1;
+				max-width: 400px;
+			}
+			.ppq-api-key-toggle-visibility .dashicons {
+				vertical-align: text-bottom;
+			}
+			.ppq-api-model-section {
+				margin-bottom: 20px;
+				padding: 15px;
+				background: #f6f7f7;
+				border-radius: 4px;
+			}
+			.ppq-api-model-section label {
+				font-weight: 600;
+				margin-right: 10px;
+			}
+			.ppq-api-model-select {
+				min-width: 300px;
+			}
+			.ppq-api-model-refresh .dashicons {
+				vertical-align: text-bottom;
+			}
+			.ppq-api-usage-section {
+				margin-bottom: 20px;
+				padding: 15px;
+				background: #f6f7f7;
+				border-radius: 4px;
+			}
+			.ppq-api-usage-section h4 {
+				margin: 0 0 10px 0;
+			}
+			.ppq-api-usage-stats {
+				display: flex;
+				gap: 30px;
+				align-items: center;
+				flex-wrap: wrap;
+			}
+			.ppq-api-usage-stat {
+				text-align: center;
+			}
+			.ppq-api-usage-value {
+				display: block;
+				font-size: 24px;
+				font-weight: 700;
+				color: #1d2327;
+			}
+			.ppq-api-usage-label {
+				font-size: 12px;
+				color: #646970;
+				text-transform: uppercase;
+			}
+			.ppq-api-usage-progress {
+				flex: 1;
+				min-width: 200px;
+				height: 8px;
+				background: #dcdcde;
+				border-radius: 4px;
+				overflow: hidden;
+			}
+			.ppq-api-usage-progress-bar {
+				height: 100%;
+				background: #2271b1;
+				transition: width 0.3s ease;
+			}
+			.ppq-api-security-notice {
+				display: flex;
+				align-items: center;
+				gap: 8px;
+				padding: 10px 15px;
+				background: #f0f6fc;
+				border: 1px solid #c5d9ed;
+				border-radius: 4px;
+				color: #1d4ed8;
+				font-size: 13px;
+			}
+			.ppq-api-security-notice .dashicons {
+				color: #1d4ed8;
+			}
+			.ppq-api-key-manager .spinner {
+				float: none;
+				margin: 0;
+			}
+		</style>
+		<?php
+	}
+
+	/**
+	 * Enqueue API key management script
+	 *
+	 * @since 1.0.0
+	 */
+	private function enqueue_api_key_script() {
+		?>
+		<script>
+		jQuery(document).ready(function($) {
+			var PPQ_APIKey = {
+				init: function() {
+					this.bindEvents();
+				},
+
+				bindEvents: function() {
+					$('#ppq-save-key').on('click', this.saveKey.bind(this));
+					$('#ppq-validate-key').on('click', this.validateKey.bind(this));
+					$('#ppq-clear-key').on('click', this.clearKey.bind(this));
+					$('#ppq-toggle-key-visibility').on('click', this.toggleVisibility.bind(this));
+					$('#ppq-api-model').on('change', this.saveModelPreference.bind(this));
+					$('#ppq-refresh-models').on('click', this.refreshModels.bind(this));
+				},
+
+				saveKey: function() {
+					var key = $('#ppq-api-key-input').val().trim();
+
+					if (!key) {
+						this.showResult('error', '<?php echo esc_js( __( 'Please enter an API key.', 'pressprimer-quiz' ) ); ?>');
+						return;
+					}
+
+					if (!key.startsWith('sk-')) {
+						this.showResult('error', '<?php echo esc_js( __( 'Invalid API key format. Keys should start with "sk-".', 'pressprimer-quiz' ) ); ?>');
+						return;
+					}
+
+					this.setLoading('#ppq-save-key', true);
+
+					$.ajax({
+						url: ajaxurl,
+						type: 'POST',
+						data: {
+							action: 'ppq_save_user_api_key',
+							nonce: '<?php echo esc_js( wp_create_nonce( 'ppq_api_key_nonce' ) ); ?>',
+							api_key: key
+						},
+						success: function(response) {
+							this.setLoading('#ppq-save-key', false);
+
+							if (response.success) {
+								this.showResult('success', response.data.message);
+								// Reload to update UI
+								setTimeout(function() {
+									location.reload();
+								}, 1500);
+							} else {
+								this.showResult('error', response.data.message || '<?php echo esc_js( __( 'Failed to save API key.', 'pressprimer-quiz' ) ); ?>');
+							}
+						}.bind(this),
+						error: function() {
+							this.setLoading('#ppq-save-key', false);
+							this.showResult('error', '<?php echo esc_js( __( 'An error occurred. Please try again.', 'pressprimer-quiz' ) ); ?>');
+						}.bind(this)
+					});
+				},
+
+				validateKey: function() {
+					this.setLoading('#ppq-validate-key', true);
+
+					$.ajax({
+						url: ajaxurl,
+						type: 'POST',
+						data: {
+							action: 'ppq_validate_api_key',
+							nonce: '<?php echo esc_js( wp_create_nonce( 'ppq_api_key_nonce' ) ); ?>'
+						},
+						success: function(response) {
+							this.setLoading('#ppq-validate-key', false);
+
+							if (response.success) {
+								this.showResult('success', response.data.message);
+							} else {
+								this.showResult('error', response.data.message || '<?php echo esc_js( __( 'Invalid API key.', 'pressprimer-quiz' ) ); ?>');
+							}
+						}.bind(this),
+						error: function() {
+							this.setLoading('#ppq-validate-key', false);
+							this.showResult('error', '<?php echo esc_js( __( 'An error occurred. Please try again.', 'pressprimer-quiz' ) ); ?>');
+						}.bind(this)
+					});
+				},
+
+				clearKey: function() {
+					if (!confirm('<?php echo esc_js( __( 'Are you sure you want to remove your API key? You will not be able to use AI generation until you add a new key.', 'pressprimer-quiz' ) ); ?>')) {
+						return;
+					}
+
+					this.setLoading('#ppq-clear-key', true);
+
+					$.ajax({
+						url: ajaxurl,
+						type: 'POST',
+						data: {
+							action: 'ppq_clear_user_api_key',
+							nonce: '<?php echo esc_js( wp_create_nonce( 'ppq_api_key_nonce' ) ); ?>'
+						},
+						success: function(response) {
+							this.setLoading('#ppq-clear-key', false);
+
+							if (response.success) {
+								this.showResult('success', response.data.message);
+								setTimeout(function() {
+									location.reload();
+								}, 1500);
+							} else {
+								this.showResult('error', response.data.message || '<?php echo esc_js( __( 'Failed to clear API key.', 'pressprimer-quiz' ) ); ?>');
+							}
+						}.bind(this),
+						error: function() {
+							this.setLoading('#ppq-clear-key', false);
+							this.showResult('error', '<?php echo esc_js( __( 'An error occurred. Please try again.', 'pressprimer-quiz' ) ); ?>');
+						}.bind(this)
+					});
+				},
+
+				toggleVisibility: function() {
+					var input = $('#ppq-api-key-input');
+					var icon = $('#ppq-toggle-key-visibility .dashicons');
+
+					if (input.attr('type') === 'password') {
+						input.attr('type', 'text');
+						icon.removeClass('dashicons-visibility').addClass('dashicons-hidden');
+					} else {
+						input.attr('type', 'password');
+						icon.removeClass('dashicons-hidden').addClass('dashicons-visibility');
+					}
+				},
+
+				saveModelPreference: function() {
+					var model = $('#ppq-api-model').val();
+
+					$.ajax({
+						url: ajaxurl,
+						type: 'POST',
+						data: {
+							action: 'ppq_save_user_api_key',
+							nonce: '<?php echo esc_js( wp_create_nonce( 'ppq_api_key_nonce' ) ); ?>',
+							model: model
+						},
+						success: function(response) {
+							if (response.success) {
+								this.showResult('success', '<?php echo esc_js( __( 'Model preference saved.', 'pressprimer-quiz' ) ); ?>');
+							}
+						}.bind(this)
+					});
+				},
+
+				refreshModels: function() {
+					this.setLoading('#ppq-refresh-models', true);
+
+					$.ajax({
+						url: ajaxurl,
+						type: 'POST',
+						data: {
+							action: 'ppq_get_api_models',
+							nonce: '<?php echo esc_js( wp_create_nonce( 'ppq_api_key_nonce' ) ); ?>'
+						},
+						success: function(response) {
+							this.setLoading('#ppq-refresh-models', false);
+
+							if (response.success && response.data.models) {
+								var select = $('#ppq-api-model');
+								var currentValue = select.val();
+								select.empty();
+
+								response.data.models.forEach(function(model) {
+									select.append($('<option>', {
+										value: model,
+										text: model,
+										selected: model === currentValue
+									}));
+								});
+
+								this.showResult('success', '<?php echo esc_js( __( 'Models refreshed.', 'pressprimer-quiz' ) ); ?>');
+							} else {
+								this.showResult('error', response.data.message || '<?php echo esc_js( __( 'Failed to fetch models.', 'pressprimer-quiz' ) ); ?>');
+							}
+						}.bind(this),
+						error: function() {
+							this.setLoading('#ppq-refresh-models', false);
+							this.showResult('error', '<?php echo esc_js( __( 'An error occurred. Please try again.', 'pressprimer-quiz' ) ); ?>');
+						}.bind(this)
+					});
+				},
+
+				showResult: function(type, message) {
+					var $result = $('#ppq-validation-result');
+					$result.removeClass('success error').addClass(type).text(message).show();
+
+					// Auto-hide after 5 seconds
+					setTimeout(function() {
+						$result.fadeOut();
+					}, 5000);
+				},
+
+				setLoading: function(selector, loading) {
+					var $btn = $(selector);
+					if (loading) {
+						$btn.prop('disabled', true);
+						if (!$btn.find('.spinner').length) {
+							$btn.append(' <span class="spinner is-active"></span>');
+						}
+					} else {
+						$btn.prop('disabled', false);
+						$btn.find('.spinner').remove();
+					}
+				}
+			};
+
+			PPQ_APIKey.init();
+		});
+		</script>
+		<?php
+	}
+
+	/**
+	 * Get user usage data
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param int $user_id User ID.
+	 * @return array|false Usage data or false if no data.
+	 */
+	private function get_user_usage_data( $user_id ) {
+		$key           = 'ppq_ai_requests_' . $user_id;
+		$requests      = (int) get_transient( $key );
+		$rate_limit    = PPQ_AI_Service::RATE_LIMIT_PER_HOUR;
+		$remaining     = max( 0, $rate_limit - $requests );
+		$usage_percent = ( $requests / $rate_limit ) * 100;
+
+		return [
+			'requests_this_hour' => $requests,
+			'requests_remaining' => $remaining,
+			'rate_limit'         => $rate_limit,
+			'usage_percent'      => min( 100, $usage_percent ),
+		];
 	}
 
 	/**
@@ -936,5 +1468,161 @@ Good luck with your studies!', 'pressprimer-quiz' );
 	public static function get( $key, $default = null ) {
 		$settings = get_option( self::OPTION_NAME, [] );
 		return isset( $settings[ $key ] ) ? $settings[ $key ] : $default;
+	}
+
+	/**
+	 * AJAX handler: Save user API key
+	 *
+	 * Saves the API key and/or model preference for the current user.
+	 *
+	 * @since 1.0.0
+	 */
+	public function ajax_save_user_api_key() {
+		// Verify nonce
+		if ( ! check_ajax_referer( 'ppq_api_key_nonce', 'nonce', false ) ) {
+			wp_send_json_error( [ 'message' => __( 'Security check failed.', 'pressprimer-quiz' ) ] );
+		}
+
+		// Check capability
+		if ( ! current_user_can( 'ppq_manage_own' ) ) {
+			wp_send_json_error( [ 'message' => __( 'Permission denied.', 'pressprimer-quiz' ) ] );
+		}
+
+		$user_id = get_current_user_id();
+
+		// Handle API key
+		if ( isset( $_POST['api_key'] ) && ! empty( $_POST['api_key'] ) ) {
+			$api_key = sanitize_text_field( wp_unslash( $_POST['api_key'] ) );
+
+			// Basic format validation
+			if ( strlen( $api_key ) < 20 || strpos( $api_key, 'sk-' ) !== 0 ) {
+				wp_send_json_error( [ 'message' => __( 'Invalid API key format. Keys should start with "sk-".', 'pressprimer-quiz' ) ] );
+			}
+
+			// Validate the key with OpenAI
+			$validation = PPQ_AI_Service::validate_api_key( $api_key );
+
+			if ( is_wp_error( $validation ) ) {
+				wp_send_json_error( [ 'message' => $validation->get_error_message() ] );
+			}
+
+			// Save the key
+			$result = PPQ_AI_Service::save_api_key( $user_id, $api_key );
+
+			if ( is_wp_error( $result ) ) {
+				wp_send_json_error( [ 'message' => $result->get_error_message() ] );
+			}
+
+			wp_send_json_success( [ 'message' => __( 'API key saved and validated successfully.', 'pressprimer-quiz' ) ] );
+		}
+
+		// Handle model preference
+		if ( isset( $_POST['model'] ) ) {
+			$model = sanitize_text_field( wp_unslash( $_POST['model'] ) );
+			PPQ_AI_Service::save_model_preference( $user_id, $model );
+			wp_send_json_success( [ 'message' => __( 'Model preference saved.', 'pressprimer-quiz' ) ] );
+		}
+
+		wp_send_json_error( [ 'message' => __( 'No data provided.', 'pressprimer-quiz' ) ] );
+	}
+
+	/**
+	 * AJAX handler: Validate API key
+	 *
+	 * Validates the current user's stored API key.
+	 *
+	 * @since 1.0.0
+	 */
+	public function ajax_validate_api_key() {
+		// Verify nonce
+		if ( ! check_ajax_referer( 'ppq_api_key_nonce', 'nonce', false ) ) {
+			wp_send_json_error( [ 'message' => __( 'Security check failed.', 'pressprimer-quiz' ) ] );
+		}
+
+		// Check capability
+		if ( ! current_user_can( 'ppq_manage_own' ) ) {
+			wp_send_json_error( [ 'message' => __( 'Permission denied.', 'pressprimer-quiz' ) ] );
+		}
+
+		$user_id = get_current_user_id();
+		$api_key = PPQ_AI_Service::get_api_key( $user_id );
+
+		if ( empty( $api_key ) || is_wp_error( $api_key ) ) {
+			wp_send_json_error( [ 'message' => __( 'No API key configured.', 'pressprimer-quiz' ) ] );
+		}
+
+		// Validate with OpenAI
+		$validation = PPQ_AI_Service::validate_api_key( $api_key );
+
+		if ( is_wp_error( $validation ) ) {
+			wp_send_json_error( [ 'message' => $validation->get_error_message() ] );
+		}
+
+		wp_send_json_success( [ 'message' => __( 'API key is valid and working correctly.', 'pressprimer-quiz' ) ] );
+	}
+
+	/**
+	 * AJAX handler: Clear user API key
+	 *
+	 * Removes the API key for the current user.
+	 *
+	 * @since 1.0.0
+	 */
+	public function ajax_clear_user_api_key() {
+		// Verify nonce
+		if ( ! check_ajax_referer( 'ppq_api_key_nonce', 'nonce', false ) ) {
+			wp_send_json_error( [ 'message' => __( 'Security check failed.', 'pressprimer-quiz' ) ] );
+		}
+
+		// Check capability
+		if ( ! current_user_can( 'ppq_manage_own' ) ) {
+			wp_send_json_error( [ 'message' => __( 'Permission denied.', 'pressprimer-quiz' ) ] );
+		}
+
+		$user_id = get_current_user_id();
+
+		// Clear the key (passing empty string)
+		$result = PPQ_AI_Service::save_api_key( $user_id, '' );
+
+		if ( is_wp_error( $result ) ) {
+			wp_send_json_error( [ 'message' => $result->get_error_message() ] );
+		}
+
+		wp_send_json_success( [ 'message' => __( 'API key removed successfully.', 'pressprimer-quiz' ) ] );
+	}
+
+	/**
+	 * AJAX handler: Get available models
+	 *
+	 * Fetches available GPT models from OpenAI.
+	 *
+	 * @since 1.0.0
+	 */
+	public function ajax_get_api_models() {
+		// Verify nonce
+		if ( ! check_ajax_referer( 'ppq_api_key_nonce', 'nonce', false ) ) {
+			wp_send_json_error( [ 'message' => __( 'Security check failed.', 'pressprimer-quiz' ) ] );
+		}
+
+		// Check capability
+		if ( ! current_user_can( 'ppq_manage_own' ) ) {
+			wp_send_json_error( [ 'message' => __( 'Permission denied.', 'pressprimer-quiz' ) ] );
+		}
+
+		$user_id = get_current_user_id();
+		$api_key = PPQ_AI_Service::get_api_key( $user_id );
+
+		if ( empty( $api_key ) || is_wp_error( $api_key ) ) {
+			wp_send_json_error( [ 'message' => __( 'No API key configured.', 'pressprimer-quiz' ) ] );
+		}
+
+		// Fetch models
+		$models = PPQ_AI_Service::get_available_models( $api_key );
+
+		if ( is_wp_error( $models ) ) {
+			wp_send_json_error( [ 'message' => $models->get_error_message() ] );
+		}
+
+		wp_send_json_success( [ 'models' => $models ] );
 	}
 }

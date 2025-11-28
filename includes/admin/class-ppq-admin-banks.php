@@ -390,9 +390,33 @@ class PPQ_Admin_Banks {
 				</div>
 			</div>
 
-			<!-- Add Question Section -->
-			<div class="ppq-form-section">
-				<h2><?php esc_html_e( 'Add Questions to Bank', 'pressprimer-quiz' ); ?></h2>
+			<!-- Add Questions Tabs -->
+			<div class="ppq-bank-add-tabs">
+				<div class="ppq-bank-tabs-nav">
+					<button type="button" class="ppq-bank-tab ppq-bank-tab--active" data-tab="ai-generate">
+						<span class="dashicons dashicons-admin-generic"></span>
+						<?php esc_html_e( 'Generate with AI', 'pressprimer-quiz' ); ?>
+					</button>
+					<button type="button" class="ppq-bank-tab" data-tab="add-existing">
+						<span class="dashicons dashicons-plus-alt"></span>
+						<?php esc_html_e( 'Add Existing Questions', 'pressprimer-quiz' ); ?>
+					</button>
+				</div>
+
+				<!-- AI Generation Tab -->
+				<div class="ppq-bank-tab-content ppq-bank-tab-content--active" data-tab-content="ai-generate">
+					<?php
+					// Include AI generation panel
+					if ( class_exists( 'PPQ_Admin_AI_Generation' ) ) {
+						$ai_generation = new PPQ_Admin_AI_Generation();
+						$ai_generation->render_panel( $bank_id );
+					}
+					?>
+				</div>
+
+				<!-- Add Existing Questions Tab -->
+				<div class="ppq-bank-tab-content" data-tab-content="add-existing">
+					<h3><?php esc_html_e( 'Add Existing Questions', 'pressprimer-quiz' ); ?></h3>
 
 				<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" class="ppq-add-question-form">
 					<?php wp_nonce_field( 'ppq_add_question_to_bank', 'ppq_add_question_nonce' ); ?>
@@ -516,7 +540,8 @@ class PPQ_Admin_Banks {
 						</button>
 					</p>
 				</form>
-			</div>
+				</div><!-- End Add Existing Questions Tab -->
+			</div><!-- End Tabs Container -->
 
 			<!-- Filter Questions -->
 			<div class="ppq-form-section" style="margin-top: 20px;">
@@ -614,12 +639,12 @@ class PPQ_Admin_Banks {
 										<strong><?php echo esc_html( $stem_preview ); ?></strong>
 										<div class="row-actions">
 											<span class="edit">
-												<a href="<?php echo esc_url( admin_url( 'admin.php?page=ppq-questions&action=edit&question_id=' . $question->id ) ); ?>">
+												<a href="<?php echo esc_url( admin_url( 'admin.php?page=ppq-questions&action=edit&question=' . $question->id ) ); ?>">
 													<?php esc_html_e( 'Edit', 'pressprimer-quiz' ); ?>
 												</a> |
 											</span>
 											<span class="view">
-												<a href="<?php echo esc_url( admin_url( 'admin.php?page=ppq-questions&action=view&question_id=' . $question->id ) ); ?>">
+												<a href="<?php echo esc_url( admin_url( 'admin.php?page=ppq-questions&action=view&question=' . $question->id ) ); ?>">
 													<?php esc_html_e( 'View', 'pressprimer-quiz' ); ?>
 												</a>
 											</span>
@@ -629,19 +654,14 @@ class PPQ_Admin_Banks {
 									<td><?php echo esc_html( $difficulty_label ); ?></td>
 									<td><?php echo $category_display; // Already escaped above ?></td>
 									<td>
-										<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" style="display: inline;">
-											<?php wp_nonce_field( 'ppq_remove_question_from_bank', 'ppq_remove_question_nonce' ); ?>
-											<input type="hidden" name="action" value="ppq_remove_question_from_bank">
-											<input type="hidden" name="bank_id" value="<?php echo esc_attr( $bank_id ); ?>">
-											<input type="hidden" name="question_id" value="<?php echo esc_attr( $question->id ); ?>">
-											<button
-												type="submit"
-												class="button-link-delete"
-												onclick="return confirm('<?php esc_attr_e( 'Remove this question from the bank?', 'pressprimer-quiz' ); ?>');"
-											>
-												<?php esc_html_e( 'Remove from Bank', 'pressprimer-quiz' ); ?>
-											</button>
-										</form>
+										<button
+											type="button"
+											class="button-link-delete ppq-remove-question-btn"
+											data-bank-id="<?php echo esc_attr( $bank_id ); ?>"
+											data-question-id="<?php echo esc_attr( $question->id ); ?>"
+										>
+											<?php esc_html_e( 'Remove from Bank', 'pressprimer-quiz' ); ?>
+										</button>
 									</td>
 								</tr>
 							<?php endforeach; ?>
@@ -882,6 +902,54 @@ class PPQ_Admin_Banks {
 				});
 
 				$('#ppq-add-selected-questions').prop('disabled', selectedQuestions.length === 0);
+			});
+
+			// Remove question from bank via AJAX
+			$(document).on('click', '.ppq-remove-question-btn', function() {
+				var $btn = $(this);
+				var $row = $btn.closest('tr');
+				var bankId = $btn.data('bank-id');
+				var questionId = $btn.data('question-id');
+
+				// Disable button during request
+				$btn.prop('disabled', true).text('<?php esc_html_e( 'Removing...', 'pressprimer-quiz' ); ?>');
+
+				$.ajax({
+					url: ajaxurl,
+					type: 'POST',
+					data: {
+						action: 'ppq_remove_question_from_bank',
+						nonce: window.ppqAdmin.nonce,
+						bank_id: bankId,
+						question_id: questionId
+					},
+					success: function(response) {
+						if (response.success) {
+							// Remove the row with a fade effect
+							$row.fadeOut(300, function() {
+								$(this).remove();
+
+								// Update the question count display
+								var $countDisplay = $('.ppq-form-section').first().find('div[style*="font-size: 48px"]');
+								if ($countDisplay.length && response.data.new_count !== undefined) {
+									$countDisplay.text(response.data.new_count);
+								}
+
+								// Check if table is now empty
+								if ($('.ppq-table tbody tr').length === 0) {
+									$('.ppq-table').replaceWith('<p><em><?php esc_html_e( 'No questions in this bank yet.', 'pressprimer-quiz' ); ?></em></p>');
+								}
+							});
+						} else {
+							$btn.prop('disabled', false).text('<?php esc_html_e( 'Remove from Bank', 'pressprimer-quiz' ); ?>');
+							alert(response.data.message || '<?php esc_html_e( 'Error removing question.', 'pressprimer-quiz' ); ?>');
+						}
+					},
+					error: function() {
+						$btn.prop('disabled', false).text('<?php esc_html_e( 'Remove from Bank', 'pressprimer-quiz' ); ?>');
+						alert('<?php esc_html_e( 'Error removing question. Please try again.', 'pressprimer-quiz' ); ?>');
+					}
+				});
 			});
 		});
 		</script>

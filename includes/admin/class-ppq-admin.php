@@ -35,6 +35,7 @@ class PPQ_Admin {
 		add_action( 'admin_enqueue_scripts', [ $this, 'enqueue_assets' ] );
 		add_action( 'wp_ajax_ppq_search_questions', [ $this, 'ajax_search_questions' ] );
 		add_action( 'wp_ajax_ppq_get_recent_questions', [ $this, 'ajax_get_recent_questions' ] );
+		add_action( 'wp_ajax_ppq_remove_question_from_bank', [ $this, 'ajax_remove_question_from_bank' ] );
 
 		// Initialize settings
 		if ( class_exists( 'PPQ_Admin_Settings' ) ) {
@@ -64,6 +65,12 @@ class PPQ_Admin {
 		if ( class_exists( 'PPQ_Admin_Quizzes' ) ) {
 			$quizzes = new PPQ_Admin_Quizzes();
 			$quizzes->init();
+		}
+
+		// Initialize AI generation admin
+		if ( class_exists( 'PPQ_Admin_AI_Generation' ) ) {
+			$ai_generation = new PPQ_Admin_AI_Generation();
+			$ai_generation->init();
 		}
 	}
 
@@ -232,9 +239,19 @@ class PPQ_Admin {
 				'ajaxUrl' => admin_url( 'admin-ajax.php' ),
 				'nonce'   => wp_create_nonce( 'ppq_admin_nonce' ),
 				'strings' => [
-					'confirmDelete' => __( 'Are you sure you want to delete this item?', 'pressprimer-quiz' ),
-					'error'         => __( 'An error occurred. Please try again.', 'pressprimer-quiz' ),
-					'saved'         => __( 'Changes saved successfully.', 'pressprimer-quiz' ),
+					'confirmDelete'          => __( 'Are you sure you want to delete this item?', 'pressprimer-quiz' ),
+					'confirmDeleteTitle'     => __( 'Delete Item', 'pressprimer-quiz' ),
+					'confirmRemoveFromBank'  => __( 'Remove this question from the bank?', 'pressprimer-quiz' ),
+					'removeFromBankTitle'    => __( 'Remove from Bank', 'pressprimer-quiz' ),
+					'error'                  => __( 'An error occurred. Please try again.', 'pressprimer-quiz' ),
+					'saved'                  => __( 'Changes saved successfully.', 'pressprimer-quiz' ),
+					'delete'                 => __( 'Delete', 'pressprimer-quiz' ),
+					'remove'                 => __( 'Remove', 'pressprimer-quiz' ),
+					'cancel'                 => __( 'Cancel', 'pressprimer-quiz' ),
+					'ok'                     => __( 'OK', 'pressprimer-quiz' ),
+					'yes'                    => __( 'Yes', 'pressprimer-quiz' ),
+					'no'                     => __( 'No', 'pressprimer-quiz' ),
+					'confirmTitle'           => __( 'Confirm', 'pressprimer-quiz' ),
 				],
 			]
 		);
@@ -667,6 +684,55 @@ class PPQ_Admin {
 			'total_items' => $total_items,
 			'total_pages' => $total_pages,
 			'current_page' => $page,
+		] );
+	}
+
+	/**
+	 * AJAX handler for removing a question from a bank
+	 *
+	 * @since 1.0.0
+	 */
+	public function ajax_remove_question_from_bank() {
+		// Verify nonce
+		if ( ! isset( $_POST['nonce'] ) || ! wp_verify_nonce( $_POST['nonce'], 'ppq_admin_nonce' ) ) {
+			wp_send_json_error( [ 'message' => __( 'Security check failed.', 'pressprimer-quiz' ) ] );
+		}
+
+		// Check capability
+		if ( ! current_user_can( 'ppq_manage_own' ) ) {
+			wp_send_json_error( [ 'message' => __( 'You do not have permission.', 'pressprimer-quiz' ) ] );
+		}
+
+		$bank_id = isset( $_POST['bank_id'] ) ? absint( $_POST['bank_id'] ) : 0;
+		$question_id = isset( $_POST['question_id'] ) ? absint( $_POST['question_id'] ) : 0;
+
+		if ( ! $bank_id || ! $question_id ) {
+			wp_send_json_error( [ 'message' => __( 'Invalid bank or question ID.', 'pressprimer-quiz' ) ] );
+		}
+
+		$bank = null;
+		if ( class_exists( 'PPQ_Bank' ) ) {
+			$bank = PPQ_Bank::get( $bank_id );
+		}
+
+		if ( ! $bank ) {
+			wp_send_json_error( [ 'message' => __( 'Bank not found.', 'pressprimer-quiz' ) ] );
+		}
+
+		// Check ownership
+		if ( ! current_user_can( 'ppq_manage_all' ) && absint( $bank->owner_id ) !== get_current_user_id() ) {
+			wp_send_json_error( [ 'message' => __( 'You do not have permission to edit this bank.', 'pressprimer-quiz' ) ] );
+		}
+
+		// Remove question from bank
+		$bank->remove_question( $question_id );
+
+		// Update count
+		$bank->update_question_count();
+
+		wp_send_json_success( [
+			'message' => __( 'Question removed from bank.', 'pressprimer-quiz' ),
+			'new_count' => $bank->question_count,
 		] );
 	}
 }

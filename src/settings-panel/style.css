@@ -1,0 +1,398 @@
+/**
+ * Settings Panel Styles
+ *
+ * @package PressPrimer_Quiz
+ * @since 1.0.0
+ */
+
+.ppq-settings-container {
+	background: #f0f2f5;
+	min-height: calc(100vh - 32px); /* Account for WP admin bar */
+	padding: 24px;
+}
+
+.ppq-settings-header {
+	background: #fff;
+	padding: 24px;
+	border-radius: 8px;
+	margin-bottom: 24px;
+	box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.ppq-settings-header h1 {
+	margin: 0 0 8px 0;
+	font-size: 24px;
+	font-weight: 600;
+	color: #1d2327;
+}
+
+.ppq-settings-header p {
+	margin: 0;
+	color: #646970;
+}
+
+/* Main settings layout */
+.ppq-settings-layout {
+	display: flex;
+	gap: 24px;
+	background: #fff;
+	border-radius: 8px;
+	box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+	overflow: hidden;
+}
+
+/* Vertical tabs sidebar */
+.ppq-settings-tabs {
+	width: 220px;
+	min-width: 220px;
+	background: #fafafa;
+	border-right: 1px solid #f0f0f0;
+	padding: 16px 0;
+}
+
+.ppq-settings-tab {
+	display: flex;
+	align-items: center;
+	gap: 12px;
+	width: 100%;
+	padding: 14px 20px;
+	border: none;
+	background: transparent;
+	cursor: pointer;
+	font-size: 14px;
+	color: #1d2327;
+	text-align: left;
+	transition: all 0.2s ease;
+	position: relative;
+}
+
+.ppq-settings-tab:hover {
+	background: #f0f0f0;
+	color: #2271b1;
+}
+
+.ppq-settings-tab--active {
+	background: #fff;
+	color: #2271b1;
+	font-weight: 600;
+}
+
+.ppq-settings-tab--active::before {
+	content: '';
+	position: absolute;
+	left: 0;
+	top: 0;
+	bottom: 0;
+	width: 3px;
+	background: #2271b1;
+}
+
+.ppq-settings-tab .anticon {
+	font-size: 18px;
+}
+
+/* Tab content area */
+.ppq-settings-content {
+	flex: 1;
+	padding: 24px;
+	min-height: 600px;
+}
+
+.ppq-settings-section {
+	margin-bottom: 32px;
+}
+
+.ppq-settings-section:last-child {
+	margin-bottom: 0;
+}
+
+.ppq-settings-section-title {
+	font-size: 16px;
+	font-weight: 600;
+	color: #1d2327;
+	margin: 0 0 8px 0;
+	padding-bottom: 12px;
+	border-bottom: 1px solid #f0f0f0;
+}
+
+.ppq-settings-section-description {
+	color: #646970;
+	margin-bottom: 16px;
+	font-size: 13px;
+}
+
+/* Form field styling */
+.ppq-settings-field {
+	margin-bottom: 20px;
+}
+
+.ppq-settings-field:last-child {
+	margin-bottom: 0;
+}
+
+.ppq-settings-field .ant-form-item {
+	margin-bottom: 0;
+}
+
+.ppq-settings-field .ant-form-item-label > label {
+	font-weight: 500;
+}
+
+/* API Key Manager */
+.ppq-api-key-manager {
+	background: #fafafa;
+	border: 1px solid #f0f0f0;
+	border-radius: 8px;
+	padding: 20px;
+}
+
+.ppq-api-key-status {
+	display: flex;
+	align-items: center;
+	gap: 12px;
+	padding: 12px 16px;
+	border-radius: 6px;
+	margin-bottom: 16px;
+}
+
+.ppq-api-key-status--configured {
+	background: #f6ffed;
+	border: 1px solid #b7eb8f;
+}
+
+.ppq-api-key-status--not-configured {
+	background: #fffbe6;
+	border: 1px solid #ffe58f;
+}
+
+.ppq-api-key-status-icon {
+	font-size: 20px;
+}
+
+.ppq-api-key-status--configured .ppq-api-key-status-icon {
+	color: #52c41a;
+}
+
+.ppq-api-key-status--not-configured .ppq-api-key-status-icon {
+	color: #faad14;
+}
+
+/* Model selector */
+.ppq-model-section {
+	background: #fff;
+	border: 1px solid #f0f0f0;
+	border-radius: 6px;
+	padding: 16px;
+	margin-top: 16px;
+}
+
+/* Usage stats */
+.ppq-usage-stats {
+	display: flex;
+	gap: 24px;
+	align-items: center;
+	margin-top: 16px;
+	padding: 16px;
+	background: #fff;
+	border: 1px solid #f0f0f0;
+	border-radius: 6px;
+}
+
+.ppq-usage-stat {
+	text-align: center;
+}
+
+.ppq-usage-stat-value {
+	font-size: 24px;
+	font-weight: 700;
+	color: #1d2327;
+	display: block;
+}
+
+.ppq-usage-stat-label {
+	font-size: 12px;
+	color: #646970;
+	text-transform: uppercase;
+}
+
+/* System info table */
+.ppq-system-info {
+	width: 100%;
+	border-collapse: collapse;
+}
+
+.ppq-system-info th,
+.ppq-system-info td {
+	padding: 12px 16px;
+	text-align: left;
+	border-bottom: 1px solid #f0f0f0;
+}
+
+.ppq-system-info th {
+	width: 200px;
+	font-weight: 500;
+	color: #1d2327;
+	background: #fafafa;
+}
+
+.ppq-system-info td {
+	color: #3c434a;
+}
+
+.ppq-system-info tr:last-child th,
+.ppq-system-info tr:last-child td {
+	border-bottom: none;
+}
+
+/* Security notice */
+.ppq-security-notice {
+	display: flex;
+	align-items: flex-start;
+	gap: 12px;
+	padding: 12px 16px;
+	background: #f0f6fc;
+	border: 1px solid #c5d9ed;
+	border-radius: 6px;
+	margin-top: 16px;
+}
+
+.ppq-security-notice .anticon {
+	color: #2271b1;
+	font-size: 16px;
+	margin-top: 2px;
+}
+
+.ppq-security-notice span {
+	color: #2271b1;
+	font-size: 13px;
+	line-height: 1.5;
+}
+
+/* Token list for email templates */
+.ppq-token-list {
+	background: #fafafa;
+	border: 1px solid #f0f0f0;
+	border-radius: 6px;
+	padding: 12px 16px;
+	margin-top: 8px;
+}
+
+.ppq-token-list code {
+	background: #e6f7ff;
+	padding: 2px 6px;
+	border-radius: 3px;
+	font-size: 12px;
+	color: #1890ff;
+}
+
+/* LMS Integration cards */
+.ppq-lms-integration {
+	background: #fff;
+	border: 1px solid #f0f0f0;
+	border-radius: 8px;
+	padding: 16px 20px;
+	margin-bottom: 12px;
+}
+
+.ppq-lms-integration:last-child {
+	margin-bottom: 0;
+}
+
+.ppq-lms-integration--disabled {
+	background: #fafafa;
+	opacity: 0.8;
+}
+
+.ppq-lms-integration-header {
+	display: flex;
+	align-items: center;
+}
+
+.ppq-lms-integration .ant-descriptions-item-label {
+	color: #646970;
+	font-weight: 500;
+}
+
+.ppq-lms-integration .ant-descriptions-item-content {
+	color: #1d2327;
+}
+
+/* Danger zone styling */
+.ppq-danger-zone {
+	border: 1px solid #ff4d4f;
+	border-radius: 8px;
+	padding: 20px;
+	background: #fff2f0;
+}
+
+.ppq-danger-zone .ppq-settings-section-title {
+	color: #cf1322;
+}
+
+/* Save button footer */
+.ppq-settings-footer {
+	display: flex;
+	justify-content: flex-end;
+	padding: 16px 24px;
+	background: #fafafa;
+	border-top: 1px solid #f0f0f0;
+	margin: 0 -24px -24px -24px;
+}
+
+/* Responsive adjustments */
+@media screen and (max-width: 1024px) {
+	.ppq-settings-layout {
+		flex-direction: column;
+	}
+
+	.ppq-settings-tabs {
+		width: 100%;
+		min-width: 100%;
+		border-right: none;
+		border-bottom: 1px solid #f0f0f0;
+		display: flex;
+		flex-wrap: wrap;
+		padding: 8px;
+	}
+
+	.ppq-settings-tab {
+		padding: 10px 16px;
+	}
+
+	.ppq-settings-tab--active::before {
+		display: none;
+	}
+
+	.ppq-settings-tab--active {
+		background: #2271b1;
+		color: #fff;
+		border-radius: 4px;
+	}
+
+	.ppq-settings-tab--active:hover {
+		color: #fff;
+	}
+}
+
+@media screen and (max-width: 600px) {
+	.ppq-settings-container {
+		padding: 12px;
+	}
+
+	.ppq-settings-header {
+		padding: 16px;
+	}
+
+	.ppq-settings-content {
+		padding: 16px;
+	}
+
+	.ppq-usage-stats {
+		flex-direction: column;
+		gap: 12px;
+	}
+
+	.ppq-system-info th {
+		width: 120px;
+	}
+}

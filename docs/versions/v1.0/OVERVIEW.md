@@ -100,6 +100,7 @@ WordPress.org Plugin Repository
 - Category and tag management
 - Quiz list with bulk operations
 - Settings page with global defaults, email templates, theme customization
+- **Onboarding wizard** for new users (interactive, skippable, relaunchable)
 
 ### Frontend Components
 - Three Gutenberg blocks: Quiz, My Attempts, Assigned Quizzes
@@ -206,9 +207,9 @@ WordPress.org Plugin Repository
 
 ### WordPress.org Submission
 - `readme.txt` with full documentation
-- Screenshots (1280×960px minimum)
-- Plugin icon (128×128, 256×256)
-- Plugin banner (772×250, 1544×500)
+- Screenshots (1280Ã—960px minimum)
+- Plugin icon (128Ã—128, 256Ã—256)
+- Plugin banner (772Ã—250, 1544Ã—500)
 
 ### Documentation
 - User guide (for WordPress.org FAQ)
@@ -217,7 +218,7 @@ WordPress.org Plugin Repository
 
 ## Development Approach
 
-This version is divided into 8 phases. See `PHASES.md` for the detailed breakdown.
+This version is divided into 10 phases. See `PHASES.md` for the detailed breakdown.
 
 Each phase includes:
 - Specific prompts for Claude Code

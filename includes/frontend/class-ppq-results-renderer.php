@@ -412,18 +412,39 @@ class PPQ_Results_Renderer {
 	 * @param PPQ_Quiz    $quiz Quiz object.
 	 */
 	private function render_results_actions( $attempt, $quiz ) {
+		// Check for LearnDash navigation data
+		$ld_nav = $this->get_learndash_navigation( $attempt );
+
 		?>
 		<div class="ppq-results-actions">
+			<?php
+			// LearnDash "Continue" button (only if passed and has next URL)
+			if ( $ld_nav && $attempt->passed && ! empty( $ld_nav['next_url'] ) ) :
+				?>
+				<a href="<?php echo esc_url( $ld_nav['next_url'] ); ?>" class="ppq-button ppq-button-primary ppq-continue-button">
+					<?php esc_html_e( 'Continue', 'pressprimer-quiz' ); ?> →
+				</a>
+			<?php endif; ?>
+
 			<a href="#ppq-question-review" class="ppq-button ppq-review-button">
 				<?php esc_html_e( 'Review Answers', 'pressprimer-quiz' ); ?>
 			</a>
 
 			<?php
-			// Retake button if allowed
+			// Retake button if allowed (and not using LearnDash context where they need to pass)
 			if ( $this->can_retake( $quiz, $attempt ) ) :
 				?>
 				<a href="<?php echo esc_url( $this->get_retake_url( $quiz ) ); ?>" class="ppq-button ppq-retake-button">
 					<?php esc_html_e( 'Retake Quiz', 'pressprimer-quiz' ); ?>
+				</a>
+			<?php endif; ?>
+
+			<?php
+			// Return to course button for LearnDash (if failed or as secondary option)
+			if ( $ld_nav && ! empty( $ld_nav['course_url'] ) && ( ! $attempt->passed || empty( $ld_nav['next_url'] ) ) ) :
+				?>
+				<a href="<?php echo esc_url( $ld_nav['course_url'] ); ?>" class="ppq-button ppq-course-button">
+					<?php esc_html_e( 'Return to Course', 'pressprimer-quiz' ); ?>
 				</a>
 			<?php endif; ?>
 
@@ -438,6 +459,53 @@ class PPQ_Results_Renderer {
 		$this->render_social_sharing( $attempt, $quiz );
 		?>
 		<?php
+	}
+
+	/**
+	 * Get LearnDash navigation data from attempt meta
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param PPQ_Attempt $attempt Attempt object.
+	 * @return array|null Navigation data or null if not LearnDash context.
+	 */
+	private function get_learndash_navigation( $attempt ) {
+		if ( empty( $attempt->meta_json ) ) {
+			return null;
+		}
+
+		$meta = json_decode( $attempt->meta_json, true );
+
+		if ( empty( $meta['learndash_post_id'] ) ) {
+			return null;
+		}
+
+		// Check if LearnDash integration is available
+		if ( ! class_exists( 'PPQ_LearnDash' ) || ! defined( 'LEARNDASH_VERSION' ) ) {
+			return null;
+		}
+
+		$learndash = new PPQ_LearnDash();
+		$ld_post_id = (int) $meta['learndash_post_id'];
+		$post_type = get_post_type( $ld_post_id );
+
+		// For courses, return to course page on completion
+		if ( 'sfwd-courses' === $post_type ) {
+			return [
+				'post_id'    => $ld_post_id,
+				'post_type'  => $post_type,
+				'next_url'   => get_permalink( $ld_post_id ), // Return to course
+				'course_url' => get_permalink( $ld_post_id ),
+			];
+		}
+
+		// For lessons/topics, get next step URL
+		return [
+			'post_id'    => $ld_post_id,
+			'post_type'  => $post_type,
+			'next_url'   => $learndash->get_next_step_url( $ld_post_id ),
+			'course_url' => get_permalink( $meta['learndash_course_id'] ?? null ),
+		];
 	}
 
 	/**

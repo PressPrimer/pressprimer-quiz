@@ -40,15 +40,18 @@ The admin interface provides WordPress administrators with tools to manage PPQ Q
 - [ ] Submenu: Questions (question list and builder)
 - [ ] Submenu: Question Banks (bank management)
 - [ ] Submenu: Categories (category/tag management)
+- [ ] Submenu: Reports (see 010-admin-reporting.md)
 - [ ] Submenu: Settings (global configuration)
 - [ ] Menu position: 30 (after Comments)
 
 ### Dashboard Widget
 
+See `010-admin-reporting.md` for full dashboard widget specification.
+
 - [ ] Widget on WordPress dashboard
 - [ ] Shows: Total quizzes, Total questions, Recent attempts (last 7 days)
 - [ ] Shows: Most popular quizzes (by attempts)
-- [ ] Quick links: Create Quiz, Create Question, View Reports
+- [ ] Quick links: Create Quiz, Create Question, View Reports, Launch Onboarding
 - [ ] Collapsible/dismissible like standard widgets
 
 ### PPQ Quizzes Page
@@ -212,40 +215,40 @@ All admin operations use AJAX with proper nonce verification:
 
 ```
 assets/js/admin/
-├── index.js                 # Entry point
-├── App.jsx                  # Router setup
-├── components/
-│   ├── QuizList.jsx
-│   ├── QuizBuilder/
-│   │   ├── index.jsx
-│   │   ├── QuestionSelector.jsx
-│   │   ├── DynamicRules.jsx
-│   │   ├── SettingsPanel.jsx
-│   │   ├── ThemePanel.jsx
-│   │   └── FeedbackPanel.jsx
-│   ├── QuestionList.jsx
-│   ├── QuestionBuilder/
-│   │   ├── index.jsx
-│   │   ├── StemEditor.jsx
-│   │   ├── AnswerOptions.jsx
-│   │   └── MetadataPanel.jsx
-│   ├── BankList.jsx
-│   ├── BankEditor.jsx
-│   ├── CategoryManager.jsx
-│   └── common/
-│       ├── DataTable.jsx
-│       ├── Modal.jsx
-│       ├── Spinner.jsx
-│       └── Notice.jsx
-├── hooks/
-│   ├── useQuizzes.js
-│   ├── useQuestions.js
-│   ├── useBanks.js
-│   └── useCategories.js
-├── api/
-│   └── client.js            # AJAX wrapper
-└── utils/
-    └── helpers.js
+â”œâ”€â”€ index.js                 # Entry point
+â”œâ”€â”€ App.jsx                  # Router setup
+â”œâ”€â”€ components/
+â”‚   â”œâ”€â”€ QuizList.jsx
+â”‚   â”œâ”€â”€ QuizBuilder/
+â”‚   â”‚   â”œâ”€â”€ index.jsx
+â”‚   â”‚   â”œâ”€â”€ QuestionSelector.jsx
+â”‚   â”‚   â”œâ”€â”€ DynamicRules.jsx
+â”‚   â”‚   â”œâ”€â”€ SettingsPanel.jsx
+â”‚   â”‚   â”œâ”€â”€ ThemePanel.jsx
+â”‚   â”‚   â””â”€â”€ FeedbackPanel.jsx
+â”‚   â”œâ”€â”€ QuestionList.jsx
+â”‚   â”œâ”€â”€ QuestionBuilder/
+â”‚   â”‚   â”œâ”€â”€ index.jsx
+â”‚   â”‚   â”œâ”€â”€ StemEditor.jsx
+â”‚   â”‚   â”œâ”€â”€ AnswerOptions.jsx
+â”‚   â”‚   â””â”€â”€ MetadataPanel.jsx
+â”‚   â”œâ”€â”€ BankList.jsx
+â”‚   â”œâ”€â”€ BankEditor.jsx
+â”‚   â”œâ”€â”€ CategoryManager.jsx
+â”‚   â””â”€â”€ common/
+â”‚       â”œâ”€â”€ DataTable.jsx
+â”‚       â”œâ”€â”€ Modal.jsx
+â”‚       â”œâ”€â”€ Spinner.jsx
+â”‚       â””â”€â”€ Notice.jsx
+â”œâ”€â”€ hooks/
+â”‚   â”œâ”€â”€ useQuizzes.js
+â”‚   â”œâ”€â”€ useQuestions.js
+â”‚   â”œâ”€â”€ useBanks.js
+â”‚   â””â”€â”€ useCategories.js
+â”œâ”€â”€ api/
+â”‚   â””â”€â”€ client.js            # AJAX wrapper
+â””â”€â”€ utils/
+    â””â”€â”€ helpers.js
 ```
 
 ### Admin Page Registration
@@ -1009,7 +1012,8 @@ Settings stored in WordPress options:
 - Advanced analytics dashboard (premium feature)
 - User management (handled by WordPress)
 - Email template customization (v2.0)
-- Reports page (removed from v1.0 free)
+
+**Note:** Dashboard widget and Reports page are documented in `010-admin-reporting.md`.
 
 ## Testing Checklist
 

@@ -201,6 +201,52 @@ class PPQ_REST_Controller {
 			'callback'            => [ $this, 'reorder_quiz_rules' ],
 			'permission_callback' => [ $this, 'check_permission' ],
 		] );
+
+		// Settings endpoints
+		register_rest_route( 'ppq/v1', '/settings', [
+			[
+				'methods'             => WP_REST_Server::READABLE,
+				'callback'            => [ $this, 'get_settings' ],
+				'permission_callback' => [ $this, 'check_settings_permission' ],
+			],
+			[
+				'methods'             => WP_REST_Server::CREATABLE,
+				'callback'            => [ $this, 'update_settings' ],
+				'permission_callback' => [ $this, 'check_settings_permission' ],
+			],
+		] );
+
+		// API Key endpoints
+		register_rest_route( 'ppq/v1', '/settings/api-key', [
+			[
+				'methods'             => WP_REST_Server::CREATABLE,
+				'callback'            => [ $this, 'save_api_key' ],
+				'permission_callback' => [ $this, 'check_permission' ],
+			],
+			[
+				'methods'             => WP_REST_Server::DELETABLE,
+				'callback'            => [ $this, 'delete_api_key' ],
+				'permission_callback' => [ $this, 'check_permission' ],
+			],
+		] );
+
+		register_rest_route( 'ppq/v1', '/settings/api-key/validate', [
+			'methods'             => WP_REST_Server::CREATABLE,
+			'callback'            => [ $this, 'validate_api_key' ],
+			'permission_callback' => [ $this, 'check_permission' ],
+		] );
+
+		register_rest_route( 'ppq/v1', '/settings/api-models', [
+			'methods'             => WP_REST_Server::READABLE,
+			'callback'            => [ $this, 'get_api_models' ],
+			'permission_callback' => [ $this, 'check_permission' ],
+		] );
+
+		register_rest_route( 'ppq/v1', '/settings/api-model', [
+			'methods'             => WP_REST_Server::CREATABLE,
+			'callback'            => [ $this, 'save_api_model' ],
+			'permission_callback' => [ $this, 'check_permission' ],
+		] );
 	}
 
 	/**
@@ -212,6 +258,17 @@ class PPQ_REST_Controller {
 	 */
 	public function check_permission() {
 		return current_user_can( 'ppq_manage_own' ) || current_user_can( 'ppq_manage_all' );
+	}
+
+	/**
+	 * Check settings permission
+	 *
+	 * @since 1.0.0
+	 *
+	 * @return bool True if user has permission.
+	 */
+	public function check_settings_permission() {
+		return current_user_can( 'ppq_manage_settings' );
 	}
 
 	/**
@@ -1362,5 +1419,252 @@ class PPQ_REST_Controller {
 		}
 
 		return new WP_REST_Response( [ 'success' => true ], 200 );
+	}
+
+	/**
+	 * Get settings
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param WP_REST_Request $request Request object.
+	 * @return WP_REST_Response Response object.
+	 */
+	public function get_settings( $request ) {
+		$settings = get_option( PPQ_Admin_Settings::OPTION_NAME, [] );
+
+		return new WP_REST_Response( [
+			'success'  => true,
+			'settings' => $settings,
+		], 200 );
+	}
+
+	/**
+	 * Update settings
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param WP_REST_Request $request Request object.
+	 * @return WP_REST_Response Response object.
+	 */
+	public function update_settings( $request ) {
+		$data = $request->get_json_params();
+
+		// Get existing settings
+		$existing = get_option( PPQ_Admin_Settings::OPTION_NAME, [] );
+
+		// Sanitize incoming settings
+		$sanitized = [];
+
+		// General settings
+		if ( isset( $data['default_passing_score'] ) ) {
+			$sanitized['default_passing_score'] = min( 100, max( 0, absint( $data['default_passing_score'] ) ) );
+		}
+
+		if ( isset( $data['default_quiz_mode'] ) ) {
+			$sanitized['default_quiz_mode'] = in_array( $data['default_quiz_mode'], [ 'tutorial', 'timed' ], true )
+				? $data['default_quiz_mode']
+				: 'tutorial';
+		}
+
+		// Email settings
+		if ( isset( $data['email_from_name'] ) ) {
+			$sanitized['email_from_name'] = sanitize_text_field( $data['email_from_name'] );
+		}
+
+		if ( isset( $data['email_from_email'] ) ) {
+			$sanitized['email_from_email'] = sanitize_email( $data['email_from_email'] );
+		}
+
+		if ( isset( $data['email_results_auto_send'] ) ) {
+			$sanitized['email_results_auto_send'] = (bool) $data['email_results_auto_send'];
+		}
+
+		if ( isset( $data['email_results_subject'] ) ) {
+			$sanitized['email_results_subject'] = sanitize_text_field( $data['email_results_subject'] );
+		}
+
+		if ( isset( $data['email_results_body'] ) ) {
+			$sanitized['email_results_body'] = wp_kses_post( $data['email_results_body'] );
+		}
+
+		// Sharing settings
+		if ( isset( $data['social_sharing_twitter'] ) ) {
+			$sanitized['social_sharing_twitter'] = (bool) $data['social_sharing_twitter'];
+		}
+
+		if ( isset( $data['social_sharing_facebook'] ) ) {
+			$sanitized['social_sharing_facebook'] = (bool) $data['social_sharing_facebook'];
+		}
+
+		if ( isset( $data['social_sharing_linkedin'] ) ) {
+			$sanitized['social_sharing_linkedin'] = (bool) $data['social_sharing_linkedin'];
+		}
+
+		if ( isset( $data['social_sharing_include_score'] ) ) {
+			$sanitized['social_sharing_include_score'] = (bool) $data['social_sharing_include_score'];
+		}
+
+		if ( isset( $data['social_sharing_message'] ) ) {
+			$sanitized['social_sharing_message'] = sanitize_text_field( $data['social_sharing_message'] );
+		}
+
+		// Advanced settings
+		if ( isset( $data['remove_data_on_uninstall'] ) ) {
+			$sanitized['remove_data_on_uninstall'] = (bool) $data['remove_data_on_uninstall'];
+		}
+
+		// Merge with existing settings
+		$merged = array_merge( $existing, $sanitized );
+
+		// Save settings
+		update_option( PPQ_Admin_Settings::OPTION_NAME, $merged );
+
+		return new WP_REST_Response( [
+			'success' => true,
+			'message' => __( 'Settings saved successfully.', 'pressprimer-quiz' ),
+		], 200 );
+	}
+
+	/**
+	 * Save API key
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param WP_REST_Request $request Request object.
+	 * @return WP_REST_Response|WP_Error Response object or error.
+	 */
+	public function save_api_key( $request ) {
+		$data = $request->get_json_params();
+		$api_key = sanitize_text_field( $data['api_key'] ?? '' );
+
+		if ( empty( $api_key ) ) {
+			return new WP_Error( 'invalid_key', __( 'Please provide an API key.', 'pressprimer-quiz' ), [ 'status' => 400 ] );
+		}
+
+		if ( strpos( $api_key, 'sk-' ) !== 0 ) {
+			return new WP_Error( 'invalid_key', __( 'Invalid API key format.', 'pressprimer-quiz' ), [ 'status' => 400 ] );
+		}
+
+		$user_id = get_current_user_id();
+
+		// Save the API key
+		$result = PPQ_AI_Service::save_api_key( $user_id, $api_key );
+
+		if ( is_wp_error( $result ) ) {
+			return new WP_Error( 'save_failed', $result->get_error_message(), [ 'status' => 500 ] );
+		}
+
+		// Get status for response
+		$status = PPQ_AI_Service::get_api_key_status( $user_id );
+
+		return new WP_REST_Response( [
+			'success'    => true,
+			'message'    => __( 'API key saved successfully.', 'pressprimer-quiz' ),
+			'masked_key' => $status['masked_key'] ?? 'sk-****',
+		], 200 );
+	}
+
+	/**
+	 * Delete API key
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param WP_REST_Request $request Request object.
+	 * @return WP_REST_Response Response object.
+	 */
+	public function delete_api_key( $request ) {
+		$user_id = get_current_user_id();
+
+		// Delete the API key
+		PPQ_AI_Service::delete_api_key( $user_id );
+
+		return new WP_REST_Response( [
+			'success' => true,
+			'message' => __( 'API key removed successfully.', 'pressprimer-quiz' ),
+		], 200 );
+	}
+
+	/**
+	 * Validate API key
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param WP_REST_Request $request Request object.
+	 * @return WP_REST_Response|WP_Error Response object or error.
+	 */
+	public function validate_api_key( $request ) {
+		$user_id = get_current_user_id();
+
+		// Get the API key
+		$api_key = PPQ_AI_Service::get_api_key( $user_id );
+
+		if ( is_wp_error( $api_key ) || empty( $api_key ) ) {
+			return new WP_Error( 'no_key', __( 'No API key configured.', 'pressprimer-quiz' ), [ 'status' => 400 ] );
+		}
+
+		// Validate by trying to fetch models
+		$models = PPQ_AI_Service::get_available_models( $api_key );
+
+		if ( is_wp_error( $models ) ) {
+			return new WP_Error( 'invalid_key', $models->get_error_message(), [ 'status' => 400 ] );
+		}
+
+		return new WP_REST_Response( [
+			'success' => true,
+			'message' => __( 'API key is valid.', 'pressprimer-quiz' ),
+		], 200 );
+	}
+
+	/**
+	 * Get API models
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param WP_REST_Request $request Request object.
+	 * @return WP_REST_Response|WP_Error Response object or error.
+	 */
+	public function get_api_models( $request ) {
+		$user_id = get_current_user_id();
+
+		// Get the API key
+		$api_key = PPQ_AI_Service::get_api_key( $user_id );
+
+		if ( is_wp_error( $api_key ) || empty( $api_key ) ) {
+			return new WP_Error( 'no_key', __( 'No API key configured.', 'pressprimer-quiz' ), [ 'status' => 400 ] );
+		}
+
+		// Fetch models
+		$models = PPQ_AI_Service::get_available_models( $api_key );
+
+		if ( is_wp_error( $models ) ) {
+			return new WP_Error( 'fetch_failed', $models->get_error_message(), [ 'status' => 500 ] );
+		}
+
+		return new WP_REST_Response( [
+			'success' => true,
+			'models'  => $models,
+		], 200 );
+	}
+
+	/**
+	 * Save API model preference
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param WP_REST_Request $request Request object.
+	 * @return WP_REST_Response Response object.
+	 */
+	public function save_api_model( $request ) {
+		$data = $request->get_json_params();
+		$model = sanitize_text_field( $data['model'] ?? '' );
+		$user_id = get_current_user_id();
+
+		// Save model preference
+		PPQ_AI_Service::save_model_preference( $user_id, $model );
+
+		return new WP_REST_Response( [
+			'success' => true,
+			'message' => __( 'Model preference saved.', 'pressprimer-quiz' ),
+		], 200 );
 	}
 }

@@ -1380,7 +1380,7 @@ Good luck with your studies!', 'pressprimer-quiz' );
 	/**
 	 * Render settings page
 	 *
-	 * Displays the settings page HTML.
+	 * Displays the React settings page.
 	 *
 	 * @since 1.0.0
 	 */
@@ -1394,64 +1394,132 @@ Good luck with your studies!', 'pressprimer-quiz' );
 			);
 		}
 
+		// Enqueue React settings panel
+		$this->enqueue_react_settings();
+
 		?>
-		<div class="wrap">
-			<h1><?php echo esc_html( get_admin_page_title() ); ?></h1>
-
-			<form method="post" action="options.php">
-				<?php
-				settings_fields( 'ppq_settings_group' );
-				do_settings_sections( 'ppq-settings' );
-				submit_button();
-				?>
-			</form>
-
-			<div class="ppq-settings-footer" style="margin-top: 40px; padding-top: 20px; border-top: 1px solid #c3c4c7;">
-				<h2><?php esc_html_e( 'System Information', 'pressprimer-quiz' ); ?></h2>
-				<table class="widefat striped" style="max-width: 600px;">
-					<tbody>
-						<tr>
-							<th style="width: 200px;"><?php esc_html_e( 'Plugin Version', 'pressprimer-quiz' ); ?></th>
-							<td><?php echo esc_html( PPQ_VERSION ); ?></td>
-						</tr>
-						<tr>
-							<th><?php esc_html_e( 'Database Version', 'pressprimer-quiz' ); ?></th>
-							<td><?php echo esc_html( get_option( 'ppq_db_version', 'Not set' ) ); ?></td>
-						</tr>
-						<tr>
-							<th><?php esc_html_e( 'WordPress Version', 'pressprimer-quiz' ); ?></th>
-							<td><?php echo esc_html( get_bloginfo( 'version' ) ); ?></td>
-						</tr>
-						<tr>
-							<th><?php esc_html_e( 'WordPress Memory Limit', 'pressprimer-quiz' ); ?></th>
-							<td><?php echo esc_html( WP_MEMORY_LIMIT ); ?></td>
-						</tr>
-						<tr>
-							<th><?php esc_html_e( 'PHP Version', 'pressprimer-quiz' ); ?></th>
-							<td><?php echo esc_html( PHP_VERSION ); ?></td>
-						</tr>
-						<tr>
-							<th><?php esc_html_e( 'PHP Post Max Size', 'pressprimer-quiz' ); ?></th>
-							<td><?php echo esc_html( ini_get( 'post_max_size' ) ); ?></td>
-						</tr>
-						<tr>
-							<th><?php esc_html_e( 'PHP Time Limit', 'pressprimer-quiz' ); ?></th>
-							<td><?php echo esc_html( ini_get( 'max_execution_time' ) . ' ' . __( 'seconds', 'pressprimer-quiz' ) ); ?></td>
-						</tr>
-						<tr>
-							<th><?php esc_html_e( 'MySQL Version', 'pressprimer-quiz' ); ?></th>
-							<td>
-								<?php
-								global $wpdb;
-								echo esc_html( $wpdb->db_version() );
-								?>
-							</td>
-						</tr>
-					</tbody>
-				</table>
-			</div>
-		</div>
+		<!-- React Settings Root -->
+		<div id="ppq-settings-root"></div>
 		<?php
+	}
+
+	/**
+	 * Enqueue React settings panel
+	 *
+	 * @since 1.0.0
+	 */
+	private function enqueue_react_settings() {
+		// Enqueue Ant Design CSS
+		wp_enqueue_style(
+			'antd',
+			'https://cdn.jsdelivr.net/npm/antd@5.12.0/dist/reset.css',
+			[],
+			'5.12.0'
+		);
+
+		// Enqueue built React app
+		$asset_file = PPQ_PLUGIN_PATH . 'build/settings-panel.asset.php';
+		$asset      = file_exists( $asset_file ) ? require $asset_file : [
+			'dependencies' => [ 'wp-element', 'wp-i18n', 'wp-api-fetch' ],
+			'version'      => PPQ_VERSION,
+		];
+
+		wp_enqueue_script(
+			'ppq-settings-panel',
+			PPQ_PLUGIN_URL . 'build/settings-panel.js',
+			$asset['dependencies'],
+			$asset['version'],
+			true
+		);
+
+		wp_enqueue_style(
+			'ppq-settings-panel',
+			PPQ_PLUGIN_URL . 'build/style-settings-panel.css',
+			[],
+			$asset['version']
+		);
+
+		// Prepare settings data for React
+		$settings_data = $this->get_settings_data_for_react();
+
+		// Localize script with data
+		wp_localize_script(
+			'ppq-settings-panel',
+			'ppqSettingsData',
+			$settings_data
+		);
+
+		// Also pass admin URL
+		wp_localize_script(
+			'ppq-settings-panel',
+			'ppqAdmin',
+			[
+				'adminUrl' => admin_url(),
+				'nonce'    => wp_create_nonce( 'wp_rest' ),
+			]
+		);
+	}
+
+	/**
+	 * Get settings data for React
+	 *
+	 * @since 1.0.0
+	 *
+	 * @return array Settings data.
+	 */
+	private function get_settings_data_for_react() {
+		global $wpdb;
+
+		$user_id    = get_current_user_id();
+		$settings   = get_option( self::OPTION_NAME, [] );
+		$key_status = PPQ_AI_Service::get_api_key_status( $user_id );
+		$model_pref = PPQ_AI_Service::get_model_preference( $user_id );
+		$usage_data = $this->get_user_usage_data( $user_id );
+
+		// Fetch available models if key is configured
+		$available_models = [];
+		if ( $key_status['configured'] ) {
+			$api_key = PPQ_AI_Service::get_api_key( $user_id );
+			if ( ! is_wp_error( $api_key ) && ! empty( $api_key ) ) {
+				$fetched_models = PPQ_AI_Service::get_available_models( $api_key );
+				if ( ! is_wp_error( $fetched_models ) ) {
+					$available_models = $fetched_models;
+				}
+			}
+		}
+
+		// Get statistics (only questions table has deleted_at column)
+		$total_quizzes   = (int) $wpdb->get_var( "SELECT COUNT(*) FROM {$wpdb->prefix}ppq_quizzes" );
+		$total_questions = (int) $wpdb->get_var( "SELECT COUNT(*) FROM {$wpdb->prefix}ppq_questions WHERE deleted_at IS NULL" );
+		$total_banks     = (int) $wpdb->get_var( "SELECT COUNT(*) FROM {$wpdb->prefix}ppq_banks" );
+		$total_attempts  = (int) $wpdb->get_var( "SELECT COUNT(*) FROM {$wpdb->prefix}ppq_attempts" );
+
+		return [
+			'settings'     => $settings,
+			'apiKeyStatus' => $key_status,
+			'apiModels'    => $available_models,
+			'modelPref'    => $model_pref,
+			'usageData'    => $usage_data,
+			'defaults'     => [
+				'siteName'   => get_bloginfo( 'name' ),
+				'adminEmail' => get_bloginfo( 'admin_email' ),
+			],
+			'systemInfo'   => [
+				'pluginVersion'      => PPQ_VERSION,
+				'dbVersion'          => get_option( 'ppq_db_version', 'Not set' ),
+				'wpVersion'          => get_bloginfo( 'version' ),
+				'memoryLimit'        => WP_MEMORY_LIMIT,
+				'phpVersion'         => PHP_VERSION,
+				'postMaxSize'        => ini_get( 'post_max_size' ),
+				'maxExecutionTime'   => ini_get( 'max_execution_time' ),
+				'mysqlVersion'       => $wpdb->db_version(),
+				'isMultisite'        => is_multisite(),
+				'totalQuizzes'       => $total_quizzes,
+				'totalQuestions'     => $total_questions,
+				'totalBanks'         => $total_banks,
+				'totalAttempts'      => $total_attempts,
+			],
+		];
 	}
 
 	/**

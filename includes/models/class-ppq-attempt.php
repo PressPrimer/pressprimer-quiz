@@ -338,6 +338,13 @@ class PPQ_Attempt extends PPQ_Model {
 			);
 		}
 
+		// Build meta data including any integration context
+		$meta = [];
+		if ( ! empty( $GLOBALS['ppq_quiz_context'] ) && is_array( $GLOBALS['ppq_quiz_context'] ) ) {
+			$meta = $GLOBALS['ppq_quiz_context'];
+			unset( $GLOBALS['ppq_quiz_context'] );
+		}
+
 		// Create attempt
 		$attempt_data = [
 			'uuid'           => wp_generate_uuid4(),
@@ -348,6 +355,7 @@ class PPQ_Attempt extends PPQ_Model {
 			'status'         => 'in_progress',
 			'current_position' => 0,
 			'questions_json' => wp_json_encode( $questions_data ),
+			'meta_json'      => ! empty( $meta ) ? wp_json_encode( $meta ) : null,
 			'started_at'     => current_time( 'mysql' ),
 		];
 
@@ -728,6 +736,39 @@ class PPQ_Attempt extends PPQ_Model {
 
 		if ( is_wp_error( $result ) ) {
 			return $result;
+		}
+
+		/**
+		 * Fires after a quiz attempt is submitted.
+		 *
+		 * @since 1.0.0
+		 *
+		 * @param PPQ_Attempt $attempt The submitted attempt object.
+		 * @param PPQ_Quiz    $quiz    The quiz object.
+		 */
+		do_action( 'ppq_attempt_submitted', $this, $quiz );
+
+		// Fire pass/fail specific hooks
+		if ( $passed ) {
+			/**
+			 * Fires when a user passes a quiz.
+			 *
+			 * @since 1.0.0
+			 *
+			 * @param PPQ_Attempt $attempt The submitted attempt object.
+			 * @param PPQ_Quiz    $quiz    The quiz object.
+			 */
+			do_action( 'ppq_quiz_passed', $this, $quiz );
+		} else {
+			/**
+			 * Fires when a user fails a quiz.
+			 *
+			 * @since 1.0.0
+			 *
+			 * @param PPQ_Attempt $attempt The submitted attempt object.
+			 * @param PPQ_Quiz    $quiz    The quiz object.
+			 */
+			do_action( 'ppq_quiz_failed', $this, $quiz );
 		}
 
 		return true;

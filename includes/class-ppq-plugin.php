@@ -137,8 +137,10 @@ class PPQ_Plugin {
 	private function init_integrations() {
 		// LearnDash integration
 		if ( defined( 'LEARNDASH_VERSION' ) ) {
-			// $learndash = new PPQ_LearnDash();
-			// $learndash->init();
+			if ( class_exists( 'PPQ_LearnDash' ) ) {
+				$learndash = new PPQ_LearnDash();
+				$learndash->init();
+			}
 		}
 
 		// TutorLMS integration

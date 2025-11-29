@@ -2,17 +2,20 @@
 
 ## Phase Overview
 
-Version 1.0 is divided into 7 phases, each with specific prompts for Claude Code. Complete phases in order. Complete all prompts within a phase before proceeding.
+Version 1.0 is divided into 10 phases, each with specific prompts for Claude Code. Complete phases in order. Complete all prompts within a phase before proceeding.
 
-| Phase | Focus                     | Prompts | Dependencies |
-| ----- | ------------------------- | ------- | ------------ |
-| 1     | Foundation                | 10      | None         |
-| 2     | Question System           | 10      | Phase 1      |
-| 3     | Quiz Builder              | 10      | Phase 2      |
-| 4     | Quiz Taking Engine        | 10      | Phase 3      |
-| 5     | Results & Review          | 8       | Phase 4      |
-| 6     | AI Generation             | 6       | Phase 2      |
-| 7     | LMS Integrations & Polish | 10      | Phases 5, 6  |
+| Phase | Focus                | Prompts | Dependencies    |
+| ----- | -------------------- | ------- | --------------- |
+| 1     | Foundation           | 10      | None            |
+| 2     | Question System      | 10      | Phase 1         |
+| 3     | Quiz Builder         | 10      | Phase 2         |
+| 4     | Quiz Taking Engine   | 10      | Phase 3         |
+| 5     | Results & Review     | 8       | Phase 4         |
+| 6     | AI Generation        | 6       | Phase 2         |
+| 7     | LMS Integrations     | 7       | Phases 5, 6     |
+| 8     | Admin Reporting      | 6       | Phases 5, 7     |
+| 9     | Onboarding Wizard    | 5       | Phase 8         |
+| 10    | Final Polish         | 3       | All Phases      |
 
 ---
 
@@ -785,9 +788,9 @@ Add API key management UI:
 
 ---
 
-## Phase 7: LMS Integrations & Polish (10 Prompts)
+## Phase 7: LMS Integrations (7 Prompts)
 
-**Goal:** Complete LMS integrations, Automator triggers, themes, and final polish.
+**Goal:** Complete LMS integrations, Automator triggers, and visual themes.
 
 ### Prompt 7.1: LearnDash Integration
 ```
@@ -869,46 +872,7 @@ Create remaining Gutenberg blocks:
 - Inspector controls for settings
 ```
 
-### Prompt 7.8: Accessibility Audit
-```
-Review and fix accessibility:
-- Keyboard navigation throughout
-- Focus indicators visible
-- ARIA labels on interactive elements
-- Screen reader announcements for timer, saves, errors
-- Form labels properly associated
-- Color contrast checks
-- Skip links where appropriate
-- Test with NVDA or VoiceOver
-```
-
-### Prompt 7.9: Translation Preparation
-```
-Ensure translation readiness:
-- Verify ALL user-facing strings use __() or _e()
-- Create languages/pressprimer-quiz.pot file
-- Translator comments for ambiguous strings
-- RTL CSS support
-- Date/time localization
-- Number formatting localization
-```
-
-### Prompt 7.10: Final Polish
-```
-Final cleanup and optimization:
-- Remove all debug code
-- Minify CSS and JS for production
-- Verify no PHP notices/warnings
-- Test on WordPress 6.0 and latest
-- Test on PHP 7.4 and 8.3
-- Performance check with 1000+ questions
-- Security review
-- Update version numbers
-- Prepare readme.txt for WordPress.org
-- Create screenshots
-```
-
-**Phase 8 Testing:**
+**Phase 7 Testing:**
 - [ ] LearnDash integration works
 - [ ] TutorLMS integration works
 - [ ] LifterLMS integration works
@@ -916,11 +880,270 @@ Final cleanup and optimization:
 - [ ] All three themes display properly
 - [ ] Theme customization applies
 - [ ] Blocks work in Gutenberg
-- [ ] Keyboard-only navigation possible
-- [ ] Screen reader announces properly
+
+---
+
+## Phase 8: Admin Reporting (6 Prompts)
+
+**Goal:** Complete dashboard widget and reports page for administrators.
+
+### Prompt 8.1: Dashboard Statistics Service
+```
+Read docs/versions/v1.0/features/010-admin-reporting.md.
+
+Create includes/services/class-ppq-stats-service.php:
+- get_dashboard_stats() - returns array of summary statistics
+- get_quiz_count() - total published quizzes
+- get_question_count() - total active questions  
+- get_bank_count() - total question banks
+- get_recent_attempts($days) - attempt count for period
+- get_pass_rate($days) - pass percentage for period
+- get_popular_quizzes($limit, $days) - top quizzes by attempts
+- Use efficient SQL queries with proper caching
+```
+
+### Prompt 8.2: Dashboard Widget
+```
+Create includes/admin/class-ppq-dashboard-widget.php:
+- Register widget with wp_add_dashboard_widget
+- Capability check for ppq_manage_own
+- Display summary cards: quizzes, questions, banks, attempts, pass rate
+- Display top 5 popular quizzes list
+- Quick action buttons: Create Quiz, Add Question, View Reports
+- "Launch Onboarding" link (if not completed)
+- CSS in assets/css/admin-widget.css
+- Widget follows WordPress dashboard styling
+```
+
+### Prompt 8.3: Reports Data Layer
+```
+Add to PPQ_Stats_Service:
+- get_quiz_performance($args) - quiz performance with filtering
+- get_recent_attempts_list($args) - paginated attempt list
+- get_attempt_detail($attempt_id) - single attempt with questions
+- Support filters: quiz_id, user_id, date_from, date_to, passed
+- Support sorting and pagination
+- Support search by student name/email
+```
+
+### Prompt 8.4: Reports Page Structure
+```
+Create reports page with React:
+- Add Reports submenu page under PPQ
+- Create assets/js/admin/components/Reports/index.jsx
+- Overview cards showing aggregate metrics
+- Date range selector (7 days, 30 days, 90 days, All, Custom)
+- Two data tables: Quiz Performance, Recent Attempts
+- Loading states and error handling
+```
+
+### Prompt 8.5: Reports Tables
+```
+Create React table components:
+- QuizPerformanceTable.jsx
+  - Columns: Quiz, Attempts, Avg Score, Pass Rate, Avg Time
+  - Sortable columns
+  - Search by quiz title
+  - Pagination
+- RecentAttemptsTable.jsx
+  - Columns: Student, Quiz, Score, Status, Date, Duration
+  - Filters: Quiz dropdown, Pass/Fail, Date range
+  - Search by student name/email
+  - Click row to view details
+  - Pagination
+```
+
+### Prompt 8.6: Attempt Detail Modal
+```
+Create AttemptDetailModal.jsx:
+- Modal displays on row click in Recent Attempts table
+- Student info (name, email)
+- Quiz title and date/time
+- Score (points and percentage)
+- Pass/fail status with visual indicator
+- Duration
+- Per-question breakdown list:
+  - Question stem (truncated)
+  - Correct/Incorrect indicator
+  - Time spent
+- "View Full Results" link to frontend results page
+- Close button
+- Accessibility: focus trap, escape to close
+```
+
+**Phase 8 Testing:**
+- [ ] Dashboard widget appears on WP dashboard
+- [ ] Statistics display correctly
+- [ ] Popular quizzes list updates
+- [ ] Quick links work
+- [ ] Reports page loads without errors
+- [ ] Date range filter works
+- [ ] Quiz performance table sorts
+- [ ] Recent attempts filters work
+- [ ] Search finds students
+- [ ] Pagination works
+- [ ] Attempt modal displays correctly
+- [ ] Performance acceptable with 1000+ attempts
+
+---
+
+## Phase 9: Onboarding Wizard (5 Prompts)
+
+**Goal:** Create an interactive onboarding experience for new users.
+
+### Prompt 9.1: Onboarding State Management
+```
+Read docs/versions/v1.0/features/011-onboarding-wizard.md.
+
+Create includes/admin/class-ppq-onboarding.php:
+- User meta keys: ppq_onboarding_completed, ppq_onboarding_skipped, ppq_onboarding_step
+- should_show_onboarding() - check if user should see wizard
+- complete_onboarding($user_id) - mark as completed
+- skip_onboarding($user_id, $permanent) - skip wizard
+- reset_onboarding($user_id) - reset for user (admin only)
+- get_onboarding_state($user_id) - get current state
+- AJAX handlers for state updates
+```
+
+### Prompt 9.2: Onboarding React Components
+```
+Create assets/js/admin/components/Onboarding/:
+- index.jsx - Main container, manages step state
+- WelcomeScreen.jsx - Initial modal with Get Started/Skip
+- ProgressBar.jsx - Step progress dots
+- WizardNavigation.jsx - Back/Skip/Next buttons
+- useOnboarding.js hook for state management
+- Load on all PPQ admin pages when should_show is true
+```
+
+### Prompt 9.3: Spotlight and Tooltip System
+```
+Create interactive highlighting components:
+- Spotlight.jsx - SVG mask overlay with cutout for target element
+- Tooltip.jsx - Positioned tooltip with content
+- Calculate positions relative to target elements
+- Support positions: top, bottom, left, right
+- Smooth scroll target into view
+- Pulse animation on highlighted element
+- Handle window resize
+- CSS in assets/css/admin-onboarding.css
+```
+
+### Prompt 9.4: Wizard Steps
+```
+Create individual step components in Onboarding/steps/:
+- OverviewStep.jsx - Workflow diagram (Questions → Banks → Quizzes → Results)
+- QuestionsStep.jsx - Navigate to Questions, highlight create button
+- BanksStep.jsx - Navigate to Banks, explain organization
+- QuizBuilderStep.jsx - Navigate to Quizzes, highlight builder elements
+- AIStep.jsx - Show AI capabilities (conditionally, if API key set)
+- ReportsStep.jsx - Navigate to Reports, explain metrics
+- CompletionStep.jsx - Congratulations with action buttons
+
+Each step:
+- Uses Spotlight to highlight relevant UI elements
+- Has clear explanatory text
+- Supports Back/Skip/Next navigation
+- Updates progress via AJAX
+```
+
+### Prompt 9.5: Wizard Launch Points
+```
+Add wizard launch capabilities:
+- Update dashboard widget: add "Launch Onboarding" button (visible to all)
+- Add "Launch Onboarding" link in Settings page
+- Both trigger wizard from step 1
+- Reset onboarding state when relaunching
+- Ensure wizard can be relaunched even after completion
+
+Accessibility:
+- Keyboard navigation throughout
+- Focus trap in modals
+- Escape key to close/skip
+- Screen reader announcements
+- Respect prefers-reduced-motion
+```
+
+**Phase 9 Testing:**
+- [ ] Wizard appears on first admin visit
+- [ ] Welcome screen displays correctly
+- [ ] Progress dots update
+- [ ] Get Started begins wizard
+- [ ] Skip dismisses wizard
+- [ ] Don't show again works
+- [ ] Each step navigates correctly
+- [ ] Spotlight highlights correct elements
+- [ ] Tooltips position correctly
+- [ ] Back/Skip/Next work
+- [ ] Completion screen shows
+- [ ] State persists on refresh
+- [ ] Dashboard widget shows launch button
+- [ ] Settings shows launch link
+- [ ] Relaunch works after completion
+- [ ] Keyboard navigation works
+- [ ] Screen reader compatible
+
+---
+
+## Phase 10: Final Polish (3 Prompts)
+
+**Goal:** Accessibility audit, translation preparation, and final cleanup.
+
+### Prompt 10.1: Accessibility Audit
+```
+Review and fix accessibility throughout the plugin:
+- Keyboard navigation on all interactive elements
+- Focus indicators visible
+- ARIA labels on buttons, inputs, dynamic content
+- Screen reader announcements for timer, saves, errors
+- Form labels properly associated with inputs
+- Color contrast meets WCAG 2.1 AA (4.5:1 for text)
+- Skip links where appropriate
+- Test with NVDA or VoiceOver
+- Document any known limitations
+```
+
+### Prompt 10.2: Translation Preparation
+```
+Ensure translation readiness:
+- Audit ALL user-facing strings use __() or _e()
+- Generate languages/pressprimer-quiz.pot file using WP-CLI or equivalent
+- Add translator comments for ambiguous strings
+- Verify RTL CSS support (test with RTL language)
+- Date/time localization uses wp_date()
+- Number formatting uses number_format_i18n()
+- Pluralization uses _n() where appropriate
+```
+
+### Prompt 10.3: Final Cleanup
+```
+Final cleanup and optimization:
+- Remove all debug code and console.log statements
+- Minify CSS and JS for production builds
+- Verify no PHP notices, warnings, or errors (WP_DEBUG = true)
+- Test on WordPress 6.0 and latest version
+- Test on PHP 7.4, 8.1, and 8.3
+- Performance check with 1000+ questions (queries < 100ms)
+- Security review: escaping, sanitization, nonces, capabilities
+- Update version numbers in all files
+- Verify all constants defined correctly
+- Prepare readme.txt for WordPress.org
+- Create screenshots (minimum 3)
+- Verify plugin icon and banner images ready
+```
+
+**Phase 10 Testing:**
+- [ ] Keyboard-only navigation possible throughout
+- [ ] Screen reader announces all changes properly
 - [ ] No translation strings missed
-- [ ] No PHP errors on any page
+- [ ] POT file generates correctly
+- [ ] RTL layout displays correctly
+- [ ] No PHP errors or warnings
+- [ ] No JavaScript console errors
 - [ ] Performance acceptable
+- [ ] Security checklist complete
+- [ ] readme.txt validates
+- [ ] Screenshots captured
 
 ---
 

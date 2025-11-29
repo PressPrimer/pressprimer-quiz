@@ -7,6 +7,7 @@ module.exports = {
 		'question-editor': path.resolve(process.cwd(), 'src', 'question-editor', 'index.js'),
 		'quiz-editor': path.resolve(process.cwd(), 'src', 'quiz-editor', 'index.js'),
 		'bank-editor': path.resolve(process.cwd(), 'src', 'bank-editor', 'index.js'),
+		'settings-panel': path.resolve(process.cwd(), 'src', 'settings-panel', 'index.js'),
 		'blocks/my-attempts/index': path.resolve(process.cwd(), 'blocks', 'my-attempts', 'index.js'),
 	},
 	output: {

@@ -52,6 +52,7 @@ class PPQ_Shortcodes {
 	 * Displays a quiz landing page or quiz interface.
 	 *
 	 * Usage: [ppq_quiz id="123"]
+	 * Usage with context: [ppq_quiz id="123" context="base64_encoded_json"]
 	 *
 	 * @since 1.0.0
 	 *
@@ -62,11 +63,29 @@ class PPQ_Shortcodes {
 		// Parse attributes
 		$atts = shortcode_atts(
 			[
-				'id' => 0,
+				'id'      => 0,
+				'context' => '', // Base64 encoded JSON for integration context (e.g., LearnDash)
 			],
 			$atts,
 			'ppq_quiz'
 		);
+
+		// Decode context if provided (used by LMS integrations)
+		$context = [];
+		if ( ! empty( $atts['context'] ) ) {
+			$decoded = base64_decode( $atts['context'] );
+			if ( $decoded ) {
+				$context = json_decode( $decoded, true );
+				if ( ! is_array( $context ) ) {
+					$context = [];
+				}
+			}
+		}
+
+		// Store context in a global for the attempt creation to pick up
+		if ( ! empty( $context ) ) {
+			$GLOBALS['ppq_quiz_context'] = $context;
+		}
 
 		$quiz_id = absint( $atts['id'] );
 

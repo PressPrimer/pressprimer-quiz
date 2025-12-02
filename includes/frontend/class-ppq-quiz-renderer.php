@@ -36,7 +36,7 @@ class PPQ_Quiz_Renderer {
 	 */
 	public function render_landing( $quiz ) {
 		// Enqueue assets
-		$this->enqueue_assets();
+		$this->enqueue_assets( $quiz );
 
 		$user_id = get_current_user_id();
 		$is_logged_in = $user_id > 0;
@@ -103,11 +103,14 @@ class PPQ_Quiz_Renderer {
 			}
 		}
 
+		// Get theme class
+		$theme_class = PPQ_Theme_Loader::get_theme_class( PPQ_Theme_Loader::get_quiz_theme( $quiz ) );
+
 		// Start output buffering
 		ob_start();
 
 		?>
-		<div class="ppq-quiz-landing" data-quiz-id="<?php echo esc_attr( $quiz->id ); ?>">
+		<div class="ppq-quiz-landing <?php echo esc_attr( $theme_class ); ?>" data-quiz-id="<?php echo esc_attr( $quiz->id ); ?>">
 
 			<?php if ( $quiz->featured_image_id ) : ?>
 				<div class="ppq-quiz-header-image">
@@ -320,8 +323,11 @@ class PPQ_Quiz_Renderer {
 	 * @return string Rendered HTML.
 	 */
 	public function render_quiz( $attempt ) {
+		// Get quiz first for asset loading
+		$quiz = $attempt->get_quiz();
+
 		// Enqueue assets
-		$this->enqueue_assets();
+		$this->enqueue_assets( $quiz );
 
 		// Check if attempt is valid
 		if ( 'in_progress' !== $attempt->status ) {
@@ -366,8 +372,7 @@ class PPQ_Quiz_Renderer {
 			return ob_get_clean();
 		}
 
-		// Get quiz
-		$quiz = $attempt->get_quiz();
+		// Verify quiz was loaded (already loaded earlier for asset enqueuing)
 		if ( ! $quiz ) {
 			return '<div class="ppq-error ppq-notice ppq-notice-error"><p>' .
 				esc_html__( 'Quiz not found.', 'pressprimer-quiz' ) .
@@ -391,11 +396,14 @@ class PPQ_Quiz_Renderer {
 			$time_remaining = max( 0, $time_limit - $elapsed );
 		}
 
+		// Get theme class
+		$theme_class = PPQ_Theme_Loader::get_theme_class( PPQ_Theme_Loader::get_quiz_theme( $quiz ) );
+
 		// Start output buffering
 		ob_start();
 
 		?>
-		<div class="ppq-quiz-interface"
+		<div class="ppq-quiz-interface <?php echo esc_attr( $theme_class ); ?>"
 			 data-attempt-id="<?php echo esc_attr( $attempt->id ); ?>"
 			 data-quiz-id="<?php echo esc_attr( $quiz->id ); ?>"
 			 data-time-limit="<?php echo esc_attr( $time_limit ); ?>"
@@ -597,8 +605,10 @@ class PPQ_Quiz_Renderer {
 	 * Enqueue frontend assets
 	 *
 	 * @since 1.0.0
+	 *
+	 * @param PPQ_Quiz|null $quiz Quiz object for theme loading.
 	 */
-	private function enqueue_assets() {
+	private function enqueue_assets( $quiz = null ) {
 		// Enqueue quiz CSS
 		wp_enqueue_style(
 			'ppq-quiz',
@@ -607,7 +617,16 @@ class PPQ_Quiz_Renderer {
 			PPQ_VERSION
 		);
 
-		// Enqueue quiz JavaScript (will be created in 4.7)
+		// Enqueue theme CSS
+		if ( $quiz ) {
+			PPQ_Theme_Loader::enqueue_quiz_theme( $quiz );
+			PPQ_Theme_Loader::output_custom_css( $quiz );
+		} else {
+			// Fallback to default theme if no quiz provided
+			PPQ_Theme_Loader::enqueue_theme( 'default' );
+		}
+
+		// Enqueue quiz JavaScript
 		wp_enqueue_script(
 			'ppq-quiz',
 			PPQ_PLUGIN_URL . 'assets/js/quiz.js',
@@ -624,15 +643,21 @@ class PPQ_Quiz_Renderer {
 				'ajaxUrl' => admin_url( 'admin-ajax.php' ),
 				'nonce'   => wp_create_nonce( 'ppq_quiz_nonce' ),
 				'strings' => [
-					'startingQuiz'      => __( 'Starting quiz...', 'pressprimer-quiz' ),
-					'error'             => __( 'An error occurred. Please try again.', 'pressprimer-quiz' ),
-					'emailRequired'     => __( 'Please enter a valid email address.', 'pressprimer-quiz' ),
-					'submittingQuiz'    => __( 'Submitting quiz...', 'pressprimer-quiz' ),
-					'confirmSubmit'     => __( 'Are you sure you want to submit your quiz? You cannot change your answers after submitting.', 'pressprimer-quiz' ),
-					'timeExpired'       => __( 'Time has expired. Your quiz is being submitted automatically.', 'pressprimer-quiz' ),
-					'saved'             => __( 'Saved', 'pressprimer-quiz' ),
-					'saving'            => __( 'Saving...', 'pressprimer-quiz' ),
-					'saveFailed'        => __( 'Save failed', 'pressprimer-quiz' ),
+					'startingQuiz'       => __( 'Starting quiz...', 'pressprimer-quiz' ),
+					'error'              => __( 'An error occurred. Please try again.', 'pressprimer-quiz' ),
+					'emailRequired'      => __( 'Please enter a valid email address.', 'pressprimer-quiz' ),
+					'submittingQuiz'     => __( 'Submitting quiz...', 'pressprimer-quiz' ),
+					'confirmSubmit'      => __( 'Are you sure you want to submit your quiz? You cannot change your answers after submitting.', 'pressprimer-quiz' ),
+					'timeExpired'        => __( 'Time has expired. Your quiz is being submitted automatically.', 'pressprimer-quiz' ),
+					'saved'              => __( 'Saved', 'pressprimer-quiz' ),
+					'saving'             => __( 'Saving...', 'pressprimer-quiz' ),
+					'saveFailed'         => __( 'Save failed', 'pressprimer-quiz' ),
+					'unansweredTitle'    => __( 'Unanswered Questions', 'pressprimer-quiz' ),
+					'unansweredSingle'   => __( 'Question {question} has not been answered.', 'pressprimer-quiz' ),
+					'unansweredMultiple' => __( 'Questions {questions} have not been answered.', 'pressprimer-quiz' ),
+					'unansweredMany'     => __( 'You have {count} unanswered questions.', 'pressprimer-quiz' ),
+					'goToQuestion'       => __( 'Go to Question {question}', 'pressprimer-quiz' ),
+					'submitAnyway'       => __( 'Submit Anyway', 'pressprimer-quiz' ),
 				],
 			]
 		);

@@ -190,6 +190,13 @@
 		pendingSaves: {},
 		isSaving: false,
 
+		// Active time tracking
+		activeElapsedMs: 0,
+		lastActiveTimestamp: null,
+		isTabActive: true,
+		heartbeatInterval: null,
+		heartbeatDelay: 30000, // 30 seconds
+
 		// Edge case handling
 		timerPaused: false,
 		hasUnsavedChanges: false,
@@ -215,8 +222,12 @@
 			// Initialize components
 			this.bindEvents();
 			this.bindEdgeCaseHandlers();
+			this.syncSelectionState();
 			this.updateProgress();
 			this.updateNavButtons();
+
+			// Start active time tracking
+			this.startActiveTimeTracking();
 
 			// Start timer if timed quiz
 			if (this.timeLimit && this.timeRemaining) {
@@ -225,6 +236,24 @@
 
 			// Show first question
 			this.showQuestion(0);
+		},
+
+		/**
+		 * Sync visual selection state with actual input state
+		 *
+		 * Ensures ppq-selected class matches checked inputs on all questions.
+		 */
+		syncSelectionState: function() {
+			$('.ppq-answer-input').each(function() {
+				const $input = $(this);
+				const $option = $input.closest('.ppq-answer-option');
+
+				if ($input.is(':checked')) {
+					$option.addClass('ppq-selected');
+				} else {
+					$option.removeClass('ppq-selected');
+				}
+			});
 		},
 
 		/**
@@ -255,12 +284,30 @@
 				self.handleAnswerChange($(this));
 			});
 
-			// Update visual state when answer option clicked
+			// Handle clicks on answer options
+			// Since the input is hidden (width/height: 0), we need to manually handle clicks
+			// on the visible parts of the label (the custom radio/checkbox and text)
 			$(document).on('click', '.ppq-answer-option', function(e) {
-				// Let the input handle the change
-				if (e.target.tagName !== 'INPUT') {
-					$(this).find('.ppq-answer-input').trigger('click');
+				// If clicking directly on the input, let native behavior handle it
+				if (e.target.tagName === 'INPUT') {
+					return;
 				}
+
+				// Prevent the label's native "click input" behavior since we'll handle it manually
+				e.preventDefault();
+
+				const $input = $(this).find('.ppq-answer-input');
+
+				if ($input.attr('type') === 'checkbox') {
+					// Toggle checkbox
+					$input.prop('checked', !$input.prop('checked'));
+				} else {
+					// Select radio
+					$input.prop('checked', true);
+				}
+
+				// Call handler directly instead of triggering synthetic event
+				self.handleAnswerChange($input);
 			});
 
 			// Keyboard navigation
@@ -345,17 +392,18 @@
 		 * Handle tab hidden (user switched away)
 		 */
 		handleTabHidden: function() {
-			// Pause timer for timed quizzes to prevent unfair time loss
-			// Note: This is optional - some quiz systems continue the timer
-			// For now, we'll continue the timer even when hidden for fairness
-			// (prevents cheating by looking up answers in another tab)
+			// Pause active time tracking
+			this.pauseActiveTimeTracking();
 
-			// Force save any pending answers
+			// Force save any pending answers (includes active time)
 			if (Object.keys(this.pendingSaves).length > 0) {
 				if (this.autoSaveTimer) {
 					clearTimeout(this.autoSaveTimer);
 				}
 				this.performAutoSave();
+			} else {
+				// No pending answers, but sync the active time
+				this.syncActiveTime();
 			}
 		},
 
@@ -363,6 +411,9 @@
 		 * Handle tab visible (user switched back)
 		 */
 		handleTabVisible: function() {
+			// Resume active time tracking
+			this.resumeActiveTimeTracking();
+
 			// Check if quiz timed out while tab was hidden
 			if (this.timeLimit && this.timeRemaining <= 0) {
 				this.handleTimeExpired();
@@ -578,16 +629,35 @@
 			this.isSaving = true;
 			this.showAutoSaveIndicator('saving');
 
+			// Get current active elapsed time
+			const activeElapsedMs = this.getCurrentActiveElapsedMs();
+
+			// Build form data manually to ensure proper array serialization
+			const formData = {
+				action: 'ppq_save_answers',
+				nonce: ppqQuiz.nonce,
+				attempt_id: this.attemptId,
+				active_elapsed_ms: activeElapsedMs
+			};
+
+			// Add answers with proper array notation for PHP
+			Object.keys(saves).forEach(function(itemId) {
+				const answers = saves[itemId];
+				if (Array.isArray(answers) && answers.length > 0) {
+					answers.forEach(function(answerId, index) {
+						formData['answers[' + itemId + '][' + index + ']'] = answerId;
+					});
+				} else if (Array.isArray(answers) && answers.length === 0) {
+					// Empty array - send empty marker so PHP knows to clear answers
+					formData['answers[' + itemId + '][]'] = '';
+				}
+			});
+
 			// Make AJAX request
 			$.ajax({
 				url: ppqQuiz.ajaxUrl,
 				type: 'POST',
-				data: {
-					action: 'ppq_save_answers',
-					nonce: ppqQuiz.nonce,
-					attempt_id: this.attemptId,
-					answers: saves
-				},
+				data: formData,
 				success: function(response) {
 					self.isSaving = false;
 
@@ -598,7 +668,11 @@
 					} else {
 						// Save failed - add back to queue
 						Object.assign(self.pendingSaves, saves);
-						self.showAutoSaveIndicator('failed');
+						// Show more descriptive error message
+						const errorMsg = response.data && response.data.message
+							? response.data.message
+							: ppqQuiz.strings.saveFailed;
+						self.showAutoSaveIndicator('failed', errorMsg);
 					}
 				},
 				error: function() {
@@ -619,8 +693,9 @@
 		 * Show auto-save indicator
 		 *
 		 * @param {string} state State: 'saving', 'saved', 'failed'
+		 * @param {string} message Optional custom message for failed state
 		 */
-		showAutoSaveIndicator: function(state) {
+		showAutoSaveIndicator: function(state, message) {
 			const $indicator = $('#ppq-autosave-indicator');
 			const $text = $indicator.find('.ppq-autosave-text');
 			const $icon = $indicator.find('.ppq-autosave-icon');
@@ -635,7 +710,8 @@
 				$icon.text('✓');
 				$indicator.removeClass('ppq-autosave-saving ppq-autosave-error');
 			} else if (state === 'failed') {
-				$text.text(ppqQuiz.strings.saveFailed);
+				// Use custom message if provided, otherwise use default
+				$text.text(message || ppqQuiz.strings.saveFailed);
 				$icon.text('⚠️');
 				$indicator.removeClass('ppq-autosave-saving').addClass('ppq-autosave-error');
 			}
@@ -707,6 +783,15 @@
 				return;
 			}
 
+			// Check for unanswered questions (skip for auto-submit on timeout)
+			if (!autoSubmit) {
+				const unanswered = this.getUnansweredQuestions();
+				if (unanswered.length > 0) {
+					this.showUnansweredWarning(unanswered);
+					return;
+				}
+			}
+
 			// Set submitting state
 			this.isSubmitting = true;
 			this.isAutoSubmit = autoSubmit;
@@ -744,6 +829,10 @@
 			const self = this;
 			const $submitButton = $('#ppq-submit-button');
 
+			// Stop heartbeat and get final active time
+			this.stopHeartbeat();
+			const finalActiveElapsedMs = this.getCurrentActiveElapsedMs();
+
 			// Make AJAX request
 			$.ajax({
 				url: ppqQuiz.ajaxUrl,
@@ -753,7 +842,8 @@
 					nonce: ppqQuiz.nonce,
 					attempt_id: this.attemptId,
 					timed_out: this.isAutoSubmit,
-					current_url: window.location.href
+					current_url: window.location.href,
+					active_elapsed_ms: finalActiveElapsedMs
 				},
 				success: (response) => {
 					if (response.success && response.data.redirect_url) {
@@ -797,6 +887,235 @@
 		 */
 		padZero: function(num) {
 			return num < 10 ? '0' + num : num.toString();
+		},
+
+		/**
+		 * Start active time tracking
+		 *
+		 * Tracks time when the user is actively engaged with the quiz.
+		 * Pauses when tab is hidden or browser is minimized.
+		 */
+		startActiveTimeTracking: function() {
+			// Initialize timestamp
+			this.lastActiveTimestamp = Date.now();
+			this.isTabActive = true;
+
+			// Start heartbeat interval for syncing time when no answers are being saved
+			this.startHeartbeat();
+		},
+
+		/**
+		 * Pause active time tracking
+		 *
+		 * Called when tab becomes hidden or browser loses focus.
+		 */
+		pauseActiveTimeTracking: function() {
+			if (!this.isTabActive) {
+				return; // Already paused
+			}
+
+			// Calculate elapsed time since last timestamp
+			if (this.lastActiveTimestamp) {
+				const now = Date.now();
+				this.activeElapsedMs += (now - this.lastActiveTimestamp);
+			}
+
+			this.isTabActive = false;
+			this.lastActiveTimestamp = null;
+		},
+
+		/**
+		 * Resume active time tracking
+		 *
+		 * Called when tab becomes visible again.
+		 */
+		resumeActiveTimeTracking: function() {
+			if (this.isTabActive) {
+				return; // Already active
+			}
+
+			this.isTabActive = true;
+			this.lastActiveTimestamp = Date.now();
+		},
+
+		/**
+		 * Get current total active elapsed time in milliseconds
+		 *
+		 * @return {number} Total active time in milliseconds
+		 */
+		getCurrentActiveElapsedMs: function() {
+			let total = this.activeElapsedMs;
+
+			// Add time since last timestamp if currently active
+			if (this.isTabActive && this.lastActiveTimestamp) {
+				total += (Date.now() - this.lastActiveTimestamp);
+			}
+
+			return Math.round(total);
+		},
+
+		/**
+		 * Start heartbeat interval for syncing time
+		 *
+		 * Syncs active time every 30 seconds when no auto-save is occurring.
+		 */
+		startHeartbeat: function() {
+			const self = this;
+
+			// Clear any existing interval
+			if (this.heartbeatInterval) {
+				clearInterval(this.heartbeatInterval);
+			}
+
+			// Start heartbeat
+			this.heartbeatInterval = setInterval(function() {
+				// Only sync if tab is active and not currently saving
+				if (self.isTabActive && !self.isSaving && Object.keys(self.pendingSaves).length === 0) {
+					self.syncActiveTime();
+				}
+			}, this.heartbeatDelay);
+		},
+
+		/**
+		 * Stop heartbeat interval
+		 */
+		stopHeartbeat: function() {
+			if (this.heartbeatInterval) {
+				clearInterval(this.heartbeatInterval);
+				this.heartbeatInterval = null;
+			}
+		},
+
+		/**
+		 * Get list of unanswered question indices
+		 *
+		 * @return {Array} Array of question indices (0-based) that are unanswered
+		 */
+		getUnansweredQuestions: function() {
+			const unanswered = [];
+
+			$('.ppq-question').each(function(index) {
+				const $question = $(this);
+				const hasAnswer = $question.find('.ppq-answer-input:checked').length > 0;
+
+				if (!hasAnswer) {
+					unanswered.push(index);
+				}
+			});
+
+			return unanswered;
+		},
+
+		/**
+		 * Show warning about unanswered questions
+		 *
+		 * @param {Array} unanswered Array of unanswered question indices
+		 */
+		showUnansweredWarning: function(unanswered) {
+			const self = this;
+			const questionNumbers = unanswered.map(function(idx) { return idx + 1; });
+
+			// Build message
+			let message;
+			if (unanswered.length === 1) {
+				message = ppqQuiz.strings.unansweredSingle.replace('{question}', questionNumbers[0]);
+			} else if (unanswered.length <= 5) {
+				message = ppqQuiz.strings.unansweredMultiple.replace('{questions}', questionNumbers.join(', '));
+			} else {
+				message = ppqQuiz.strings.unansweredMany.replace('{count}', unanswered.length);
+			}
+
+			// Remove any existing warning
+			$('.ppq-unanswered-overlay').remove();
+
+			// Create overlay with warning
+			const $overlay = $('<div class="ppq-unanswered-overlay">' +
+				'<div class="ppq-unanswered-warning">' +
+				'<p><strong>' + ppqQuiz.strings.unansweredTitle + '</strong></p>' +
+				'<p>' + message + '</p>' +
+				'<div class="ppq-unanswered-actions">' +
+				'<button type="button" class="ppq-button ppq-button-secondary ppq-go-to-first">' +
+				ppqQuiz.strings.goToQuestion.replace('{question}', questionNumbers[0]) +
+				'</button>' +
+				'<button type="button" class="ppq-button ppq-button-primary ppq-submit-anyway">' +
+				ppqQuiz.strings.submitAnyway +
+				'</button>' +
+				'</div>' +
+				'</div>' +
+				'</div>');
+
+			// Append to body
+			$('body').append($overlay);
+
+			// Bind events
+			$overlay.find('.ppq-go-to-first').on('click', function() {
+				$overlay.remove();
+				self.showQuestion(unanswered[0]);
+			});
+
+			$overlay.find('.ppq-submit-anyway').on('click', function() {
+				$overlay.remove();
+				// Force submit without checking again
+				self.isSubmitting = true;
+				self.isAutoSubmit = false;
+				$('#ppq-submit-button').prop('disabled', true).addClass('ppq-loading');
+
+				// Stop timer if running
+				if (self.timerInterval) {
+					clearInterval(self.timerInterval);
+				}
+
+				// Wait for pending saves then submit
+				const waitForSaves = function() {
+					if (self.isSaving || Object.keys(self.pendingSaves).length > 0) {
+						setTimeout(waitForSaves, 100);
+						return;
+					}
+					self.performSubmission();
+				};
+				waitForSaves();
+			});
+
+			// Close overlay when clicking backdrop
+			$overlay.on('click', function(e) {
+				if ($(e.target).hasClass('ppq-unanswered-overlay')) {
+					$overlay.remove();
+				}
+			});
+		},
+
+		/**
+		 * Sync active time to server
+		 *
+		 * Lightweight endpoint that only updates active_elapsed_ms.
+		 */
+		syncActiveTime: function() {
+			const self = this;
+
+			// Don't sync if offline
+			if (!this.isOnline) {
+				return;
+			}
+
+			const activeElapsedMs = this.getCurrentActiveElapsedMs();
+
+			$.ajax({
+				url: ppqQuiz.ajaxUrl,
+				type: 'POST',
+				data: {
+					action: 'ppq_sync_time',
+					nonce: ppqQuiz.nonce,
+					attempt_id: this.attemptId,
+					active_elapsed_ms: activeElapsedMs
+				},
+				// Silent - no UI feedback for heartbeat
+				success: function() {
+					// Time synced successfully
+				},
+				error: function() {
+					// Ignore errors for heartbeat - will retry next interval
+				}
+			});
 		}
 	};
 

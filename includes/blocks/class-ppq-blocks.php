@@ -79,8 +79,111 @@ class PPQ_Blocks {
 			return;
 		}
 
+		// Register Quiz block
+		$this->register_quiz_block();
+
 		// Register My Attempts block
 		$this->register_my_attempts_block();
+	}
+
+	/**
+	 * Register Quiz block
+	 *
+	 * @since 1.0.0
+	 */
+	private function register_quiz_block() {
+		// Get asset file for dependencies and version
+		$asset_file = PPQ_PLUGIN_PATH . 'build/blocks/quiz/index.asset.php';
+
+		if ( ! file_exists( $asset_file ) ) {
+			return;
+		}
+
+		$asset = require $asset_file;
+
+		// Register block script
+		wp_register_script(
+			'pressprimer-quiz-quiz-block-editor',
+			PPQ_PLUGIN_URL . 'build/blocks/quiz/index.js',
+			$asset['dependencies'],
+			$asset['version']
+		);
+
+		// Register editor style
+		wp_register_style(
+			'pressprimer-quiz-quiz-block-editor-style',
+			PPQ_PLUGIN_URL . 'blocks/quiz/editor.css',
+			[],
+			PPQ_VERSION
+		);
+
+		// Register frontend style
+		wp_register_style(
+			'pressprimer-quiz-quiz-block-style',
+			PPQ_PLUGIN_URL . 'blocks/quiz/style.css',
+			[],
+			PPQ_VERSION
+		);
+
+		// Register block type
+		register_block_type( 'pressprimer-quiz/quiz', [
+			'api_version'     => 2,
+			'title'           => __( 'PPQ Quiz', 'pressprimer-quiz' ),
+			'description'     => __( 'Display a quiz for users to take.', 'pressprimer-quiz' ),
+			'category'        => 'pressprimer-quiz',
+			'icon'            => 'welcome-learn-more',
+			'supports'        => [
+				'html'  => false,
+				'align' => [ 'wide', 'full' ],
+			],
+			'editor_script'   => 'pressprimer-quiz-quiz-block-editor',
+			'editor_style'    => 'pressprimer-quiz-quiz-block-editor-style',
+			'style'           => 'pressprimer-quiz-quiz-block-style',
+			'render_callback' => [ $this, 'render_quiz_block' ],
+			'attributes'      => [
+				'quizId' => [
+					'type'    => 'number',
+					'default' => 0,
+				],
+			],
+		] );
+	}
+
+	/**
+	 * Render Quiz block
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param array $attributes Block attributes.
+	 * @return string Rendered block HTML.
+	 */
+	public function render_quiz_block( $attributes ) {
+		// Get quiz ID from attributes
+		$quiz_id = isset( $attributes['quizId'] ) ? absint( $attributes['quizId'] ) : 0;
+
+		// If no quiz selected, show placeholder
+		if ( ! $quiz_id ) {
+			return '<div class="wp-block-pressprimer-quiz-quiz ppq-block-placeholder">' .
+				'<p>' . esc_html__( 'Please select a quiz to display.', 'pressprimer-quiz' ) . '</p>' .
+				'</div>';
+		}
+
+		// Use the shortcode handler to render
+		if ( ! class_exists( 'PPQ_Shortcodes' ) ) {
+			return '<div class="ppq-error">' . esc_html__( 'Quiz renderer not available.', 'pressprimer-quiz' ) . '</div>';
+		}
+
+		// Build shortcode attributes
+		$shortcode_atts = [
+			'id' => $quiz_id,
+		];
+
+		// Call the shortcode handler
+		$shortcodes = new PPQ_Shortcodes();
+		$output = $shortcodes->render_quiz( $shortcode_atts );
+
+		// Wrap in block div
+		return '<div class="wp-block-pressprimer-quiz-quiz">' . $output . '</div>';
 	}
 
 	/**
@@ -125,7 +228,7 @@ class PPQ_Blocks {
 		// Register block type
 		register_block_type( 'pressprimer-quiz/my-attempts', [
 			'api_version'     => 2,
-			'title'           => __( 'My Quiz Attempts', 'pressprimer-quiz' ),
+			'title'           => __( 'PPQ Quiz Attempts', 'pressprimer-quiz' ),
 			'description'     => __( 'Display a list of the current user\'s quiz attempts.', 'pressprimer-quiz' ),
 			'category'        => 'pressprimer-quiz',
 			'icon'            => 'list-view',

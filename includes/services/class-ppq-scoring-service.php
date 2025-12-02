@@ -40,11 +40,14 @@ class PPQ_Scoring_Service {
 	public function score_response( $question, $revision, array $selected_answers ) {
 		$answers = $revision->get_answers();
 
+		// Ensure selected_answers are integers for consistent comparison
+		$selected_answers = array_map( 'intval', $selected_answers );
+
 		// Get correct answer indices
 		$correct_indices = [];
 		foreach ( $answers as $index => $answer ) {
-			if ( $answer['is_correct'] ) {
-				$correct_indices[] = $index;
+			if ( ! empty( $answer['is_correct'] ) ) {
+				$correct_indices[] = (int) $index;
 			}
 		}
 

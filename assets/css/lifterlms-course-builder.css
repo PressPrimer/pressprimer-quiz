@@ -1,0 +1,28 @@
+/**
+ * LifterLMS Course Builder - PPQ Quiz Styles
+ *
+ * Minimal styles for the PPQ Quiz lesson indicator.
+ * Quiz selection now uses LifterLMS native custom fields.
+ *
+ * @package PressPrimer_Quiz
+ * @since 1.0.0
+ */
+
+/* PPQ Quiz Lesson Indicator in Sidebar */
+.ppq-lesson-indicator {
+	font-size: 11px;
+	color: #7b68ee;
+	padding: 4px 8px;
+	font-style: italic;
+	background: #f8f8ff;
+	border-radius: 3px;
+	margin-top: 4px;
+}
+
+/* Responsive */
+@media (max-width: 782px) {
+	.ppq-lesson-indicator {
+		font-size: 10px;
+		padding: 3px 6px;
+	}
+}

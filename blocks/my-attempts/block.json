@@ -3,7 +3,7 @@
 	"apiVersion": 2,
 	"name": "pressprimer-quiz/my-attempts",
 	"version": "1.0.0",
-	"title": "My Quiz Attempts",
+	"title": "PPQ Quiz Attempts",
 	"category": "pressprimer-quiz",
 	"icon": "list-view",
 	"description": "Display a list of the current user's quiz attempts.",

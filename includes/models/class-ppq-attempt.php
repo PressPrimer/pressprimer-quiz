@@ -97,12 +97,23 @@ class PPQ_Attempt extends PPQ_Model {
 	public $finished_at;
 
 	/**
-	 * Elapsed time in milliseconds
+	 * Elapsed time in milliseconds (wall-clock time)
 	 *
 	 * @since 1.0.0
 	 * @var int|null
 	 */
 	public $elapsed_ms;
+
+	/**
+	 * Active elapsed time in milliseconds (actual engagement time)
+	 *
+	 * Tracks time when the browser tab is visible/active.
+	 * Pauses when tab is hidden, browser is minimized, or device is locked.
+	 *
+	 * @since 1.0.0
+	 * @var int|null
+	 */
+	public $active_elapsed_ms;
 
 	/**
 	 * Score in points
@@ -212,6 +223,7 @@ class PPQ_Attempt extends PPQ_Model {
 			'started_at',
 			'finished_at',
 			'elapsed_ms',
+			'active_elapsed_ms',
 			'score_points',
 			'max_points',
 			'score_percent',
@@ -600,15 +612,16 @@ class PPQ_Attempt extends PPQ_Model {
 	 * Save answer for a question
 	 *
 	 * Saves student's selected answer(s) for a specific question.
+	 * Accepts either an attempt_item_id or question_revision_id.
 	 *
 	 * @since 1.0.0
 	 *
-	 * @param int   $question_revision_id Question revision ID.
-	 * @param array $selected_answers Array of selected answer IDs.
+	 * @param int   $item_or_revision_id Attempt item ID or question revision ID.
+	 * @param array $selected_answers Array of selected answer indices.
 	 * @param bool  $confidence Whether student is confident in answer.
 	 * @return bool|WP_Error True on success, WP_Error on failure.
 	 */
-	public function save_answer( int $question_revision_id, array $selected_answers, bool $confidence = false ) {
+	public function save_answer( int $item_or_revision_id, array $selected_answers, bool $confidence = false ) {
 		// Validate attempt is in progress
 		if ( 'in_progress' !== $this->status ) {
 			return new WP_Error(
@@ -617,37 +630,35 @@ class PPQ_Attempt extends PPQ_Model {
 			);
 		}
 
-		// Verify question is part of this attempt
-		$questions = json_decode( $this->questions_json, true );
-		$found = false;
-		$order_index = 0;
+		global $wpdb;
+		$items_table = $wpdb->prefix . 'ppq_attempt_items';
 
-		foreach ( $questions as $index => $question_data ) {
-			if ( $question_data['revision_id'] === $question_revision_id ) {
-				$found = true;
-				$order_index = $index;
-				break;
-			}
+		// First, try to find by attempt_item_id (this is what the frontend sends)
+		$existing = $wpdb->get_row(
+			$wpdb->prepare(
+				"SELECT * FROM {$items_table} WHERE id = %d AND attempt_id = %d", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+				$item_or_revision_id,
+				$this->id
+			)
+		);
+
+		// If not found by item ID, try by question_revision_id (backwards compatibility)
+		if ( ! $existing ) {
+			$existing = $wpdb->get_row(
+				$wpdb->prepare(
+					"SELECT * FROM {$items_table} WHERE attempt_id = %d AND question_revision_id = %d", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+					$this->id,
+					$item_or_revision_id
+				)
+			);
 		}
 
-		if ( ! $found ) {
+		if ( ! $existing ) {
 			return new WP_Error(
 				'ppq_invalid_question',
 				__( 'This question is not part of this quiz attempt.', 'pressprimer-quiz' )
 			);
 		}
-
-		// Get or create attempt item
-		global $wpdb;
-		$items_table = $wpdb->prefix . 'ppq_attempt_items';
-
-		$existing = $wpdb->get_row(
-			$wpdb->prepare(
-				"SELECT * FROM {$items_table} WHERE attempt_id = %d AND question_revision_id = %d", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-				$this->id,
-				$question_revision_id
-			)
-		);
 
 		$answer_data = [
 			'selected_answers_json' => wp_json_encode( $selected_answers ),
@@ -655,31 +666,14 @@ class PPQ_Attempt extends PPQ_Model {
 			'confidence'            => $confidence ? 1 : 0,
 		];
 
-		if ( $existing ) {
-			// Update existing item
-			$wpdb->update(
-				$items_table,
-				$answer_data,
-				[ 'id' => $existing->id ],
-				[ '%s', '%s', '%d' ],
-				[ '%d' ]
-			);
-		} else {
-			// Create new item
-			$wpdb->insert(
-				$items_table,
-				array_merge(
-					[
-						'attempt_id'           => $this->id,
-						'question_revision_id' => $question_revision_id,
-						'order_index'          => $order_index,
-						'first_view_at'        => current_time( 'mysql' ),
-					],
-					$answer_data
-				),
-				[ '%d', '%d', '%d', '%s', '%s', '%s', '%d' ]
-			);
-		}
+		// Update the existing item
+		$wpdb->update(
+			$items_table,
+			$answer_data,
+			[ 'id' => $existing->id ],
+			[ '%s', '%s', '%d' ],
+			[ '%d' ]
+		);
 
 		// Clear cached items
 		$this->_items = null;
@@ -715,11 +709,20 @@ class PPQ_Attempt extends PPQ_Model {
 		$elapsed_seconds = $now - $started_timestamp;
 		$elapsed_ms = $elapsed_seconds * 1000;
 
-		// Score the attempt
+		// Score the attempt - this updates scores in the database
 		$scoring_result = $this->score_attempt();
 
 		if ( is_wp_error( $scoring_result ) ) {
 			return $scoring_result;
+		}
+
+		// Reload from database to get updated score values
+		$refreshed = static::get( $this->id );
+		if ( $refreshed ) {
+			$this->score_points = $refreshed->score_points;
+			$this->max_points = $refreshed->max_points;
+			$this->score_percent = $refreshed->score_percent;
+			$this->passed = $refreshed->passed;
 		}
 
 		// Get quiz to check passing percentage
@@ -747,6 +750,16 @@ class PPQ_Attempt extends PPQ_Model {
 		 * @param PPQ_Quiz    $quiz    The quiz object.
 		 */
 		do_action( 'ppq_attempt_submitted', $this, $quiz );
+
+		/**
+		 * Fires when a user completes a quiz (pass or fail).
+		 *
+		 * @since 1.0.0
+		 *
+		 * @param PPQ_Attempt $attempt The submitted attempt object.
+		 * @param PPQ_Quiz    $quiz    The quiz object.
+		 */
+		do_action( 'ppq_quiz_completed', $this, $quiz );
 
 		// Fire pass/fail specific hooks
 		if ( $passed ) {

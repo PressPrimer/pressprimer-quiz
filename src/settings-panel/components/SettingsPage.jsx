@@ -21,9 +21,11 @@ import {
 	InfoCircleOutlined,
 	ToolOutlined,
 	SaveOutlined,
+	BgColorsOutlined,
 } from '@ant-design/icons';
 
 import GeneralTab from './GeneralTab';
+import AppearanceTab from './AppearanceTab';
 import IntegrationsTab from './IntegrationsTab';
 import EmailTab from './EmailTab';
 import SharingTab from './SharingTab';
@@ -39,6 +41,12 @@ const TABS = [
 		label: __('General', 'pressprimer-quiz'),
 		icon: <SettingOutlined />,
 		component: GeneralTab,
+	},
+	{
+		id: 'appearance',
+		label: __('Appearance', 'pressprimer-quiz'),
+		icon: <BgColorsOutlined />,
+		component: AppearanceTab,
 	},
 	{
 		id: 'integrations',

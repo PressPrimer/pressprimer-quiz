@@ -122,13 +122,13 @@
 }
 
 .ppq-pass-label {
-	font-size: 1.25rem;
+	font-size: var(--ppq-font-size-xl, 1.25rem);
 	display: block;
 	margin-bottom: 0.25rem;
 }
 
 .ppq-pass-threshold {
-	font-size: 0.875rem;
+	font-size: var(--ppq-font-size-sm, 0.875rem);
 	opacity: 0.9;
 }
 
@@ -891,7 +891,7 @@
 	}
 
 	.ppq-pass-label {
-		font-size: 1.125rem;
+		font-size: var(--ppq-font-size-lg, 1.125rem);
 	}
 
 	.ppq-results-meta {

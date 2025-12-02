@@ -1,0 +1,24 @@
+{
+	"$schema": "https://schemas.wp.org/trunk/block.json",
+	"apiVersion": 2,
+	"name": "pressprimer-quiz/quiz",
+	"version": "1.0.0",
+	"title": "PPQ Quiz",
+	"category": "pressprimer-quiz",
+	"icon": "welcome-learn-more",
+	"description": "Display a quiz for users to take.",
+	"supports": {
+		"html": false,
+		"align": ["wide", "full"]
+	},
+	"attributes": {
+		"quizId": {
+			"type": "number",
+			"default": 0
+		}
+	},
+	"textdomain": "pressprimer-quiz",
+	"editorScript": "file:../../build/blocks/quiz/index.js",
+	"editorStyle": "file:./editor.css",
+	"style": "file:./style.css"
+}

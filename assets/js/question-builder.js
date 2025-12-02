@@ -321,22 +321,8 @@
 		initCharacterCounters: function() {
 			var self = this;
 
-			// Add counter to question stem
-			if ($('#question_stem_ifr').length) {
-				// TinyMCE editor - add counter below
-				var $stemContainer = $('#wp-question_stem-wrap');
-				if (!$stemContainer.find('.ppq-char-counter').length) {
-					$stemContainer.append('<div class="ppq-char-counter" id="stem-char-counter"></div>');
-					this.updateStemCounter();
-
-					// Update on TinyMCE change
-					if (typeof tinyMCE !== 'undefined') {
-						tinyMCE.get('question_stem').on('keyup change', function() {
-							self.updateStemCounter();
-						});
-					}
-				}
-			}
+			// Add counter to question stem - wait for TinyMCE to initialize
+			this.initStemCounter();
 
 			// Add counters to answer fields
 			$(document).on('keyup change', '.ppq-answer-text', function() {
@@ -357,6 +343,84 @@
 			$('#feedback_correct, #feedback_incorrect').each(function() {
 				self.updateFeedbackCounter($(this));
 			});
+		},
+
+		/**
+		 * Initialize stem character counter
+		 *
+		 * Waits for TinyMCE to be ready before setting up the counter.
+		 *
+		 * @since 1.0.0
+		 */
+		initStemCounter: function() {
+			var self = this;
+
+			// Add counter container if not exists
+			var $stemContainer = $('#wp-question_stem-wrap');
+			if ($stemContainer.length && !$stemContainer.find('.ppq-char-counter').length) {
+				$stemContainer.append('<div class="ppq-char-counter" id="stem-char-counter"></div>');
+			}
+
+			// Wait for TinyMCE to initialize
+			if (typeof tinyMCE !== 'undefined') {
+				// Check if editor already exists
+				var editor = tinyMCE.get('question_stem');
+				if (editor) {
+					self.setupStemEditorCounter(editor);
+				} else {
+					// Wait for editor to initialize
+					$(document).on('tinymce-editor-init', function(event, editor) {
+						if (editor.id === 'question_stem') {
+							self.setupStemEditorCounter(editor);
+						}
+					});
+				}
+			} else {
+				// Fallback for plain textarea (text mode)
+				$('#question_stem').on('keyup change', function() {
+					self.updateStemCounterFromTextarea();
+				});
+				self.updateStemCounterFromTextarea();
+			}
+		},
+
+		/**
+		 * Setup counter for TinyMCE stem editor
+		 *
+		 * @since 1.0.0
+		 * @param {object} editor TinyMCE editor instance.
+		 */
+		setupStemEditorCounter: function(editor) {
+			var self = this;
+
+			// Update counter immediately
+			self.updateStemCounter();
+
+			// Update on editor changes
+			editor.on('keyup change NodeChange', function() {
+				self.updateStemCounter();
+			});
+		},
+
+		/**
+		 * Update stem counter from plain textarea
+		 *
+		 * @since 1.0.0
+		 */
+		updateStemCounterFromTextarea: function() {
+			var $textarea = $('#question_stem');
+			if ($textarea.length) {
+				var length = $textarea.val().length;
+				var max = 10000;
+				var $counter = $('#stem-char-counter');
+
+				var html = length + ' / ' + max + ' characters';
+				if (length > max) {
+					html = '<span style="color: #d63638;">' + html + ' (exceeds limit)</span>';
+				}
+
+				$counter.html(html);
+			}
 		},
 
 		/**

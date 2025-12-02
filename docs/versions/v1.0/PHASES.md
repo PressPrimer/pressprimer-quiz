@@ -53,9 +53,9 @@ Create includes/database/class-ppq-schema.php that returns the SQL for all table
 - wp_ppq_quizzes
 - wp_ppq_quiz_items
 - wp_ppq_quiz_rules
-- wp_ppq_groups
-- wp_ppq_group_members
-- wp_ppq_assignments
+- wp_ppq_groups (created but unused in Free - used by Educator addon)
+- wp_ppq_group_members (created but unused in Free - used by Educator addon)
+- wp_ppq_assignments (created but unused in Free - used by Educator addon)
 - wp_ppq_attempts
 - wp_ppq_attempt_items
 - wp_ppq_events
@@ -121,11 +121,12 @@ Create includes/admin/class-ppq-admin.php with:
   - Submenu: Quizzes (ppq-quizzes)
   - Submenu: Questions (ppq-questions)
   - Submenu: Question Banks (ppq-banks)
-  - Submenu: Groups (ppq-groups)
   - Submenu: Reports (ppq-reports)
   - Submenu: Settings (ppq-settings)
 - Placeholder render methods for each page
 - Capability checks on each menu item
+
+Note: Groups submenu is added by the Educator addon, not the free plugin.
 ```
 
 ### Prompt 1.8: Admin Assets
@@ -500,9 +501,10 @@ Create includes/services/class-ppq-scoring-service.php:
 Create includes/frontend/class-ppq-shortcodes.php:
 - [ppq_quiz id="X"] - render quiz
 - [ppq_my_attempts] - render attempts list
-- [ppq_assigned_quizzes] - render assignments
 - Register shortcodes on init
 - Handle missing/invalid IDs gracefully
+
+Note: [ppq_assigned_quizzes] is added by the Educator addon.
 ```
 
 ### Prompt 4.5: Quiz Landing Page
@@ -794,7 +796,7 @@ Add API key management UI:
 
 ### Prompt 7.1: LearnDash Integration
 ```
-Read docs/versions/v1.0/features/009-lms-integrations.md.
+Read docs/versions/v1.0/features/007-lms-integrations.md.
 
 Create includes/integrations/class-ppq-learndash.php:
 - init() checks if LearnDash active
@@ -802,8 +804,9 @@ Create includes/integrations/class-ppq-learndash.php:
 - Quiz selector in meta box
 - Display quiz at bottom of lesson content
 - On quiz pass: mark lesson complete (configurable)
-- Map Group Leaders to ppq_teacher role
-- Filter teacher's visible students to their LD groups
+- Respect LearnDash course enrollment
+
+Note: Group Leader role mapping is handled by Educator addon.
 ```
 
 ### Prompt 7.2: TutorLMS Integration
@@ -863,13 +866,15 @@ Add theme customization to settings:
 
 ### Prompt 7.7: Gutenberg Blocks
 ```
-Create remaining Gutenberg blocks:
+Create Gutenberg blocks:
 - blocks/quiz/ - Quiz display block
-- blocks/assigned-quizzes/ - Assigned quizzes block
+- blocks/my-attempts/ - My attempts block
 - Each with: block.json, edit.js, save.js (or render.php)
 - Block attributes matching shortcode parameters
 - Preview in editor
 - Inspector controls for settings
+
+Note: Assigned Quizzes block is added by the Educator addon.
 ```
 
 **Phase 7 Testing:**

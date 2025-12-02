@@ -38,6 +38,10 @@ class PPQ_AJAX_Handler {
 		add_action( 'wp_ajax_ppq_save_answers', [ $this, 'save_answers' ] );
 		add_action( 'wp_ajax_nopriv_ppq_save_answers', [ $this, 'save_answers' ] );
 
+		// Sync active time (logged in and guests)
+		add_action( 'wp_ajax_ppq_sync_time', [ $this, 'sync_time' ] );
+		add_action( 'wp_ajax_nopriv_ppq_sync_time', [ $this, 'sync_time' ] );
+
 		// Submit quiz (logged in and guests)
 		add_action( 'wp_ajax_ppq_submit_quiz', [ $this, 'submit_quiz' ] );
 		add_action( 'wp_ajax_nopriv_ppq_submit_quiz', [ $this, 'submit_quiz' ] );
@@ -198,6 +202,13 @@ class PPQ_AJAX_Handler {
 			}
 		}
 
+		// Update active elapsed time if provided
+		$active_elapsed_ms = isset( $_POST['active_elapsed_ms'] ) ? absint( $_POST['active_elapsed_ms'] ) : 0;
+		if ( $active_elapsed_ms > 0 ) {
+			$attempt->active_elapsed_ms = $active_elapsed_ms;
+			$attempt->save();
+		}
+
 		// Return success
 		wp_send_json_success( [
 			'message'     => sprintf(
@@ -206,6 +217,68 @@ class PPQ_AJAX_Handler {
 				$saved_count
 			),
 			'saved_count' => $saved_count,
+		] );
+	}
+
+	/**
+	 * Sync active time
+	 *
+	 * Lightweight endpoint to update active elapsed time without saving answers.
+	 * Called periodically as a heartbeat when no answers are being saved.
+	 *
+	 * @since 1.0.0
+	 */
+	public function sync_time() {
+		// Verify nonce
+		if ( ! check_ajax_referer( 'ppq_quiz_nonce', 'nonce', false ) ) {
+			wp_send_json_error( [
+				'message' => __( 'Security check failed.', 'pressprimer-quiz' ),
+			] );
+		}
+
+		// Get attempt ID
+		$attempt_id = isset( $_POST['attempt_id'] ) ? absint( $_POST['attempt_id'] ) : 0;
+
+		if ( ! $attempt_id ) {
+			wp_send_json_error( [
+				'message' => __( 'Invalid attempt ID.', 'pressprimer-quiz' ),
+			] );
+		}
+
+		// Load attempt
+		$attempt = PPQ_Attempt::get( $attempt_id );
+
+		if ( ! $attempt ) {
+			wp_send_json_error( [
+				'message' => __( 'Attempt not found.', 'pressprimer-quiz' ),
+			] );
+		}
+
+		// Verify user can access this attempt
+		if ( ! $this->can_access_attempt( $attempt ) ) {
+			wp_send_json_error( [
+				'message' => __( 'You do not have permission to access this attempt.', 'pressprimer-quiz' ),
+			] );
+		}
+
+		// Check if attempt is in progress
+		if ( 'in_progress' !== $attempt->status ) {
+			wp_send_json_error( [
+				'message' => __( 'This attempt is not in progress.', 'pressprimer-quiz' ),
+			] );
+		}
+
+		// Update active elapsed time
+		$active_elapsed_ms = isset( $_POST['active_elapsed_ms'] ) ? absint( $_POST['active_elapsed_ms'] ) : 0;
+
+		if ( $active_elapsed_ms > 0 ) {
+			$attempt->active_elapsed_ms = $active_elapsed_ms;
+			$attempt->save();
+		}
+
+		// Return success (minimal response for efficiency)
+		wp_send_json_success( [
+			'synced' => true,
 		] );
 	}
 
@@ -254,6 +327,12 @@ class PPQ_AJAX_Handler {
 			wp_send_json_error( [
 				'message' => __( 'This attempt has already been submitted.', 'pressprimer-quiz' ),
 			] );
+		}
+
+		// Save final active elapsed time before submission
+		$active_elapsed_ms = isset( $_POST['active_elapsed_ms'] ) ? absint( $_POST['active_elapsed_ms'] ) : 0;
+		if ( $active_elapsed_ms > 0 ) {
+			$attempt->active_elapsed_ms = $active_elapsed_ms;
 		}
 
 		// Submit attempt (this handles scoring via PPQ_Scoring_Service)

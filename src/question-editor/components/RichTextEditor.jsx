@@ -53,18 +53,19 @@ const RichTextEditor = ({ value, onChange, placeholder, maxChars = 2000, rows = 
 								editorInstanceRef.current = editor;
 								setIsInitialized(true);
 
-								// Set initial content
-								if (value) {
-									editor.setContent(value);
-								}
-
 								// Track character count
 								const updateCount = () => {
 									const content = editor.getContent({ format: 'text' });
 									setCharCount(content.length);
 								};
 
-								editor.on('init', updateCount);
+								// Set initial content and update count
+								if (value) {
+									editor.setContent(value);
+								}
+								// Update count after content is set
+								updateCount();
+
 								editor.on('input change keyup', () => {
 									updateCount();
 									// Always call the latest onChange using the ref

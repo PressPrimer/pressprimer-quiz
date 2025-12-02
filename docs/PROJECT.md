@@ -51,16 +51,16 @@ The free version isn't crippled. It's genuinely useful forever with unlimited qu
 ## Business Model
 
 ### Free (WordPress.org)
-Full-featured quiz platform: unlimited quizzes, unlimited questions, AI generation (user's own API key), LMS integration, three professional themes, groups and assignments. Not a trial—genuinely useful forever.
+Full-featured quiz platform: unlimited quizzes, unlimited questions, AI generation (user's own API key), LMS integration (LearnDash, TutorLMS, LifterLMS), three professional themes. Not a trial—genuinely useful forever.
 
 ### Educator ($149/year - 1 site)
-For individual teachers and small teams who need advanced features: enhanced reporting, AI distractor generation, import/export, LaTeX math support, confidence ratings, survey/ungraded questions.
+For individual teachers and small teams who need: groups and quiz assignments, import/export, pre/post test linking, enhanced reporting with charts, AI distractor generation, LaTeX math support, confidence ratings reports.
 
-### School ($249/year - 3 sites)
-For departments and organizations: group/multi-teacher system, xAPI support, spaced repetition, student self-quiz generation, reporting by attempt over time periods.
+### School ($299/year - 3 sites)
+For departments and organizations: multi-teacher coordination, shared question banks, xAPI/LRS support, spaced repetition, curve grading, quiz availability windows (date/time restrictions), longitudinal reporting.
 
-### Enterprise ($399/year - 5 sites)
-For large organizations: white labeling, adaptive/branching quizzes, proctoring, emailed reports, audit logging.
+### Enterprise ($499/year - 5 sites)
+For large organizations: white labeling, branching/adaptive quizzes, proctoring suite, comprehensive audit logging, compliance reporting.
 
 ## Question Types (Scope)
 
@@ -83,73 +83,53 @@ We do NOT support: essay, fill-in-blank, matching, ordering, hotspot, video, aud
 
 **vs. Built-in LMS Quizzes:**
 - Cross-LMS compatibility
-- Better reporting and analytics
-- More sophisticated question handling
-- Beautiful, modern design
-- Specialized focus on assessment
+- Superior question management
+- AI generation capabilities
+- More assessment options
+- Better reporting
 
-**vs. Enterprise SaaS LMS:**
-- WordPress-native (familiar, flexible, owned)
-- Affordable pricing ($149-399 vs $10K-100K)
-- No per-user fees (unlimited students)
-- No vendor lock-in
-- Customizable and extensible
+**vs. Enterprise Assessment Platforms:**
+- WordPress-native (no migration)
+- 10-100x more affordable
+- Familiar ecosystem
+- Self-hosted data ownership
 
-## Technical Requirements
+## Technical Philosophy
 
-**Platform:**
-- WordPress 6.0+ required
-- PHP 7.4+ required
-- MySQL 5.7+ / MariaDB 10.3+
-- Works with or without LMS plugins
+1. **Custom tables over CPTs** - Performance at scale requires proper database design
+2. **React admin, vanilla frontend** - Modern admin experience, fast quiz delivery
+3. **Server-side everything** - Never trust the client, especially with correct answers
+4. **Hooks everywhere** - Extensibility for developers and future premium features
+5. **WordPress standards** - Coding standards, translation ready, accessibility compliant
 
-**Quality Standards:**
-- Custom database tables for performance at scale (10K+ questions, 100K+ attempts)
-- Object caching support (Redis, Memcached)
-- WCAG 2.1 AA accessibility compliance
-- Full translation/i18n support
-- WordPress coding standards compliance
-- Server-side answer validation only (never expose correct answers)
-- Comprehensive security (nonce verification, prepared statements, rate limiting)
+## Version Strategy
+
+### v1.0 Free (Initial Release)
+Prove product-market fit with a genuinely useful free plugin. 1,000+ active installs, 4.0+ star rating.
+
+### v2.0 (Premium Launch)
+Launch all three premium tiers simultaneously. Establish recurring revenue.
+
+### v3.0+ (Feature Expansion)
+Additional question types, deeper integrations, advanced psychometrics based on user feedback.
 
 ## Success Metrics
 
-**v1.0 Free (90 days post-launch):**
-- 1,000+ active installations
-- 4.0+ star average rating
-- <15% unresolved support threads
-- 10+ five-star reviews with testimonials
+### Product Success
+- Active installations: 1,000 (90 days), 5,000 (1 year)
+- WordPress.org rating: 4.0+ stars
+- Support resolution: <48 hours average
+- Churn rate: <20% annual
 
-**Premium 1.0 (6 months):**
-- $30K+ ARR
-- 100+ paying customers
-- 3,000+ free installs
+### Business Success
+- Paid conversions: 2-5% of active free users
+- ARR target: $100K by month 12
+- ARPU: $200+ (blended across tiers)
 
-**Year 3 Target:**
-- $550K ARR
-- $330K EBITDA
-- Positioned for acquisition at 2.5x EBITDA ($825K+)
+## Team & Resources
 
-## Development Approach
+**Current:** Solo founder with AI-assisted development
+**Near-term:** Contract designers for marketing assets
+**Future:** Support contractor when volume requires
 
-This is a solo-developed plugin using AI-assisted development (Claude Code). The documentation in this folder serves as the source of truth for all development work. Claude Code should read these documents before implementing any feature.
-
-### Key Development Principles:
-1. **Code quality over speed** - This is a commercial plugin; reliability matters
-2. **Security first** - Never expose answers client-side; validate everything server-side
-3. **Accessibility from day one** - WCAG 2.1 AA, not retrofitted later
-4. **Translation ready** - All strings wrapped properly from the start
-5. **Test as you go** - Manual testing at each phase, not just at the end
-
-## Document Index
-
-Read documents in this order:
-
-1. **This file (PROJECT.md)** - Vision and context
-2. **CLAUDE-INSTRUCTIONS.md** - How to use documentation with Claude Code
-3. **architecture/DATABASE.md** - Understand the data model
-4. **architecture/CONVENTIONS.md** - Naming and coding standards
-5. **versions/v1.0/OVERVIEW.md** - What's in v1.0
-6. **versions/v1.0/PHASES.md** - Development breakdown
-7. **Individual feature files** - As needed for implementation
-
+Development velocity multiplied by Claude Code and comprehensive documentation.

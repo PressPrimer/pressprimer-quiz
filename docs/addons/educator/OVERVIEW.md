@@ -1,266 +1,191 @@
-# PressPrimer Quiz - Educator Addon
+# Educator Addon - Overview
 
-> **Purpose:** Context document for AI-assisted development. Provides scope for the Educator premium tier across versions.
+## Product Identity
 
-> **Price:** $149/year (single site license)  
-> **Target Market:** Professional educators, tutors, small training teams, course creators
+**Name:** PressPrimer Quiz - Educator  
+**Price:** $149/year (1 site)  
+**Launched At:** Version 2.0 (aligned with Free v2.0)
 
----
+## Target Users
 
-## Addon Philosophy
+Individual educators and small teams who need:
+- Advanced reporting and analytics
+- Content portability (import/export)
+- Group-based quiz assignment
+- Professional assessment features
 
-The Educator tier unlocks professional-grade assessment features for individual educators who need more sophisticated tools than the free tier provides. Features focus on enhanced pedagogy, advanced question authoring, and personal productivity improvements.
+## Release Strategy
 
-**Value Proposition:** *Professional-grade assessment tools that would cost $500+/year from competitors, for less than $13/month.*
-
----
-
-## Version 1.0 Features (Launches with Free v2.0)
-
-### Survey & Ungraded Questions
-- **Survey Mode:** Questions without correct answers for opinion gathering
-- **Ungraded Questions:** Questions that don't affect final score
-- **Mixed Quizzes:** Combine graded and ungraded questions in same quiz
-- **Survey Analytics:** Response distribution, trends, word clouds for open responses
-
-### Confidence Ratings
-- **Per-Question Confidence:** Students rate confidence before seeing results
-- **Confidence Calibration Report:** Compare confidence vs actual performance
-- **Metacognition Insights:** Identify overconfident/underconfident patterns
-- **Confidence Trends:** Track calibration improvement over time
-
-### Branching & Conditional Logic
-- **Conditional Paths:** Show/skip questions based on previous answers
-- **Score-Based Branching:** Different paths for high/medium/low performers
-- **Remediation Loops:** Automatically redirect to easier questions after failures
-- **Branch Visualization:** Visual flow diagram of quiz logic
-
-### Front-End Quiz Authoring
-- **Teacher Dashboard:** Create and manage quizzes from front-end
-- **No Admin Access Required:** Teachers work entirely from front-end
-- **Quick Edit Mode:** Inline editing of questions and answers
-- **Preview Integration:** Test quizzes without publishing
-
-### LaTeX Math Support
-- **Math Notation:** Full LaTeX rendering in questions and answers
-- **Equation Editor:** Visual equation builder for non-LaTeX users
-- **Copy/Paste Support:** Import equations from other tools
-- **Mobile Rendering:** Responsive math display on all devices
-
-### Enhanced Reporting
-- **Detailed Analytics:** Per-question performance breakdown
-- **Time Analytics:** How long students spend per question
-- **Attempt Comparison:** Compare performance across attempts
-- **Exportable Charts:** Download report visualizations
-
-### Attribution Removal
-- **Admin-Only Removal:** Remove "Powered by PressPrimer" from admin
-- **Front-End Attribution:** Remains on student-facing pages (Enterprise for full removal)
+Each release focuses on 1-2 major features to maintain quality and provide regular marketing moments.
 
 ---
 
-## Version 2.0 Features (Launches with Free v3.0)
+## Version 2.0 - Launch Release
 
-### Import/Export
-- **CSV Question Import:** Bulk import with mapping interface
-- **CSV Question Export:** Export question banks for backup/transfer
-- **Quiz Structure Export:** JSON export of complete quiz configuration
-- **Template Library:** Import from pre-built question sets
+**Theme:** Groups & Import/Export  
+**Target:** 4 weeks after Free v1.0
 
-### AI Distractor Generation
-- **Smart Distractors:** AI generates plausible wrong answers
-- **Distractor Quality Scoring:** Rate generated options by difficulty
-- **Customization:** Adjust distractor style (common misconceptions, similar terms, etc.)
-- **Batch Generation:** Generate distractors for multiple questions
+### Major Features
 
-### Spaced Repetition Tools
-- **Review Scheduling:** Automatically schedule question reviews
-- **Forgetting Curve Tracking:** Visualize retention decay
-- **Optimal Intervals:** Algorithm-based review timing
-- **Student Self-Study:** Personalized review quiz generation
+#### 1. Groups & Quiz Assignments
+- Create student groups
+- Assign quizzes to groups or individual users
+- Set due dates for assignments
+- Track assignment completion
+- `ppq_teacher` role with scoped permissions
+- Teachers see only their own groups/students
+- Assigned Quizzes block and `[ppq_assigned_quizzes]` shortcode
 
-### Enhanced Branching
-- **Complex Logic Trees:** Multiple conditions per branch
-- **Variable-Based Logic:** Store and reference values across questions
-- **Loop Constructs:** Repeat sections until mastery achieved
-- **External Data:** Branch based on user meta or LMS data
+#### 2. Import/Export
+- Export questions to CSV/JSON format
+- Export entire question banks
+- Import questions from CSV/JSON
+- Import from other quiz plugins (Quiz Cat, WP Quiz, Learn Dash Quiz)
+- Duplicate detection during import
+- Field mapping interface for CSV imports
 
----
+### Additional Features
+- Freemius license validation
+- Settings panel for Educator-specific options
+- Integration hooks for Free plugin
 
-## Version 3.0 Features (Launches with Free v4.0)
-
-### Advanced Survey Analytics
-- **Sentiment Analysis:** AI-powered response categorization
-- **Cross-Tabulation:** Compare responses by demographics/groups
-- **Trend Reporting:** Track opinion shifts over time
-- **Comparative Benchmarks:** Compare against previous cohorts
-
-### Custom Quiz Templates
-- **Template Builder:** Create reusable quiz structures
-- **Branded Templates:** Apply consistent styling across quizzes
-- **Template Sharing:** Share templates within organization (requires School tier for cross-teacher sharing)
-- **Template Variables:** Dynamic content insertion
-
-### Enhanced AI Features
-- **Content Analysis:** AI suggests questions from uploaded materials
-- **Difficulty Prediction:** AI estimates question difficulty before use
-- **Question Improvement Suggestions:** AI feedback on question clarity
-- **Automatic Tagging:** AI-powered category and tag suggestions
+### Technical Requirements
+- Requires Free v2.0+
+- Adds 2 new database tables (uses existing groups tables from Free)
+- Admin-only features (no frontend changes)
 
 ---
 
-## Technical Requirements
+## Version 2.1
 
-### Dependencies
-- Requires PressPrimer Quiz Free v2.0+
-- PHP 7.4+ (matches free plugin)
-- WordPress 6.0+
-- OpenAI API key (for AI distractor features)
+**Theme:** Enhanced Reporting  
+**Target:** 6 weeks after v2.0
 
-### Database Extensions
-```sql
--- Confidence ratings storage
--- Added to ppq_responses table:
-confidence_rating TINYINT NULL,  -- 1-5 scale, NULL if not enabled
+### Major Feature
 
--- Survey response storage
-ppq_survey_responses (
-    id BIGINT PRIMARY KEY,
-    question_id BIGINT,
-    attempt_id BIGINT,
-    response_text TEXT,
-    response_data JSON,  -- For structured survey responses
-    created_at DATETIME
-)
+#### Pre/Post Test Linking
+- Link two quizzes as pre-test and post-test
+- Automatic learning gain calculation
+- Visual comparison of pre vs post scores
+- Per-category improvement tracking
+- Aggregate class improvement reports
 
--- Branching logic storage
--- Added to ppq_quizzes settings JSON:
-{
-    "branching": {
-        "enabled": true,
-        "rules": [
-            {
-                "id": "rule_1",
-                "trigger": "question_answer",
-                "question_id": 123,
-                "condition": "equals",
-                "value": "answer_a",
-                "action": "skip_to",
-                "target_question_id": 456
-            }
-        ]
-    }
-}
+### Supporting Features
+- CSV export of all reports
+- Visual charts with Chart.js (score distribution, category performance)
+- Enhanced dashboard with Educator-specific metrics
 
--- Spaced repetition data
-ppq_spaced_repetition (
-    id BIGINT PRIMARY KEY,
-    user_id BIGINT,
-    question_id BIGINT,
-    ease_factor DECIMAL(3,2) DEFAULT 2.5,
-    interval_days INT DEFAULT 1,
-    repetitions INT DEFAULT 0,
-    next_review DATE,
-    last_review DATE,
-    INDEX (user_id, next_review)
-)
+---
+
+## Version 2.2
+
+**Theme:** AI Enhancement  
+**Target:** 6 weeks after v2.1
+
+### Major Feature
+
+#### AI Distractor Generation
+- Generate plausible wrong answers for existing questions
+- Configurable distractor count (2-7)
+- Quality scoring for generated distractors
+- Edit/approve before saving
+- Bulk generation for question banks
+
+### Supporting Features
+- Confidence ratings detailed reports
+- Student confidence calibration analytics
+- Question difficulty analysis based on actual performance
+
+---
+
+## Version 2.3
+
+**Theme:** Content Flexibility  
+**Target:** 6 weeks after v2.2
+
+### Major Feature
+
+#### Survey/Ungraded Questions
+- New question mode: Survey (no correct answer)
+- Likert scale support (1-5, 1-7, 1-10)
+- Open-ended text responses (short answer, no auto-grading)
+- Mixed quiz support (graded + survey questions)
+- Survey response reports and aggregation
+
+### Supporting Features
+- LaTeX/math rendering support (MathJax integration)
+- Question templates for common assessment patterns
+
+---
+
+## Version 2.4+
+
+**Future Considerations:**
+- Question quality metrics
+- Item analysis reports
+- Distractor effectiveness analysis
+- More import sources (Kahoot, Quizlet, Moodle)
+- Question bank templates
+
+---
+
+## Technical Architecture
+
+### Plugin Structure
+```
+pressprimer-quiz-educator/
+├── pressprimer-quiz-educator.php
+├── includes/
+│   ├── class-ppq-educator.php
+│   ├── admin/
+│   │   ├── class-ppq-groups-admin.php
+│   │   ├── class-ppq-assignments-admin.php
+│   │   ├── class-ppq-import-export.php
+│   │   └── class-ppq-educator-reports.php
+│   ├── models/
+│   │   ├── class-ppq-group.php
+│   │   ├── class-ppq-group-member.php
+│   │   └── class-ppq-assignment.php
+│   └── integrations/
+│       └── class-ppq-educator-automator.php
+├── assets/
+│   ├── css/
+│   └── js/
+└── languages/
 ```
 
-### Hooks Provided
+### Database Tables (leverages Free tables)
+- `wp_ppq_groups` - Group definitions
+- `wp_ppq_group_members` - User-group relationships
+- `wp_ppq_assignments` - Quiz assignments to groups/users
+
+### Hooks Added
 ```php
-// Confidence rating hooks
-apply_filters('ppq_educator_confidence_scale', $scale, $question_id);
-do_action('ppq_educator_confidence_recorded', $attempt_id, $question_id, $rating);
+// Actions
+do_action('ppq_educator_group_created', $group_id);
+do_action('ppq_educator_assignment_created', $assignment_id);
+do_action('ppq_educator_questions_imported', $question_ids);
 
-// Survey hooks
-apply_filters('ppq_educator_survey_response_types', $types);
-do_action('ppq_educator_survey_response_saved', $response_id, $data);
-
-// Branching hooks
-apply_filters('ppq_educator_branch_conditions', $conditions);
-apply_filters('ppq_educator_evaluate_branch', $should_branch, $rule, $attempt);
-do_action('ppq_educator_branch_taken', $attempt_id, $rule_id, $target_question_id);
-
-// AI distractor hooks
-apply_filters('ppq_educator_distractor_prompt', $prompt, $question, $context);
-apply_filters('ppq_educator_distractor_count', $count, $question_id);
-do_action('ppq_educator_distractors_generated', $question_id, $distractors);
-
-// Spaced repetition hooks
-apply_filters('ppq_educator_sr_algorithm', $algorithm_name);
-apply_filters('ppq_educator_sr_next_interval', $days, $ease_factor, $repetitions);
-do_action('ppq_educator_sr_review_completed', $user_id, $question_id, $quality);
-
-// Import/export hooks
+// Filters
 apply_filters('ppq_educator_import_formats', $formats);
-apply_filters('ppq_educator_export_formats', $formats);
-do_action('ppq_educator_import_completed', $import_id, $stats);
+apply_filters('ppq_educator_export_data', $data, $format);
 ```
 
----
-
-## UI Components
-
-### Admin Additions
-- **Educator Settings Panel:** Configure tier-specific features
-- **Branching Editor:** Visual flow builder within quiz editor
-- **Import/Export Interface:** Drag-drop import, format selection
-- **AI Distractor Panel:** Generate and review AI suggestions
-
-### Front-End Additions
-- **Teacher Dashboard:** `/teacher-dashboard/` page template
-- **Confidence Rating UI:** Slider or button scale during quiz
-- **Survey Response UI:** Text areas, scales, multi-select options
-
-### Quiz Builder Extensions
-- **Question Type Selector:** Adds survey/ungraded options
-- **Confidence Toggle:** Enable per-quiz or per-question
-- **Branch Configuration:** Condition builder within question settings
-- **LaTeX Editor:** Integrated equation editor
-
----
-
-## Licensing & Activation
-
-### License Validation
-- EDD Software Licensing integration
-- Single site activation
-- Annual renewal required
-- Grace period: 14 days after expiration
-
-### Feature Degradation
-When license expires:
-- Existing data preserved
-- New feature usage blocked
-- Survey questions become regular questions (no analytics)
-- Branching logic continues to work (but can't edit)
-- Import/export disabled
-- AI features disabled
+### Automator Integration
+- Trigger: Quiz assigned to user
+- Trigger: Assignment due date approaching
+- Trigger: Assignment completed
 
 ---
 
 ## Success Metrics
 
-- License activation rate from free users
-- Feature adoption per licensed user
-- Support ticket volume per customer
-- Renewal rate (target: 70%+)
-- NPS score from Educator customers
+### v2.0 Launch (30 days)
+- 100+ paid licenses
+- <5% refund rate
+- <10% support tickets per customer
 
----
-
-## Development Priority
-
-### v1.0 Priority Order
-1. Survey/ungraded questions (highest differentiation)
-2. Confidence ratings (unique feature)
-3. Branching logic (high request item)
-4. Front-end authoring (teacher productivity)
-5. LaTeX support (academic market)
-6. Enhanced reporting (value perception)
-
-### Integration Points
-- Must integrate cleanly with free quiz builder
-- React components extend existing interfaces
-- Database migrations must be reversible
-- Feature flags for graceful degradation
+### Ongoing
+- 20% conversion rate from Free users who view upgrade page
+- 80%+ renewal rate at year end
+- 4.5+ average rating

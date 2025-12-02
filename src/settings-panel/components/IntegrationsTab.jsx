@@ -64,6 +64,12 @@ const IntegrationsTab = ({ settings, updateSetting, settingsData }) => {
 	});
 	const [savingLearndash, setSavingLearndash] = useState(false);
 
+	const [tutorlmsStatus, setTutorlmsStatus] = useState(null);
+	const [loadingTutorlms, setLoadingTutorlms] = useState(true);
+
+	const [lifterlmsStatus, setLifterlmsStatus] = useState(null);
+	const [loadingLifterlms, setLoadingLifterlms] = useState(true);
+
 	const usageData = settingsData.usageData || {
 		requests_this_hour: 0,
 		requests_remaining: 20,
@@ -95,6 +101,52 @@ const IntegrationsTab = ({ settings, updateSetting, settingsData }) => {
 		};
 
 		fetchLearndashStatus();
+	}, []);
+
+	// Fetch TutorLMS status on mount
+	useEffect(() => {
+		const fetchTutorlmsStatus = async () => {
+			try {
+				const response = await apiFetch({
+					path: '/ppq/v1/tutorlms/status',
+					method: 'GET',
+				});
+
+				if (response.success) {
+					setTutorlmsStatus(response.status);
+				}
+			} catch (error) {
+				// TutorLMS endpoint might not exist if not active
+				setTutorlmsStatus({ active: false });
+			} finally {
+				setLoadingTutorlms(false);
+			}
+		};
+
+		fetchTutorlmsStatus();
+	}, []);
+
+	// Fetch LifterLMS status on mount
+	useEffect(() => {
+		const fetchLifterlmsStatus = async () => {
+			try {
+				const response = await apiFetch({
+					path: '/ppq/v1/lifterlms/status',
+					method: 'GET',
+				});
+
+				if (response.success) {
+					setLifterlmsStatus(response.status);
+				}
+			} catch (error) {
+				// LifterLMS endpoint might not exist if not active
+				setLifterlmsStatus({ active: false });
+			} finally {
+				setLoadingLifterlms(false);
+			}
+		};
+
+		fetchLifterlmsStatus();
 	}, []);
 
 	/**
@@ -509,22 +561,90 @@ const IntegrationsTab = ({ settings, updateSetting, settingsData }) => {
 					)}
 				</div>
 
-				{/* TutorLMS - Coming Soon */}
-				<div className="ppq-lms-integration ppq-lms-integration--disabled">
+				{/* TutorLMS */}
+				<div className="ppq-lms-integration">
 					<div className="ppq-lms-integration-header">
-						<BookOutlined style={{ fontSize: 20, marginRight: 8, opacity: 0.5 }} />
-						<Text strong style={{ opacity: 0.7 }}>Tutor LMS</Text>
-						<Tag style={{ marginLeft: 8 }}>{__('Coming Soon', 'pressprimer-quiz')}</Tag>
+						<BookOutlined style={{ fontSize: 20, marginRight: 8 }} />
+						<Text strong>Tutor LMS</Text>
 					</div>
+
+					{loadingTutorlms ? (
+						<div style={{ padding: '16px', textAlign: 'center' }}>
+							<Spin size="small" />
+						</div>
+					) : tutorlmsStatus?.active ? (
+						<Descriptions column={1} size="small" style={{ marginTop: 12 }}>
+							<Descriptions.Item label={__('Status', 'pressprimer-quiz')}>
+								<Tag color="success" icon={<CheckCircleOutlined />}>
+									{__('Active', 'pressprimer-quiz')}
+								</Tag>
+							</Descriptions.Item>
+							<Descriptions.Item label={__('Version', 'pressprimer-quiz')}>
+								{tutorlmsStatus.version}
+							</Descriptions.Item>
+							<Descriptions.Item label={__('Integration', 'pressprimer-quiz')}>
+								<Tag color="blue">
+									{__('Working', 'pressprimer-quiz')}
+								</Tag>
+							</Descriptions.Item>
+							{tutorlmsStatus.attached_quizzes > 0 && (
+								<Descriptions.Item label={__('Attached Quizzes', 'pressprimer-quiz')}>
+									{tutorlmsStatus.attached_quizzes}
+								</Descriptions.Item>
+							)}
+						</Descriptions>
+					) : (
+						<Alert
+							message={__('Tutor LMS Not Detected', 'pressprimer-quiz')}
+							description={__('Install and activate Tutor LMS to enable this integration. Once active, you can attach PressPrimer quizzes to lessons.', 'pressprimer-quiz')}
+							type="info"
+							showIcon
+							style={{ marginTop: 12 }}
+						/>
+					)}
 				</div>
 
-				{/* LifterLMS - Coming Soon */}
-				<div className="ppq-lms-integration ppq-lms-integration--disabled">
+				{/* LifterLMS */}
+				<div className="ppq-lms-integration">
 					<div className="ppq-lms-integration-header">
-						<BookOutlined style={{ fontSize: 20, marginRight: 8, opacity: 0.5 }} />
-						<Text strong style={{ opacity: 0.7 }}>LifterLMS</Text>
-						<Tag style={{ marginLeft: 8 }}>{__('Coming Soon', 'pressprimer-quiz')}</Tag>
+						<BookOutlined style={{ fontSize: 20, marginRight: 8 }} />
+						<Text strong>LifterLMS</Text>
 					</div>
+
+					{loadingLifterlms ? (
+						<div style={{ padding: '16px', textAlign: 'center' }}>
+							<Spin size="small" />
+						</div>
+					) : lifterlmsStatus?.active ? (
+						<Descriptions column={1} size="small" style={{ marginTop: 12 }}>
+							<Descriptions.Item label={__('Status', 'pressprimer-quiz')}>
+								<Tag color="success" icon={<CheckCircleOutlined />}>
+									{__('Active', 'pressprimer-quiz')}
+								</Tag>
+							</Descriptions.Item>
+							<Descriptions.Item label={__('Version', 'pressprimer-quiz')}>
+								{lifterlmsStatus.version}
+							</Descriptions.Item>
+							<Descriptions.Item label={__('Integration', 'pressprimer-quiz')}>
+								<Tag color="blue">
+									{__('Working', 'pressprimer-quiz')}
+								</Tag>
+							</Descriptions.Item>
+							{lifterlmsStatus.attached_quizzes > 0 && (
+								<Descriptions.Item label={__('Attached Quizzes', 'pressprimer-quiz')}>
+									{lifterlmsStatus.attached_quizzes}
+								</Descriptions.Item>
+							)}
+						</Descriptions>
+					) : (
+						<Alert
+							message={__('LifterLMS Not Detected', 'pressprimer-quiz')}
+							description={__('Install and activate LifterLMS to enable this integration. Once active, you can attach PressPrimer quizzes to lessons.', 'pressprimer-quiz')}
+							type="info"
+							showIcon
+							style={{ marginTop: 12 }}
+						/>
+					)}
 				</div>
 			</div>
 		</div>

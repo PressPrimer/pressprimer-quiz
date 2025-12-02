@@ -793,7 +793,7 @@
 }
 
 .ppq-question-text {
-	font-size: 1.25rem;
+	font-size: var(--ppq-font-size-xl, 1.25rem);
 	font-weight: 600;
 	line-height: 1.6;
 	margin-bottom: var(--ppq-space-xl);
@@ -1074,7 +1074,7 @@
 	}
 
 	.ppq-question-text {
-		font-size: 1.125rem;
+		font-size: var(--ppq-font-size-lg, 1.125rem);
 	}
 
 	.ppq-quiz-navigation {
@@ -1104,7 +1104,7 @@
 	}
 
 	.ppq-quiz-interface-title {
-		font-size: 1.25rem;
+		font-size: var(--ppq-font-size-xl, 1.25rem);
 	}
 
 	.ppq-quiz-interface-meta {
@@ -1121,7 +1121,7 @@
 	}
 
 	.ppq-question-text {
-		font-size: 1rem;
+		font-size: var(--ppq-font-size-base, 1rem);
 	}
 
 	.ppq-answer-option {
@@ -1162,6 +1162,70 @@
 /* Keyboard navigation for answers */
 .ppq-answer-input:focus + .ppq-answer-radio-check {
 	box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.3);
+}
+
+/* ==========================================================================
+   Unanswered Questions Warning Modal
+   ========================================================================== */
+
+.ppq-unanswered-overlay {
+	position: fixed;
+	top: 0;
+	left: 0;
+	right: 0;
+	bottom: 0;
+	background: rgba(0, 0, 0, 0.5);
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	z-index: 10001;
+	padding: var(--ppq-space-md);
+}
+
+.ppq-unanswered-warning {
+	background: var(--ppq-background);
+	border-radius: var(--ppq-radius-xl);
+	padding: var(--ppq-space-2xl);
+	max-width: 480px;
+	width: 100%;
+	box-shadow: var(--ppq-shadow-xl);
+	border-left: 4px solid var(--ppq-warning);
+}
+
+.ppq-unanswered-warning p {
+	margin: 0 0 var(--ppq-space-md);
+	color: var(--ppq-text);
+	line-height: 1.6;
+}
+
+.ppq-unanswered-warning p:last-of-type {
+	margin-bottom: var(--ppq-space-xl);
+}
+
+.ppq-unanswered-warning strong {
+	font-size: 1.125rem;
+	color: var(--ppq-text);
+}
+
+.ppq-unanswered-actions {
+	display: flex;
+	gap: var(--ppq-space-md);
+	flex-wrap: wrap;
+}
+
+.ppq-unanswered-actions .ppq-button {
+	flex: 1;
+	min-width: 140px;
+}
+
+@media (max-width: 480px) {
+	.ppq-unanswered-actions {
+		flex-direction: column;
+	}
+
+	.ppq-unanswered-actions .ppq-button {
+		width: 100%;
+	}
 }
 
 /* ==========================================================================

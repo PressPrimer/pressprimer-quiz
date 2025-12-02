@@ -5,7 +5,7 @@
  * @since 1.0.0
  */
 
-import { useState } from '@wordpress/element';
+import { useState, useEffect } from '@wordpress/element';
 import { __ } from '@wordpress/i18n';
 import { Card, Form, Input, Typography, Space, Tooltip, Progress } from 'antd';
 import {
@@ -20,12 +20,20 @@ const { Title, Text } = Typography;
 const FeedbackFields = ({ form }) => {
 	const maxChars = 2000;
 
-	const [correctLength, setCorrectLength] = useState(
-		form.getFieldValue('feedbackCorrect')?.length || 0
-	);
-	const [incorrectLength, setIncorrectLength] = useState(
-		form.getFieldValue('feedbackIncorrect')?.length || 0
-	);
+	const [correctLength, setCorrectLength] = useState(0);
+	const [incorrectLength, setIncorrectLength] = useState(0);
+
+	// Initialize character counts when form values are available
+	useEffect(() => {
+		const correctValue = form.getFieldValue('feedbackCorrect');
+		const incorrectValue = form.getFieldValue('feedbackIncorrect');
+		if (correctValue) {
+			setCorrectLength(correctValue.length);
+		}
+		if (incorrectValue) {
+			setIncorrectLength(incorrectValue.length);
+		}
+	}, [form]);
 
 	const correctPercent = (correctLength / maxChars) * 100;
 	const incorrectPercent = (incorrectLength / maxChars) * 100;

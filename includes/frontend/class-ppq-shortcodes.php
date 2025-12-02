@@ -17,7 +17,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 /**
  * Shortcodes class
  *
- * Provides shortcodes for embedding quizzes, attempts, and assignments
+ * Provides shortcodes for embedding quizzes and attempts
  * into posts and pages.
  *
  * @since 1.0.0
@@ -43,7 +43,6 @@ class PPQ_Shortcodes {
 	public function register_shortcodes() {
 		add_shortcode( 'ppq_quiz', [ $this, 'render_quiz' ] );
 		add_shortcode( 'ppq_my_attempts', [ $this, 'render_my_attempts' ] );
-		add_shortcode( 'ppq_assigned_quizzes', [ $this, 'render_assigned_quizzes' ] );
 	}
 
 	/**
@@ -109,10 +108,13 @@ class PPQ_Shortcodes {
 			}
 		}
 
+		// Check if user wants to retake - ignore attempt parameter if retake is requested
+		$is_retake = isset( $_GET['ppq_retake'] ) && '1' === $_GET['ppq_retake'];
+
 		// Check if user is viewing an in-progress or submitted attempt
 		$attempt_id = isset( $_GET['attempt'] ) ? absint( $_GET['attempt'] ) : 0;
 
-		if ( $attempt_id ) {
+		if ( $attempt_id && ! $is_retake ) {
 			return $this->render_quiz_attempt( $attempt_id );
 		}
 
@@ -189,13 +191,32 @@ class PPQ_Shortcodes {
 				return $this->render_error( __( 'Results renderer not available.', 'pressprimer-quiz' ) );
 			}
 
+			// Get quiz for theme
+			$quiz = $attempt->get_quiz();
+
+			// Enqueue quiz CSS (base styles)
+			wp_enqueue_style(
+				'ppq-quiz',
+				PPQ_PLUGIN_URL . 'assets/css/quiz.css',
+				[],
+				PPQ_VERSION
+			);
+
 			// Enqueue results CSS
 			wp_enqueue_style(
 				'ppq-results',
 				PPQ_PLUGIN_URL . 'assets/css/results.css',
-				[],
+				[ 'ppq-quiz' ],
 				PPQ_VERSION
 			);
+
+			// Enqueue theme CSS
+			if ( $quiz ) {
+				PPQ_Theme_Loader::enqueue_quiz_theme( $quiz );
+				PPQ_Theme_Loader::output_custom_css( $quiz );
+			} else {
+				PPQ_Theme_Loader::enqueue_theme( 'default' );
+			}
 
 			// Enqueue results JavaScript
 			wp_enqueue_script(
@@ -613,50 +634,6 @@ class PPQ_Shortcodes {
 		} else {
 			return sprintf( '%ds', $seconds );
 		}
-	}
-
-	/**
-	 * Render assigned quizzes shortcode
-	 *
-	 * Displays quizzes assigned to the current user.
-	 *
-	 * Usage: [ppq_assigned_quizzes]
-	 *
-	 * @since 1.0.0
-	 *
-	 * @param array $atts Shortcode attributes.
-	 * @return string Rendered assigned quizzes HTML.
-	 */
-	public function render_assigned_quizzes( $atts ) {
-		// Parse attributes
-		$atts = shortcode_atts(
-			[
-				'limit' => 20,
-			],
-			$atts,
-			'ppq_assigned_quizzes'
-		);
-
-		// Require login
-		if ( ! is_user_logged_in() ) {
-			return $this->render_notice(
-				__( 'Please log in to view your assigned quizzes.', 'pressprimer-quiz' ),
-				'info'
-			);
-		}
-
-		// Get user's assignments
-		// Note: Assignment functionality will be implemented in Phase 6
-		// For now, return a placeholder
-
-		ob_start();
-
-		echo '<div class="ppq-assigned-quizzes">';
-		echo '<h2>' . esc_html__( 'My Assigned Quizzes', 'pressprimer-quiz' ) . '</h2>';
-		echo '<p>' . esc_html__( 'Quiz assignment functionality will be available in a future update.', 'pressprimer-quiz' ) . '</p>';
-		echo '</div>';
-
-		return ob_get_clean();
 	}
 
 	/**

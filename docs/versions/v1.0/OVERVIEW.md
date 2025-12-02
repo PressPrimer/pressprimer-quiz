@@ -69,25 +69,24 @@ WordPress.org Plugin Repository
 - Overall score (points and percentage)
 - Pass/fail indicator
 - Time spent (total and per question)
-- Category breakdown chart
+- Category breakdown display
 - Confidence calibration metric
 - Comparison to average
 - Question-by-question review
 - "My Attempts" history page
 - Score-banded feedback messages
 
-### Reporting
-- admin reports
-- Filter by quiz, student, date range, pass/fail
+### Admin Reporting
+- Dashboard widget with key metrics
+- Filter by quiz, date range, pass/fail
 - Key metrics: attempts, average score, pass rate, completion time
-- Visual charts: score distribution, category performance, attempts over time
 - Individual attempt drill-down
 - Data captured for future features (psychometrics, xAPI, etc.)
 
 ### LMS Integrations
-- **LearnDash:** Meta box on lessons, completion triggers, group leader role mapping
-- **TutorLMS:** Course builder integration, instructor role mapping
-- **LifterLMS:** Lesson builder integration, instructor role mapping
+- **LearnDash:** Meta box on lessons, completion triggers
+- **TutorLMS:** Course builder integration
+- **LifterLMS:** Lesson builder integration
 - Auto-enable when LMS detected
 
 ### Uncanny Automator Integration
@@ -95,16 +94,16 @@ WordPress.org Plugin Repository
 - Fields: quiz ID, score, pass/fail, user info
 
 ### Admin Experience
-- Dashboard widget with metrics and reports
+- Dashboard widget with metrics
 - Question bank management with search/filters
 - Category and tag management
 - Quiz list with bulk operations
-- Settings page with global defaults, email templates, theme customization
-- **Onboarding wizard** for new users (interactive, skippable, relaunchable)
+- Settings page with global defaults, theme customization
+- Interactive onboarding wizard
 
 ### Frontend Components
-- Three Gutenberg blocks: Quiz, My Attempts, Assigned Quizzes
-- Matching shortcodes: `[ppq_quiz]`, `[ppq_my_attempts]`, `[ppq_assigned_quizzes]`
+- Two Gutenberg blocks: Quiz, My Attempts
+- Matching shortcodes: `[ppq_quiz]`, `[ppq_my_attempts]`
 
 ### Technical Foundation
 - Custom database tables (not CPTs)
@@ -122,29 +121,38 @@ WordPress.org Plugin Repository
 
 **These are explicitly excluded from v1.0 Free:**
 
-### Premium-Only Features
-- LaTeX/math support (Educator tier)
-- AI distractor generation (Educator tier)
-- Import/export (Educator tier)
-- Confidence ratings detailed reports (Educator tier)
-- Survey/ungraded questions (Educator tier)
-- xAPI/LRS output (School tier)
-- Spaced repetition (School tier)
-- Group support (School tier)
-- Student self-quiz generation (School tier)
-- Reporting by attempt number over time (School tier)
-- Shared question banks (School tier)
-- Proctoring (Enterprise tier)
-- Branching/adaptive logic (Enterprise tier)
-- White-label (Enterprise tier)
-- Audit logging (Enterprise tier)
+### Premium-Only Features (Educator Tier - $149/yr)
+- Groups and quiz assignments
+- LaTeX/math support
+- AI distractor generation
+- Import/export questions
+- Confidence ratings detailed reports
+- Survey/ungraded questions
+- Pre/post test linking
+- CSV export of reports
+- Visual charts with Chart.js
 
-### Future Free Features
-- CSV export of reports (v2.0)
-- LearnPress integration (v2.0)
-- Pre/post test linking (v2.0)
-- Visual charts with Chart.js (v2.0)
-- Premium upsells or locked features (v2.0) 
+### Premium-Only Features (School Tier - $299/yr)
+- xAPI/LRS output
+- Spaced repetition
+- Multi-teacher/group management
+- Student self-quiz generation
+- Reporting by attempt number over time
+- Shared question banks
+- Curve grading
+- Quiz availability windows (date/time restrictions)
+
+### Premium-Only Features (Enterprise Tier - $499/yr)
+- Proctoring
+- Branching/adaptive logic
+- White-label
+- Audit logging
+
+### Future Free Features (v2.0)
+- Freemius SDK integration
+- Premium upsells and locked feature indicators
+- Analytics opt-in
+- LearnPress integration
 
 ### Explicitly Not Building
 - No essay, fill-in-blank, matching, ordering, hotspot, video, or audio question types
@@ -155,25 +163,20 @@ WordPress.org Plugin Repository
 
 ### Administrator
 - Full access to all features
-- Manage all quizzes, questions, banks, groups
+- Manage all quizzes, questions, banks
 - Plugin settings
 
-### PressPrimer Teacher (Custom Role, for 2.0 School tier and group support)
-- Create/edit own quizzes and question banks
-- Assign quizzes to their groups/students
-- View results only for their own students
-- Front-end quiz authoring interface
-- Cannot access site settings or other teachers' content
-
 ### Student (WordPress Subscriber + capability)
-- Take assigned quizzes
+- Take quizzes (no assignment system in free)
 - View own results and history
-- Cannot browse teacher question banks
+- Cannot browse question banks
 
 ### Guest
 - Take quizzes with optional email capture
 - Access results via tokenized link
 - 24-hour session duration
+
+**Note:** The `ppq_teacher` role and group/assignment features are reserved for the Educator tier addon.
 
 ## Technical Requirements
 
@@ -207,9 +210,9 @@ WordPress.org Plugin Repository
 
 ### WordPress.org Submission
 - `readme.txt` with full documentation
-- Screenshots (1280Ã—960px minimum)
-- Plugin icon (128Ã—128, 256Ã—256)
-- Plugin banner (772Ã—250, 1544Ã—500)
+- Screenshots (1280×960px minimum)
+- Plugin icon (128×128, 256×256)
+- Plugin banner (772×250, 1544×500)
 
 ### Documentation
 - User guide (for WordPress.org FAQ)
@@ -226,4 +229,3 @@ Each phase includes:
 - Testing requirements
 
 Work through phases in order. Complete all prompts in a phase before moving to the next.
-

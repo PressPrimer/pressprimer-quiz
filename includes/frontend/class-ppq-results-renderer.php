@@ -68,16 +68,17 @@ class PPQ_Results_Renderer {
 		// Get settings
 		$settings        = get_option( 'ppq_settings', [] );
 		$include_score   = isset( $settings['social_sharing_include_score'] ) ? $settings['social_sharing_include_score'] : true;
-		$message_template = isset( $settings['social_sharing_message'] ) ? $settings['social_sharing_message'] : 'I just completed {quiz_title}!';
+		$message_template = isset( $settings['social_sharing_message'] ) ? $settings['social_sharing_message'] : 'I just completed {quiz_title} at {website_url} with a score of {score}%!';
 
 		// Build title and description
 		$title = $quiz->title;
 		$description = str_replace(
-			[ '{quiz_title}', '{pass_status}', '{score}' ],
+			[ '{quiz_title}', '{pass_status}', '{score}', '{website_url}' ],
 			[
 				$quiz->title,
 				$attempt->passed ? __( 'Passed', 'pressprimer-quiz' ) : __( 'Failed', 'pressprimer-quiz' ),
-				$include_score ? round( (float) $attempt->score_percent, 1 ) . '%' : '',
+				$include_score ? round( (float) $attempt->score_percent, 1 ) : '',
+				home_url( '/' ),
 			],
 			$message_template
 		);
@@ -133,10 +134,13 @@ class PPQ_Results_Renderer {
 		// Calculate comprehensive results
 		$results = $this->calculate_results( $attempt );
 
+		// Get theme class
+		$theme_class = PPQ_Theme_Loader::get_theme_class( PPQ_Theme_Loader::get_quiz_theme( $quiz ) );
+
 		// Build output
 		ob_start();
 		?>
-		<div class="ppq-results-container">
+		<div class="ppq-results-container <?php echo esc_attr( $theme_class ); ?>">
 			<?php $this->render_results_header( $attempt, $quiz, $results ); ?>
 			<?php $this->render_guest_token_notice( $attempt ); ?>
 			<?php $this->render_score_summary( $attempt, $quiz, $results ); ?>
@@ -265,7 +269,7 @@ class PPQ_Results_Renderer {
 				<div class="ppq-meta-item">
 					<span class="ppq-meta-icon">⏱️</span>
 					<span class="ppq-meta-label"><?php esc_html_e( 'Time:', 'pressprimer-quiz' ); ?></span>
-					<span class="ppq-meta-value"><?php echo esc_html( $this->format_duration( $attempt->elapsed_ms ) ); ?></span>
+					<span class="ppq-meta-value"><?php echo esc_html( $this->format_duration( $this->get_display_time( $attempt ) ) ); ?></span>
 				</div>
 
 				<?php
@@ -538,7 +542,6 @@ class PPQ_Results_Renderer {
 			data-attempt-id="<?php echo esc_attr( $attempt->id ); ?>"
 			data-email="<?php echo esc_attr( $email ); ?>"
 		>
-			<span class="ppq-email-icon">✉</span>
 			<?php esc_html_e( 'Email Results', 'pressprimer-quiz' ); ?>
 		</button>
 		<div class="ppq-email-status" style="display: none;"></div>
@@ -566,7 +569,7 @@ class PPQ_Results_Renderer {
 		}
 
 		$include_score = isset( $settings['social_sharing_include_score'] ) ? $settings['social_sharing_include_score'] : true;
-		$message_template = isset( $settings['social_sharing_message'] ) ? $settings['social_sharing_message'] : 'I just completed {quiz_title}!';
+		$message_template = isset( $settings['social_sharing_message'] ) ? $settings['social_sharing_message'] : 'I just completed {quiz_title} at {website_url} with a score of {score}%!';
 
 		// Build share message
 		$share_message = $this->build_share_message( $message_template, $attempt, $quiz, $include_score );
@@ -650,10 +653,11 @@ class PPQ_Results_Renderer {
 		$replacements = [
 			'{quiz_title}'  => $quiz->title,
 			'{pass_status}' => $attempt->passed ? __( 'Passed', 'pressprimer-quiz' ) : __( 'Failed', 'pressprimer-quiz' ),
+			'{website_url}' => home_url( '/' ),
 		];
 
 		if ( $include_score ) {
-			$replacements['{score}'] = round( (float) $attempt->score_percent, 1 ) . '%';
+			$replacements['{score}'] = round( (float) $attempt->score_percent, 1 );
 		} else {
 			// Remove score token if not including score
 			$replacements['{score}'] = '';
@@ -673,8 +677,8 @@ class PPQ_Results_Renderer {
 		// Get current URL
 		$url = ( is_ssl() ? 'https://' : 'http://' ) . $_SERVER['HTTP_HOST'] . $_SERVER['REQUEST_URI'];
 
-		// Remove attempt parameter to share clean quiz URL
-		return remove_query_arg( 'attempt', $url );
+		// Remove attempt, token, and timed_out parameters to share clean quiz URL
+		return remove_query_arg( [ 'attempt', 'token', 'timed_out' ], $url );
 	}
 
 	/**
@@ -708,10 +712,13 @@ class PPQ_Results_Renderer {
 		// Determine if we should show correct answers
 		$show_correct_answers = $this->should_show_correct_answers( $quiz, $attempt );
 
+		// Get theme class
+		$theme_class = PPQ_Theme_Loader::get_theme_class( PPQ_Theme_Loader::get_quiz_theme( $quiz ) );
+
 		// Build output
 		ob_start();
 		?>
-		<div id="ppq-question-review" class="ppq-question-review-container">
+		<div id="ppq-question-review" class="ppq-question-review-container <?php echo esc_attr( $theme_class ); ?>">
 			<h2 class="ppq-review-title"><?php esc_html_e( 'Question Review', 'pressprimer-quiz' ); ?></h2>
 
 			<?php foreach ( $items as $index => $item ) : ?>
@@ -1153,9 +1160,29 @@ class PPQ_Results_Renderer {
 	 * @return string Retake URL.
 	 */
 	private function get_retake_url( $quiz ) {
-		// This will be the same URL as the quiz shortcode
-		// For now, return current URL with retake parameter
-		return add_query_arg( 'ppq_retake', '1' );
+		// Remove attempt/token parameters and add retake flag
+		$url = remove_query_arg( [ 'attempt', 'token', 'timed_out' ] );
+		return add_query_arg( 'ppq_retake', '1', $url );
+	}
+
+	/**
+	 * Get display time for attempt
+	 *
+	 * Returns active elapsed time if available, otherwise falls back to wall-clock time.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param PPQ_Attempt $attempt Attempt object.
+	 * @return int Time in milliseconds.
+	 */
+	private function get_display_time( $attempt ) {
+		// Prefer active elapsed time (tracks actual engagement)
+		if ( ! empty( $attempt->active_elapsed_ms ) ) {
+			return (int) $attempt->active_elapsed_ms;
+		}
+
+		// Fall back to wall-clock time
+		return (int) $attempt->elapsed_ms;
 	}
 
 	/**

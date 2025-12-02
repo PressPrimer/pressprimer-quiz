@@ -145,20 +145,25 @@ class PPQ_Plugin {
 
 		// TutorLMS integration
 		if ( defined( 'TUTOR_VERSION' ) ) {
-			// $tutor = new PPQ_TutorLMS();
-			// $tutor->init();
+			if ( class_exists( 'PPQ_TutorLMS' ) ) {
+				$tutor = new PPQ_TutorLMS();
+				$tutor->init();
+			}
 		}
 
 		// LifterLMS integration
 		if ( defined( 'LLMS_PLUGIN_FILE' ) ) {
-			// $lifter = new PPQ_LifterLMS();
-			// $lifter->init();
+			if ( class_exists( 'PPQ_LifterLMS' ) ) {
+				$lifter = new PPQ_LifterLMS();
+				$lifter->init();
+			}
 		}
 
 		// Uncanny Automator integration
 		if ( class_exists( 'Uncanny_Automator\Automator_Functions' ) ) {
-			// $automator = new PPQ_Automator();
-			// $automator->init();
+			require_once PPQ_PLUGIN_PATH . 'includes/integrations/uncanny-automator/class-ppq-automator-loader.php';
+			$automator = new \Jeero\PressPrimerQuiz\Integrations\UncannyAutomator\PPQ_Automator_Loader();
+			$automator->init();
 		}
 	}
 

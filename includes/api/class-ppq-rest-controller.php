@@ -123,6 +123,13 @@ class PPQ_REST_Controller {
 			],
 		] );
 
+		// Published quizzes endpoint for block editor (less restrictive permissions)
+		register_rest_route( 'ppq/v1', '/quizzes/published', [
+			'methods'             => WP_REST_Server::READABLE,
+			'callback'            => [ $this, 'get_published_quizzes' ],
+			'permission_callback' => [ $this, 'check_editor_permission' ],
+		] );
+
 		register_rest_route( 'ppq/v1', '/quizzes/(?P<id>\d+)', [
 			[
 				'methods'             => WP_REST_Server::READABLE,
@@ -269,6 +276,20 @@ class PPQ_REST_Controller {
 	 */
 	public function check_settings_permission() {
 		return current_user_can( 'ppq_manage_settings' );
+	}
+
+	/**
+	 * Check editor permission for block usage
+	 *
+	 * Allows users who can edit posts to see the list of published quizzes
+	 * for use in blocks.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @return bool True if user has permission.
+	 */
+	public function check_editor_permission() {
+		return current_user_can( 'edit_posts' );
 	}
 
 	/**
@@ -944,6 +965,58 @@ class PPQ_REST_Controller {
 	public function get_quizzes( $request ) {
 		// TODO: Implement listing with pagination/filters
 		return new WP_REST_Response( [], 200 );
+	}
+
+	/**
+	 * Get published quizzes for block editor
+	 *
+	 * Returns a simplified list of published quizzes for use in
+	 * block editor dropdowns.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param WP_REST_Request $request Request object.
+	 * @return WP_REST_Response Response object.
+	 */
+	public function get_published_quizzes( $request ) {
+		$quizzes = PPQ_Quiz::find( [
+			'where'    => [ 'status' => 'published' ],
+			'order_by' => 'title',
+			'order'    => 'ASC',
+			'limit'    => 100,
+		] );
+
+		$items = [];
+
+		foreach ( $quizzes as $quiz ) {
+			// Get question count based on generation mode
+			$question_count = 0;
+			if ( 'fixed' === $quiz->generation_mode ) {
+				// For fixed quizzes, count the items
+				$quiz_items = $quiz->get_items();
+				$question_count = count( $quiz_items );
+			} else {
+				// For dynamic quizzes, sum question_count from rules
+				$rules = $quiz->get_rules();
+				foreach ( $rules as $rule ) {
+					$question_count += absint( $rule->question_count );
+				}
+			}
+
+			// Calculate time limit in minutes
+			$time_limit_minutes = $quiz->time_limit_seconds ? round( $quiz->time_limit_seconds / 60 ) : 0;
+
+			$items[] = [
+				'id'                 => $quiz->id,
+				'title'              => $quiz->title,
+				'description'        => wp_strip_all_tags( $quiz->description ),
+				'question_count'     => $question_count,
+				'time_limit_minutes' => $time_limit_minutes,
+				'passing_score'      => $quiz->pass_percent,
+			];
+		}
+
+		return new WP_REST_Response( $items, 200 );
 	}
 
 	/**

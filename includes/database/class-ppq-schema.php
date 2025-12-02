@@ -422,6 +422,7 @@ class PPQ_Schema {
 			started_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
 			finished_at DATETIME DEFAULT NULL,
 			elapsed_ms INT UNSIGNED DEFAULT NULL,
+			active_elapsed_ms INT UNSIGNED DEFAULT NULL,
 			score_points DECIMAL(10,2) DEFAULT NULL,
 			max_points DECIMAL(10,2) DEFAULT NULL,
 			score_percent DECIMAL(5,2) DEFAULT NULL,

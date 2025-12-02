@@ -153,16 +153,6 @@ class PPQ_Admin {
 			[ $this, 'render_tags' ]
 		);
 
-		// Groups submenu
-		add_submenu_page(
-			'ppq',
-			__( 'Groups', 'pressprimer-quiz' ),
-			__( 'Groups', 'pressprimer-quiz' ),
-			'ppq_manage_own',
-			'ppq-groups',
-			[ $this, 'render_groups' ]
-		);
-
 		// Reports submenu
 		add_submenu_page(
 			'ppq',
@@ -376,36 +366,6 @@ class PPQ_Admin {
 			$categories_admin = new PPQ_Admin_Categories();
 			$categories_admin->render_tags();
 		}
-	}
-
-	/**
-	 * Render groups page
-	 *
-	 * Displays list and management interface for student groups.
-	 *
-	 * @since 1.0.0
-	 */
-	public function render_groups() {
-		// Check capability
-		if ( ! current_user_can( 'ppq_manage_own' ) ) {
-			wp_die(
-				esc_html__( 'You do not have permission to access this page.', 'pressprimer-quiz' ),
-				esc_html__( 'Permission Denied', 'pressprimer-quiz' ),
-				[ 'response' => 403 ]
-			);
-		}
-
-		?>
-		<div class="wrap">
-			<h1 class="wp-heading-inline"><?php esc_html_e( 'Groups', 'pressprimer-quiz' ); ?></h1>
-			<a href="<?php echo esc_url( admin_url( 'admin.php?page=ppq-groups&action=new' ) ); ?>" class="page-title-action">
-				<?php esc_html_e( 'Add New', 'pressprimer-quiz' ); ?>
-			</a>
-			<hr class="wp-header-end">
-
-			<p><em><?php esc_html_e( 'Group management will be implemented in later phases.', 'pressprimer-quiz' ); ?></em></p>
-		</div>
-		<?php
 	}
 
 	/**

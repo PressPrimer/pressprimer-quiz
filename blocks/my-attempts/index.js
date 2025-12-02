@@ -52,7 +52,7 @@ registerBlockType('pressprimer-quiz/my-attempts', {
 
 				<Placeholder
 					icon={list}
-					label={__('My Quiz Attempts', 'pressprimer-quiz')}
+					label={__('PPQ Quiz Attempts', 'pressprimer-quiz')}
 					instructions={__('This block displays the current user\'s quiz attempts. Configure display options in the sidebar.', 'pressprimer-quiz')}
 				>
 					<div style={{ textAlign: 'left', width: '100%', padding: '20px' }}>

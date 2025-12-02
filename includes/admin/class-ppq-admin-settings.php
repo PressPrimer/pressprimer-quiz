@@ -1373,6 +1373,45 @@ Good luck with your studies!', 'pressprimer-quiz' );
 		// Sanitize remove data on uninstall
 		$sanitized['remove_data_on_uninstall'] = isset( $input['remove_data_on_uninstall'] ) && '1' === $input['remove_data_on_uninstall'];
 
+		// Sanitize appearance settings
+		if ( isset( $input['appearance_font_family'] ) ) {
+			$sanitized['appearance_font_family'] = sanitize_text_field( $input['appearance_font_family'] );
+		}
+
+		if ( isset( $input['appearance_font_size'] ) ) {
+			$sanitized['appearance_font_size'] = sanitize_text_field( $input['appearance_font_size'] );
+		}
+
+		if ( isset( $input['appearance_primary_color'] ) ) {
+			$color = $input['appearance_primary_color'];
+			$sanitized['appearance_primary_color'] = ! empty( $color ) ? sanitize_hex_color( $color ) : '';
+		}
+
+		if ( isset( $input['appearance_text_color'] ) ) {
+			$color = $input['appearance_text_color'];
+			$sanitized['appearance_text_color'] = ! empty( $color ) ? sanitize_hex_color( $color ) : '';
+		}
+
+		if ( isset( $input['appearance_background_color'] ) ) {
+			$color = $input['appearance_background_color'];
+			$sanitized['appearance_background_color'] = ! empty( $color ) ? sanitize_hex_color( $color ) : '';
+		}
+
+		if ( isset( $input['appearance_success_color'] ) ) {
+			$color = $input['appearance_success_color'];
+			$sanitized['appearance_success_color'] = ! empty( $color ) ? sanitize_hex_color( $color ) : '';
+		}
+
+		if ( isset( $input['appearance_error_color'] ) ) {
+			$color = $input['appearance_error_color'];
+			$sanitized['appearance_error_color'] = ! empty( $color ) ? sanitize_hex_color( $color ) : '';
+		}
+
+		if ( isset( $input['appearance_border_radius'] ) ) {
+			$radius = $input['appearance_border_radius'];
+			$sanitized['appearance_border_radius'] = ( '' !== $radius && null !== $radius ) ? absint( $radius ) : '';
+		}
+
 		// Merge with existing settings to preserve any not in the form
 		return array_merge( $existing, $sanitized );
 	}
@@ -1494,6 +1533,9 @@ Good luck with your studies!', 'pressprimer-quiz' );
 		$total_banks     = (int) $wpdb->get_var( "SELECT COUNT(*) FROM {$wpdb->prefix}ppq_banks" );
 		$total_attempts  = (int) $wpdb->get_var( "SELECT COUNT(*) FROM {$wpdb->prefix}ppq_attempts" );
 
+		// Get theme font family from WordPress theme
+		$theme_font = $this->get_theme_font_family();
+
 		return [
 			'settings'     => $settings,
 			'apiKeyStatus' => $key_status,
@@ -1503,6 +1545,16 @@ Good luck with your studies!', 'pressprimer-quiz' );
 			'defaults'     => [
 				'siteName'   => get_bloginfo( 'name' ),
 				'adminEmail' => get_bloginfo( 'admin_email' ),
+			],
+			'appearance'   => [
+				'themeFont'     => $theme_font,
+				'defaultColors' => [
+					'primary'    => '#0073aa',
+					'text'       => '#1d2327',
+					'background' => '#ffffff',
+					'success'    => '#00a32a',
+					'error'      => '#d63638',
+				],
 			],
 			'systemInfo'   => [
 				'pluginVersion'      => PPQ_VERSION,
@@ -1536,6 +1588,94 @@ Good luck with your studies!', 'pressprimer-quiz' );
 	public static function get( $key, $default = null ) {
 		$settings = get_option( self::OPTION_NAME, [] );
 		return isset( $settings[ $key ] ) ? $settings[ $key ] : $default;
+	}
+
+	/**
+	 * Get the font family from the active WordPress theme
+	 *
+	 * Attempts to detect the primary body font from theme.json or
+	 * common theme customizer settings.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @return array|null Font info array with 'name' and 'value' keys, or null.
+	 */
+	private function get_theme_font_family() {
+		// Try to get font from theme.json (block themes)
+		if ( function_exists( 'wp_get_global_settings' ) ) {
+			$global_settings = wp_get_global_settings();
+
+			// Check for typography font family
+			if ( ! empty( $global_settings['typography']['fontFamily'] ) ) {
+				$font_family = $global_settings['typography']['fontFamily'];
+				// Clean up CSS var references like var(--wp--preset--font-family--system-font)
+				if ( strpos( $font_family, 'var(' ) === 0 ) {
+					// Try to resolve the variable
+					$font_families = $global_settings['typography']['fontFamilies']['theme'] ?? [];
+					foreach ( $font_families as $font ) {
+						if ( ! empty( $font['fontFamily'] ) && ! empty( $font['name'] ) ) {
+							// Use the first theme font as primary
+							return [
+								'name'  => $font['name'],
+								'value' => $font['fontFamily'],
+							];
+						}
+					}
+				} else {
+					return [
+						'name'  => __( 'Theme Font', 'pressprimer-quiz' ),
+						'value' => $font_family,
+					];
+				}
+			}
+
+			// Check font families defined in theme
+			$font_families = $global_settings['typography']['fontFamilies']['theme'] ?? [];
+			if ( ! empty( $font_families ) ) {
+				// Find the body or primary font
+				foreach ( $font_families as $font ) {
+					$slug = $font['slug'] ?? '';
+					// Look for common body font slugs
+					if ( in_array( $slug, [ 'body', 'primary', 'base', 'system-font', 'body-font' ], true ) ) {
+						return [
+							'name'  => $font['name'] ?? __( 'Theme Font', 'pressprimer-quiz' ),
+							'value' => $font['fontFamily'] ?? '',
+						];
+					}
+				}
+				// If no body font found, use the first one
+				$first_font = reset( $font_families );
+				if ( ! empty( $first_font['fontFamily'] ) ) {
+					return [
+						'name'  => $first_font['name'] ?? __( 'Theme Font', 'pressprimer-quiz' ),
+						'value' => $first_font['fontFamily'],
+					];
+				}
+			}
+		}
+
+		// Try customizer setting (common in classic themes)
+		$body_font = get_theme_mod( 'body_font_family' );
+		if ( ! empty( $body_font ) ) {
+			return [
+				'name'  => __( 'Theme Font', 'pressprimer-quiz' ),
+				'value' => $body_font,
+			];
+		}
+
+		// Fallback: try common customizer setting names
+		$common_settings = [ 'body_font', 'font_body', 'typography_body_font', 'base_font' ];
+		foreach ( $common_settings as $setting ) {
+			$font = get_theme_mod( $setting );
+			if ( ! empty( $font ) ) {
+				return [
+					'name'  => __( 'Theme Font', 'pressprimer-quiz' ),
+					'value' => $font,
+				];
+			}
+		}
+
+		return null;
 	}
 
 	/**

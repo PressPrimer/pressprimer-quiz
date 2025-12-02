@@ -221,6 +221,16 @@ class PPQ_Admin {
 			);
 		}
 
+		// Enqueue Dashboard React app on main dashboard page
+		if ( 'toplevel_page_ppq' === $hook ) {
+			$this->enqueue_dashboard_assets();
+		}
+
+		// Enqueue Reports React app on reports page
+		if ( 'pressprimer-quiz_page_ppq-reports' === $hook ) {
+			$this->enqueue_reports_assets();
+		}
+
 		// Localize script with data
 		wp_localize_script(
 			'ppq-admin',
@@ -248,6 +258,93 @@ class PPQ_Admin {
 	}
 
 	/**
+	 * Enqueue Dashboard React app assets
+	 *
+	 * @since 1.0.0
+	 */
+	private function enqueue_dashboard_assets() {
+		$asset_file = PPQ_PLUGIN_PATH . 'build/dashboard.asset.php';
+
+		if ( ! file_exists( $asset_file ) ) {
+			return;
+		}
+
+		$asset = require $asset_file;
+
+		// Enqueue the dashboard script
+		wp_enqueue_script(
+			'ppq-dashboard',
+			PPQ_PLUGIN_URL . 'build/dashboard.js',
+			$asset['dependencies'],
+			$asset['version'],
+			true
+		);
+
+		// Enqueue the dashboard styles
+		wp_enqueue_style(
+			'ppq-dashboard',
+			PPQ_PLUGIN_URL . 'build/style-dashboard.css',
+			[],
+			$asset['version']
+		);
+
+		// Localize script with dashboard data
+		wp_localize_script(
+			'ppq-dashboard',
+			'ppqDashboardData',
+			[
+				'urls' => [
+					'create_quiz'   => admin_url( 'admin.php?page=ppq-quizzes&action=new' ),
+					'add_question'  => admin_url( 'admin.php?page=ppq-questions&action=new' ),
+					'create_bank'   => admin_url( 'admin.php?page=ppq-banks&action=new' ),
+					'reports'       => admin_url( 'admin.php?page=ppq-reports' ),
+				],
+			]
+		);
+	}
+
+	/**
+	 * Enqueue Reports React app assets
+	 *
+	 * @since 1.0.0
+	 */
+	private function enqueue_reports_assets() {
+		$asset_file = PPQ_PLUGIN_PATH . 'build/reports.asset.php';
+
+		if ( ! file_exists( $asset_file ) ) {
+			return;
+		}
+
+		$asset = require $asset_file;
+
+		// Enqueue the reports script
+		wp_enqueue_script(
+			'ppq-reports',
+			PPQ_PLUGIN_URL . 'build/reports.js',
+			$asset['dependencies'],
+			$asset['version'],
+			true
+		);
+
+		// Enqueue the reports styles
+		wp_enqueue_style(
+			'ppq-reports',
+			PPQ_PLUGIN_URL . 'build/style-reports.css',
+			[],
+			$asset['version']
+		);
+
+		// Localize script with reports data
+		wp_localize_script(
+			'ppq-reports',
+			'ppqReportsData',
+			[
+				'resultsUrl' => home_url( '/quiz-results/' ),
+			]
+		);
+	}
+
+	/**
 	 * Render dashboard page
 	 *
 	 * Displays the main dashboard with overview and statistics.
@@ -264,38 +361,8 @@ class PPQ_Admin {
 			);
 		}
 
-		?>
-		<div class="wrap">
-			<h1><?php esc_html_e( 'PressPrimer Quiz Dashboard', 'pressprimer-quiz' ); ?></h1>
-
-			<div class="ppq-dashboard">
-				<div class="ppq-dashboard-welcome">
-					<h2><?php esc_html_e( 'Welcome to PressPrimer Quiz', 'pressprimer-quiz' ); ?></h2>
-					<p><?php esc_html_e( 'Enterprise-grade quiz and assessment platform for WordPress educators.', 'pressprimer-quiz' ); ?></p>
-				</div>
-
-				<div class="ppq-dashboard-stats">
-					<h3><?php esc_html_e( 'Quick Stats', 'pressprimer-quiz' ); ?></h3>
-					<p><em><?php esc_html_e( 'Dashboard statistics will be implemented in future phases.', 'pressprimer-quiz' ); ?></em></p>
-				</div>
-
-				<div class="ppq-dashboard-actions">
-					<h3><?php esc_html_e( 'Quick Actions', 'pressprimer-quiz' ); ?></h3>
-					<p>
-						<a href="<?php echo esc_url( admin_url( 'admin.php?page=ppq-questions&action=new' ) ); ?>" class="button button-primary">
-							<?php esc_html_e( 'Create Question', 'pressprimer-quiz' ); ?>
-						</a>
-						<a href="<?php echo esc_url( admin_url( 'admin.php?page=ppq-quizzes&action=new' ) ); ?>" class="button button-primary">
-							<?php esc_html_e( 'Create Quiz', 'pressprimer-quiz' ); ?>
-						</a>
-						<a href="<?php echo esc_url( admin_url( 'admin.php?page=ppq-reports' ) ); ?>" class="button button-secondary">
-							<?php esc_html_e( 'View Reports', 'pressprimer-quiz' ); ?>
-						</a>
-					</p>
-				</div>
-			</div>
-		</div>
-		<?php
+		// Render React app container
+		echo '<div id="ppq-dashboard-root" class="ppq-admin-react-root"></div>';
 	}
 
 	/**
@@ -385,13 +452,8 @@ class PPQ_Admin {
 			);
 		}
 
-		?>
-		<div class="wrap">
-			<h1><?php esc_html_e( 'Reports', 'pressprimer-quiz' ); ?></h1>
-
-			<p><em><?php esc_html_e( 'Reporting functionality will be implemented in Phase 5.', 'pressprimer-quiz' ); ?></em></p>
-		</div>
-		<?php
+		// Render React app container
+		echo '<div id="ppq-reports-root" class="ppq-admin-react-root"></div>';
 	}
 
 	/**

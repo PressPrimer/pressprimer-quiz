@@ -1,0 +1,721 @@
+<?php
+/**
+ * Statistics Service
+ *
+ * Provides statistics and reporting data for the plugin dashboard
+ * and reports page.
+ *
+ * @package PressPrimer_Quiz
+ * @subpackage Services
+ * @since 1.0.0
+ */
+
+// Prevent direct access
+if ( ! defined( 'ABSPATH' ) ) {
+	exit;
+}
+
+/**
+ * Statistics Service class
+ *
+ * Handles all statistics queries for dashboard and reporting features.
+ *
+ * @since 1.0.0
+ */
+class PPQ_Statistics_Service {
+
+	/**
+	 * Get dashboard statistics
+	 *
+	 * Returns summary statistics for the plugin's Dashboard page.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param int|null $owner_id Optional. Limit stats to specific owner. Default null for all.
+	 * @return array Statistics array.
+	 */
+	public function get_dashboard_stats( $owner_id = null ) {
+		global $wpdb;
+
+		$stats = [
+			'total_quizzes'      => 0,
+			'total_questions'    => 0,
+			'total_banks'        => 0,
+			'recent_attempts'    => 0,
+			'recent_pass_rate'   => 0,
+			'questions_answered' => 0,
+			'popular_quizzes'    => [],
+		];
+
+		$quizzes_table   = $wpdb->prefix . 'ppq_quizzes';
+		$questions_table = $wpdb->prefix . 'ppq_questions';
+		$banks_table     = $wpdb->prefix . 'ppq_banks';
+		$attempts_table  = $wpdb->prefix . 'ppq_attempts';
+
+		// Build owner restriction if needed
+		$owner_where = '';
+		if ( $owner_id ) {
+			$owner_where = $wpdb->prepare( ' AND owner_id = %d', $owner_id );
+		}
+
+		// Total published quizzes
+		$stats['total_quizzes'] = (int) $wpdb->get_var(
+			"SELECT COUNT(*) FROM {$quizzes_table} WHERE status = 'published'{$owner_where}" // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		);
+
+		// Total active questions
+		$stats['total_questions'] = (int) $wpdb->get_var(
+			"SELECT COUNT(*) FROM {$questions_table} WHERE deleted_at IS NULL{$owner_where}" // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		);
+
+		// Total question banks
+		$stats['total_banks'] = (int) $wpdb->get_var(
+			"SELECT COUNT(*) FROM {$banks_table} WHERE deleted_at IS NULL{$owner_where}" // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		);
+
+		// Attempts in last 7 days
+		$seven_days_ago      = gmdate( 'Y-m-d H:i:s', strtotime( '-7 days' ) );
+		$attempt_items_table = $wpdb->prefix . 'ppq_attempt_items';
+
+		if ( $owner_id ) {
+			$stats['recent_attempts'] = (int) $wpdb->get_var(
+				$wpdb->prepare(
+					"SELECT COUNT(*) FROM {$attempts_table} a
+					 INNER JOIN {$quizzes_table} q ON a.quiz_id = q.id
+					 WHERE a.status = 'submitted' AND a.finished_at >= %s AND q.owner_id = %d",
+					$seven_days_ago,
+					$owner_id
+				)
+			);
+
+			// Questions answered in last 7 days
+			$stats['questions_answered'] = (int) $wpdb->get_var(
+				$wpdb->prepare(
+					"SELECT COUNT(ai.id) FROM {$attempt_items_table} ai
+					 INNER JOIN {$attempts_table} a ON ai.attempt_id = a.id
+					 INNER JOIN {$quizzes_table} q ON a.quiz_id = q.id
+					 WHERE a.status = 'submitted' AND a.finished_at >= %s AND q.owner_id = %d",
+					$seven_days_ago,
+					$owner_id
+				)
+			);
+		} else {
+			$stats['recent_attempts'] = (int) $wpdb->get_var(
+				$wpdb->prepare(
+					"SELECT COUNT(*) FROM {$attempts_table}
+					 WHERE status = 'submitted' AND finished_at >= %s",
+					$seven_days_ago
+				)
+			);
+
+			// Questions answered in last 7 days
+			$stats['questions_answered'] = (int) $wpdb->get_var(
+				$wpdb->prepare(
+					"SELECT COUNT(ai.id) FROM {$attempt_items_table} ai
+					 INNER JOIN {$attempts_table} a ON ai.attempt_id = a.id
+					 WHERE a.status = 'submitted' AND a.finished_at >= %s",
+					$seven_days_ago
+				)
+			);
+		}
+
+		// Pass rate in last 7 days
+		if ( $owner_id ) {
+			$pass_data = $wpdb->get_row(
+				$wpdb->prepare(
+					"SELECT
+						COUNT(*) as total,
+						SUM(CASE WHEN a.passed = 1 THEN 1 ELSE 0 END) as passed
+					 FROM {$attempts_table} a
+					 INNER JOIN {$quizzes_table} q ON a.quiz_id = q.id
+					 WHERE a.status = 'submitted' AND a.finished_at >= %s AND q.owner_id = %d",
+					$seven_days_ago,
+					$owner_id
+				)
+			);
+		} else {
+			$pass_data = $wpdb->get_row(
+				$wpdb->prepare(
+					"SELECT
+						COUNT(*) as total,
+						SUM(CASE WHEN passed = 1 THEN 1 ELSE 0 END) as passed
+					 FROM {$attempts_table}
+					 WHERE status = 'submitted' AND finished_at >= %s",
+					$seven_days_ago
+				)
+			);
+		}
+
+		if ( $pass_data && $pass_data->total > 0 ) {
+			$stats['recent_pass_rate'] = round( ( $pass_data->passed / $pass_data->total ) * 100, 1 );
+		}
+
+		// Popular quizzes (last 30 days)
+		$thirty_days_ago = gmdate( 'Y-m-d H:i:s', strtotime( '-30 days' ) );
+
+		if ( $owner_id ) {
+			$stats['popular_quizzes'] = $wpdb->get_results(
+				$wpdb->prepare(
+					"SELECT q.id, q.title, COUNT(a.id) as attempt_count
+					 FROM {$quizzes_table} q
+					 LEFT JOIN {$attempts_table} a ON q.id = a.quiz_id
+						AND a.status = 'submitted' AND a.finished_at >= %s
+					 WHERE q.status = 'published' AND q.owner_id = %d
+					 GROUP BY q.id
+					 ORDER BY attempt_count DESC
+					 LIMIT 5",
+					$thirty_days_ago,
+					$owner_id
+				)
+			);
+		} else {
+			$stats['popular_quizzes'] = $wpdb->get_results(
+				$wpdb->prepare(
+					"SELECT q.id, q.title, COUNT(a.id) as attempt_count
+					 FROM {$quizzes_table} q
+					 LEFT JOIN {$attempts_table} a ON q.id = a.quiz_id
+						AND a.status = 'submitted' AND a.finished_at >= %s
+					 WHERE q.status = 'published'
+					 GROUP BY q.id
+					 ORDER BY attempt_count DESC
+					 LIMIT 5",
+					$thirty_days_ago
+				)
+			);
+		}
+
+		return $stats;
+	}
+
+	/**
+	 * Get overview statistics for reports page
+	 *
+	 * Returns aggregate statistics for a given date range.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param array $args Query arguments.
+	 * @return array Overview statistics.
+	 */
+	public function get_overview_stats( $args = [] ) {
+		global $wpdb;
+
+		$defaults = [
+			'date_from' => null,
+			'date_to'   => null,
+			'owner_id'  => null,
+		];
+
+		$args = wp_parse_args( $args, $defaults );
+
+		$attempts_table = $wpdb->prefix . 'ppq_attempts';
+		$quizzes_table  = $wpdb->prefix . 'ppq_quizzes';
+
+		$where = [ "a.status = 'submitted'" ];
+
+		if ( $args['date_from'] ) {
+			$where[] = $wpdb->prepare( 'a.finished_at >= %s', $args['date_from'] );
+		}
+
+		if ( $args['date_to'] ) {
+			$where[] = $wpdb->prepare( 'a.finished_at <= %s', $args['date_to'] );
+		}
+
+		if ( $args['owner_id'] ) {
+			$where[] = $wpdb->prepare( 'q.owner_id = %d', $args['owner_id'] );
+		}
+
+		$where_sql = implode( ' AND ', $where );
+
+		$stats = $wpdb->get_row(
+			"SELECT
+				COUNT(*) as total_attempts,
+				ROUND(AVG(a.score_percent), 1) as avg_score,
+				ROUND((SUM(CASE WHEN a.passed = 1 THEN 1 ELSE 0 END) / NULLIF(COUNT(*), 0)) * 100, 1) as pass_rate,
+				ROUND(AVG(a.elapsed_ms) / 1000) as avg_time_seconds
+			 FROM {$attempts_table} a
+			 INNER JOIN {$quizzes_table} q ON a.quiz_id = q.id
+			 WHERE {$where_sql}" // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		);
+
+		return [
+			'total_attempts'   => (int) ( $stats->total_attempts ?? 0 ),
+			'avg_score'        => (float) ( $stats->avg_score ?? 0 ),
+			'pass_rate'        => (float) ( $stats->pass_rate ?? 0 ),
+			'avg_time_seconds' => (int) ( $stats->avg_time_seconds ?? 0 ),
+		];
+	}
+
+	/**
+	 * Get quiz performance data for reports
+	 *
+	 * Returns per-quiz statistics with pagination and filtering.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param array $args Query arguments.
+	 * @return array Quiz performance data with pagination info.
+	 */
+	public function get_quiz_performance( $args = [] ) {
+		global $wpdb;
+
+		$defaults = [
+			'date_from' => null,
+			'date_to'   => null,
+			'search'    => '',
+			'orderby'   => 'attempts',
+			'order'     => 'DESC',
+			'per_page'  => 20,
+			'page'      => 1,
+			'owner_id'  => null,
+		];
+
+		$args = wp_parse_args( $args, $defaults );
+
+		$quizzes_table  = $wpdb->prefix . 'ppq_quizzes';
+		$attempts_table = $wpdb->prefix . 'ppq_attempts';
+
+		$where = [ "q.status = 'published'" ];
+
+		// Owner filtering
+		if ( $args['owner_id'] ) {
+			$where[] = $wpdb->prepare( 'q.owner_id = %d', $args['owner_id'] );
+		}
+
+		// Search
+		if ( ! empty( $args['search'] ) ) {
+			$where[] = $wpdb->prepare( 'q.title LIKE %s', '%' . $wpdb->esc_like( $args['search'] ) . '%' );
+		}
+
+		$where_sql = implode( ' AND ', $where );
+
+		// Build date filtering for attempts
+		$date_where = "a.status = 'submitted'";
+		if ( $args['date_from'] ) {
+			$date_where .= $wpdb->prepare( ' AND a.finished_at >= %s', $args['date_from'] );
+		}
+		if ( $args['date_to'] ) {
+			$date_where .= $wpdb->prepare( ' AND a.finished_at <= %s', $args['date_to'] );
+		}
+
+		// Validate orderby
+		$allowed_orderby = [
+			'title'     => 'q.title',
+			'attempts'  => 'attempts',
+			'avg_score' => 'avg_score',
+			'pass_rate' => 'pass_rate',
+			'avg_time'  => 'avg_time',
+		];
+
+		$orderby_column = $allowed_orderby[ $args['orderby'] ] ?? 'attempts';
+		$order          = strtoupper( $args['order'] ) === 'ASC' ? 'ASC' : 'DESC';
+
+		$offset = ( $args['page'] - 1 ) * $args['per_page'];
+
+		// Main query
+		$results = $wpdb->get_results(
+			$wpdb->prepare(
+				"SELECT
+					q.id,
+					q.title,
+					COUNT(CASE WHEN {$date_where} THEN a.id END) as attempts,
+					ROUND(AVG(CASE WHEN {$date_where} THEN a.score_percent END), 1) as avg_score,
+					ROUND(
+						(SUM(CASE WHEN {$date_where} AND a.passed = 1 THEN 1 ELSE 0 END) /
+						 NULLIF(COUNT(CASE WHEN {$date_where} THEN a.id END), 0)) * 100,
+					1) as pass_rate,
+					ROUND(AVG(CASE WHEN {$date_where} THEN a.elapsed_ms END) / 1000) as avg_time
+				 FROM {$quizzes_table} q
+				 LEFT JOIN {$attempts_table} a ON q.id = a.quiz_id
+				 WHERE {$where_sql}
+				 GROUP BY q.id
+				 ORDER BY {$orderby_column} {$order}
+				 LIMIT %d OFFSET %d", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+				$args['per_page'],
+				$offset
+			)
+		);
+
+		// Get total count
+		$total = (int) $wpdb->get_var(
+			"SELECT COUNT(*) FROM {$quizzes_table} q WHERE {$where_sql}" // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		);
+
+		return [
+			'items'       => $results,
+			'total'       => $total,
+			'total_pages' => ceil( $total / $args['per_page'] ),
+			'page'        => $args['page'],
+		];
+	}
+
+	/**
+	 * Get recent attempts for reports
+	 *
+	 * Returns individual attempt records with pagination and filtering.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param array $args Query arguments.
+	 * @return array Attempts data with pagination info.
+	 */
+	public function get_recent_attempts( $args = [] ) {
+		global $wpdb;
+
+		$defaults = [
+			'quiz_id'   => null,
+			'user_id'   => null,
+			'passed'    => null, // null = all, 1 = passed, 0 = failed
+			'date_from' => null,
+			'date_to'   => null,
+			'search'    => '',
+			'orderby'   => 'finished_at',
+			'order'     => 'DESC',
+			'per_page'  => 20,
+			'page'      => 1,
+			'owner_id'  => null,
+		];
+
+		$args = wp_parse_args( $args, $defaults );
+
+		$attempts_table = $wpdb->prefix . 'ppq_attempts';
+		$quizzes_table  = $wpdb->prefix . 'ppq_quizzes';
+		$users_table    = $wpdb->users;
+
+		$where = [ "a.status = 'submitted'" ];
+
+		if ( $args['quiz_id'] ) {
+			$where[] = $wpdb->prepare( 'a.quiz_id = %d', $args['quiz_id'] );
+		}
+
+		if ( $args['user_id'] ) {
+			$where[] = $wpdb->prepare( 'a.user_id = %d', $args['user_id'] );
+		}
+
+		if ( $args['passed'] !== null ) {
+			$where[] = $wpdb->prepare( 'a.passed = %d', $args['passed'] );
+		}
+
+		if ( $args['date_from'] ) {
+			$where[] = $wpdb->prepare( 'a.finished_at >= %s', $args['date_from'] );
+		}
+
+		if ( $args['date_to'] ) {
+			$where[] = $wpdb->prepare( 'a.finished_at <= %s', $args['date_to'] );
+		}
+
+		if ( $args['owner_id'] ) {
+			$where[] = $wpdb->prepare( 'q.owner_id = %d', $args['owner_id'] );
+		}
+
+		if ( ! empty( $args['search'] ) ) {
+			$search_like = '%' . $wpdb->esc_like( $args['search'] ) . '%';
+			$where[]     = $wpdb->prepare(
+				'(u.display_name LIKE %s OR u.user_email LIKE %s OR a.guest_email LIKE %s)',
+				$search_like,
+				$search_like,
+				$search_like
+			);
+		}
+
+		$where_sql = implode( ' AND ', $where );
+
+		// Validate orderby
+		$allowed_orderby = [
+			'finished_at'   => 'a.finished_at',
+			'score_percent' => 'a.score_percent',
+			'elapsed_ms'    => 'a.elapsed_ms',
+			'quiz_title'    => 'q.title',
+			'student_name'  => 'student_name',
+		];
+
+		$orderby_column = $allowed_orderby[ $args['orderby'] ] ?? 'a.finished_at';
+		$order          = strtoupper( $args['order'] ) === 'ASC' ? 'ASC' : 'DESC';
+
+		$offset = ( $args['page'] - 1 ) * $args['per_page'];
+
+		// Main query
+		$results = $wpdb->get_results(
+			$wpdb->prepare(
+				"SELECT
+					a.id,
+					a.quiz_id,
+					a.user_id,
+					a.guest_email,
+					a.score_points,
+					a.score_percent,
+					a.passed,
+					a.started_at,
+					a.finished_at,
+					a.elapsed_ms,
+					q.title as quiz_title,
+					q.pass_percent as quiz_pass_percent,
+					COALESCE(u.display_name, a.guest_email, 'Guest') as student_name,
+					u.user_email
+				 FROM {$attempts_table} a
+				 INNER JOIN {$quizzes_table} q ON a.quiz_id = q.id
+				 LEFT JOIN {$users_table} u ON a.user_id = u.ID
+				 WHERE {$where_sql}
+				 ORDER BY {$orderby_column} {$order}
+				 LIMIT %d OFFSET %d", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+				$args['per_page'],
+				$offset
+			)
+		);
+
+		// Get total count
+		$total = (int) $wpdb->get_var(
+			"SELECT COUNT(*)
+			 FROM {$attempts_table} a
+			 INNER JOIN {$quizzes_table} q ON a.quiz_id = q.id
+			 LEFT JOIN {$users_table} u ON a.user_id = u.ID
+			 WHERE {$where_sql}" // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		);
+
+		return [
+			'items'       => $results,
+			'total'       => $total,
+			'total_pages' => ceil( $total / $args['per_page'] ),
+			'page'        => $args['page'],
+		];
+	}
+
+	/**
+	 * Get attempt detail for modal
+	 *
+	 * Returns detailed information about a specific attempt including
+	 * per-question breakdown.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param int      $attempt_id Attempt ID.
+	 * @param int|null $owner_id   Optional. Owner ID for permission check.
+	 * @return array|null Attempt details or null if not found/not permitted.
+	 */
+	public function get_attempt_detail( $attempt_id, $owner_id = null ) {
+		global $wpdb;
+
+		$attempts_table      = $wpdb->prefix . 'ppq_attempts';
+		$attempt_items_table = $wpdb->prefix . 'ppq_attempt_items';
+		$quizzes_table       = $wpdb->prefix . 'ppq_quizzes';
+		$questions_table     = $wpdb->prefix . 'ppq_questions';
+		$users_table         = $wpdb->users;
+
+		// Build query with optional owner check
+		$where = [ 'a.id = %d' ];
+		$params = [ $attempt_id ];
+
+		if ( $owner_id ) {
+			$where[]  = 'q.owner_id = %d';
+			$params[] = $owner_id;
+		}
+
+		$where_sql = implode( ' AND ', $where );
+
+		// Get attempt
+		$attempt = $wpdb->get_row(
+			$wpdb->prepare(
+				"SELECT
+					a.id,
+					a.quiz_id,
+					a.user_id,
+					a.guest_email,
+					a.score_points,
+					a.score_percent,
+					a.passed,
+					a.started_at,
+					a.finished_at,
+					a.elapsed_ms,
+					q.title as quiz_title,
+					q.pass_percent as quiz_pass_percent,
+					COALESCE(u.display_name, a.guest_email, 'Guest') as student_name,
+					u.user_email
+				 FROM {$attempts_table} a
+				 INNER JOIN {$quizzes_table} q ON a.quiz_id = q.id
+				 LEFT JOIN {$users_table} u ON a.user_id = u.ID
+				 WHERE {$where_sql}", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+				...$params
+			)
+		);
+
+		if ( ! $attempt ) {
+			return null;
+		}
+
+		// Get attempt items (questions)
+		$items = $wpdb->get_results(
+			$wpdb->prepare(
+				"SELECT
+					ai.id,
+					ai.question_id,
+					ai.is_correct,
+					ai.points_earned,
+					ai.time_spent_ms,
+					q.stem
+				 FROM {$attempt_items_table} ai
+				 LEFT JOIN {$questions_table} q ON ai.question_id = q.id
+				 WHERE ai.attempt_id = %d
+				 ORDER BY ai.order_index ASC",
+				$attempt_id
+			)
+		);
+
+		// Format items
+		$formatted_items = [];
+		foreach ( $items as $item ) {
+			$formatted_items[] = [
+				'id'            => (int) $item->id,
+				'question_id'   => (int) $item->question_id,
+				'stem'          => wp_strip_all_tags( $item->stem ?? '' ),
+				'is_correct'    => (bool) $item->is_correct,
+				'points_earned' => (float) $item->points_earned,
+				'time_spent_ms' => (int) $item->time_spent_ms,
+			];
+		}
+
+		return [
+			'id'                => (int) $attempt->id,
+			'quiz_id'           => (int) $attempt->quiz_id,
+			'quiz_title'        => $attempt->quiz_title,
+			'quiz_pass_percent' => (float) $attempt->quiz_pass_percent,
+			'user_id'           => $attempt->user_id ? (int) $attempt->user_id : null,
+			'student_name'      => $attempt->student_name,
+			'student_email'     => $attempt->user_email ?? $attempt->guest_email ?? '',
+			'score_points'      => (float) $attempt->score_points,
+			'score_percent'     => (float) $attempt->score_percent,
+			'passed'            => (bool) $attempt->passed,
+			'started_at'        => $attempt->started_at,
+			'finished_at'       => $attempt->finished_at,
+			'elapsed_ms'        => (int) $attempt->elapsed_ms,
+			'items'             => $formatted_items,
+		];
+	}
+
+	/**
+	 * Get activity chart data
+	 *
+	 * Returns daily completions and average scores for the dashboard chart.
+	 * Data is cached using transients for performance.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param array $args Query arguments.
+	 * @return array Chart data with dates, completions, and average scores.
+	 */
+	public function get_activity_chart_data( $args = [] ) {
+		global $wpdb;
+
+		$defaults = [
+			'days'     => 90,
+			'owner_id' => null,
+		];
+
+		$args = wp_parse_args( $args, $defaults );
+
+		// Limit to 2 years max
+		$args['days'] = min( $args['days'], 730 );
+
+		// Generate cache key
+		$cache_key = 'ppq_activity_chart_' . md5( wp_json_encode( $args ) );
+
+		// Check cache (15 minutes)
+		$cached = get_transient( $cache_key );
+		if ( false !== $cached ) {
+			return $cached;
+		}
+
+		$attempts_table = $wpdb->prefix . 'ppq_attempts';
+		$quizzes_table  = $wpdb->prefix . 'ppq_quizzes';
+
+		// Calculate date range
+		$end_date   = gmdate( 'Y-m-d' );
+		$start_date = gmdate( 'Y-m-d', strtotime( "-{$args['days']} days" ) );
+
+		$where = [
+			"a.status = 'submitted'",
+			$wpdb->prepare( 'DATE(a.finished_at) >= %s', $start_date ),
+			$wpdb->prepare( 'DATE(a.finished_at) <= %s', $end_date ),
+		];
+
+		if ( $args['owner_id'] ) {
+			$where[] = $wpdb->prepare( 'q.owner_id = %d', $args['owner_id'] );
+		}
+
+		$where_sql = implode( ' AND ', $where );
+
+		// Query for daily aggregates
+		$results = $wpdb->get_results(
+			"SELECT
+				DATE(a.finished_at) as date,
+				COUNT(*) as completions,
+				ROUND(AVG(a.score_percent), 1) as avg_score
+			 FROM {$attempts_table} a
+			 INNER JOIN {$quizzes_table} q ON a.quiz_id = q.id
+			 WHERE {$where_sql}
+			 GROUP BY DATE(a.finished_at)
+			 ORDER BY date ASC" // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		);
+
+		// Build a complete date range with zeros for missing days
+		$data = [];
+		$current = new DateTime( $start_date );
+		$end     = new DateTime( $end_date );
+
+		// Index results by date for quick lookup
+		$results_by_date = [];
+		foreach ( $results as $row ) {
+			$results_by_date[ $row->date ] = $row;
+		}
+
+		// Fill in all dates
+		while ( $current <= $end ) {
+			$date_str = $current->format( 'Y-m-d' );
+			$data[]   = [
+				'date'        => $date_str,
+				'completions' => isset( $results_by_date[ $date_str ] ) ? (int) $results_by_date[ $date_str ]->completions : 0,
+				'avg_score'   => isset( $results_by_date[ $date_str ] ) ? (float) $results_by_date[ $date_str ]->avg_score : null,
+			];
+			$current->modify( '+1 day' );
+		}
+
+		$result = [
+			'data'       => $data,
+			'start_date' => $start_date,
+			'end_date'   => $end_date,
+			'days'       => $args['days'],
+		];
+
+		// Cache for 15 minutes
+		set_transient( $cache_key, $result, 15 * MINUTE_IN_SECONDS );
+
+		return $result;
+	}
+
+	/**
+	 * Get list of quizzes for filter dropdown
+	 *
+	 * Returns a simple list of quizzes for use in report filters.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param int|null $owner_id Optional. Limit to specific owner.
+	 * @return array List of quizzes with id and title.
+	 */
+	public function get_quiz_filter_options( $owner_id = null ) {
+		global $wpdb;
+
+		$quizzes_table = $wpdb->prefix . 'ppq_quizzes';
+
+		$where = [ "status = 'published'" ];
+
+		if ( $owner_id ) {
+			$where[] = $wpdb->prepare( 'owner_id = %d', $owner_id );
+		}
+
+		$where_sql = implode( ' AND ', $where );
+
+		return $wpdb->get_results(
+			"SELECT id, title FROM {$quizzes_table} WHERE {$where_sql} ORDER BY title ASC" // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		);
+	}
+}

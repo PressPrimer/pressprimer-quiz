@@ -254,6 +254,49 @@ class PPQ_REST_Controller {
 			'callback'            => [ $this, 'save_api_model' ],
 			'permission_callback' => [ $this, 'check_permission' ],
 		] );
+
+		// Statistics endpoints
+		register_rest_route( 'ppq/v1', '/statistics/dashboard', [
+			'methods'             => WP_REST_Server::READABLE,
+			'callback'            => [ $this, 'get_dashboard_stats' ],
+			'permission_callback' => [ $this, 'check_permission' ],
+		] );
+
+		register_rest_route( 'ppq/v1', '/statistics/overview', [
+			'methods'             => WP_REST_Server::READABLE,
+			'callback'            => [ $this, 'get_overview_stats' ],
+			'permission_callback' => [ $this, 'check_reports_permission' ],
+		] );
+
+		register_rest_route( 'ppq/v1', '/statistics/quiz-performance', [
+			'methods'             => WP_REST_Server::READABLE,
+			'callback'            => [ $this, 'get_quiz_performance' ],
+			'permission_callback' => [ $this, 'check_reports_permission' ],
+		] );
+
+		register_rest_route( 'ppq/v1', '/statistics/attempts', [
+			'methods'             => WP_REST_Server::READABLE,
+			'callback'            => [ $this, 'get_attempts_stats' ],
+			'permission_callback' => [ $this, 'check_reports_permission' ],
+		] );
+
+		register_rest_route( 'ppq/v1', '/statistics/attempts/(?P<id>\d+)', [
+			'methods'             => WP_REST_Server::READABLE,
+			'callback'            => [ $this, 'get_attempt_detail' ],
+			'permission_callback' => [ $this, 'check_reports_permission' ],
+		] );
+
+		register_rest_route( 'ppq/v1', '/statistics/quiz-options', [
+			'methods'             => WP_REST_Server::READABLE,
+			'callback'            => [ $this, 'get_quiz_filter_options' ],
+			'permission_callback' => [ $this, 'check_reports_permission' ],
+		] );
+
+		register_rest_route( 'ppq/v1', '/statistics/activity-chart', [
+			'methods'             => WP_REST_Server::READABLE,
+			'callback'            => [ $this, 'get_activity_chart' ],
+			'permission_callback' => [ $this, 'check_permission' ],
+		] );
 	}
 
 	/**
@@ -290,6 +333,35 @@ class PPQ_REST_Controller {
 	 */
 	public function check_editor_permission() {
 		return current_user_can( 'edit_posts' );
+	}
+
+	/**
+	 * Check reports permission
+	 *
+	 * Allows users who can view quiz results to access reports.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @return bool True if user has permission.
+	 */
+	public function check_reports_permission() {
+		return current_user_can( 'ppq_view_results_own' ) || current_user_can( 'ppq_view_results_all' );
+	}
+
+	/**
+	 * Get owner ID for current user based on permissions
+	 *
+	 * Returns null if user can see all results, or user ID if limited to own content.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @return int|null Owner ID or null for all.
+	 */
+	private function get_owner_id_for_reports() {
+		if ( current_user_can( 'ppq_view_results_all' ) ) {
+			return null;
+		}
+		return get_current_user_id();
 	}
 
 	/**
@@ -1738,6 +1810,191 @@ class PPQ_REST_Controller {
 		return new WP_REST_Response( [
 			'success' => true,
 			'message' => __( 'Model preference saved.', 'pressprimer-quiz' ),
+		], 200 );
+	}
+
+	/**
+	 * Get dashboard statistics
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param WP_REST_Request $request Request object.
+	 * @return WP_REST_Response Response object.
+	 */
+	public function get_dashboard_stats( $request ) {
+		$service = new PPQ_Statistics_Service();
+
+		// Determine owner restriction based on permissions
+		$owner_id = null;
+		if ( ! current_user_can( 'ppq_manage_all' ) ) {
+			$owner_id = get_current_user_id();
+		}
+
+		$stats = $service->get_dashboard_stats( $owner_id );
+
+		return new WP_REST_Response( [
+			'success' => true,
+			'data'    => $stats,
+		], 200 );
+	}
+
+	/**
+	 * Get overview statistics for reports
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param WP_REST_Request $request Request object.
+	 * @return WP_REST_Response Response object.
+	 */
+	public function get_overview_stats( $request ) {
+		$service = new PPQ_Statistics_Service();
+
+		$args = [
+			'date_from' => $request->get_param( 'date_from' ),
+			'date_to'   => $request->get_param( 'date_to' ),
+			'owner_id'  => $this->get_owner_id_for_reports(),
+		];
+
+		$stats = $service->get_overview_stats( $args );
+
+		return new WP_REST_Response( [
+			'success' => true,
+			'data'    => $stats,
+		], 200 );
+	}
+
+	/**
+	 * Get quiz performance statistics
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param WP_REST_Request $request Request object.
+	 * @return WP_REST_Response Response object.
+	 */
+	public function get_quiz_performance( $request ) {
+		$service = new PPQ_Statistics_Service();
+
+		$args = [
+			'date_from' => $request->get_param( 'date_from' ),
+			'date_to'   => $request->get_param( 'date_to' ),
+			'search'    => $request->get_param( 'search' ) ?? '',
+			'orderby'   => $request->get_param( 'orderby' ) ?? 'attempts',
+			'order'     => $request->get_param( 'order' ) ?? 'DESC',
+			'per_page'  => $request->get_param( 'per_page' ) ? absint( $request->get_param( 'per_page' ) ) : 20,
+			'page'      => $request->get_param( 'page' ) ? absint( $request->get_param( 'page' ) ) : 1,
+			'owner_id'  => $this->get_owner_id_for_reports(),
+		];
+
+		$data = $service->get_quiz_performance( $args );
+
+		return new WP_REST_Response( [
+			'success' => true,
+			'data'    => $data,
+		], 200 );
+	}
+
+	/**
+	 * Get recent attempts statistics
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param WP_REST_Request $request Request object.
+	 * @return WP_REST_Response Response object.
+	 */
+	public function get_attempts_stats( $request ) {
+		$service = new PPQ_Statistics_Service();
+
+		$args = [
+			'quiz_id'   => $request->get_param( 'quiz_id' ) ? absint( $request->get_param( 'quiz_id' ) ) : null,
+			'passed'    => $request->get_param( 'passed' ) !== null ? absint( $request->get_param( 'passed' ) ) : null,
+			'date_from' => $request->get_param( 'date_from' ),
+			'date_to'   => $request->get_param( 'date_to' ),
+			'search'    => $request->get_param( 'search' ) ?? '',
+			'orderby'   => $request->get_param( 'orderby' ) ?? 'finished_at',
+			'order'     => $request->get_param( 'order' ) ?? 'DESC',
+			'per_page'  => $request->get_param( 'per_page' ) ? absint( $request->get_param( 'per_page' ) ) : 20,
+			'page'      => $request->get_param( 'page' ) ? absint( $request->get_param( 'page' ) ) : 1,
+			'owner_id'  => $this->get_owner_id_for_reports(),
+		];
+
+		$data = $service->get_recent_attempts( $args );
+
+		return new WP_REST_Response( [
+			'success' => true,
+			'data'    => $data,
+		], 200 );
+	}
+
+	/**
+	 * Get attempt detail
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param WP_REST_Request $request Request object.
+	 * @return WP_REST_Response|WP_Error Response object or error.
+	 */
+	public function get_attempt_detail( $request ) {
+		$attempt_id = absint( $request['id'] );
+		$service    = new PPQ_Statistics_Service();
+
+		$data = $service->get_attempt_detail( $attempt_id, $this->get_owner_id_for_reports() );
+
+		if ( ! $data ) {
+			return new WP_Error( 'not_found', __( 'Attempt not found.', 'pressprimer-quiz' ), [ 'status' => 404 ] );
+		}
+
+		return new WP_REST_Response( [
+			'success' => true,
+			'data'    => $data,
+		], 200 );
+	}
+
+	/**
+	 * Get quiz filter options
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param WP_REST_Request $request Request object.
+	 * @return WP_REST_Response Response object.
+	 */
+	public function get_quiz_filter_options( $request ) {
+		$service = new PPQ_Statistics_Service();
+
+		$quizzes = $service->get_quiz_filter_options( $this->get_owner_id_for_reports() );
+
+		return new WP_REST_Response( [
+			'success' => true,
+			'data'    => $quizzes,
+		], 200 );
+	}
+
+	/**
+	 * Get activity chart data
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param WP_REST_Request $request Request object.
+	 * @return WP_REST_Response Response object.
+	 */
+	public function get_activity_chart( $request ) {
+		$service = new PPQ_Statistics_Service();
+
+		// Determine owner restriction based on permissions
+		$owner_id = null;
+		if ( ! current_user_can( 'ppq_manage_all' ) ) {
+			$owner_id = get_current_user_id();
+		}
+
+		$args = [
+			'days'     => $request->get_param( 'days' ) ? absint( $request->get_param( 'days' ) ) : 90,
+			'owner_id' => $owner_id,
+		];
+
+		$data = $service->get_activity_chart_data( $args );
+
+		return new WP_REST_Response( [
+			'success' => true,
+			'data'    => $data,
 		], 200 );
 	}
 }

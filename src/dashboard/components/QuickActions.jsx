@@ -14,6 +14,7 @@ import {
 	FileTextOutlined,
 	BarChartOutlined,
 	FolderAddOutlined,
+	PlayCircleOutlined,
 } from '@ant-design/icons';
 
 /**
@@ -21,8 +22,9 @@ import {
  *
  * @param {Object} props Component props
  * @param {Object} props.urls URL mappings for actions
+ * @param {Function} props.onLaunchTour Callback to launch onboarding tour
  */
-const QuickActions = ({ urls = {} }) => {
+const QuickActions = ({ urls = {}, onLaunchTour }) => {
 	const actions = [
 		{
 			key: 'create_quiz',
@@ -72,6 +74,15 @@ const QuickActions = ({ urls = {} }) => {
 						{action.label}
 					</Button>
 				))}
+				<Button
+					type="default"
+					icon={<PlayCircleOutlined />}
+					onClick={onLaunchTour}
+					block
+					className="ppq-quick-action-button"
+				>
+					{__('Watch Onboarding Tour', 'pressprimer-quiz')}
+				</Button>
 			</div>
 		</div>
 	);

@@ -5,7 +5,7 @@
  * @since 1.0.0
  */
 
-import { useState, useEffect } from '@wordpress/element';
+import { useState, useEffect, useCallback } from '@wordpress/element';
 import { __ } from '@wordpress/i18n';
 import apiFetch from '@wordpress/api-fetch';
 import {
@@ -63,6 +63,35 @@ const Dashboard = ({ initialData = {} }) => {
 		fetchData();
 	}, []);
 
+	/**
+	 * Launch the onboarding tour
+	 */
+	const handleLaunchTour = useCallback(async () => {
+		// Reset onboarding state via AJAX to start from step 1
+		const onboardingData = window.ppqOnboardingData || {};
+
+		try {
+			// Call reset action first
+			const formData = new FormData();
+			formData.append('action', 'ppq_onboarding_progress');
+			formData.append('onboarding_action', 'reset');
+			formData.append('nonce', onboardingData.nonce || '');
+
+			await fetch(onboardingData.ajaxUrl || '/wp-admin/admin-ajax.php', {
+				method: 'POST',
+				body: formData,
+				credentials: 'same-origin',
+			});
+		} catch (err) {
+			console.error('Failed to reset onboarding:', err);
+		}
+
+		// Launch the onboarding wizard
+		if (typeof window.ppqLaunchOnboarding === 'function') {
+			window.ppqLaunchOnboarding();
+		}
+	}, []);
+
 	return (
 		<div className="ppq-dashboard-container">
 			{/* Header */}
@@ -89,7 +118,7 @@ const Dashboard = ({ initialData = {} }) => {
 					{/* Top Row: Stats Cards (2 cols) + Quick Actions (1 col) */}
 					<div className="ppq-dashboard-top-row">
 						<StatsCards stats={stats} loading={loading} />
-						<QuickActions urls={initialData.urls || {}} />
+						<QuickActions urls={initialData.urls || {}} onLaunchTour={handleLaunchTour} />
 					</div>
 
 					{/* Activity Chart */}

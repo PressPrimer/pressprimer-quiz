@@ -1,0 +1,532 @@
+/**
+ * Onboarding Tour Styles
+ *
+ * @package PressPrimer_Quiz
+ * @since 1.0.0
+ */
+
+/* ==========================================================================
+   Overlay (for modals)
+   ========================================================================== */
+
+.ppq-onboarding-overlay {
+	position: fixed;
+	inset: 0;
+	z-index: 100000;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	background: rgba(0, 0, 0, 0.75);
+	animation: ppq-fade-in 0.3s ease-out;
+}
+
+/* ==========================================================================
+   Modal (Welcome & Completion)
+   ========================================================================== */
+
+.ppq-onboarding-modal {
+	background: #fff;
+	border-radius: 16px;
+	padding: 48px;
+	max-width: 520px;
+	width: calc(100% - 32px);
+	text-align: center;
+	box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+	animation: ppq-scale-in 0.3s ease-out;
+}
+
+.ppq-onboarding-modal--complete {
+	max-width: 580px;
+}
+
+.ppq-onboarding-modal__icon {
+	width: 80px;
+	height: 80px;
+	margin: 0 auto 24px;
+	background: linear-gradient(135deg, #1890ff 0%, #722ed1 100%);
+	border-radius: 20px;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	font-size: 40px;
+	color: #fff;
+}
+
+.ppq-onboarding-modal__icon--success {
+	background: linear-gradient(135deg, #52c41a 0%, #389e0d 100%);
+}
+
+.ppq-onboarding-modal__title {
+	font-size: 28px;
+	font-weight: 700;
+	color: #1d2327;
+	margin: 0 0 16px 0;
+}
+
+.ppq-onboarding-modal__content {
+	font-size: 16px;
+	color: #646970;
+	margin: 0 0 32px 0;
+	line-height: 1.6;
+}
+
+.ppq-onboarding-modal__actions {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: 12px;
+}
+
+.ppq-onboarding-modal__start-btn,
+.ppq-onboarding-modal__complete-btn {
+	min-width: 200px;
+	height: 44px;
+	font-size: 16px;
+	font-weight: 500;
+}
+
+.ppq-onboarding-modal__skip-btn {
+	color: #646970;
+}
+
+.ppq-onboarding-modal__skip-btn:hover {
+	color: #1d2327;
+}
+
+.ppq-onboarding-modal__checkbox {
+	margin-top: 8px;
+	color: #8c8c8c;
+	font-size: 13px;
+}
+
+/* Quick Actions in Completion Modal */
+.ppq-onboarding-modal__quick-actions {
+	margin-bottom: 24px;
+	padding: 20px;
+	background: #fafafa;
+	border-radius: 12px;
+}
+
+.ppq-onboarding-modal__quick-actions-title {
+	font-size: 14px;
+	font-weight: 600;
+	color: #1d2327;
+	margin: 0 0 16px 0;
+}
+
+.ppq-onboarding-modal__action-btn {
+	height: 40px;
+}
+
+/* ==========================================================================
+   Spotlight
+   ========================================================================== */
+
+.ppq-spotlight__overlay {
+	pointer-events: none;
+}
+
+.ppq-spotlight__highlight {
+	border: 3px solid #1890ff;
+	box-shadow:
+		0 0 0 4px rgba(24, 144, 255, 0.2),
+		0 0 20px rgba(24, 144, 255, 0.3);
+	transition: all 0.3s ease;
+}
+
+.ppq-spotlight__highlight--pulse {
+	animation: ppq-spotlight-pulse 2s ease-in-out infinite;
+}
+
+@keyframes ppq-spotlight-pulse {
+	0%,
+	100% {
+		box-shadow:
+			0 0 0 4px rgba(24, 144, 255, 0.2),
+			0 0 20px rgba(24, 144, 255, 0.3);
+	}
+	50% {
+		box-shadow:
+			0 0 0 8px rgba(24, 144, 255, 0.1),
+			0 0 30px rgba(24, 144, 255, 0.4);
+	}
+}
+
+/* ==========================================================================
+   Tooltip
+   ========================================================================== */
+
+.ppq-tooltip {
+	position: fixed;
+	background: linear-gradient(135deg, #1890ff 0%, #096dd9 100%);
+	border-radius: 12px;
+	padding: 20px;
+	min-width: 280px;
+	max-width: 360px;
+	box-shadow:
+		0 8px 24px rgba(24, 144, 255, 0.35),
+		0 4px 12px rgba(0, 0, 0, 0.15),
+		0 0 0 1px rgba(24, 144, 255, 0.1);
+	animation: ppq-tooltip-in 0.2s ease-out;
+	transition: opacity 0.2s ease, top 0.2s ease, left 0.2s ease;
+}
+
+@keyframes ppq-tooltip-in {
+	from {
+		opacity: 0;
+		transform: translateY(8px);
+	}
+	to {
+		opacity: 1;
+		transform: translateY(0);
+	}
+}
+
+/* Arrow */
+.ppq-tooltip__arrow {
+	position: absolute;
+	width: 12px;
+	height: 12px;
+	background: #1890ff;
+	transform: rotate(45deg);
+}
+
+.ppq-tooltip__arrow--top {
+	bottom: -6px;
+	left: 50%;
+	margin-left: -6px;
+	background: #096dd9;
+}
+
+.ppq-tooltip__arrow--bottom {
+	top: -6px;
+	left: 50%;
+	margin-left: -6px;
+}
+
+.ppq-tooltip__arrow--left {
+	right: -6px;
+	top: 50%;
+	margin-top: -6px;
+	background: #096dd9;
+}
+
+.ppq-tooltip__arrow--right {
+	left: -6px;
+	top: 50%;
+	margin-top: -6px;
+}
+
+/* Close button */
+.ppq-tooltip__close {
+	position: absolute;
+	top: 12px;
+	right: 12px;
+	width: 24px;
+	height: 24px;
+	border: none;
+	background: rgba(255, 255, 255, 0.15);
+	color: rgba(255, 255, 255, 0.8);
+	cursor: pointer;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	border-radius: 4px;
+	font-size: 12px;
+	transition: all 0.2s ease;
+	padding: 0;
+}
+
+.ppq-tooltip__close:hover {
+	background: rgba(255, 255, 255, 0.25);
+	color: #fff;
+}
+
+/* Content */
+.ppq-tooltip__content {
+	margin-bottom: 16px;
+}
+
+.ppq-tooltip__title {
+	font-size: 16px;
+	font-weight: 600;
+	color: #fff;
+	margin: 0 0 8px 0;
+	padding-right: 20px;
+}
+
+.ppq-tooltip__body {
+	font-size: 14px;
+	color: rgba(255, 255, 255, 0.9);
+	line-height: 1.6;
+}
+
+.ppq-tooltip__body p {
+	margin: 0 0 8px 0;
+}
+
+.ppq-tooltip__body p:last-child {
+	margin-bottom: 0;
+}
+
+/* Navigation */
+.ppq-tooltip__navigation {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	padding-top: 16px;
+	border-top: 1px solid rgba(255, 255, 255, 0.2);
+	gap: 8px;
+}
+
+.ppq-tooltip__nav-left,
+.ppq-tooltip__nav-center,
+.ppq-tooltip__nav-right {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+}
+
+.ppq-tooltip__nav-left {
+	flex: 0 0 auto;
+}
+
+.ppq-tooltip__nav-center {
+	flex: 1;
+	justify-content: center;
+}
+
+.ppq-tooltip__nav-right {
+	flex: 0 0 auto;
+}
+
+.ppq-tooltip__step-indicator {
+	font-size: 12px;
+	color: rgba(255, 255, 255, 0.7);
+}
+
+/* Override Ant Design button styles in tooltip */
+.ppq-tooltip .ant-btn-text {
+	color: rgba(255, 255, 255, 0.85);
+}
+
+.ppq-tooltip .ant-btn-text:hover {
+	color: #fff;
+	background: rgba(255, 255, 255, 0.15);
+}
+
+.ppq-tooltip .ant-btn-primary {
+	background: #fff;
+	color: #1890ff;
+	border-color: #fff;
+}
+
+.ppq-tooltip .ant-btn-primary:hover {
+	background: rgba(255, 255, 255, 0.9);
+	color: #096dd9;
+	border-color: rgba(255, 255, 255, 0.9);
+}
+
+/* ==========================================================================
+   Floating Tooltip (when spotlight target not found)
+   ========================================================================== */
+
+.ppq-onboarding-floating {
+	position: fixed;
+	bottom: 24px;
+	right: 24px;
+	z-index: 100000;
+	animation: ppq-slide-up 0.3s ease-out;
+}
+
+@keyframes ppq-slide-up {
+	from {
+		opacity: 0;
+		transform: translateY(20px);
+	}
+	to {
+		opacity: 1;
+		transform: translateY(0);
+	}
+}
+
+.ppq-onboarding-floating__content {
+	background: linear-gradient(135deg, #1890ff 0%, #096dd9 100%);
+	border-radius: 12px;
+	padding: 20px;
+	width: 320px;
+	max-width: calc(100vw - 48px);
+	box-shadow:
+		0 8px 24px rgba(24, 144, 255, 0.35),
+		0 4px 12px rgba(0, 0, 0, 0.15);
+	position: relative;
+}
+
+.ppq-onboarding-floating__close {
+	position: absolute;
+	top: 12px;
+	right: 12px;
+	width: 24px;
+	height: 24px;
+	border: none;
+	background: rgba(255, 255, 255, 0.15);
+	color: rgba(255, 255, 255, 0.8);
+	cursor: pointer;
+	font-size: 20px;
+	line-height: 1;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	border-radius: 4px;
+	transition: all 0.2s ease;
+	padding: 0;
+}
+
+.ppq-onboarding-floating__close:hover {
+	background: rgba(255, 255, 255, 0.25);
+	color: #fff;
+}
+
+.ppq-onboarding-floating__title {
+	font-size: 16px;
+	font-weight: 600;
+	color: #fff;
+	margin: 0 0 8px 0;
+	padding-right: 24px;
+}
+
+.ppq-onboarding-floating__text {
+	font-size: 14px;
+	color: rgba(255, 255, 255, 0.9);
+	line-height: 1.6;
+	margin: 0 0 16px 0;
+}
+
+.ppq-onboarding-floating__nav {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	padding-top: 16px;
+	border-top: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.ppq-onboarding-floating__btn {
+	padding: 6px 16px;
+	border-radius: 6px;
+	font-size: 14px;
+	font-weight: 500;
+	cursor: pointer;
+	transition: all 0.2s ease;
+}
+
+.ppq-onboarding-floating__btn--back {
+	background: rgba(255, 255, 255, 0.15);
+	border: 1px solid rgba(255, 255, 255, 0.3);
+	color: #fff;
+}
+
+.ppq-onboarding-floating__btn--back:hover {
+	background: rgba(255, 255, 255, 0.25);
+	border-color: rgba(255, 255, 255, 0.5);
+}
+
+.ppq-onboarding-floating__btn--next {
+	background: #fff;
+	border: 1px solid #fff;
+	color: #1890ff;
+}
+
+.ppq-onboarding-floating__btn--next:hover {
+	background: rgba(255, 255, 255, 0.9);
+	border-color: rgba(255, 255, 255, 0.9);
+}
+
+.ppq-onboarding-floating__step {
+	font-size: 12px;
+	color: rgba(255, 255, 255, 0.7);
+}
+
+/* ==========================================================================
+   Animations
+   ========================================================================== */
+
+@keyframes ppq-fade-in {
+	from {
+		opacity: 0;
+	}
+	to {
+		opacity: 1;
+	}
+}
+
+@keyframes ppq-scale-in {
+	from {
+		opacity: 0;
+		transform: scale(0.95);
+	}
+	to {
+		opacity: 1;
+		transform: scale(1);
+	}
+}
+
+/* ==========================================================================
+   Responsive
+   ========================================================================== */
+
+@media screen and (max-width: 640px) {
+	.ppq-onboarding-modal {
+		margin: 16px;
+		padding: 32px 24px;
+	}
+
+	.ppq-onboarding-modal__title {
+		font-size: 22px;
+	}
+
+	.ppq-tooltip {
+		min-width: 240px;
+		max-width: calc(100vw - 40px);
+		padding: 16px;
+	}
+
+	.ppq-tooltip__title {
+		font-size: 15px;
+	}
+
+	.ppq-tooltip__body {
+		font-size: 13px;
+	}
+
+	.ppq-onboarding-floating {
+		bottom: 16px;
+		right: 16px;
+		left: 16px;
+	}
+
+	.ppq-onboarding-floating__content {
+		width: 100%;
+	}
+}
+
+/* ==========================================================================
+   Reduced Motion
+   ========================================================================== */
+
+@media (prefers-reduced-motion: reduce) {
+	.ppq-onboarding-overlay,
+	.ppq-onboarding-modal,
+	.ppq-tooltip,
+	.ppq-onboarding-floating {
+		animation: none;
+	}
+
+	.ppq-spotlight__highlight--pulse {
+		animation: none;
+	}
+
+	.ppq-tooltip {
+		transition: none;
+	}
+}
+

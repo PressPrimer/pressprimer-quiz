@@ -231,6 +231,9 @@ class PPQ_Admin {
 			$this->enqueue_reports_assets();
 		}
 
+		// Enqueue Onboarding React app on all PPQ pages
+		$this->enqueue_onboarding_assets();
+
 		// Localize script with data
 		wp_localize_script(
 			'ppq-admin',
@@ -341,6 +344,52 @@ class PPQ_Admin {
 			[
 				'resultsUrl' => home_url( '/quiz-results/' ),
 			]
+		);
+	}
+
+	/**
+	 * Enqueue Onboarding React app assets
+	 *
+	 * @since 1.0.0
+	 */
+	private function enqueue_onboarding_assets() {
+		$asset_file = PPQ_PLUGIN_PATH . 'build/onboarding.asset.php';
+
+		if ( ! file_exists( $asset_file ) ) {
+			return;
+		}
+
+		// Get the onboarding instance to check state
+		if ( ! class_exists( 'PPQ_Onboarding' ) ) {
+			return;
+		}
+
+		$onboarding = PPQ_Onboarding::get_instance();
+
+		$asset = require $asset_file;
+
+		// Enqueue the onboarding script
+		wp_enqueue_script(
+			'ppq-onboarding',
+			PPQ_PLUGIN_URL . 'build/onboarding.js',
+			$asset['dependencies'],
+			$asset['version'],
+			true
+		);
+
+		// Enqueue the onboarding styles
+		wp_enqueue_style(
+			'ppq-onboarding',
+			PPQ_PLUGIN_URL . 'build/style-onboarding.css',
+			[],
+			$asset['version']
+		);
+
+		// Localize script with onboarding data
+		wp_localize_script(
+			'ppq-onboarding',
+			'ppqOnboardingData',
+			$onboarding->get_js_data()
 		);
 	}
 

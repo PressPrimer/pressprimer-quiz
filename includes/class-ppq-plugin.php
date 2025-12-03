@@ -98,6 +98,11 @@ class PPQ_Plugin {
 			$admin = new PPQ_Admin();
 			$admin->init();
 		}
+
+		// Initialize onboarding
+		if ( class_exists( 'PPQ_Onboarding' ) ) {
+			PPQ_Onboarding::get_instance();
+		}
 	}
 
 	/**

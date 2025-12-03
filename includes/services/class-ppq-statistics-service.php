@@ -434,6 +434,8 @@ class PPQ_Statistics_Service {
 
 		$offset = ( $args['page'] - 1 ) * $args['per_page'];
 
+		$attempt_items_table = $wpdb->prefix . 'ppq_attempt_items';
+
 		// Main query
 		$results = $wpdb->get_results(
 			$wpdb->prepare(
@@ -451,7 +453,9 @@ class PPQ_Statistics_Service {
 					q.title as quiz_title,
 					q.pass_percent as quiz_pass_percent,
 					COALESCE(u.display_name, a.guest_email, 'Guest') as student_name,
-					u.user_email
+					u.user_email,
+					(SELECT COUNT(*) FROM {$attempt_items_table} ai WHERE ai.attempt_id = a.id) as total_questions,
+					(SELECT COUNT(*) FROM {$attempt_items_table} ai WHERE ai.attempt_id = a.id AND ai.is_correct = 1) as correct_questions
 				 FROM {$attempts_table} a
 				 INNER JOIN {$quizzes_table} q ON a.quiz_id = q.id
 				 LEFT JOIN {$users_table} u ON a.user_id = u.ID
@@ -542,42 +546,67 @@ class PPQ_Statistics_Service {
 			return null;
 		}
 
-		// Get attempt items (questions)
+		$revisions_table = $wpdb->prefix . 'ppq_question_revisions';
+
+		// Get attempt items (questions) with full revision data
 		$items = $wpdb->get_results(
 			$wpdb->prepare(
 				"SELECT
 					ai.id,
-					ai.question_id,
+					ai.question_revision_id,
+					ai.selected_answers_json,
 					ai.is_correct,
-					ai.points_earned,
+					ai.score_points as points_earned,
 					ai.time_spent_ms,
-					q.stem
+					qr.question_id,
+					qr.stem,
+					qr.answers_json
 				 FROM {$attempt_items_table} ai
-				 LEFT JOIN {$questions_table} q ON ai.question_id = q.id
+				 LEFT JOIN {$revisions_table} qr ON ai.question_revision_id = qr.id
 				 WHERE ai.attempt_id = %d
 				 ORDER BY ai.order_index ASC",
 				$attempt_id
 			)
 		);
 
-		// Format items
+		// Format items with answer details
 		$formatted_items = [];
 		foreach ( $items as $item ) {
+			$answers          = json_decode( $item->answers_json ?? '[]', true ) ?: [];
+			$selected_indexes = json_decode( $item->selected_answers_json ?? '[]', true ) ?: [];
+
+			// Build answer display data
+			$answer_options = [];
+			foreach ( $answers as $idx => $answer ) {
+				$answer_options[] = [
+					'text'        => wp_strip_all_tags( $answer['text'] ?? '' ),
+					'is_correct'  => (bool) ( $answer['correct'] ?? false ),
+					'was_selected' => in_array( $idx, $selected_indexes, true ),
+				];
+			}
+
 			$formatted_items[] = [
-				'id'            => (int) $item->id,
-				'question_id'   => (int) $item->question_id,
-				'stem'          => wp_strip_all_tags( $item->stem ?? '' ),
-				'is_correct'    => (bool) $item->is_correct,
-				'points_earned' => (float) $item->points_earned,
-				'time_spent_ms' => (int) $item->time_spent_ms,
+				'id'             => (int) $item->id,
+				'question_id'    => (int) $item->question_id,
+				'stem'           => wp_strip_all_tags( $item->stem ?? '' ),
+				'is_correct'     => (bool) $item->is_correct,
+				'points_earned'  => (float) ( $item->points_earned ?? 0 ),
+				'time_spent_ms'  => (int) ( $item->time_spent_ms ?? 0 ),
+				'answers'        => $answer_options,
 			];
+		}
+
+		// Handle pass_percent - use 70% default if NULL
+		$pass_percent = $attempt->quiz_pass_percent;
+		if ( $pass_percent === null || $pass_percent === '' ) {
+			$pass_percent = 70.0; // Default passing score
 		}
 
 		return [
 			'id'                => (int) $attempt->id,
 			'quiz_id'           => (int) $attempt->quiz_id,
 			'quiz_title'        => $attempt->quiz_title,
-			'quiz_pass_percent' => (float) $attempt->quiz_pass_percent,
+			'quiz_pass_percent' => (float) $pass_percent,
 			'user_id'           => $attempt->user_id ? (int) $attempt->user_id : null,
 			'student_name'      => $attempt->student_name,
 			'student_email'     => $attempt->user_email ?? $attempt->guest_email ?? '',

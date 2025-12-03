@@ -219,6 +219,9 @@
 			this.timeRemaining = this.$container.data('time-remaining');
 			this.totalQuestions = $('.ppq-question').length;
 
+			// Get start question (first unanswered for resume, default 0)
+			var startQuestion = parseInt(this.$container.data('start-question'), 10) || 0;
+
 			// Initialize components
 			this.bindEvents();
 			this.bindEdgeCaseHandlers();
@@ -234,8 +237,8 @@
 				this.startTimer();
 			}
 
-			// Show first question
-			this.showQuestion(0);
+			// Show starting question (first unanswered on resume, or first question)
+			this.showQuestion(startQuestion);
 		},
 
 		/**

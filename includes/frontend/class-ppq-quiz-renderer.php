@@ -399,6 +399,20 @@ class PPQ_Quiz_Renderer {
 		// Get theme class
 		$theme_class = PPQ_Theme_Loader::get_theme_class( PPQ_Theme_Loader::get_quiz_theme( $quiz ) );
 
+		// Find first unanswered question (for resume functionality)
+		$first_unanswered = 0;
+		foreach ( $items as $index => $item ) {
+			$selected = $item->get_selected_answers();
+			if ( empty( $selected ) ) {
+				$first_unanswered = $index;
+				break;
+			}
+			// If we've checked all questions and they're all answered, stay on last question
+			if ( $index === count( $items ) - 1 ) {
+				$first_unanswered = $index;
+			}
+		}
+
 		// Start output buffering
 		ob_start();
 
@@ -407,7 +421,8 @@ class PPQ_Quiz_Renderer {
 			 data-attempt-id="<?php echo esc_attr( $attempt->id ); ?>"
 			 data-quiz-id="<?php echo esc_attr( $quiz->id ); ?>"
 			 data-time-limit="<?php echo esc_attr( $time_limit ); ?>"
-			 data-time-remaining="<?php echo esc_attr( $time_remaining ); ?>">
+			 data-time-remaining="<?php echo esc_attr( $time_remaining ); ?>"
+			 data-start-question="<?php echo esc_attr( $first_unanswered ); ?>">
 
 			<!-- Quiz Header -->
 			<div class="ppq-quiz-interface-header">

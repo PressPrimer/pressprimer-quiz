@@ -22,7 +22,7 @@ if ( ! defined( 'ABSPATH' ) ) {
  *
  * @since 1.0.0
  */
-class PPQ_Schema {
+class PressPrimer_Quiz_Schema {
 
 	/**
 	 * Get the complete schema SQL
@@ -39,7 +39,7 @@ class PPQ_Schema {
 
 		$charset_collate = $wpdb->get_charset_collate();
 
-		$sql = self::get_questions_table( $charset_collate );
+		$sql  = self::get_questions_table( $charset_collate );
 		$sql .= self::get_question_revisions_table( $charset_collate );
 		$sql .= self::get_categories_table( $charset_collate );
 		$sql .= self::get_question_tax_table( $charset_collate );

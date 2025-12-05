@@ -22,7 +22,7 @@ if ( ! defined( 'ABSPATH' ) ) {
  *
  * @since 1.0.0
  */
-class PPQ_Capabilities {
+class PressPrimer_Quiz_Capabilities {
 
 	/**
 	 * Setup capabilities
@@ -97,12 +97,12 @@ class PPQ_Capabilities {
 			__( 'PressPrimer Teacher', 'pressprimer-quiz' ),
 			[
 				// Basic WordPress capabilities
-				'read'                   => true,
+				'read'                 => true,
 
 				// PressPrimer Quiz capabilities
-				'ppq_manage_own'         => true,  // Manage own quizzes, questions, banks
-				'ppq_view_results_own'   => true,  // View results for own students
-				'ppq_take_quiz'          => true,  // Take quizzes
+				'ppq_manage_own'       => true,  // Manage own quizzes, questions, banks
+				'ppq_view_results_own' => true,  // View results for own students
+				'ppq_take_quiz'        => true,  // Take quizzes
 			]
 		);
 	}

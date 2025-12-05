@@ -13,8 +13,9 @@ Quizzes in the back end should be called "PPQ Quiz", "PPQ Quizzes", or "PressPri
 | Plugin slug | `pressprimer-quiz` | `pressprimer-quiz/pressprimer-quiz.php` |
 | Text domain | `pressprimer-quiz` | `__( 'Quiz', 'pressprimer-quiz' )` |
 | Database tables | `wp_ppq_` | `wp_ppq_questions` |
-| PHP functions | `ppq_` | `ppq_get_question()` |
-| PHP classes | `PPQ_` | `class PPQ_Question` |
+| **Global PHP functions** | `pressprimer_quiz_` | `pressprimer_quiz_init()` |
+| **PHP classes** | `PressPrimer_Quiz_` | `class PressPrimer_Quiz_Question` |
+| **Hooks (actions/filters)** | `pressprimer_quiz_` | `do_action( 'pressprimer_quiz_quiz_passed' )` |
 | CSS classes | `ppq-` | `.ppq-quiz-container` |
 | JavaScript namespace | `PPQ` | `PPQ.Quiz.submit()` |
 | Shortcodes | `ppq_` | `[ppq_quiz]` |
@@ -26,71 +27,70 @@ Quizzes in the back end should be called "PPQ Quiz", "PPQ Quizzes", or "PressPri
 | Capabilities | `ppq_` | `ppq_manage_all` |
 | Nonces | `ppq_` | `wp_nonce_field( 'ppq_save_quiz' )` |
 | AJAX actions | `ppq_` | `add_action( 'wp_ajax_ppq_save_quiz' )` |
-| Hooks (actions/filters) | `ppq_` | `do_action( 'ppq_attempt_started' )` |
 | Block names | `pressprimer-quiz/` | `pressprimer-quiz/quiz` |
+
+**Note:** Global namespace identifiers (functions, classes, and hooks) use the full `pressprimer_quiz_` or `PressPrimer_Quiz_` prefix to meet WordPress.org Plugin Check requirements. Internal identifiers (options, meta keys, nonces, CSS) use the shorter `ppq_` prefix.
 
 ### Class Naming
 
 **Models:**
 ```php
-class PPQ_Question { }
-class PPQ_Quiz { }
-class PPQ_Attempt { }
-class PPQ_Bank { }
-class PPQ_Group { }
+class PressPrimer_Quiz_Question { }
+class PressPrimer_Quiz_Quiz { }
+class PressPrimer_Quiz_Attempt { }
+class PressPrimer_Quiz_Bank { }
+class PressPrimer_Quiz_Group { }
 ```
 
 **Controllers/Handlers:**
 ```php
-class PPQ_Quiz_Controller { }
-class PPQ_Admin_Controller { }
-class PPQ_AJAX_Handler { }
-class PPQ_REST_Controller { }
+class PressPrimer_Quiz_Quiz_Controller { }
+class PressPrimer_Quiz_Admin_Controller { }
+class PressPrimer_Quiz_AJAX_Handler { }
+class PressPrimer_Quiz_REST_Controller { }
 ```
 
 **Services:**
 ```php
-class PPQ_Scoring_Service { }
-class PPQ_AI_Service { }
-class PPQ_Email_Service { }
+class PressPrimer_Quiz_Scoring_Service { }
+class PressPrimer_Quiz_AI_Service { }
+class PressPrimer_Quiz_Email_Service { }
 ```
 
 **Admin Pages:**
 ```php
-class PPQ_Admin_Questions_Page { }
-class PPQ_Admin_Settings_Page { }
+class PressPrimer_Quiz_Admin_Questions_Page { }
+class PressPrimer_Quiz_Admin_Settings_Page { }
 ```
 
 ### Function Naming
 
+**Note:** Global functions should use the `pressprimer_quiz_` prefix. However, most functionality is implemented via class methods rather than global functions. The examples below show the naming pattern if global functions are needed.
+
 **Getters:**
 ```php
-ppq_get_question( $id )
-ppq_get_quiz( $id )
-ppq_get_user_attempts( $user_id )
-ppq_get_quiz_by_uuid( $uuid )
+pressprimer_quiz_get_question( $id )
+pressprimer_quiz_get_quiz( $id )
+pressprimer_quiz_get_user_attempts( $user_id )
 ```
 
 **Boolean checks:**
 ```php
-ppq_is_quiz_published( $quiz_id )
-ppq_has_user_passed( $user_id, $quiz_id )
-ppq_can_user_retake( $user_id, $quiz_id )
+pressprimer_quiz_is_quiz_published( $quiz_id )
+pressprimer_quiz_has_user_passed( $user_id, $quiz_id )
+pressprimer_quiz_can_user_retake( $user_id, $quiz_id )
 ```
 
 **Actions:**
 ```php
-ppq_create_question( $data )
-ppq_update_quiz( $id, $data )
-ppq_submit_attempt( $attempt_id )
-ppq_score_response( $question, $answer )
+pressprimer_quiz_create_question( $data )
+pressprimer_quiz_submit_attempt( $attempt_id )
 ```
 
 **Rendering:**
 ```php
-ppq_render_quiz( $quiz_id, $args )
-ppq_render_results( $attempt_id )
-ppq_render_admin_table( $items )
+pressprimer_quiz_render_quiz( $quiz_id, $args )
+pressprimer_quiz_render_results( $attempt_id )
 ```
 
 ### Database Field Naming
@@ -247,7 +247,7 @@ if ( ! defined( 'ABSPATH' ) ) {
  *
  * @since 1.0.0
  */
-class PPQ_Question {
+class PressPrimer_Quiz_Question {
 ```
 
 **Method Documentation:**
@@ -258,9 +258,9 @@ class PPQ_Question {
  * @since 1.0.0
  *
  * @param int $id Question ID.
- * @return PPQ_Question|null Question object or null if not found.
+ * @return PressPrimer_Quiz_Question|null Question object or null if not found.
  */
-public function get( int $id ): ?PPQ_Question {
+public function get( int $id ): ?PressPrimer_Quiz_Question {
 ```
 
 **Inline Comments:**
@@ -572,20 +572,22 @@ Use WordPress-style autoloading:
 // In main plugin file
 spl_autoload_register( function( $class ) {
     // Only handle our classes
-    if ( strpos( $class, 'PPQ_' ) !== 0 ) {
+    if ( strpos( $class, 'PressPrimer_Quiz_' ) !== 0 ) {
         return;
     }
-    
+
     // Convert class name to file name
-    $file = 'class-' . strtolower( str_replace( '_', '-', $class ) ) . '.php';
-    
+    // PressPrimer_Quiz_Question -> class-ppq-question.php
+    $class_without_prefix = substr( $class, strlen( 'PressPrimer_Quiz_' ) );
+    $file = 'class-ppq-' . strtolower( str_replace( '_', '-', $class_without_prefix ) ) . '.php';
+
     // Check in includes directory
     $path = PPQ_PLUGIN_PATH . 'includes/' . $file;
     if ( file_exists( $path ) ) {
         require_once $path;
         return;
     }
-    
+
     // Check in subdirectories
     $subdirs = [ 'models', 'admin', 'frontend', 'services', 'integrations', 'database', 'utilities' ];
     foreach ( $subdirs as $subdir ) {

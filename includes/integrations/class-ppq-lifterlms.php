@@ -26,7 +26,7 @@ if ( ! defined( 'ABSPATH' ) ) {
  *
  * @since 1.0.0
  */
-class PPQ_LifterLMS {
+class PressPrimer_Quiz_LifterLMS {
 
 	/**
 	 * Meta key for storing the PPQ quiz ID on lessons
@@ -69,10 +69,10 @@ class PPQ_LifterLMS {
 		add_filter( 'llms_is_complete', [ $this, 'check_ppq_quiz_complete' ], 10, 4 );
 
 		// Completion tracking.
-		add_action( 'ppq_quiz_passed', [ $this, 'handle_quiz_passed' ], 10, 2 );
+		add_action( 'pressprimer_quiz_quiz_passed', [ $this, 'handle_quiz_passed' ], 10, 2 );
 
 		// Map Instructors to ppq_teacher role.
-		add_filter( 'ppq_user_has_teacher_capability', [ $this, 'check_instructor_capability' ], 10, 2 );
+		add_filter( 'pressprimer_quiz_user_has_teacher_capability', [ $this, 'check_instructor_capability' ], 10, 2 );
 
 		// AJAX handler for metabox quiz search (classic editor).
 		add_action( 'wp_ajax_ppq_search_quizzes_lifterlms', [ $this, 'ajax_search_quizzes' ] );
@@ -113,7 +113,7 @@ class PPQ_LifterLMS {
 		// Get quiz title if one is selected.
 		$quiz_title = '';
 		if ( $quiz_id ) {
-			$quiz = class_exists( 'PPQ_Quiz' ) ? PPQ_Quiz::get( $quiz_id ) : null;
+			$quiz = class_exists( 'PressPrimer_Quiz_Quiz' ) ? PressPrimer_Quiz_Quiz::get( $quiz_id ) : null;
 			if ( $quiz ) {
 				$quiz_title = $quiz->title;
 			}
@@ -125,7 +125,7 @@ class PPQ_LifterLMS {
 				<input type="hidden" name="ppq_lifterlms_quiz_id" id="ppq_lifterlms_quiz_id" value="<?php echo esc_attr( $quiz_id ); ?>" />
 				<span class="ppq-quiz-input-wrapper" style="display: flex; gap: 5px;">
 					<input type="text" id="ppq_lifterlms_quiz_search" class="widefat" placeholder="<?php esc_attr_e( 'Search quizzes...', 'pressprimer-quiz' ); ?>" value="<?php echo esc_attr( $quiz_title ? $quiz_id . ' - ' . $quiz_title : '' ); ?>" autocomplete="off" style="flex: 1;" />
-					<button type="button" id="ppq_lifterlms_quiz_clear" class="button" title="<?php esc_attr_e( 'Remove quiz', 'pressprimer-quiz' ); ?>" <?php echo $quiz_id ? '' : 'style="display:none;"'; ?>>&times;</button>
+					<button type="button" id="ppq_lifterlms_quiz_clear" class="button" title="<?php esc_attr_e( 'Remove quiz', 'pressprimer-quiz' ); ?>" style="<?php echo $quiz_id ? '' : 'display:none;'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Safe CSS values ?>">&times;</button>
 				</span>
 				<span id="ppq_lifterlms_quiz_results" class="ppq-search-results hidden"></span>
 			</p>
@@ -259,7 +259,7 @@ class PPQ_LifterLMS {
 		}
 
 		// Save quiz ID.
-		$quiz_id = isset( $_POST['ppq_lifterlms_quiz_id'] ) ? absint( $_POST['ppq_lifterlms_quiz_id'] ) : 0;
+		$quiz_id = isset( $_POST['ppq_lifterlms_quiz_id'] ) ? absint( wp_unslash( $_POST['ppq_lifterlms_quiz_id'] ) ) : 0;
 		if ( $quiz_id ) {
 			update_post_meta( $post_id, self::META_KEY_QUIZ_ID, $quiz_id );
 		} else {
@@ -292,7 +292,7 @@ class PPQ_LifterLMS {
 
 		// Get current course ID.
 		// phpcs:ignore WordPress.Security.NonceVerification.Recommended
-		$course_id = isset( $_GET['course_id'] ) ? absint( $_GET['course_id'] ) : 0;
+		$course_id = isset( $_GET['course_id'] ) ? absint( wp_unslash( $_GET['course_id'] ) ) : 0;
 
 		// Get lesson quiz mappings for this course (for sidebar indicators).
 		$lesson_quizzes = $this->get_lesson_quizzes_for_course( $course_id );
@@ -344,7 +344,7 @@ class PPQ_LifterLMS {
 		foreach ( $lessons as $lesson_id ) {
 			$quiz_id = get_post_meta( $lesson_id, self::META_KEY_QUIZ_ID, true );
 			if ( $quiz_id ) {
-				$quiz = class_exists( 'PPQ_Quiz' ) ? PPQ_Quiz::get( $quiz_id ) : null;
+				$quiz = class_exists( 'PressPrimer_Quiz_Quiz' ) ? PressPrimer_Quiz_Quiz::get( $quiz_id ) : null;
 				if ( $quiz ) {
 					$require_pass          = get_post_meta( $lesson_id, self::META_KEY_REQUIRE_PASS, true );
 					$quizzes[ $lesson_id ] = [
@@ -429,8 +429,8 @@ class PPQ_LifterLMS {
 		}
 
 		// Check if user has passed the PPQ quiz.
-		if ( class_exists( 'PPQ_Attempt' ) ) {
-			$passed = PPQ_Attempt::user_has_passed( $quiz_id, $user_id );
+		if ( class_exists( 'PressPrimer_Quiz_Attempt' ) ) {
+			$passed = PressPrimer_Quiz_Attempt::user_has_passed( $quiz_id, $user_id );
 			return $passed ? $is_complete : false;
 		}
 
@@ -449,11 +449,11 @@ class PPQ_LifterLMS {
 		global $wpdb;
 
 		// Find lessons using this quiz.
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Lesson lookup by quiz ID, not suitable for caching
 		$lessons = $wpdb->get_col(
 			$wpdb->prepare(
 				"SELECT post_id FROM {$wpdb->postmeta}
-				WHERE meta_key = %s AND meta_value = %d",
+				WHERE meta_key = %s AND meta_value = %d", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- WordPress core table name
 				self::META_KEY_QUIZ_ID,
 				$quiz_id
 			)
@@ -498,7 +498,7 @@ class PPQ_LifterLMS {
 		 * @param int $lesson_id Lesson ID.
 		 * @param int $user_id   User ID.
 		 */
-		do_action( 'ppq_lifterlms_lesson_completed', $lesson_id, $user_id );
+		do_action( 'pressprimer_quiz_lifterlms_lesson_completed', $lesson_id, $user_id );
 	}
 
 	/**
@@ -577,11 +577,11 @@ class PPQ_LifterLMS {
 					return current_user_can( 'edit_posts' );
 				},
 				'args'                => [
-					'lesson_id' => [
+					'lesson_id'    => [
 						'required'          => true,
 						'sanitize_callback' => 'absint',
 					],
-					'quiz_id'   => [
+					'quiz_id'      => [
 						'required'          => true,
 						'sanitize_callback' => 'absint',
 					],
@@ -608,7 +608,7 @@ class PPQ_LifterLMS {
 
 		$quizzes = [];
 
-		if ( class_exists( 'PPQ_Quiz' ) ) {
+		if ( class_exists( 'PressPrimer_Quiz_Quiz' ) ) {
 			$args = [
 				'where'    => [
 					'status' => 'published',
@@ -618,15 +618,18 @@ class PPQ_LifterLMS {
 				'order'    => 'DESC',
 			];
 
-			$results = PPQ_Quiz::find( $args );
+			$results = PressPrimer_Quiz_Quiz::find( $args );
 
 			// Filter by search term if provided.
 			if ( $search ) {
 				$search_lower = strtolower( $search );
-				$results = array_filter( $results, function( $quiz ) use ( $search_lower ) {
-					return strpos( strtolower( $quiz->title ), $search_lower ) !== false
+				$results      = array_filter(
+					$results,
+					function ( $quiz ) use ( $search_lower ) {
+						return strpos( strtolower( $quiz->title ), $search_lower ) !== false
 						|| strpos( (string) $quiz->id, $search_lower ) !== false;
-				} );
+					}
+				);
 			}
 
 			foreach ( $results as $quiz ) {
@@ -684,8 +687,8 @@ class PPQ_LifterLMS {
 		// Save or remove quiz association.
 		if ( $quiz_id ) {
 			// Validate quiz exists.
-			if ( class_exists( 'PPQ_Quiz' ) ) {
-				$quiz = PPQ_Quiz::get( $quiz_id );
+			if ( class_exists( 'PressPrimer_Quiz_Quiz' ) ) {
+				$quiz = PressPrimer_Quiz_Quiz::get( $quiz_id );
 				if ( ! $quiz ) {
 					return new WP_REST_Response(
 						[
@@ -735,9 +738,9 @@ class PPQ_LifterLMS {
 
 		$quizzes = [];
 
-		if ( class_exists( 'PPQ_Quiz' ) && strlen( $search ) >= 2 ) {
-			// Use PPQ_Quiz::find() instead of get_all() which doesn't exist.
-			$results = PPQ_Quiz::find(
+		if ( class_exists( 'PressPrimer_Quiz_Quiz' ) && strlen( $search ) >= 2 ) {
+			// Use PressPrimer_Quiz_Quiz::find() instead of get_all() which doesn't exist.
+			$results = PressPrimer_Quiz_Quiz::find(
 				[
 					'where'    => [ 'status' => 'published' ],
 					'limit'    => 10,
@@ -782,9 +785,10 @@ class PPQ_LifterLMS {
 		// Count how many LifterLMS lessons have PPQ quizzes attached.
 		if ( $status['active'] ) {
 			global $wpdb;
-			$count = $wpdb->get_var(
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Status count query, not suitable for caching
+			$count                      = $wpdb->get_var(
 				$wpdb->prepare(
-					"SELECT COUNT(*) FROM {$wpdb->postmeta} WHERE meta_key = %s AND meta_value != ''",
+					"SELECT COUNT(*) FROM {$wpdb->postmeta} WHERE meta_key = %s AND meta_value != ''", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- WordPress core table name
 					self::META_KEY_QUIZ_ID
 				)
 			);

@@ -22,7 +22,7 @@ if ( ! defined( 'ABSPATH' ) ) {
  *
  * @since 1.0.0
  */
-class PPQ_Results_Renderer {
+class PressPrimer_Quiz_Results_Renderer {
 
 	/**
 	 * Render results page
@@ -31,7 +31,7 @@ class PPQ_Results_Renderer {
 	 *
 	 * @since 1.0.0
 	 *
-	 * @param PPQ_Attempt $attempt Attempt object.
+	 * @param PressPrimer_Quiz_Attempt $attempt Attempt object.
 	 * @return string HTML output.
 	 */
 	public function render_results( $attempt ) {
@@ -57,13 +57,13 @@ class PPQ_Results_Renderer {
 		 * @since 1.0.0
 		 *
 		 * @param array       $results Calculated results including score_percent, category_scores, confidence_stats.
-		 * @param PPQ_Attempt $attempt The attempt object.
-		 * @param PPQ_Quiz    $quiz    The quiz object.
+		 * @param PressPrimer_Quiz_Attempt $attempt The attempt object.
+		 * @param PressPrimer_Quiz_Quiz    $quiz    The quiz object.
 		 */
-		$results = apply_filters( 'ppq_results_data', $results, $attempt, $quiz );
+		$results = apply_filters( 'pressprimer_quiz_results_data', $results, $attempt, $quiz );
 
 		// Get theme class
-		$theme_class = PPQ_Theme_Loader::get_theme_class( PPQ_Theme_Loader::get_quiz_theme( $quiz ) );
+		$theme_class = PressPrimer_Quiz_Theme_Loader::get_theme_class( PressPrimer_Quiz_Theme_Loader::get_quiz_theme( $quiz ) );
 
 		/**
 		 * Filter which sections are displayed on the results page.
@@ -75,19 +75,24 @@ class PPQ_Results_Renderer {
 		 * @since 1.0.0
 		 *
 		 * @param array       $sections Array of section IDs to display.
-		 * @param PPQ_Attempt $attempt  The attempt object.
-		 * @param PPQ_Quiz    $quiz     The quiz object.
+		 * @param PressPrimer_Quiz_Attempt $attempt  The attempt object.
+		 * @param PressPrimer_Quiz_Quiz    $quiz     The quiz object.
 		 */
-		$sections = apply_filters( 'ppq_results_sections', [
-			'header',
-			'guest_notice',
-			'score_summary',
-			'email_notice',
-			'category_breakdown',
-			'confidence',
-			'feedback',
-			'actions',
-		], $attempt, $quiz );
+		$sections = apply_filters(
+			'pressprimer_quiz_results_sections',
+			[
+				'header',
+				'guest_notice',
+				'score_summary',
+				'email_notice',
+				'category_breakdown',
+				'confidence',
+				'feedback',
+				'actions',
+			],
+			$attempt,
+			$quiz
+		);
 
 		// Build output
 		ob_start();
@@ -99,11 +104,11 @@ class PPQ_Results_Renderer {
 			 *
 			 * @since 1.0.0
 			 *
-			 * @param PPQ_Attempt $attempt The attempt object.
-			 * @param PPQ_Quiz    $quiz    The quiz object.
+			 * @param PressPrimer_Quiz_Attempt $attempt The attempt object.
+			 * @param PressPrimer_Quiz_Quiz    $quiz    The quiz object.
 			 * @param array       $results The calculated results data.
 			 */
-			do_action( 'ppq_before_results', $attempt, $quiz, $results );
+			do_action( 'pressprimer_quiz_before_results', $attempt, $quiz, $results );
 
 			if ( in_array( 'header', $sections, true ) ) {
 				$this->render_results_header( $attempt, $quiz, $results );
@@ -137,11 +142,11 @@ class PPQ_Results_Renderer {
 			 *
 			 * @since 1.0.0
 			 *
-			 * @param PPQ_Attempt $attempt The attempt object.
-			 * @param PPQ_Quiz    $quiz    The quiz object.
+			 * @param PressPrimer_Quiz_Attempt $attempt The attempt object.
+			 * @param PressPrimer_Quiz_Quiz    $quiz    The quiz object.
 			 * @param array       $results The calculated results data.
 			 */
-			do_action( 'ppq_after_results', $attempt, $quiz, $results );
+			do_action( 'pressprimer_quiz_after_results', $attempt, $quiz, $results );
 			?>
 		</div>
 		<?php
@@ -153,9 +158,9 @@ class PPQ_Results_Renderer {
 	 *
 	 * @since 1.0.0
 	 *
-	 * @param PPQ_Attempt $attempt Attempt object.
-	 * @param PPQ_Quiz    $quiz Quiz object.
-	 * @param array       $results Results data.
+	 * @param PressPrimer_Quiz_Attempt $attempt Attempt object.
+	 * @param PressPrimer_Quiz_Quiz    $quiz Quiz object.
+	 * @param array                    $results Results data.
 	 */
 	private function render_results_header( $attempt, $quiz, $results ) {
 		?>
@@ -173,7 +178,7 @@ class PPQ_Results_Renderer {
 	 *
 	 * @since 1.0.0
 	 *
-	 * @param PPQ_Attempt $attempt Attempt object.
+	 * @param PressPrimer_Quiz_Attempt $attempt Attempt object.
 	 */
 	private function render_guest_token_notice( $attempt ) {
 		// Only show for guest attempts
@@ -188,8 +193,8 @@ class PPQ_Results_Renderer {
 
 		// Calculate days until expiration
 		if ( $attempt->token_expires_at ) {
-			$now = current_time( 'timestamp' );
-			$expires = strtotime( $attempt->token_expires_at );
+			$now            = current_time( 'timestamp' );
+			$expires        = strtotime( $attempt->token_expires_at );
 			$days_remaining = max( 0, ceil( ( $expires - $now ) / DAY_IN_SECONDS ) );
 
 			?>
@@ -199,12 +204,14 @@ class PPQ_Results_Renderer {
 					<?php
 					printf(
 						/* translators: %d: number of days */
-						esc_html( _n(
-							'You can access your results for %d more day using this unique link.',
-							'You can access your results for %d more days using this unique link.',
-							$days_remaining,
-							'pressprimer-quiz'
-						) ),
+						esc_html(
+							_n(
+								'You can access your results for %d more day using this unique link.',
+								'You can access your results for %d more days using this unique link.',
+								$days_remaining,
+								'pressprimer-quiz'
+							)
+						),
 						(int) $days_remaining
 					);
 					?>
@@ -219,14 +226,14 @@ class PPQ_Results_Renderer {
 	 *
 	 * @since 1.0.0
 	 *
-	 * @param PPQ_Attempt $attempt Attempt object.
-	 * @param PPQ_Quiz    $quiz Quiz object.
-	 * @param array       $results Results data.
+	 * @param PressPrimer_Quiz_Attempt $attempt Attempt object.
+	 * @param PressPrimer_Quiz_Quiz    $quiz Quiz object.
+	 * @param array                    $results Results data.
 	 */
 	private function render_score_summary( $attempt, $quiz, $results ) {
 		$passed_class = $attempt->passed ? 'ppq-passed' : 'ppq-failed';
 		/* translators: All caps pass/fail status shown on results page */
-		$passed_text  = $attempt->passed
+		$passed_text = $attempt->passed
 			? __( 'PASSED', 'pressprimer-quiz' )
 			: __( 'FAILED', 'pressprimer-quiz' );
 
@@ -291,11 +298,11 @@ class PPQ_Results_Renderer {
 	 *
 	 * @since 1.0.0
 	 *
-	 * @param PPQ_Attempt $attempt Attempt object.
+	 * @param PressPrimer_Quiz_Attempt $attempt Attempt object.
 	 */
 	private function render_email_sent_notice( $attempt ) {
 		// Check if auto-send is enabled
-		$settings = get_option( 'ppq_settings', [] );
+		$settings  = get_option( 'ppq_settings', [] );
 		$auto_send = isset( $settings['email_results_auto_send'] ) && $settings['email_results_auto_send'];
 
 		if ( ! $auto_send ) {
@@ -330,9 +337,9 @@ class PPQ_Results_Renderer {
 	 *
 	 * @since 1.0.0
 	 *
-	 * @param array       $results Results data.
-	 * @param PPQ_Attempt $attempt Attempt object.
-	 * @param PPQ_Quiz    $quiz    Quiz object.
+	 * @param array                    $results Results data.
+	 * @param PressPrimer_Quiz_Attempt $attempt Attempt object.
+	 * @param PressPrimer_Quiz_Quiz    $quiz    Quiz object.
 	 */
 	private function render_category_breakdown( $results, $attempt = null, $quiz = null ) {
 		if ( empty( $results['category_scores'] ) ) {
@@ -346,10 +353,10 @@ class PPQ_Results_Renderer {
 		 *
 		 * @param bool        $show    Whether to show category breakdown. Default true.
 		 * @param array       $results The results data with category_scores.
-		 * @param PPQ_Attempt $attempt The attempt object.
-		 * @param PPQ_Quiz    $quiz    The quiz object.
+		 * @param PressPrimer_Quiz_Attempt $attempt The attempt object.
+		 * @param PressPrimer_Quiz_Quiz    $quiz    The quiz object.
 		 */
-		if ( ! apply_filters( 'ppq_show_category_breakdown', true, $results, $attempt, $quiz ) ) {
+		if ( ! apply_filters( 'pressprimer_quiz_show_category_breakdown', true, $results, $attempt, $quiz ) ) {
 			return;
 		}
 
@@ -402,13 +409,13 @@ class PPQ_Results_Renderer {
 		// Determine calibration message
 		if ( $calibration >= 90 ) {
 			$message = __( 'Your confidence is well-calibrated!', 'pressprimer-quiz' );
-			$icon = '💡';
+			$icon    = '💡';
 		} elseif ( $calibration >= 70 ) {
 			$message = __( 'Your confidence is fairly good, but there\'s room for improvement.', 'pressprimer-quiz' );
-			$icon = '📊';
+			$icon    = '📊';
 		} else {
 			$message = __( 'You may be overconfident. Review the questions you marked as confident.', 'pressprimer-quiz' );
-			$icon = '⚠️';
+			$icon    = '⚠️';
 		}
 
 		?>
@@ -440,8 +447,8 @@ class PPQ_Results_Renderer {
 	 *
 	 * @since 1.0.0
 	 *
-	 * @param PPQ_Quiz $quiz Quiz object.
-	 * @param array    $results Results data.
+	 * @param PressPrimer_Quiz_Quiz $quiz Quiz object.
+	 * @param array                 $results Results data.
 	 */
 	private function render_score_feedback( $quiz, $results ) {
 		$feedback = $this->get_score_feedback( $quiz, $results['score_percent'] );
@@ -465,8 +472,8 @@ class PPQ_Results_Renderer {
 	 *
 	 * @since 1.0.0
 	 *
-	 * @param PPQ_Attempt $attempt Attempt object.
-	 * @param PPQ_Quiz    $quiz Quiz object.
+	 * @param PressPrimer_Quiz_Attempt $attempt Attempt object.
+	 * @param PressPrimer_Quiz_Quiz    $quiz Quiz object.
 	 */
 	private function render_results_actions( $attempt, $quiz ) {
 		// Check for LearnDash navigation data
@@ -482,10 +489,10 @@ class PPQ_Results_Renderer {
 			 *
 			 * @since 1.0.0
 			 *
-			 * @param PPQ_Attempt $attempt The attempt object.
-			 * @param PPQ_Quiz    $quiz    The quiz object.
+			 * @param PressPrimer_Quiz_Attempt $attempt The attempt object.
+			 * @param PressPrimer_Quiz_Quiz    $quiz    The quiz object.
 			 */
-			do_action( 'ppq_results_actions_start', $attempt, $quiz );
+			do_action( 'pressprimer_quiz_results_actions_start', $attempt, $quiz );
 
 			// LearnDash "Continue" button (only if passed and has next URL)
 			if ( $ld_nav && $attempt->passed && ! empty( $ld_nav['next_url'] ) ) :
@@ -528,10 +535,10 @@ class PPQ_Results_Renderer {
 			 *
 			 * @since 1.0.0
 			 *
-			 * @param PPQ_Attempt $attempt The attempt object.
-			 * @param PPQ_Quiz    $quiz    The quiz object.
+			 * @param PressPrimer_Quiz_Attempt $attempt The attempt object.
+			 * @param PressPrimer_Quiz_Quiz    $quiz    The quiz object.
 			 */
-			do_action( 'ppq_results_actions_end', $attempt, $quiz );
+			do_action( 'pressprimer_quiz_results_actions_end', $attempt, $quiz );
 			?>
 		</div>
 
@@ -543,7 +550,7 @@ class PPQ_Results_Renderer {
 	 *
 	 * @since 1.0.0
 	 *
-	 * @param PPQ_Attempt $attempt Attempt object.
+	 * @param PressPrimer_Quiz_Attempt $attempt Attempt object.
 	 * @return array|null Navigation data or null if not LearnDash context.
 	 */
 	private function get_learndash_navigation( $attempt ) {
@@ -558,13 +565,13 @@ class PPQ_Results_Renderer {
 		}
 
 		// Check if LearnDash integration is available
-		if ( ! class_exists( 'PPQ_LearnDash' ) || ! defined( 'LEARNDASH_VERSION' ) ) {
+		if ( ! class_exists( 'PressPrimer_Quiz_LearnDash' ) || ! defined( 'LEARNDASH_VERSION' ) ) {
 			return null;
 		}
 
-		$learndash = new PPQ_LearnDash();
+		$learndash  = new PressPrimer_Quiz_LearnDash();
 		$ld_post_id = (int) $meta['learndash_post_id'];
-		$post_type = get_post_type( $ld_post_id );
+		$post_type  = get_post_type( $ld_post_id );
 
 		// For courses, return to course page on completion
 		if ( 'sfwd-courses' === $post_type ) {
@@ -590,7 +597,7 @@ class PPQ_Results_Renderer {
 	 *
 	 * @since 1.0.0
 	 *
-	 * @param PPQ_Attempt $attempt Attempt object.
+	 * @param PressPrimer_Quiz_Attempt $attempt Attempt object.
 	 */
 	private function render_email_button( $attempt ) {
 		// Get email address
@@ -628,7 +635,7 @@ class PPQ_Results_Renderer {
 	 *
 	 * @since 1.0.0
 	 *
-	 * @param PPQ_Attempt $attempt Attempt object.
+	 * @param PressPrimer_Quiz_Attempt $attempt Attempt object.
 	 * @return string HTML output.
 	 */
 	public function render_question_review( $attempt ) {
@@ -653,7 +660,7 @@ class PPQ_Results_Renderer {
 		$show_correct_answers = $this->should_show_correct_answers( $quiz, $attempt );
 
 		// Get theme class
-		$theme_class = PPQ_Theme_Loader::get_theme_class( PPQ_Theme_Loader::get_quiz_theme( $quiz ) );
+		$theme_class = PressPrimer_Quiz_Theme_Loader::get_theme_class( PressPrimer_Quiz_Theme_Loader::get_quiz_theme( $quiz ) );
 
 		// Build output
 		ob_start();
@@ -674,11 +681,11 @@ class PPQ_Results_Renderer {
 	 *
 	 * @since 1.0.0
 	 *
-	 * @param PPQ_Attempt_Item $item Attempt item.
-	 * @param int              $current_num Current question number.
-	 * @param int              $total_num Total number of questions.
-	 * @param PPQ_Quiz         $quiz Quiz object.
-	 * @param bool             $show_correct_answers Whether to show correct answers.
+	 * @param PressPrimer_Quiz_Attempt_Item $item Attempt item.
+	 * @param int                           $current_num Current question number.
+	 * @param int                           $total_num Total number of questions.
+	 * @param PressPrimer_Quiz_Quiz         $quiz Quiz object.
+	 * @param bool                          $show_correct_answers Whether to show correct answers.
 	 */
 	private function render_single_question_review( $item, $current_num, $total_num, $quiz, $show_correct_answers ) {
 		// Get question revision (locked at attempt time)
@@ -692,7 +699,7 @@ class PPQ_Results_Renderer {
 			return;
 		}
 
-		$answers = $revision->get_answers();
+		$answers          = $revision->get_answers();
 		$selected_answers = $item->get_selected_answers();
 
 		// Determine status
@@ -776,9 +783,9 @@ class PPQ_Results_Renderer {
 	 *
 	 * @since 1.0.0
 	 *
-	 * @param array $answers All answer options.
-	 * @param array $selected_answers Selected answer indices.
-	 * @param bool  $show_correct_answers Whether to show correct answers.
+	 * @param array  $answers All answer options.
+	 * @param array  $selected_answers Selected answer indices.
+	 * @param bool   $show_correct_answers Whether to show correct answers.
 	 * @param string $question_type Question type (mc, ma, tf).
 	 */
 	private function render_answer_options( $answers, $selected_answers, $show_correct_answers, $question_type ) {
@@ -803,18 +810,18 @@ class PPQ_Results_Renderer {
 
 			// Determine indicator icon and label
 			$indicator = '';
-			$label = '';
+			$label     = '';
 			if ( $is_selected ) {
 				if ( $is_correct ) {
 					$indicator = '<span class="ppq-answer-indicator ppq-correct">✓</span>';
-					$label = '<span class="ppq-answer-label ppq-your-answer-correct">' . esc_html__( 'Your answer (Correct)', 'pressprimer-quiz' ) . '</span>';
+					$label     = '<span class="ppq-answer-label ppq-your-answer-correct">' . esc_html__( 'Your answer (Correct)', 'pressprimer-quiz' ) . '</span>';
 				} else {
 					$indicator = '<span class="ppq-answer-indicator ppq-incorrect">✗</span>';
-					$label = '<span class="ppq-answer-label ppq-your-answer-incorrect">' . esc_html__( 'Your answer (Incorrect)', 'pressprimer-quiz' ) . '</span>';
+					$label     = '<span class="ppq-answer-label ppq-your-answer-incorrect">' . esc_html__( 'Your answer (Incorrect)', 'pressprimer-quiz' ) . '</span>';
 				}
 			} elseif ( $show_correct_answers && $is_correct ) {
 				$indicator = '<span class="ppq-answer-indicator ppq-correct-marker">→</span>';
-				$label = '<span class="ppq-answer-label ppq-correct-answer-label">' . esc_html__( 'Correct answer', 'pressprimer-quiz' ) . '</span>';
+				$label     = '<span class="ppq-answer-label ppq-correct-answer-label">' . esc_html__( 'Correct answer', 'pressprimer-quiz' ) . '</span>';
 			}
 
 			?>
@@ -845,7 +852,7 @@ class PPQ_Results_Renderer {
 			<div class="ppq-answers-hidden-notice">
 				<?php esc_html_e( 'Correct answers are not shown for this quiz.', 'pressprimer-quiz' ); ?>
 			</div>
-		<?php
+			<?php
 		endif;
 	}
 
@@ -854,11 +861,11 @@ class PPQ_Results_Renderer {
 	 *
 	 * @since 1.0.0
 	 *
-	 * @param PPQ_Attempt_Item      $item Attempt item.
-	 * @param PPQ_Question_Revision $revision Question revision.
-	 * @param array                 $answers All answers.
-	 * @param array                 $selected_answers Selected answer indices.
-	 * @param bool                  $show_correct_answers Whether showing correct answers.
+	 * @param PressPrimer_Quiz_Attempt_Item      $item Attempt item.
+	 * @param PressPrimer_Quiz_Question_Revision $revision Question revision.
+	 * @param array                              $answers All answers.
+	 * @param array                              $selected_answers Selected answer indices.
+	 * @param bool                               $show_correct_answers Whether showing correct answers.
 	 */
 	private function render_question_feedback( $item, $revision, $answers, $selected_answers, $show_correct_answers ) {
 		// Per-question feedback
@@ -888,8 +895,8 @@ class PPQ_Results_Renderer {
 	 *
 	 * @since 1.0.0
 	 *
-	 * @param PPQ_Quiz    $quiz Quiz object.
-	 * @param PPQ_Attempt $attempt Attempt object.
+	 * @param PressPrimer_Quiz_Quiz    $quiz Quiz object.
+	 * @param PressPrimer_Quiz_Attempt $attempt Attempt object.
 	 * @return bool True if correct answers should be shown.
 	 */
 	private function should_show_correct_answers( $quiz, $attempt ) {
@@ -913,20 +920,20 @@ class PPQ_Results_Renderer {
 	 *
 	 * @since 1.0.0
 	 *
-	 * @param PPQ_Attempt $attempt Attempt object.
+	 * @param PressPrimer_Quiz_Attempt $attempt Attempt object.
 	 * @return array Results data.
 	 */
 	private function calculate_results( $attempt ) {
 		$items = $attempt->get_items();
 
 		$results = [
-			'score_points'      => $attempt->score_points,
-			'max_points'        => $attempt->max_points,
-			'score_percent'     => $attempt->score_percent,
-			'correct_count'     => 0,
-			'total_count'       => count( $items ),
-			'category_scores'   => [],
-			'confidence_stats'  => [
+			'score_points'     => $attempt->score_points,
+			'max_points'       => $attempt->max_points,
+			'score_percent'    => $attempt->score_percent,
+			'correct_count'    => 0,
+			'total_count'      => count( $items ),
+			'category_scores'  => [],
+			'confidence_stats' => [
 				'confident_correct'       => 0,
 				'confident_incorrect'     => 0,
 				'not_confident_correct'   => 0,
@@ -937,13 +944,13 @@ class PPQ_Results_Renderer {
 		foreach ( $items as $item ) {
 			// Count correct answers
 			if ( $item->is_correct ) {
-				$results['correct_count']++;
+				++$results['correct_count'];
 			}
 
 			// Category tracking
 			$question = $item->get_question();
 			if ( $question ) {
-				$categories = PPQ_Category::get_for_question( $question->id, 'category' );
+				$categories = PressPrimer_Quiz_Category::get_for_question( $question->id, 'category' );
 
 				foreach ( $categories as $cat ) {
 					if ( ! isset( $results['category_scores'][ $cat->id ] ) ) {
@@ -954,10 +961,10 @@ class PPQ_Results_Renderer {
 						];
 					}
 
-					$results['category_scores'][ $cat->id ]['total']++;
+					++$results['category_scores'][ $cat->id ]['total'];
 
 					if ( $item->is_correct ) {
-						$results['category_scores'][ $cat->id ]['correct']++;
+						++$results['category_scores'][ $cat->id ]['correct'];
 					}
 				}
 			}
@@ -965,16 +972,14 @@ class PPQ_Results_Renderer {
 			// Confidence tracking
 			if ( $item->confidence ) {
 				if ( $item->is_correct ) {
-					$results['confidence_stats']['confident_correct']++;
+					++$results['confidence_stats']['confident_correct'];
 				} else {
-					$results['confidence_stats']['confident_incorrect']++;
+					++$results['confidence_stats']['confident_incorrect'];
 				}
+			} elseif ( $item->is_correct ) {
+					++$results['confidence_stats']['not_confident_correct'];
 			} else {
-				if ( $item->is_correct ) {
-					$results['confidence_stats']['not_confident_correct']++;
-				} else {
-					$results['confidence_stats']['not_confident_incorrect']++;
-				}
+				++$results['confidence_stats']['not_confident_incorrect'];
 			}
 		}
 
@@ -998,6 +1003,7 @@ class PPQ_Results_Renderer {
 		$table = $wpdb->prefix . 'ppq_attempts';
 
 		// Count attempts
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Quiz statistics, dynamic data
 		$count = $wpdb->get_var(
 			$wpdb->prepare(
 				"SELECT COUNT(*) FROM {$table} WHERE quiz_id = %d AND status = 'submitted'", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
@@ -1011,6 +1017,7 @@ class PPQ_Results_Renderer {
 		}
 
 		// Calculate average
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Quiz statistics, dynamic data
 		$avg = $wpdb->get_var(
 			$wpdb->prepare(
 				"SELECT AVG(score_percent) FROM {$table} WHERE quiz_id = %d AND status = 'submitted'", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
@@ -1028,8 +1035,8 @@ class PPQ_Results_Renderer {
 	 *
 	 * @since 1.0.0
 	 *
-	 * @param PPQ_Quiz $quiz Quiz object.
-	 * @param float    $score_percent Score percentage.
+	 * @param PressPrimer_Quiz_Quiz $quiz Quiz object.
+	 * @param float                 $score_percent Score percentage.
 	 * @return string Feedback message.
 	 */
 	private function get_score_feedback( $quiz, $score_percent ) {
@@ -1055,8 +1062,8 @@ class PPQ_Results_Renderer {
 	 *
 	 * @since 1.0.0
 	 *
-	 * @param PPQ_Quiz    $quiz Quiz object.
-	 * @param PPQ_Attempt $attempt Current attempt.
+	 * @param PressPrimer_Quiz_Quiz    $quiz Quiz object.
+	 * @param PressPrimer_Quiz_Attempt $attempt Current attempt.
 	 * @return bool True if can retake.
 	 */
 	private function can_retake( $quiz, $attempt ) {
@@ -1065,12 +1072,12 @@ class PPQ_Results_Renderer {
 			$user_id = $attempt->user_id ? $attempt->user_id : 0;
 
 			if ( $user_id ) {
-				$attempts = PPQ_Attempt::get_user_attempts( $quiz->id, $user_id );
+				$attempts        = PressPrimer_Quiz_Attempt::get_user_attempts( $quiz->id, $user_id );
 				$submitted_count = 0;
 
 				foreach ( $attempts as $att ) {
 					if ( 'submitted' === $att->status ) {
-						$submitted_count++;
+						++$submitted_count;
 					}
 				}
 
@@ -1097,7 +1104,7 @@ class PPQ_Results_Renderer {
 	 *
 	 * @since 1.0.0
 	 *
-	 * @param PPQ_Quiz $quiz Quiz object.
+	 * @param PressPrimer_Quiz_Quiz $quiz Quiz object.
 	 * @return string Retake URL.
 	 */
 	private function get_retake_url( $quiz ) {
@@ -1113,7 +1120,7 @@ class PPQ_Results_Renderer {
 	 *
 	 * @since 1.0.0
 	 *
-	 * @param PPQ_Attempt $attempt Attempt object.
+	 * @param PressPrimer_Quiz_Attempt $attempt Attempt object.
 	 * @return int Time in milliseconds.
 	 */
 	private function get_display_time( $attempt ) {

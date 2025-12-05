@@ -22,7 +22,7 @@ if ( ! defined( 'ABSPATH' ) ) {
  *
  * @since 1.0.0
  */
-class PPQ_AJAX_Handler {
+class PressPrimer_Quiz_AJAX_Handler {
 
 	/**
 	 * Initialize AJAX handlers
@@ -65,61 +65,73 @@ class PPQ_AJAX_Handler {
 	public function start_quiz() {
 		// Verify nonce
 		if ( ! check_ajax_referer( 'ppq_quiz_nonce', 'nonce', false ) ) {
-			wp_send_json_error( [
-				'message' => __( 'Security check failed. Please refresh the page and try again.', 'pressprimer-quiz' ),
-			] );
+			wp_send_json_error(
+				[
+					'message' => __( 'Security check failed. Please refresh the page and try again.', 'pressprimer-quiz' ),
+				]
+			);
 		}
 
 		// Get quiz ID
-		$quiz_id = isset( $_POST['quiz_id'] ) ? absint( $_POST['quiz_id'] ) : 0;
+		$quiz_id = isset( $_POST['quiz_id'] ) ? absint( wp_unslash( $_POST['quiz_id'] ) ) : 0;
 
 		if ( ! $quiz_id ) {
-			wp_send_json_error( [
-				'message' => __( 'Invalid quiz ID.', 'pressprimer-quiz' ),
-			] );
+			wp_send_json_error(
+				[
+					'message' => __( 'Invalid quiz ID.', 'pressprimer-quiz' ),
+				]
+			);
 		}
 
 		// Load quiz
-		$quiz = PPQ_Quiz::get( $quiz_id );
+		$quiz = PressPrimer_Quiz_Quiz::get( $quiz_id );
 
 		if ( ! $quiz ) {
-			wp_send_json_error( [
-				'message' => __( 'Quiz not found.', 'pressprimer-quiz' ),
-			] );
+			wp_send_json_error(
+				[
+					'message' => __( 'Quiz not found.', 'pressprimer-quiz' ),
+				]
+			);
 		}
 
 		// Check if quiz is published
 		if ( 'published' !== $quiz->status ) {
-			wp_send_json_error( [
-				'message' => __( 'This quiz is not available.', 'pressprimer-quiz' ),
-			] );
+			wp_send_json_error(
+				[
+					'message' => __( 'This quiz is not available.', 'pressprimer-quiz' ),
+				]
+			);
 		}
 
 		// Get guest email if provided
-		$guest_email = isset( $_POST['guest_email'] ) ? sanitize_email( $_POST['guest_email'] ) : '';
+		$guest_email = isset( $_POST['guest_email'] ) ? sanitize_email( wp_unslash( $_POST['guest_email'] ) ) : '';
 
 		// Create attempt
 		$user_id = get_current_user_id();
 
 		if ( $user_id > 0 ) {
 			// Logged-in user
-			$attempt = PPQ_Attempt::create_for_user( $quiz_id, $user_id );
+			$attempt = PressPrimer_Quiz_Attempt::create_for_user( $quiz_id, $user_id );
 		} else {
 			// Guest user
-			$attempt = PPQ_Attempt::create_for_guest( $quiz_id, $guest_email );
+			$attempt = PressPrimer_Quiz_Attempt::create_for_guest( $quiz_id, $guest_email );
 		}
 
 		if ( is_wp_error( $attempt ) ) {
-			wp_send_json_error( [
-				'message' => $attempt->get_error_message(),
-			] );
+			wp_send_json_error(
+				[
+					'message' => $attempt->get_error_message(),
+				]
+			);
 		}
 
 		// Return success with attempt ID
-		wp_send_json_success( [
-			'attempt_id' => $attempt->id,
-			'message'    => __( 'Quiz started successfully.', 'pressprimer-quiz' ),
-		] );
+		wp_send_json_success(
+			[
+				'attempt_id' => $attempt->id,
+				'message'    => __( 'Quiz started successfully.', 'pressprimer-quiz' ),
+			]
+		);
 	}
 
 	/**
@@ -132,57 +144,72 @@ class PPQ_AJAX_Handler {
 	public function save_answers() {
 		// Verify nonce
 		if ( ! check_ajax_referer( 'ppq_quiz_nonce', 'nonce', false ) ) {
-			wp_send_json_error( [
-				'message' => __( 'Security check failed.', 'pressprimer-quiz' ),
-			] );
+			wp_send_json_error(
+				[
+					'message' => __( 'Security check failed.', 'pressprimer-quiz' ),
+				]
+			);
 		}
 
 		// Get attempt ID
-		$attempt_id = isset( $_POST['attempt_id'] ) ? absint( $_POST['attempt_id'] ) : 0;
+		$attempt_id = isset( $_POST['attempt_id'] ) ? absint( wp_unslash( $_POST['attempt_id'] ) ) : 0;
 
 		if ( ! $attempt_id ) {
-			wp_send_json_error( [
-				'message' => __( 'Invalid attempt ID.', 'pressprimer-quiz' ),
-			] );
+			wp_send_json_error(
+				[
+					'message' => __( 'Invalid attempt ID.', 'pressprimer-quiz' ),
+				]
+			);
 		}
 
 		// Load attempt
-		$attempt = PPQ_Attempt::get( $attempt_id );
+		$attempt = PressPrimer_Quiz_Attempt::get( $attempt_id );
 
 		if ( ! $attempt ) {
-			wp_send_json_error( [
-				'message' => __( 'Attempt not found.', 'pressprimer-quiz' ),
-			] );
+			wp_send_json_error(
+				[
+					'message' => __( 'Attempt not found.', 'pressprimer-quiz' ),
+				]
+			);
 		}
 
 		// Verify user can access this attempt
 		if ( ! $this->can_access_attempt( $attempt ) ) {
-			wp_send_json_error( [
-				'message' => __( 'You do not have permission to access this attempt.', 'pressprimer-quiz' ),
-			] );
+			wp_send_json_error(
+				[
+					'message' => __( 'You do not have permission to access this attempt.', 'pressprimer-quiz' ),
+				]
+			);
 		}
 
 		// Check if attempt is in progress
 		if ( 'in_progress' !== $attempt->status ) {
-			wp_send_json_error( [
-				'message' => __( 'This attempt is not in progress.', 'pressprimer-quiz' ),
-			] );
+			wp_send_json_error(
+				[
+					'message' => __( 'This attempt is not in progress.', 'pressprimer-quiz' ),
+				]
+			);
 		}
 
 		// Check if timed out
 		if ( $attempt->is_timed_out() ) {
-			wp_send_json_error( [
-				'message' => __( 'This attempt has timed out.', 'pressprimer-quiz' ),
-			] );
+			wp_send_json_error(
+				[
+					'message' => __( 'This attempt has timed out.', 'pressprimer-quiz' ),
+				]
+			);
 		}
 
 		// Get answers
-		$answers = isset( $_POST['answers'] ) ? $_POST['answers'] : [];
+		// phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- Complex data structure sanitized in foreach loop below
+		$answers = isset( $_POST['answers'] ) ? wp_unslash( $_POST['answers'] ) : [];
 
 		if ( empty( $answers ) || ! is_array( $answers ) ) {
-			wp_send_json_error( [
-				'message' => __( 'No answers provided.', 'pressprimer-quiz' ),
-			] );
+			wp_send_json_error(
+				[
+					'message' => __( 'No answers provided.', 'pressprimer-quiz' ),
+				]
+			);
 		}
 
 		// Save each answer
@@ -202,26 +229,28 @@ class PPQ_AJAX_Handler {
 			$result = $attempt->save_answer( $item_id, $selected_answers );
 
 			if ( ! is_wp_error( $result ) ) {
-				$saved_count++;
+				++$saved_count;
 			}
 		}
 
 		// Update active elapsed time if provided
-		$active_elapsed_ms = isset( $_POST['active_elapsed_ms'] ) ? absint( $_POST['active_elapsed_ms'] ) : 0;
+		$active_elapsed_ms = isset( $_POST['active_elapsed_ms'] ) ? absint( wp_unslash( $_POST['active_elapsed_ms'] ) ) : 0;
 		if ( $active_elapsed_ms > 0 ) {
 			$attempt->active_elapsed_ms = $active_elapsed_ms;
 			$attempt->save();
 		}
 
 		// Return success
-		wp_send_json_success( [
-			'message'     => sprintf(
-				/* translators: %d: number of answers saved */
-				_n( '%d answer saved.', '%d answers saved.', $saved_count, 'pressprimer-quiz' ),
-				$saved_count
-			),
-			'saved_count' => $saved_count,
-		] );
+		wp_send_json_success(
+			[
+				'message'     => sprintf(
+					/* translators: %d: number of answers saved */
+					_n( '%d answer saved.', '%d answers saved.', $saved_count, 'pressprimer-quiz' ),
+					$saved_count
+				),
+				'saved_count' => $saved_count,
+			]
+		);
 	}
 
 	/**
@@ -235,45 +264,55 @@ class PPQ_AJAX_Handler {
 	public function sync_time() {
 		// Verify nonce
 		if ( ! check_ajax_referer( 'ppq_quiz_nonce', 'nonce', false ) ) {
-			wp_send_json_error( [
-				'message' => __( 'Security check failed.', 'pressprimer-quiz' ),
-			] );
+			wp_send_json_error(
+				[
+					'message' => __( 'Security check failed.', 'pressprimer-quiz' ),
+				]
+			);
 		}
 
 		// Get attempt ID
-		$attempt_id = isset( $_POST['attempt_id'] ) ? absint( $_POST['attempt_id'] ) : 0;
+		$attempt_id = isset( $_POST['attempt_id'] ) ? absint( wp_unslash( $_POST['attempt_id'] ) ) : 0;
 
 		if ( ! $attempt_id ) {
-			wp_send_json_error( [
-				'message' => __( 'Invalid attempt ID.', 'pressprimer-quiz' ),
-			] );
+			wp_send_json_error(
+				[
+					'message' => __( 'Invalid attempt ID.', 'pressprimer-quiz' ),
+				]
+			);
 		}
 
 		// Load attempt
-		$attempt = PPQ_Attempt::get( $attempt_id );
+		$attempt = PressPrimer_Quiz_Attempt::get( $attempt_id );
 
 		if ( ! $attempt ) {
-			wp_send_json_error( [
-				'message' => __( 'Attempt not found.', 'pressprimer-quiz' ),
-			] );
+			wp_send_json_error(
+				[
+					'message' => __( 'Attempt not found.', 'pressprimer-quiz' ),
+				]
+			);
 		}
 
 		// Verify user can access this attempt
 		if ( ! $this->can_access_attempt( $attempt ) ) {
-			wp_send_json_error( [
-				'message' => __( 'You do not have permission to access this attempt.', 'pressprimer-quiz' ),
-			] );
+			wp_send_json_error(
+				[
+					'message' => __( 'You do not have permission to access this attempt.', 'pressprimer-quiz' ),
+				]
+			);
 		}
 
 		// Check if attempt is in progress
 		if ( 'in_progress' !== $attempt->status ) {
-			wp_send_json_error( [
-				'message' => __( 'This attempt is not in progress.', 'pressprimer-quiz' ),
-			] );
+			wp_send_json_error(
+				[
+					'message' => __( 'This attempt is not in progress.', 'pressprimer-quiz' ),
+				]
+			);
 		}
 
 		// Update active elapsed time
-		$active_elapsed_ms = isset( $_POST['active_elapsed_ms'] ) ? absint( $_POST['active_elapsed_ms'] ) : 0;
+		$active_elapsed_ms = isset( $_POST['active_elapsed_ms'] ) ? absint( wp_unslash( $_POST['active_elapsed_ms'] ) ) : 0;
 
 		if ( $active_elapsed_ms > 0 ) {
 			$attempt->active_elapsed_ms = $active_elapsed_ms;
@@ -281,9 +320,11 @@ class PPQ_AJAX_Handler {
 		}
 
 		// Return success (minimal response for efficiency)
-		wp_send_json_success( [
-			'synced' => true,
-		] );
+		wp_send_json_success(
+			[
+				'synced' => true,
+			]
+		);
 	}
 
 	/**
@@ -296,65 +337,77 @@ class PPQ_AJAX_Handler {
 	public function submit_quiz() {
 		// Verify nonce
 		if ( ! check_ajax_referer( 'ppq_quiz_nonce', 'nonce', false ) ) {
-			wp_send_json_error( [
-				'message' => __( 'Security check failed.', 'pressprimer-quiz' ),
-			] );
+			wp_send_json_error(
+				[
+					'message' => __( 'Security check failed.', 'pressprimer-quiz' ),
+				]
+			);
 		}
 
 		// Get attempt ID
-		$attempt_id = isset( $_POST['attempt_id'] ) ? absint( $_POST['attempt_id'] ) : 0;
+		$attempt_id = isset( $_POST['attempt_id'] ) ? absint( wp_unslash( $_POST['attempt_id'] ) ) : 0;
 
 		if ( ! $attempt_id ) {
-			wp_send_json_error( [
-				'message' => __( 'Invalid attempt ID.', 'pressprimer-quiz' ),
-			] );
+			wp_send_json_error(
+				[
+					'message' => __( 'Invalid attempt ID.', 'pressprimer-quiz' ),
+				]
+			);
 		}
 
 		// Load attempt
-		$attempt = PPQ_Attempt::get( $attempt_id );
+		$attempt = PressPrimer_Quiz_Attempt::get( $attempt_id );
 
 		if ( ! $attempt ) {
-			wp_send_json_error( [
-				'message' => __( 'Attempt not found.', 'pressprimer-quiz' ),
-			] );
+			wp_send_json_error(
+				[
+					'message' => __( 'Attempt not found.', 'pressprimer-quiz' ),
+				]
+			);
 		}
 
 		// Verify user can access this attempt
 		if ( ! $this->can_access_attempt( $attempt ) ) {
-			wp_send_json_error( [
-				'message' => __( 'You do not have permission to access this attempt.', 'pressprimer-quiz' ),
-			] );
+			wp_send_json_error(
+				[
+					'message' => __( 'You do not have permission to access this attempt.', 'pressprimer-quiz' ),
+				]
+			);
 		}
 
 		// Check if attempt is in progress
 		if ( 'in_progress' !== $attempt->status ) {
-			wp_send_json_error( [
-				'message' => __( 'This attempt has already been submitted.', 'pressprimer-quiz' ),
-			] );
+			wp_send_json_error(
+				[
+					'message' => __( 'This attempt has already been submitted.', 'pressprimer-quiz' ),
+				]
+			);
 		}
 
 		// Save final active elapsed time before submission
-		$active_elapsed_ms = isset( $_POST['active_elapsed_ms'] ) ? absint( $_POST['active_elapsed_ms'] ) : 0;
+		$active_elapsed_ms = isset( $_POST['active_elapsed_ms'] ) ? absint( wp_unslash( $_POST['active_elapsed_ms'] ) ) : 0;
 		if ( $active_elapsed_ms > 0 ) {
 			$attempt->active_elapsed_ms = $active_elapsed_ms;
 		}
 
-		// Submit attempt (this handles scoring via PPQ_Scoring_Service)
+		// Submit attempt (this handles scoring via PressPrimer_Quiz_Scoring_Service)
 		$result = $attempt->submit();
 
 		if ( is_wp_error( $result ) ) {
-			wp_send_json_error( [
-				'message' => $result->get_error_message(),
-			] );
+			wp_send_json_error(
+				[
+					'message' => $result->get_error_message(),
+				]
+			);
 		}
 
 		// Send email if auto-send is enabled
-		if ( class_exists( 'PPQ_Email_Service' ) ) {
-			PPQ_Email_Service::maybe_send_on_completion( $attempt->id );
+		if ( class_exists( 'PressPrimer_Quiz_Email_Service' ) ) {
+			PressPrimer_Quiz_Email_Service::maybe_send_on_completion( $attempt->id );
 		}
 
 		// Build results URL (includes token for guests)
-		$current_url = isset( $_POST['current_url'] ) ? esc_url_raw( $_POST['current_url'] ) : '';
+		$current_url = isset( $_POST['current_url'] ) ? esc_url_raw( wp_unslash( $_POST['current_url'] ) ) : '';
 
 		// Remove any existing attempt/token parameters and rebuild clean URL
 		if ( $current_url ) {
@@ -368,19 +421,21 @@ class PPQ_AJAX_Handler {
 		$redirect_url = $attempt->get_results_url( $base_url );
 
 		// Add timed_out flag if applicable
-		if ( isset( $_POST['timed_out'] ) && $_POST['timed_out'] ) {
+		if ( isset( $_POST['timed_out'] ) && rest_sanitize_boolean( wp_unslash( $_POST['timed_out'] ) ) ) {
 			$redirect_url = add_query_arg( 'timed_out', '1', $redirect_url );
 		}
 
 		// Return success with redirect URL
-		wp_send_json_success( [
-			'message'      => __( 'Quiz submitted successfully.', 'pressprimer-quiz' ),
-			'redirect_url' => $redirect_url,
-			'score'        => [
-				'score_percent' => $attempt->score_percent,
-				'passed'        => (bool) $attempt->passed,
-			],
-		] );
+		wp_send_json_success(
+			[
+				'message'      => __( 'Quiz submitted successfully.', 'pressprimer-quiz' ),
+				'redirect_url' => $redirect_url,
+				'score'        => [
+					'score_percent' => $attempt->score_percent,
+					'passed'        => (bool) $attempt->passed,
+				],
+			]
+		);
 	}
 
 	/**
@@ -388,7 +443,7 @@ class PPQ_AJAX_Handler {
 	 *
 	 * @since 1.0.0
 	 *
-	 * @param PPQ_Attempt $attempt Attempt object.
+	 * @param PressPrimer_Quiz_Attempt $attempt Attempt object.
 	 * @return bool True if user can access.
 	 */
 	private function can_access_attempt( $attempt ) {
@@ -399,7 +454,7 @@ class PPQ_AJAX_Handler {
 
 		// Check if guest with valid token
 		if ( ! is_user_logged_in() && $attempt->guest_token ) {
-			$token = isset( $_COOKIE['ppq_guest_token'] ) ? sanitize_text_field( $_COOKIE['ppq_guest_token'] ) : '';
+			$token = isset( $_COOKIE['ppq_guest_token'] ) ? sanitize_text_field( wp_unslash( $_COOKIE['ppq_guest_token'] ) ) : '';
 			if ( $token === $attempt->guest_token ) {
 				return true;
 			}
@@ -423,68 +478,86 @@ class PPQ_AJAX_Handler {
 	public function email_results() {
 		// Verify nonce
 		if ( ! check_ajax_referer( 'ppq_email_results', 'nonce', false ) ) {
-			wp_send_json_error( [
-				'message' => __( 'Security check failed. Please refresh the page and try again.', 'pressprimer-quiz' ),
-			] );
+			wp_send_json_error(
+				[
+					'message' => __( 'Security check failed. Please refresh the page and try again.', 'pressprimer-quiz' ),
+				]
+			);
 		}
 
 		// Get parameters
-		$attempt_id = isset( $_POST['attempt_id'] ) ? absint( $_POST['attempt_id'] ) : 0;
-		$email      = isset( $_POST['email'] ) ? sanitize_email( $_POST['email'] ) : '';
+		$attempt_id = isset( $_POST['attempt_id'] ) ? absint( wp_unslash( $_POST['attempt_id'] ) ) : 0;
+		$email      = isset( $_POST['email'] ) ? sanitize_email( wp_unslash( $_POST['email'] ) ) : '';
 
 		// Validate parameters
 		if ( ! $attempt_id ) {
-			wp_send_json_error( [
-				'message' => __( 'Invalid attempt ID.', 'pressprimer-quiz' ),
-			] );
+			wp_send_json_error(
+				[
+					'message' => __( 'Invalid attempt ID.', 'pressprimer-quiz' ),
+				]
+			);
 		}
 
 		if ( ! is_email( $email ) ) {
-			wp_send_json_error( [
-				'message' => __( 'Invalid email address.', 'pressprimer-quiz' ),
-			] );
+			wp_send_json_error(
+				[
+					'message' => __( 'Invalid email address.', 'pressprimer-quiz' ),
+				]
+			);
 		}
 
 		// Load attempt
-		$attempt = PPQ_Attempt::get( $attempt_id );
+		$attempt = PressPrimer_Quiz_Attempt::get( $attempt_id );
 
 		if ( ! $attempt ) {
-			wp_send_json_error( [
-				'message' => __( 'Attempt not found.', 'pressprimer-quiz' ),
-			] );
+			wp_send_json_error(
+				[
+					'message' => __( 'Attempt not found.', 'pressprimer-quiz' ),
+				]
+			);
 		}
 
 		// Verify user can access this attempt
 		if ( ! $this->can_access_attempt( $attempt ) ) {
-			wp_send_json_error( [
-				'message' => __( 'You do not have permission to email these results.', 'pressprimer-quiz' ),
-			] );
+			wp_send_json_error(
+				[
+					'message' => __( 'You do not have permission to email these results.', 'pressprimer-quiz' ),
+				]
+			);
 		}
 
 		// Verify attempt is submitted
 		if ( 'submitted' !== $attempt->status ) {
-			wp_send_json_error( [
-				'message' => __( 'Results are not available for this attempt.', 'pressprimer-quiz' ),
-			] );
+			wp_send_json_error(
+				[
+					'message' => __( 'Results are not available for this attempt.', 'pressprimer-quiz' ),
+				]
+			);
 		}
 
 		// Send email
-		if ( ! class_exists( 'PPQ_Email_Service' ) ) {
-			wp_send_json_error( [
-				'message' => __( 'Email service is not available.', 'pressprimer-quiz' ),
-			] );
+		if ( ! class_exists( 'PressPrimer_Quiz_Email_Service' ) ) {
+			wp_send_json_error(
+				[
+					'message' => __( 'Email service is not available.', 'pressprimer-quiz' ),
+				]
+			);
 		}
 
-		$sent = PPQ_Email_Service::send_results( $attempt_id, $email );
+		$sent = PressPrimer_Quiz_Email_Service::send_results( $attempt_id, $email );
 
 		if ( $sent ) {
-			wp_send_json_success( [
-				'message' => __( 'Results emailed successfully!', 'pressprimer-quiz' ),
-			] );
+			wp_send_json_success(
+				[
+					'message' => __( 'Results emailed successfully!', 'pressprimer-quiz' ),
+				]
+			);
 		} else {
-			wp_send_json_error( [
-				'message' => __( 'Failed to send email. Please try again later.', 'pressprimer-quiz' ),
-			] );
+			wp_send_json_error(
+				[
+					'message' => __( 'Failed to send email. Please try again later.', 'pressprimer-quiz' ),
+				]
+			);
 		}
 	}
 
@@ -499,63 +572,78 @@ class PPQ_AJAX_Handler {
 	public function check_answer() {
 		// Verify nonce
 		if ( ! check_ajax_referer( 'ppq_quiz_nonce', 'nonce', false ) ) {
-			wp_send_json_error( [
-				'message' => __( 'Security check failed.', 'pressprimer-quiz' ),
-			] );
+			wp_send_json_error(
+				[
+					'message' => __( 'Security check failed.', 'pressprimer-quiz' ),
+				]
+			);
 		}
 
 		// Get parameters
-		$attempt_id = isset( $_POST['attempt_id'] ) ? absint( $_POST['attempt_id'] ) : 0;
-		$item_id    = isset( $_POST['item_id'] ) ? absint( $_POST['item_id'] ) : 0;
+		$attempt_id = isset( $_POST['attempt_id'] ) ? absint( wp_unslash( $_POST['attempt_id'] ) ) : 0;
+		$item_id    = isset( $_POST['item_id'] ) ? absint( wp_unslash( $_POST['item_id'] ) ) : 0;
 
 		if ( ! $attempt_id || ! $item_id ) {
-			wp_send_json_error( [
-				'message' => __( 'Invalid parameters.', 'pressprimer-quiz' ),
-			] );
+			wp_send_json_error(
+				[
+					'message' => __( 'Invalid parameters.', 'pressprimer-quiz' ),
+				]
+			);
 		}
 
 		// Load attempt
-		$attempt = PPQ_Attempt::get( $attempt_id );
+		$attempt = PressPrimer_Quiz_Attempt::get( $attempt_id );
 
 		if ( ! $attempt ) {
-			wp_send_json_error( [
-				'message' => __( 'Attempt not found.', 'pressprimer-quiz' ),
-			] );
+			wp_send_json_error(
+				[
+					'message' => __( 'Attempt not found.', 'pressprimer-quiz' ),
+				]
+			);
 		}
 
 		// Verify user can access this attempt
 		if ( ! $this->can_access_attempt( $attempt ) ) {
-			wp_send_json_error( [
-				'message' => __( 'You do not have permission to access this attempt.', 'pressprimer-quiz' ),
-			] );
+			wp_send_json_error(
+				[
+					'message' => __( 'You do not have permission to access this attempt.', 'pressprimer-quiz' ),
+				]
+			);
 		}
 
 		// Check if attempt is in progress
 		if ( 'in_progress' !== $attempt->status ) {
-			wp_send_json_error( [
-				'message' => __( 'This attempt is not in progress.', 'pressprimer-quiz' ),
-			] );
+			wp_send_json_error(
+				[
+					'message' => __( 'This attempt is not in progress.', 'pressprimer-quiz' ),
+				]
+			);
 		}
 
 		// Verify this is a tutorial mode quiz
 		$quiz = $attempt->get_quiz();
 		if ( ! $quiz || 'tutorial' !== $quiz->mode ) {
-			wp_send_json_error( [
-				'message' => __( 'Answer checking is only available in tutorial mode.', 'pressprimer-quiz' ),
-			] );
+			wp_send_json_error(
+				[
+					'message' => __( 'Answer checking is only available in tutorial mode.', 'pressprimer-quiz' ),
+				]
+			);
 		}
 
 		// Get the attempt item
-		$item = PPQ_Attempt_Item::get( $item_id );
+		$item = PressPrimer_Quiz_Attempt_Item::get( $item_id );
 
 		if ( ! $item || (int) $item->attempt_id !== $attempt_id ) {
-			wp_send_json_error( [
-				'message' => __( 'Question not found.', 'pressprimer-quiz' ),
-			] );
+			wp_send_json_error(
+				[
+					'message' => __( 'Question not found.', 'pressprimer-quiz' ),
+				]
+			);
 		}
 
 		// Get selected answers from POST
-		$selected_answers = isset( $_POST['answers'] ) ? $_POST['answers'] : [];
+		// phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- Values sanitized with intval via array_map below
+		$selected_answers = isset( $_POST['answers'] ) ? wp_unslash( $_POST['answers'] ) : [];
 
 		// Ensure selected_answers is an array
 		if ( ! is_array( $selected_answers ) ) {
@@ -563,9 +651,15 @@ class PPQ_AJAX_Handler {
 		}
 
 		// Convert to integers and filter empty values
-		$selected_answers = array_map( 'intval', array_filter( $selected_answers, function( $v ) {
-			return '' !== $v && null !== $v;
-		} ) );
+		$selected_answers = array_map(
+			'intval',
+			array_filter(
+				$selected_answers,
+				function ( $v ) {
+					return '' !== $v && null !== $v;
+				}
+			)
+		);
 
 		// Save the answer
 		$attempt->save_answer( $item_id, $selected_answers );
@@ -574,9 +668,11 @@ class PPQ_AJAX_Handler {
 		$revision = $item->get_question_revision();
 
 		if ( ! $revision ) {
-			wp_send_json_error( [
-				'message' => __( 'Question data not found.', 'pressprimer-quiz' ),
-			] );
+			wp_send_json_error(
+				[
+					'message' => __( 'Question data not found.', 'pressprimer-quiz' ),
+				]
+			);
 		}
 
 		$answers = $revision->get_answers();
@@ -591,7 +687,7 @@ class PPQ_AJAX_Handler {
 
 		// Check if the answer is correct
 		$sorted_selected = $selected_answers;
-		$sorted_correct = $correct_indices;
+		$sorted_correct  = $correct_indices;
 		sort( $sorted_selected );
 		sort( $sorted_correct );
 		$is_correct = ( $sorted_selected === $sorted_correct );
@@ -605,11 +701,13 @@ class PPQ_AJAX_Handler {
 		}
 
 		// Return response with correct answers revealed
-		wp_send_json_success( [
-			'is_correct'       => $is_correct,
-			'correct_indices'  => $correct_indices,
-			'selected_indices' => $selected_answers,
-			'feedback_text'    => $feedback_text,
-		] );
+		wp_send_json_success(
+			[
+				'is_correct'       => $is_correct,
+				'correct_indices'  => $correct_indices,
+				'selected_indices' => $selected_answers,
+				'feedback_text'    => $feedback_text,
+			]
+		);
 	}
 }

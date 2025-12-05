@@ -59,7 +59,7 @@ if (!function_exists('ppq_fs')) {
         return $ppq_fs;
     }
     ppq_fs();
-    do_action('ppq_fs_loaded');
+    do_action('pressprimer_quiz_fs_loaded');
 }
 ```
 
@@ -134,7 +134,7 @@ function ppq_render_upsell_card($feature_name, $tier = 'educator') {
 
 **Implementation:**
 ```php
-class PPQ_LearnPress {
+class PressPrimer_Quiz_LearnPress {
     
     public static function init() {
         if (!defined('LEARNPRESS_VERSION')) {
@@ -172,16 +172,16 @@ class PPQ_LearnPress {
 **Hooks for Addons:**
 ```php
 // Allow addons to register themselves
-do_action('ppq_register_addon', $addon_slug, $addon_data);
+do_action('pressprimer_quiz_register_addon', $addon_slug, $addon_data);
 
 // Check if addon is active
 function ppq_has_addon($tier) {
-    return apply_filters('ppq_has_addon_' . $tier, false);
+    return apply_filters('pressprimer_quiz_has_addon_' . $tier, false);
 }
 
 // Addon feature flags
 function ppq_feature_enabled($feature) {
-    return apply_filters('ppq_feature_enabled', false, $feature);
+    return apply_filters('pressprimer_quiz_feature_enabled', false, $feature);
 }
 ```
 

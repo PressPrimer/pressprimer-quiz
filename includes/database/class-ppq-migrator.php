@@ -22,7 +22,7 @@ if ( ! defined( 'ABSPATH' ) ) {
  *
  * @since 1.0.0
  */
-class PPQ_Migrator {
+class PressPrimer_Quiz_Migrator {
 
 	/**
 	 * Option name for storing database version
@@ -88,7 +88,7 @@ class PPQ_Migrator {
 	 */
 	private static function update_schema() {
 		// Get schema SQL
-		$sql = PPQ_Schema::get_schema();
+		$sql = PressPrimer_Quiz_Schema::get_schema();
 
 		// Run dbDelta
 		dbDelta( $sql );
@@ -111,12 +111,12 @@ class PPQ_Migrator {
 	private static function run_data_migrations( $from_version, $to_version ) {
 		// Example: If upgrading from version before 1.1.0
 		// if ( version_compare( $from_version, '1.1.0', '<' ) ) {
-		//     self::migrate_to_1_1_0();
+		// self::migrate_to_1_1_0();
 		// }
 
 		// Example: If upgrading from version before 1.2.0
 		// if ( version_compare( $from_version, '1.2.0', '<' ) ) {
-		//     self::migrate_to_1_2_0();
+		// self::migrate_to_1_2_0();
 		// }
 
 		// For version 1.0.0, no data migrations needed
@@ -164,13 +164,6 @@ class PPQ_Migrator {
 		}
 
 		if ( ! empty( $missing_tables ) ) {
-			// Log error
-			error_log(
-				sprintf(
-					'PressPrimer Quiz: Missing database tables after migration: %s',
-					implode( ', ', $missing_tables )
-				)
-			);
 			return false;
 		}
 
@@ -203,17 +196,6 @@ class PPQ_Migrator {
 
 		// Save history
 		update_option( 'ppq_migration_history', $history );
-
-		// Log to WordPress debug log if enabled
-		if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
-			error_log(
-				sprintf(
-					'PressPrimer Quiz: Database migrated from v%s to v%s',
-					$from_version,
-					$to_version
-				)
-			);
-		}
 	}
 
 	/**

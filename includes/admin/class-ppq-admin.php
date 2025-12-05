@@ -21,7 +21,7 @@ if ( ! defined( 'ABSPATH' ) ) {
  *
  * @since 1.0.0
  */
-class PPQ_Admin {
+class PressPrimer_Quiz_Admin {
 
 	/**
 	 * Initialize admin functionality
@@ -38,38 +38,38 @@ class PPQ_Admin {
 		add_action( 'wp_ajax_ppq_remove_question_from_bank', [ $this, 'ajax_remove_question_from_bank' ] );
 
 		// Initialize settings
-		if ( class_exists( 'PPQ_Admin_Settings' ) ) {
-			$settings = new PPQ_Admin_Settings();
+		if ( class_exists( 'PressPrimer_Quiz_Admin_Settings' ) ) {
+			$settings = new PressPrimer_Quiz_Admin_Settings();
 			$settings->init();
 		}
 
 		// Initialize questions admin
-		if ( class_exists( 'PPQ_Admin_Questions' ) ) {
-			$questions = new PPQ_Admin_Questions();
+		if ( class_exists( 'PressPrimer_Quiz_Admin_Questions' ) ) {
+			$questions = new PressPrimer_Quiz_Admin_Questions();
 			$questions->init();
 		}
 
 		// Initialize banks admin
-		if ( class_exists( 'PPQ_Admin_Banks' ) ) {
-			$banks = new PPQ_Admin_Banks();
+		if ( class_exists( 'PressPrimer_Quiz_Admin_Banks' ) ) {
+			$banks = new PressPrimer_Quiz_Admin_Banks();
 			$banks->init();
 		}
 
 		// Initialize categories admin
-		if ( class_exists( 'PPQ_Admin_Categories' ) ) {
-			$categories = new PPQ_Admin_Categories();
+		if ( class_exists( 'PressPrimer_Quiz_Admin_Categories' ) ) {
+			$categories = new PressPrimer_Quiz_Admin_Categories();
 			$categories->init();
 		}
 
 		// Initialize quizzes admin
-		if ( class_exists( 'PPQ_Admin_Quizzes' ) ) {
-			$quizzes = new PPQ_Admin_Quizzes();
+		if ( class_exists( 'PressPrimer_Quiz_Admin_Quizzes' ) ) {
+			$quizzes = new PressPrimer_Quiz_Admin_Quizzes();
 			$quizzes->init();
 		}
 
 		// Initialize AI generation admin
-		if ( class_exists( 'PPQ_Admin_AI_Generation' ) ) {
-			$ai_generation = new PPQ_Admin_AI_Generation();
+		if ( class_exists( 'PressPrimer_Quiz_Admin_AI_Generation' ) ) {
+			$ai_generation = new PressPrimer_Quiz_Admin_AI_Generation();
 			$ai_generation->init();
 		}
 	}
@@ -207,6 +207,7 @@ class PPQ_Admin {
 		);
 
 		// Enqueue question builder on question pages
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only page check for conditional asset loading
 		if ( isset( $_GET['page'] ) && 'ppq-questions' === $_GET['page'] ) {
 			// Enqueue jQuery UI for sortable
 			wp_enqueue_script( 'jquery-ui-sortable' );
@@ -242,19 +243,19 @@ class PPQ_Admin {
 				'ajaxUrl' => admin_url( 'admin-ajax.php' ),
 				'nonce'   => wp_create_nonce( 'ppq_admin_nonce' ),
 				'strings' => [
-					'confirmDelete'          => __( 'Are you sure you want to delete this item?', 'pressprimer-quiz' ),
-					'confirmDeleteTitle'     => __( 'Delete Item', 'pressprimer-quiz' ),
-					'confirmRemoveFromBank'  => __( 'Remove this question from the bank?', 'pressprimer-quiz' ),
-					'removeFromBankTitle'    => __( 'Remove from Bank', 'pressprimer-quiz' ),
-					'error'                  => __( 'An error occurred. Please try again.', 'pressprimer-quiz' ),
-					'saved'                  => __( 'Changes saved successfully.', 'pressprimer-quiz' ),
-					'delete'                 => __( 'Delete', 'pressprimer-quiz' ),
-					'remove'                 => __( 'Remove', 'pressprimer-quiz' ),
-					'cancel'                 => __( 'Cancel', 'pressprimer-quiz' ),
-					'ok'                     => __( 'OK', 'pressprimer-quiz' ),
-					'yes'                    => __( 'Yes', 'pressprimer-quiz' ),
-					'no'                     => __( 'No', 'pressprimer-quiz' ),
-					'confirmTitle'           => __( 'Confirm', 'pressprimer-quiz' ),
+					'confirmDelete'         => __( 'Are you sure you want to delete this item?', 'pressprimer-quiz' ),
+					'confirmDeleteTitle'    => __( 'Delete Item', 'pressprimer-quiz' ),
+					'confirmRemoveFromBank' => __( 'Remove this question from the bank?', 'pressprimer-quiz' ),
+					'removeFromBankTitle'   => __( 'Remove from Bank', 'pressprimer-quiz' ),
+					'error'                 => __( 'An error occurred. Please try again.', 'pressprimer-quiz' ),
+					'saved'                 => __( 'Changes saved successfully.', 'pressprimer-quiz' ),
+					'delete'                => __( 'Delete', 'pressprimer-quiz' ),
+					'remove'                => __( 'Remove', 'pressprimer-quiz' ),
+					'cancel'                => __( 'Cancel', 'pressprimer-quiz' ),
+					'ok'                    => __( 'OK', 'pressprimer-quiz' ),
+					'yes'                   => __( 'Yes', 'pressprimer-quiz' ),
+					'no'                    => __( 'No', 'pressprimer-quiz' ),
+					'confirmTitle'          => __( 'Confirm', 'pressprimer-quiz' ),
 				],
 			]
 		);
@@ -362,11 +363,11 @@ class PPQ_Admin {
 		}
 
 		// Get the onboarding instance to check state
-		if ( ! class_exists( 'PPQ_Onboarding' ) ) {
+		if ( ! class_exists( 'PressPrimer_Quiz_Onboarding' ) ) {
 			return;
 		}
 
-		$onboarding = PPQ_Onboarding::get_instance();
+		$onboarding = PressPrimer_Quiz_Onboarding::get_instance();
 
 		$asset = require $asset_file;
 
@@ -424,8 +425,8 @@ class PPQ_Admin {
 	 * @since 1.0.0
 	 */
 	public function render_quizzes() {
-		if ( class_exists( 'PPQ_Admin_Quizzes' ) ) {
-			$quizzes_admin = new PPQ_Admin_Quizzes();
+		if ( class_exists( 'PressPrimer_Quiz_Admin_Quizzes' ) ) {
+			$quizzes_admin = new PressPrimer_Quiz_Admin_Quizzes();
 			$quizzes_admin->render();
 		}
 	}
@@ -438,8 +439,8 @@ class PPQ_Admin {
 	 * @since 1.0.0
 	 */
 	public function render_questions() {
-		if ( class_exists( 'PPQ_Admin_Questions' ) ) {
-			$questions_admin = new PPQ_Admin_Questions();
+		if ( class_exists( 'PressPrimer_Quiz_Admin_Questions' ) ) {
+			$questions_admin = new PressPrimer_Quiz_Admin_Questions();
 			$questions_admin->render();
 		}
 	}
@@ -452,8 +453,8 @@ class PPQ_Admin {
 	 * @since 1.0.0
 	 */
 	public function render_banks() {
-		if ( class_exists( 'PPQ_Admin_Banks' ) ) {
-			$banks_admin = new PPQ_Admin_Banks();
+		if ( class_exists( 'PressPrimer_Quiz_Admin_Banks' ) ) {
+			$banks_admin = new PressPrimer_Quiz_Admin_Banks();
 			$banks_admin->render();
 		}
 	}
@@ -466,8 +467,8 @@ class PPQ_Admin {
 	 * @since 1.0.0
 	 */
 	public function render_categories() {
-		if ( class_exists( 'PPQ_Admin_Categories' ) ) {
-			$categories_admin = new PPQ_Admin_Categories();
+		if ( class_exists( 'PressPrimer_Quiz_Admin_Categories' ) ) {
+			$categories_admin = new PressPrimer_Quiz_Admin_Categories();
 			$categories_admin->render();
 		}
 	}
@@ -480,8 +481,8 @@ class PPQ_Admin {
 	 * @since 1.0.0
 	 */
 	public function render_tags() {
-		if ( class_exists( 'PPQ_Admin_Categories' ) ) {
-			$categories_admin = new PPQ_Admin_Categories();
+		if ( class_exists( 'PressPrimer_Quiz_Admin_Categories' ) ) {
+			$categories_admin = new PressPrimer_Quiz_Admin_Categories();
 			$categories_admin->render_tags();
 		}
 	}
@@ -515,8 +516,8 @@ class PPQ_Admin {
 	 * @since 1.0.0
 	 */
 	public function render_settings() {
-		if ( class_exists( 'PPQ_Admin_Settings' ) ) {
-			$settings = new PPQ_Admin_Settings();
+		if ( class_exists( 'PressPrimer_Quiz_Admin_Settings' ) ) {
+			$settings = new PressPrimer_Quiz_Admin_Settings();
 			$settings->render_page();
 		}
 	}
@@ -530,7 +531,7 @@ class PPQ_Admin {
 	 */
 	public function ajax_search_questions() {
 		// Verify nonce
-		if ( ! isset( $_POST['nonce'] ) || ! wp_verify_nonce( $_POST['nonce'], 'ppq_search_questions' ) ) {
+		if ( ! isset( $_POST['nonce'] ) || ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['nonce'] ) ), 'ppq_search_questions' ) ) {
 			wp_send_json_error( [ 'message' => __( 'Security check failed.', 'pressprimer-quiz' ) ] );
 		}
 
@@ -539,24 +540,25 @@ class PPQ_Admin {
 			wp_send_json_error( [ 'message' => __( 'You do not have permission.', 'pressprimer-quiz' ) ] );
 		}
 
-		$search = isset( $_POST['search'] ) ? sanitize_text_field( wp_unslash( $_POST['search'] ) ) : '';
-		$bank_id = isset( $_POST['bank_id'] ) ? absint( $_POST['bank_id'] ) : 0;
-		$type = isset( $_POST['type'] ) ? sanitize_key( $_POST['type'] ) : '';
-		$difficulty = isset( $_POST['difficulty'] ) ? sanitize_key( $_POST['difficulty'] ) : '';
-		$category_id = isset( $_POST['category_id'] ) ? absint( $_POST['category_id'] ) : 0;
-		$tag_id = isset( $_POST['tag_id'] ) ? absint( $_POST['tag_id'] ) : 0;
-		$page = isset( $_POST['page'] ) ? absint( $_POST['page'] ) : 1;
-		$per_page = 5;
-		$offset = ( $page - 1 ) * $per_page;
+		$search      = isset( $_POST['search'] ) ? sanitize_text_field( wp_unslash( $_POST['search'] ) ) : '';
+		$bank_id     = isset( $_POST['bank_id'] ) ? absint( wp_unslash( $_POST['bank_id'] ) ) : 0;
+		$type        = isset( $_POST['type'] ) ? sanitize_key( wp_unslash( $_POST['type'] ) ) : '';
+		$difficulty  = isset( $_POST['difficulty'] ) ? sanitize_key( wp_unslash( $_POST['difficulty'] ) ) : '';
+		$category_id = isset( $_POST['category_id'] ) ? absint( wp_unslash( $_POST['category_id'] ) ) : 0;
+		$tag_id      = isset( $_POST['tag_id'] ) ? absint( wp_unslash( $_POST['tag_id'] ) ) : 0;
+		$page        = isset( $_POST['page'] ) ? absint( wp_unslash( $_POST['page'] ) ) : 1;
+		$per_page    = 5;
+		$offset      = ( $page - 1 ) * $per_page;
 
 		global $wpdb;
 
 		// Build search query
 		$questions_table = $wpdb->prefix . 'ppq_questions';
 		$revisions_table = $wpdb->prefix . 'ppq_question_revisions';
-		$taxonomy_table = $wpdb->prefix . 'ppq_question_tax';
+		$taxonomy_table  = $wpdb->prefix . 'ppq_question_tax';
 
 		// Start with base query
+		// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Table names safely constructed from $wpdb->prefix
 		$sql = "SELECT DISTINCT q.id, q.type, q.difficulty_author, r.stem
 				FROM {$questions_table} q
 				INNER JOIN {$revisions_table} r ON q.current_revision_id = r.id";
@@ -566,71 +568,79 @@ class PPQ_Admin {
 			$sql .= " INNER JOIN {$taxonomy_table} qt ON q.id = qt.question_id";
 		}
 
-		$sql .= " WHERE q.deleted_at IS NULL";
+		$sql .= ' WHERE q.deleted_at IS NULL';
 
 		$params = [];
 
 		// Search filter
 		if ( ! empty( $search ) ) {
 			$search_term = '%' . $wpdb->esc_like( $search ) . '%';
-			$sql .= ' AND r.stem LIKE %s';
-			$params[] = $search_term;
+			$sql        .= ' AND r.stem LIKE %s';
+			$params[]    = $search_term;
 		}
 
 		// Type filter
 		if ( ! empty( $type ) ) {
-			$sql .= ' AND q.type = %s';
+			$sql     .= ' AND q.type = %s';
 			$params[] = $type;
 		}
 
 		// Difficulty filter
 		if ( ! empty( $difficulty ) ) {
-			$sql .= ' AND q.difficulty_author = %s';
+			$sql     .= ' AND q.difficulty_author = %s';
 			$params[] = $difficulty;
 		}
 
 		// Category filter
 		if ( $category_id > 0 ) {
-			$sql .= ' AND qt.category_id = %d';
+			$sql     .= ' AND qt.category_id = %d';
 			$params[] = $category_id;
 		}
 
 		// Tag filter
 		if ( $tag_id > 0 ) {
-			$sql .= ' AND qt.category_id = %d';
+			$sql     .= ' AND qt.category_id = %d';
 			$params[] = $tag_id;
 		}
 
 		// Filter by author if not admin
 		if ( ! current_user_can( 'ppq_manage_all' ) ) {
-			$sql .= ' AND q.author_id = %d';
+			$sql     .= ' AND q.author_id = %d';
 			$params[] = get_current_user_id();
 		}
 
 		// Exclude questions already in this bank
 		if ( $bank_id > 0 ) {
 			$bank_questions_table = $wpdb->prefix . 'ppq_bank_questions';
-			$sql .= " AND q.id NOT IN (SELECT question_id FROM {$bank_questions_table} WHERE bank_id = %d)";
-			$params[] = $bank_id;
+			$sql                 .= " AND q.id NOT IN (SELECT question_id FROM {$bank_questions_table} WHERE bank_id = %d)";
+			$params[]             = $bank_id;
 		}
 
 		// Get total count first (using same WHERE conditions without LIMIT)
 		$count_sql = str_replace( 'SELECT DISTINCT q.id, q.type, q.difficulty_author, r.stem', 'SELECT COUNT(DISTINCT q.id)', $sql );
 		if ( ! empty( $params ) ) {
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Dynamic search with pagination, not suitable for caching
+			// phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- Query is prepared with placeholders
 			$total_items = absint( $wpdb->get_var( $wpdb->prepare( $count_sql, $params ) ) );
 		} else {
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Dynamic search with pagination, not suitable for caching
+			// phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- No user input in query
 			$total_items = absint( $wpdb->get_var( $count_sql ) );
 		}
 
 		// Add pagination
-		$sql .= ' LIMIT %d OFFSET %d';
+		$sql     .= ' LIMIT %d OFFSET %d';
 		$params[] = $per_page;
 		$params[] = $offset;
 
 		// Execute query
 		if ( ! empty( $params ) ) {
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Dynamic search with pagination, not suitable for caching
+			// phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- Query is prepared with placeholders
 			$results = $wpdb->get_results( $wpdb->prepare( $sql, $params ) );
 		} else {
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Dynamic search with pagination, not suitable for caching
+			// phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- No user input in query
 			$results = $wpdb->get_results( $sql );
 		}
 
@@ -643,21 +653,21 @@ class PPQ_Admin {
 					'ma' => __( 'Multiple Answer', 'pressprimer-quiz' ),
 					'tf' => __( 'True/False', 'pressprimer-quiz' ),
 				];
-				$type_label = isset( $type_labels[ $row->type ] ) ? $type_labels[ $row->type ] : $row->type;
+				$type_label  = isset( $type_labels[ $row->type ] ) ? $type_labels[ $row->type ] : $row->type;
 
 				// Difficulty labels
 				$difficulty_labels = [
-					'beginner' => __( 'Beginner', 'pressprimer-quiz' ),
+					'beginner'     => __( 'Beginner', 'pressprimer-quiz' ),
 					'intermediate' => __( 'Intermediate', 'pressprimer-quiz' ),
-					'advanced' => __( 'Advanced', 'pressprimer-quiz' ),
-					'expert' => __( 'Expert', 'pressprimer-quiz' ),
+					'advanced'     => __( 'Advanced', 'pressprimer-quiz' ),
+					'expert'       => __( 'Expert', 'pressprimer-quiz' ),
 				];
-				$difficulty_label = isset( $difficulty_labels[ $row->difficulty_author ] ) ? $difficulty_labels[ $row->difficulty_author ] : $row->difficulty_author;
+				$difficulty_label  = isset( $difficulty_labels[ $row->difficulty_author ] ) ? $difficulty_labels[ $row->difficulty_author ] : $row->difficulty_author;
 
 				// Get categories for this question.
 				$category_names = [];
-				if ( class_exists( 'PPQ_Question' ) ) {
-					$question = PPQ_Question::get( $row->id );
+				if ( class_exists( 'PressPrimer_Quiz_Question' ) ) {
+					$question = PressPrimer_Quiz_Question::get( $row->id );
 					if ( $question ) {
 						$question_categories = $question->get_categories();
 						foreach ( $question_categories as $cat ) {
@@ -669,25 +679,27 @@ class PPQ_Admin {
 				}
 
 				$questions[] = [
-					'id'              => absint( $row->id ),
-					'stem_preview'    => wp_trim_words( wp_strip_all_tags( $row->stem ), 20 ),
-					'type'            => $row->type,
-					'type_label'      => $type_label,
-					'difficulty'      => $row->difficulty_author,
+					'id'               => absint( $row->id ),
+					'stem_preview'     => wp_trim_words( wp_strip_all_tags( $row->stem ), 20 ),
+					'type'             => $row->type,
+					'type_label'       => $type_label,
+					'difficulty'       => $row->difficulty_author,
 					'difficulty_label' => $difficulty_label,
-					'category'        => ! empty( $category_names ) ? implode( ', ', $category_names ) : __( 'None', 'pressprimer-quiz' ),
+					'category'         => ! empty( $category_names ) ? implode( ', ', $category_names ) : __( 'None', 'pressprimer-quiz' ),
 				];
 			}
 		}
 
 		$total_pages = ceil( $total_items / $per_page );
 
-		wp_send_json_success( [
-			'questions'    => $questions,
-			'total_items'  => $total_items,
-			'total_pages'  => $total_pages,
-			'current_page' => $page,
-		] );
+		wp_send_json_success(
+			[
+				'questions'    => $questions,
+				'total_items'  => $total_items,
+				'total_pages'  => $total_pages,
+				'current_page' => $page,
+			]
+		);
 	}
 
 	/**
@@ -699,7 +711,7 @@ class PPQ_Admin {
 	 */
 	public function ajax_get_recent_questions() {
 		// Verify nonce
-		if ( ! isset( $_POST['nonce'] ) || ! wp_verify_nonce( $_POST['nonce'], 'ppq_get_recent_questions' ) ) {
+		if ( ! isset( $_POST['nonce'] ) || ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['nonce'] ) ), 'ppq_get_recent_questions' ) ) {
 			wp_send_json_error( [ 'message' => __( 'Security check failed.', 'pressprimer-quiz' ) ] );
 		}
 
@@ -708,18 +720,19 @@ class PPQ_Admin {
 			wp_send_json_error( [ 'message' => __( 'You do not have permission.', 'pressprimer-quiz' ) ] );
 		}
 
-		$bank_id = isset( $_POST['bank_id'] ) ? absint( $_POST['bank_id'] ) : 0;
-		$page = isset( $_POST['page'] ) ? absint( $_POST['page'] ) : 1;
+		$bank_id  = isset( $_POST['bank_id'] ) ? absint( wp_unslash( $_POST['bank_id'] ) ) : 0;
+		$page     = isset( $_POST['page'] ) ? absint( wp_unslash( $_POST['page'] ) ) : 1;
 		$per_page = 5;
-		$offset = ( $page - 1 ) * $per_page;
+		$offset   = ( $page - 1 ) * $per_page;
 
 		global $wpdb;
 
-		$questions_table = $wpdb->prefix . 'ppq_questions';
-		$revisions_table = $wpdb->prefix . 'ppq_question_revisions';
+		$questions_table      = $wpdb->prefix . 'ppq_questions';
+		$revisions_table      = $wpdb->prefix . 'ppq_question_revisions';
 		$bank_questions_table = $wpdb->prefix . 'ppq_bank_questions';
 
 		// Build query for recent questions
+		// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Table names safely constructed from $wpdb->prefix
 		$sql = "SELECT q.id, q.type, q.difficulty_author, r.stem
 				FROM {$questions_table} q
 				INNER JOIN {$revisions_table} r ON q.current_revision_id = r.id
@@ -730,13 +743,14 @@ class PPQ_Admin {
 
 		// Exclude questions already in this bank
 		if ( $bank_id > 0 ) {
-			$sql .= " AND q.id NOT IN (SELECT question_id FROM {$bank_questions_table} WHERE bank_id = %d)";
+			$sql     .= " AND q.id NOT IN (SELECT question_id FROM {$bank_questions_table} WHERE bank_id = %d)";
 			$params[] = $bank_id;
 		}
 
 		$sql .= ' ORDER BY q.created_at DESC';
 
 		// Get total count (use same WHERE conditions)
+		// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Table names safely constructed from $wpdb->prefix
 		$count_sql = "SELECT COUNT(DISTINCT q.id)
 				FROM {$questions_table} q
 				WHERE q.deleted_at IS NULL
@@ -745,17 +759,21 @@ class PPQ_Admin {
 		$count_params = [ get_current_user_id() ];
 
 		if ( $bank_id > 0 ) {
-			$count_sql .= " AND q.id NOT IN (SELECT question_id FROM {$bank_questions_table} WHERE bank_id = %d)";
+			$count_sql     .= " AND q.id NOT IN (SELECT question_id FROM {$bank_questions_table} WHERE bank_id = %d)";
 			$count_params[] = $bank_id;
 		}
 
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Dynamic search with pagination, not suitable for caching
+		// phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- Query is prepared with placeholders
 		$total_items = absint( $wpdb->get_var( $wpdb->prepare( $count_sql, $count_params ) ) );
 
 		// Add pagination
-		$sql .= ' LIMIT %d OFFSET %d';
+		$sql     .= ' LIMIT %d OFFSET %d';
 		$params[] = $per_page;
 		$params[] = $offset;
 
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Dynamic search with pagination, not suitable for caching
+		// phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- Query is prepared with placeholders
 		$results = $wpdb->get_results( $wpdb->prepare( $sql, $params ) );
 
 		$questions = [];
@@ -767,22 +785,22 @@ class PPQ_Admin {
 					'ma' => __( 'Multiple Answer', 'pressprimer-quiz' ),
 					'tf' => __( 'True/False', 'pressprimer-quiz' ),
 				];
-				$type_label = isset( $type_labels[ $row->type ] ) ? $type_labels[ $row->type ] : $row->type;
+				$type_label  = isset( $type_labels[ $row->type ] ) ? $type_labels[ $row->type ] : $row->type;
 
 				// Difficulty labels
 				$difficulty_labels = [
-					'beginner' => __( 'Beginner', 'pressprimer-quiz' ),
+					'beginner'     => __( 'Beginner', 'pressprimer-quiz' ),
 					'intermediate' => __( 'Intermediate', 'pressprimer-quiz' ),
-					'advanced' => __( 'Advanced', 'pressprimer-quiz' ),
-					'expert' => __( 'Expert', 'pressprimer-quiz' ),
+					'advanced'     => __( 'Advanced', 'pressprimer-quiz' ),
+					'expert'       => __( 'Expert', 'pressprimer-quiz' ),
 				];
-				$difficulty_label = isset( $difficulty_labels[ $row->difficulty_author ] ) ? $difficulty_labels[ $row->difficulty_author ] : $row->difficulty_author;
+				$difficulty_label  = isset( $difficulty_labels[ $row->difficulty_author ] ) ? $difficulty_labels[ $row->difficulty_author ] : $row->difficulty_author;
 
 				// Get categories for this question
-				$categories = [];
+				$categories     = [];
 				$category_names = [];
-				if ( class_exists( 'PPQ_Question' ) ) {
-					$question = PPQ_Question::get( $row->id );
+				if ( class_exists( 'PressPrimer_Quiz_Question' ) ) {
+					$question = PressPrimer_Quiz_Question::get( $row->id );
 					if ( $question ) {
 						$question_categories = $question->get_categories();
 						foreach ( $question_categories as $cat ) {
@@ -794,25 +812,27 @@ class PPQ_Admin {
 				}
 
 				$questions[] = [
-					'id'           => absint( $row->id ),
-					'stem_preview' => wp_trim_words( wp_strip_all_tags( $row->stem ), 20 ),
-					'type'         => $row->type,
-					'type_label'   => $type_label,
-					'difficulty'   => $row->difficulty_author,
+					'id'               => absint( $row->id ),
+					'stem_preview'     => wp_trim_words( wp_strip_all_tags( $row->stem ), 20 ),
+					'type'             => $row->type,
+					'type_label'       => $type_label,
+					'difficulty'       => $row->difficulty_author,
 					'difficulty_label' => $difficulty_label,
-					'category'     => ! empty( $category_names ) ? implode( ', ', $category_names ) : __( 'None', 'pressprimer-quiz' ),
+					'category'         => ! empty( $category_names ) ? implode( ', ', $category_names ) : __( 'None', 'pressprimer-quiz' ),
 				];
 			}
 		}
 
 		$total_pages = ceil( $total_items / $per_page );
 
-		wp_send_json_success( [
-			'questions' => $questions,
-			'total_items' => $total_items,
-			'total_pages' => $total_pages,
-			'current_page' => $page,
-		] );
+		wp_send_json_success(
+			[
+				'questions'    => $questions,
+				'total_items'  => $total_items,
+				'total_pages'  => $total_pages,
+				'current_page' => $page,
+			]
+		);
 	}
 
 	/**
@@ -822,7 +842,7 @@ class PPQ_Admin {
 	 */
 	public function ajax_remove_question_from_bank() {
 		// Verify nonce
-		if ( ! isset( $_POST['nonce'] ) || ! wp_verify_nonce( $_POST['nonce'], 'ppq_admin_nonce' ) ) {
+		if ( ! isset( $_POST['nonce'] ) || ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['nonce'] ) ), 'ppq_admin_nonce' ) ) {
 			wp_send_json_error( [ 'message' => __( 'Security check failed.', 'pressprimer-quiz' ) ] );
 		}
 
@@ -831,16 +851,16 @@ class PPQ_Admin {
 			wp_send_json_error( [ 'message' => __( 'You do not have permission.', 'pressprimer-quiz' ) ] );
 		}
 
-		$bank_id = isset( $_POST['bank_id'] ) ? absint( $_POST['bank_id'] ) : 0;
-		$question_id = isset( $_POST['question_id'] ) ? absint( $_POST['question_id'] ) : 0;
+		$bank_id     = isset( $_POST['bank_id'] ) ? absint( wp_unslash( $_POST['bank_id'] ) ) : 0;
+		$question_id = isset( $_POST['question_id'] ) ? absint( wp_unslash( $_POST['question_id'] ) ) : 0;
 
 		if ( ! $bank_id || ! $question_id ) {
 			wp_send_json_error( [ 'message' => __( 'Invalid bank or question ID.', 'pressprimer-quiz' ) ] );
 		}
 
 		$bank = null;
-		if ( class_exists( 'PPQ_Bank' ) ) {
-			$bank = PPQ_Bank::get( $bank_id );
+		if ( class_exists( 'PressPrimer_Quiz_Bank' ) ) {
+			$bank = PressPrimer_Quiz_Bank::get( $bank_id );
 		}
 
 		if ( ! $bank ) {
@@ -858,10 +878,12 @@ class PPQ_Admin {
 		// Update count
 		$bank->update_question_count();
 
-		wp_send_json_success( [
-			'message' => __( 'Question removed from bank.', 'pressprimer-quiz' ),
-			'new_count' => $bank->question_count,
-		] );
+		wp_send_json_success(
+			[
+				'message'   => __( 'Question removed from bank.', 'pressprimer-quiz' ),
+				'new_count' => $bank->question_count,
+			]
+		);
 	}
 
 	/**

@@ -22,7 +22,7 @@ if ( ! defined( 'ABSPATH' ) ) {
  *
  * @since 1.0.0
  */
-class PPQ_Quiz_Renderer {
+class PressPrimer_Quiz_Quiz_Renderer {
 
 	/**
 	 * Render quiz landing page
@@ -31,27 +31,27 @@ class PPQ_Quiz_Renderer {
 	 *
 	 * @since 1.0.0
 	 *
-	 * @param PPQ_Quiz $quiz Quiz object.
+	 * @param PressPrimer_Quiz_Quiz $quiz Quiz object.
 	 * @return string Rendered HTML.
 	 */
 	public function render_landing( $quiz ) {
 		// Enqueue assets
 		$this->enqueue_assets( $quiz );
 
-		$user_id = get_current_user_id();
+		$user_id      = get_current_user_id();
 		$is_logged_in = $user_id > 0;
 
 		// Get user's attempts
-		$previous_attempts = [];
+		$previous_attempts   = [];
 		$in_progress_attempt = null;
 
 		if ( $is_logged_in ) {
-			$previous_attempts = PPQ_Attempt::get_user_attempts( $quiz->id, $user_id );
-			$in_progress_attempt = PPQ_Attempt::get_user_in_progress( $quiz->id, $user_id );
+			$previous_attempts   = PressPrimer_Quiz_Attempt::get_user_attempts( $quiz->id, $user_id );
+			$in_progress_attempt = PressPrimer_Quiz_Attempt::get_user_in_progress( $quiz->id, $user_id );
 
 			// Auto-abandon stale in-progress attempts (no answers, older than 1 hour)
 			if ( $in_progress_attempt ) {
-				$items = $in_progress_attempt->get_items();
+				$items          = $in_progress_attempt->get_items();
 				$has_any_answer = false;
 				foreach ( $items as $item ) {
 					if ( ! empty( $item->get_selected_answers() ) ) {
@@ -63,7 +63,7 @@ class PPQ_Quiz_Renderer {
 				// If no answers and started more than 1 hour ago, abandon it
 				if ( ! $has_any_answer ) {
 					$started_timestamp = strtotime( $in_progress_attempt->started_at );
-					$one_hour_ago = time() - 3600;
+					$one_hour_ago      = time() - 3600;
 					if ( $started_timestamp < $one_hour_ago ) {
 						$in_progress_attempt->status = 'abandoned';
 						$in_progress_attempt->save();
@@ -74,20 +74,25 @@ class PPQ_Quiz_Renderer {
 		}
 
 		// Check attempt limits
-		$can_start = true;
+		$can_start     = true;
 		$limit_message = '';
 
 		if ( $quiz->max_attempts ) {
-			$submitted_count = count( array_filter( $previous_attempts, function( $a ) {
-				return 'submitted' === $a->status;
-			} ) );
+			$submitted_count = count(
+				array_filter(
+					$previous_attempts,
+					function ( $a ) {
+						return 'submitted' === $a->status;
+					}
+				)
+			);
 
 			if ( $submitted_count >= $quiz->max_attempts ) {
-				$can_start = false;
+				$can_start     = false;
 				$limit_message = sprintf(
 					/* translators: %d: maximum number of attempts */
 					__( 'You have reached the maximum number of attempts (%d) for this quiz.', 'pressprimer-quiz' ),
-					$quiz->max_attempts
+					intval( $quiz->max_attempts )
 				);
 			}
 		}
@@ -98,8 +103,8 @@ class PPQ_Quiz_Renderer {
 			if ( $last_attempt && 'submitted' === $last_attempt->status && $last_attempt->finished_at ) {
 				$elapsed_minutes = ( time() - strtotime( $last_attempt->finished_at ) ) / 60;
 				if ( $elapsed_minutes < $quiz->attempt_delay_minutes ) {
-					$can_start = false;
-					$wait_minutes = ceil( $quiz->attempt_delay_minutes - $elapsed_minutes );
+					$can_start     = false;
+					$wait_minutes  = ceil( $quiz->attempt_delay_minutes - $elapsed_minutes );
 					$limit_message = sprintf(
 						/* translators: %d: minutes to wait */
 						_n(
@@ -108,7 +113,7 @@ class PPQ_Quiz_Renderer {
 							$wait_minutes,
 							'pressprimer-quiz'
 						),
-						$wait_minutes
+						intval( $wait_minutes )
 					);
 				}
 			}
@@ -117,7 +122,7 @@ class PPQ_Quiz_Renderer {
 		// Count questions
 		$question_count = 0;
 		if ( 'fixed' === $quiz->generation_mode ) {
-			$items = $quiz->get_items();
+			$items          = $quiz->get_items();
 			$question_count = count( $items );
 		} else {
 			$rules = $quiz->get_rules();
@@ -127,7 +132,7 @@ class PPQ_Quiz_Renderer {
 		}
 
 		// Get theme class
-		$theme_class = PPQ_Theme_Loader::get_theme_class( PPQ_Theme_Loader::get_quiz_theme( $quiz ) );
+		$theme_class = PressPrimer_Quiz_Theme_Loader::get_theme_class( PressPrimer_Quiz_Theme_Loader::get_quiz_theme( $quiz ) );
 
 		// Start output buffering
 		ob_start();
@@ -159,9 +164,9 @@ class PPQ_Quiz_Renderer {
 				 *
 				 * @since 1.0.0
 				 *
-				 * @param PPQ_Quiz $quiz The quiz object.
+				 * @param PressPrimer_Quiz_Quiz $quiz The quiz object.
 				 */
-				do_action( 'ppq_before_quiz_meta', $quiz );
+				do_action( 'pressprimer_quiz_before_quiz_meta', $quiz );
 				?>
 
 				<div class="ppq-quiz-meta">
@@ -171,16 +176,16 @@ class PPQ_Quiz_Renderer {
 						// Quiz mode information for tooltip
 						// translators: Quiz type labels - Fixed means same questions for everyone,
 						// Random means questions are randomly selected, Adaptive adjusts difficulty
-						$mode_label = '';
+						$mode_label   = '';
 						$mode_tooltip = '';
 						if ( 'fixed' === $quiz->generation_mode ) {
-							$mode_label = __( 'Fixed Quiz', 'pressprimer-quiz' );
+							$mode_label   = __( 'Fixed Quiz', 'pressprimer-quiz' );
 							$mode_tooltip = __( 'All participants will receive the same questions in the same order.', 'pressprimer-quiz' );
 						} elseif ( 'random' === $quiz->generation_mode ) {
-							$mode_label = __( 'Random Quiz', 'pressprimer-quiz' );
+							$mode_label   = __( 'Random Quiz', 'pressprimer-quiz' );
 							$mode_tooltip = __( 'Questions are randomly selected from question pools each time you take the quiz.', 'pressprimer-quiz' );
 						} elseif ( 'adaptive' === $quiz->generation_mode ) {
-							$mode_label = __( 'Adaptive Quiz', 'pressprimer-quiz' );
+							$mode_label   = __( 'Adaptive Quiz', 'pressprimer-quiz' );
 							$mode_tooltip = __( 'Question difficulty adapts based on your performance.', 'pressprimer-quiz' );
 						}
 						?>
@@ -211,6 +216,7 @@ class PPQ_Quiz_Renderer {
 									<span class="ppq-meta-value">
 										<?php
 										$minutes = floor( $quiz->time_limit_seconds / 60 );
+										/* translators: %d: number of minutes for time limit */
 										echo esc_html( sprintf( _n( '%d minute', '%d minutes', $minutes, 'pressprimer-quiz' ), $minutes ) );
 										?>
 									</span>
@@ -233,14 +239,19 @@ class PPQ_Quiz_Renderer {
 									<span class="ppq-meta-label"><?php esc_html_e( 'Attempts', 'pressprimer-quiz' ); ?></span>
 									<span class="ppq-meta-value">
 										<?php
-										$submitted_count = count( array_filter( $previous_attempts, function( $a ) {
-											return 'submitted' === $a->status;
-										} ) );
+										$submitted_count = count(
+											array_filter(
+												$previous_attempts,
+												function ( $a ) {
+													return 'submitted' === $a->status;
+												}
+											)
+										);
 										printf(
 											/* translators: 1: attempts used, 2: max attempts */
 											esc_html__( '%1$d of %2$d', 'pressprimer-quiz' ),
-											$submitted_count,
-											$quiz->max_attempts
+											intval( $submitted_count ),
+											intval( $quiz->max_attempts )
 										);
 										?>
 									</span>
@@ -257,10 +268,10 @@ class PPQ_Quiz_Renderer {
 						 *
 						 * @since 1.0.0
 						 *
-						 * @param PPQ_Quiz $quiz           The quiz object.
+						 * @param PressPrimer_Quiz_Quiz $quiz           The quiz object.
 						 * @param int      $question_count Number of questions in the quiz.
 						 */
-						do_action( 'ppq_quiz_meta_items', $quiz, $question_count );
+						do_action( 'pressprimer_quiz_quiz_meta_items', $quiz, $question_count );
 						?>
 
 					</div>
@@ -272,14 +283,17 @@ class PPQ_Quiz_Renderer {
 				 *
 				 * @since 1.0.0
 				 *
-				 * @param PPQ_Quiz $quiz The quiz object.
+				 * @param PressPrimer_Quiz_Quiz $quiz The quiz object.
 				 */
-				do_action( 'ppq_after_quiz_meta', $quiz );
+				do_action( 'pressprimer_quiz_after_quiz_meta', $quiz );
 
 				// Count submitted attempts for display
-				$submitted_attempts = array_filter( $previous_attempts, function( $a ) {
-					return 'submitted' === $a->status;
-				} );
+				$submitted_attempts = array_filter(
+					$previous_attempts,
+					function ( $a ) {
+						return 'submitted' === $a->status;
+					}
+				);
 				?>
 
 				<?php if ( ! empty( $submitted_attempts ) && $is_logged_in ) : ?>
@@ -292,7 +306,7 @@ class PPQ_Quiz_Renderer {
 								if ( $shown >= 3 ) {
 									break; // Show max 3 previous attempts
 								}
-								$shown++;
+								++$shown;
 								?>
 								<div class="ppq-attempt-card">
 									<div class="ppq-attempt-info">
@@ -300,7 +314,7 @@ class PPQ_Quiz_Renderer {
 											<?php echo esc_html( wp_date( get_option( 'date_format' ), strtotime( $attempt->started_at ) ) ); ?>
 										</span>
 										<?php if ( null !== $attempt->score_percent ) : ?>
-											<span class="ppq-attempt-score <?php echo $attempt->passed ? 'ppq-passed' : 'ppq-failed'; ?>">
+											<span class="ppq-attempt-score <?php echo esc_attr( $attempt->passed ? 'ppq-passed' : 'ppq-failed' ); ?>">
 												<?php echo esc_html( number_format_i18n( $attempt->score_percent, 1 ) . '%' ); ?>
 												<?php if ( $attempt->passed ) : ?>
 													<span class="ppq-pass-badge" aria-label="<?php esc_attr_e( 'Passed', 'pressprimer-quiz' ); ?>">✓</span>
@@ -331,7 +345,7 @@ class PPQ_Quiz_Renderer {
 							</p>
 						</div>
 						<a href="<?php echo esc_url( add_query_arg( 'attempt', $in_progress_attempt->id, get_permalink() ) ); ?>"
-						   class="ppq-button ppq-button-primary ppq-button-large ppq-resume-button">
+							class="ppq-button ppq-button-primary ppq-button-large ppq-resume-button">
 							<span class="ppq-button-icon" aria-hidden="true">▶️</span>
 							<?php esc_html_e( 'Resume Quiz', 'pressprimer-quiz' ); ?>
 						</a>
@@ -346,16 +360,16 @@ class PPQ_Quiz_Renderer {
 									<?php esc_html_e( 'Enter your email to save your progress and receive your results.', 'pressprimer-quiz' ); ?>
 								</p>
 								<input type="email"
-								       id="ppq-guest-email"
-								       class="ppq-input ppq-email-input"
-								       placeholder="<?php esc_attr_e( 'your@email.com', 'pressprimer-quiz' ); ?>"
-								       autocomplete="email">
+										id="ppq-guest-email"
+										class="ppq-input ppq-email-input"
+										placeholder="<?php esc_attr_e( 'your@email.com', 'pressprimer-quiz' ); ?>"
+										autocomplete="email">
 							</div>
 						<?php endif; ?>
 
 						<button type="button"
-						        class="ppq-button ppq-button-primary ppq-button-large ppq-start-quiz-button"
-						        data-quiz-id="<?php echo esc_attr( $quiz->id ); ?>">
+								class="ppq-button ppq-button-primary ppq-button-large ppq-start-quiz-button"
+								data-quiz-id="<?php echo esc_attr( $quiz->id ); ?>">
 							<span class="ppq-button-icon" aria-hidden="true">🚀</span>
 							<?php esc_html_e( 'Start Quiz', 'pressprimer-quiz' ); ?>
 						</button>
@@ -379,7 +393,7 @@ class PPQ_Quiz_Renderer {
 	 *
 	 * @since 1.0.0
 	 *
-	 * @param PPQ_Attempt $attempt Attempt object.
+	 * @param PressPrimer_Quiz_Attempt $attempt Attempt object.
 	 * @return string Rendered HTML.
 	 */
 	public function render_quiz( $attempt ) {
@@ -446,17 +460,17 @@ class PPQ_Quiz_Renderer {
 
 		// Calculate time remaining (if timed)
 		$time_remaining = null;
-		$time_limit = null;
+		$time_limit     = null;
 		if ( $quiz->time_limit_seconds ) {
 			$time_limit = $quiz->time_limit_seconds;
 			// Use timezone-aware calculation - started_at is in WordPress local time
 			$started_timestamp = strtotime( get_gmt_from_date( $attempt->started_at ) );
-			$elapsed = time() - $started_timestamp;
-			$time_remaining = max( 0, $time_limit - $elapsed );
+			$elapsed           = time() - $started_timestamp;
+			$time_remaining    = max( 0, $time_limit - $elapsed );
 		}
 
 		// Get theme class
-		$theme_class = PPQ_Theme_Loader::get_theme_class( PPQ_Theme_Loader::get_quiz_theme( $quiz ) );
+		$theme_class = PressPrimer_Quiz_Theme_Loader::get_theme_class( PressPrimer_Quiz_Theme_Loader::get_quiz_theme( $quiz ) );
 
 		// Find first unanswered question (for resume functionality)
 		$first_unanswered = 0;
@@ -477,10 +491,10 @@ class PPQ_Quiz_Renderer {
 		 *
 		 * @since 1.0.0
 		 *
-		 * @param PPQ_Attempt $attempt The current attempt object.
-		 * @param PPQ_Quiz    $quiz    The quiz object.
+		 * @param PressPrimer_Quiz_Attempt $attempt The current attempt object.
+		 * @param PressPrimer_Quiz_Quiz    $quiz    The quiz object.
 		 */
-		do_action( 'ppq_before_quiz_interface', $attempt, $quiz );
+		do_action( 'pressprimer_quiz_before_quiz_interface', $attempt, $quiz );
 
 		// Start output buffering
 		ob_start();
@@ -490,14 +504,14 @@ class PPQ_Quiz_Renderer {
 		<a href="#ppq-questions-container" class="ppq-skip-link"><?php esc_html_e( 'Skip to questions', 'pressprimer-quiz' ); ?></a>
 
 		<div class="ppq-quiz-interface <?php echo esc_attr( $theme_class ); ?>"
-			 role="main"
-			 aria-label="<?php esc_attr_e( 'Quiz', 'pressprimer-quiz' ); ?>"
-			 data-attempt-id="<?php echo esc_attr( $attempt->id ); ?>"
-			 data-quiz-id="<?php echo esc_attr( $quiz->id ); ?>"
-			 data-quiz-mode="<?php echo esc_attr( $quiz->mode ); ?>"
-			 data-time-limit="<?php echo esc_attr( $time_limit ); ?>"
-			 data-time-remaining="<?php echo esc_attr( $time_remaining ); ?>"
-			 data-start-question="<?php echo esc_attr( $first_unanswered ); ?>">
+			role="main"
+			aria-label="<?php esc_attr_e( 'Quiz', 'pressprimer-quiz' ); ?>"
+			data-attempt-id="<?php echo esc_attr( $attempt->id ); ?>"
+			data-quiz-id="<?php echo esc_attr( $quiz->id ); ?>"
+			data-quiz-mode="<?php echo esc_attr( $quiz->mode ); ?>"
+			data-time-limit="<?php echo esc_attr( $time_limit ); ?>"
+			data-time-remaining="<?php echo esc_attr( $time_remaining ); ?>"
+			data-start-question="<?php echo esc_attr( $first_unanswered ); ?>">
 
 			<?php
 			/**
@@ -507,10 +521,10 @@ class PPQ_Quiz_Renderer {
 			 *
 			 * @since 1.0.0
 			 *
-			 * @param PPQ_Attempt $attempt The current attempt object.
-			 * @param PPQ_Quiz    $quiz    The quiz object.
+			 * @param PressPrimer_Quiz_Attempt $attempt The current attempt object.
+			 * @param PressPrimer_Quiz_Quiz    $quiz    The quiz object.
 			 */
-			do_action( 'ppq_quiz_interface_start', $attempt, $quiz );
+			do_action( 'pressprimer_quiz_quiz_interface_start', $attempt, $quiz );
 			?>
 
 			<!-- Quiz Header -->
@@ -547,7 +561,7 @@ class PPQ_Quiz_Renderer {
 			<!-- Questions Container -->
 			<div class="ppq-questions-container" id="ppq-questions-container" role="region" aria-label="<?php esc_attr_e( 'Quiz questions', 'pressprimer-quiz' ); ?>">
 				<?php foreach ( $items as $index => $item ) : ?>
-					<?php echo $this->render_question( $item, $index, count( $items ) ); ?>
+					<?php echo $this->render_question( $item, $index, count( $items ) ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Output escaped in render_question method ?>
 				<?php endforeach; ?>
 			</div>
 
@@ -598,9 +612,9 @@ class PPQ_Quiz_Renderer {
 	 *
 	 * @since 1.0.0
 	 *
-	 * @param PPQ_Attempt_Item $item Attempt item object.
-	 * @param int              $index Question index (0-based).
-	 * @param int              $total Total number of questions.
+	 * @param PressPrimer_Quiz_Attempt_Item $item Attempt item object.
+	 * @param int                           $index Question index (0-based).
+	 * @param int                           $total Total number of questions.
 	 * @return string Rendered HTML.
 	 */
 	private function render_question( $item, $index, $total ) {
@@ -612,25 +626,25 @@ class PPQ_Quiz_Renderer {
 		}
 
 		$selected_answers = $item->get_selected_answers();
-		$answers = $revision->get_answers();
-		$question_number = $index + 1;
+		$answers          = $revision->get_answers();
+		$question_number  = $index + 1;
 
 		// Determine input type based on question type
 		$input_type = 'radio';
 		$input_name = 'ppq_answer_' . $item->id;
 
 		if ( 'multiple_answer' === $question->type || 'ma' === $question->type ) {
-			$input_type = 'checkbox';
+			$input_type  = 'checkbox';
 			$input_name .= '[]';
 		}
 
 		ob_start();
 		?>
 		<div class="ppq-question"
-			 data-question-index="<?php echo esc_attr( $index ); ?>"
-			 data-item-id="<?php echo esc_attr( $item->id ); ?>"
-			 data-question-type="<?php echo esc_attr( $question->type ); ?>"
-			 style="<?php echo 0 === $index ? '' : 'display: none;'; ?>">
+			data-question-index="<?php echo esc_attr( $index ); ?>"
+			data-item-id="<?php echo esc_attr( $item->id ); ?>"
+			data-question-type="<?php echo esc_attr( $question->type ); ?>"
+			style="<?php echo esc_attr( 0 === $index ? '' : 'display: none;' ); ?>">
 
 			<div class="ppq-question-header">
 				<span class="ppq-question-number">
@@ -638,8 +652,8 @@ class PPQ_Quiz_Renderer {
 					printf(
 						/* translators: 1: current question number, 2: total questions */
 						esc_html__( 'Question %1$d of %2$d', 'pressprimer-quiz' ),
-						$question_number,
-						$total
+						intval( $question_number ),
+						intval( $total )
 					);
 					?>
 				</span>
@@ -649,7 +663,7 @@ class PPQ_Quiz_Renderer {
 						printf(
 							/* translators: %s: points value */
 							esc_html__( '%s points', 'pressprimer-quiz' ),
-							number_format_i18n( $question->max_points, 0 )
+							esc_html( number_format_i18n( $question->max_points, 0 ) )
 						);
 						?>
 					</span>
@@ -663,18 +677,18 @@ class PPQ_Quiz_Renderer {
 			<div class="ppq-answers">
 				<?php foreach ( $answers as $answer_index => $answer ) : ?>
 					<?php
-					$answer_id = 'ppq_answer_' . $item->id . '_' . $answer_index;
+					$answer_id  = 'ppq_answer_' . $item->id . '_' . $answer_index;
 					$is_checked = in_array( $answer_index, $selected_answers, true );
 					?>
-					<label class="ppq-answer-option <?php echo $is_checked ? 'ppq-selected' : ''; ?>"
-						   for="<?php echo esc_attr( $answer_id ); ?>">
+					<label class="ppq-answer-option <?php echo esc_attr( $is_checked ? 'ppq-selected' : '' ); ?>"
+							for="<?php echo esc_attr( $answer_id ); ?>">
 						<input type="<?php echo esc_attr( $input_type ); ?>"
-							   id="<?php echo esc_attr( $answer_id ); ?>"
-							   name="<?php echo esc_attr( $input_name ); ?>"
-							   value="<?php echo esc_attr( $answer_index ); ?>"
-							   class="ppq-answer-input"
-							   data-item-id="<?php echo esc_attr( $item->id ); ?>"
-							   <?php checked( $is_checked ); ?>>
+								id="<?php echo esc_attr( $answer_id ); ?>"
+								name="<?php echo esc_attr( $input_name ); ?>"
+								value="<?php echo esc_attr( $answer_index ); ?>"
+								class="ppq-answer-input"
+								data-item-id="<?php echo esc_attr( $item->id ); ?>"
+								<?php checked( $is_checked ); ?>>
 						<span class="ppq-answer-radio-check"></span>
 						<span class="ppq-answer-text">
 							<?php echo wp_kses_post( $answer['text'] ); ?>
@@ -719,12 +733,12 @@ class PPQ_Quiz_Renderer {
 		 * @since 1.0.0
 		 *
 		 * @param string           $output   The rendered question HTML.
-		 * @param PPQ_Attempt_Item $item     The attempt item object.
-		 * @param PPQ_Question     $question The question object.
+		 * @param PressPrimer_Quiz_Attempt_Item $item     The attempt item object.
+		 * @param PressPrimer_Quiz_Question     $question The question object.
 		 * @param int              $index    The question index (0-based).
 		 * @param int              $total    Total number of questions.
 		 */
-		return apply_filters( 'ppq_render_question', $output, $item, $question, $index, $total );
+		return apply_filters( 'pressprimer_quiz_render_question', $output, $item, $question, $index, $total );
 	}
 
 	/**
@@ -746,7 +760,7 @@ class PPQ_Quiz_Renderer {
 	 *
 	 * @since 1.0.0
 	 *
-	 * @param PPQ_Quiz|null $quiz Quiz object for theme loading.
+	 * @param PressPrimer_Quiz_Quiz|null $quiz Quiz object for theme loading.
 	 */
 	private function enqueue_assets( $quiz = null ) {
 		// Enqueue quiz CSS
@@ -759,11 +773,11 @@ class PPQ_Quiz_Renderer {
 
 		// Enqueue theme CSS
 		if ( $quiz ) {
-			PPQ_Theme_Loader::enqueue_quiz_theme( $quiz );
-			PPQ_Theme_Loader::output_custom_css( $quiz );
+			PressPrimer_Quiz_Theme_Loader::enqueue_quiz_theme( $quiz );
+			PressPrimer_Quiz_Theme_Loader::output_custom_css( $quiz );
 		} else {
 			// Fallback to default theme if no quiz provided
-			PPQ_Theme_Loader::enqueue_theme( 'default' );
+			PressPrimer_Quiz_Theme_Loader::enqueue_theme( 'default' );
 		}
 
 		// Enqueue quiz JavaScript

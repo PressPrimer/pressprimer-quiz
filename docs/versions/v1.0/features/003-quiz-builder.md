@@ -176,8 +176,8 @@ question_count SMALLINT
 
 ```php
 function ppq_generate_questions_for_attempt( $quiz_id ) {
-    $quiz = PPQ_Quiz::get( $quiz_id );
-    $rules = PPQ_Quiz_Rule::get_for_quiz( $quiz_id );
+    $quiz = PressPrimer_Quiz_Quiz::get( $quiz_id );
+    $rules = PressPrimer_Quiz_Quiz_Rule::get_for_quiz( $quiz_id );
     
     $all_question_ids = [];
     

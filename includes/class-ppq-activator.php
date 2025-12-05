@@ -21,7 +21,7 @@ if ( ! defined( 'ABSPATH' ) ) {
  *
  * @since 1.0.0
  */
-class PPQ_Activator {
+class PressPrimer_Quiz_Activator {
 
 	/**
 	 * Activate the plugin
@@ -54,13 +54,13 @@ class PPQ_Activator {
 		self::set_default_options();
 
 		// Run database migrations
-		if ( class_exists( 'PPQ_Migrator' ) ) {
-			PPQ_Migrator::maybe_migrate();
+		if ( class_exists( 'PressPrimer_Quiz_Migrator' ) ) {
+			PressPrimer_Quiz_Migrator::maybe_migrate();
 		}
 
 		// Setup capabilities
-		if ( class_exists( 'PPQ_Capabilities' ) ) {
-			PPQ_Capabilities::setup_capabilities();
+		if ( class_exists( 'PressPrimer_Quiz_Capabilities' ) ) {
+			PressPrimer_Quiz_Capabilities::setup_capabilities();
 		}
 
 		// Flush rewrite rules
@@ -81,11 +81,11 @@ class PPQ_Activator {
 	private static function set_default_options() {
 		// Default settings
 		$default_settings = [
-			'default_passing_score'     => 70,
-			'default_quiz_mode'         => 'tutorial',
-			'email_from_name'           => get_bloginfo( 'name' ),
-			'email_from_address'        => get_bloginfo( 'admin_email' ),
-			'remove_data_on_uninstall'  => false, // Keep data by default for safety
+			'default_passing_score'    => 70,
+			'default_quiz_mode'        => 'tutorial',
+			'email_from_name'          => get_bloginfo( 'name' ),
+			'email_from_address'       => get_bloginfo( 'admin_email' ),
+			'remove_data_on_uninstall' => false, // Keep data by default for safety
 		];
 
 		// Only set if not already exists

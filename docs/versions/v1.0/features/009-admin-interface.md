@@ -262,7 +262,7 @@ assets/js/admin/
  * @subpackage Admin
  */
 
-class PPQ_Admin {
+class PressPrimer_Quiz_Admin {
     
     /**
      * Initialize admin

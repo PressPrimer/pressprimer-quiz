@@ -21,7 +21,7 @@ if ( ! defined( 'ABSPATH' ) ) {
  *
  * @since 1.0.0
  */
-class PPQ_Theme_Loader {
+class PressPrimer_Quiz_Theme_Loader {
 
 	/**
 	 * Available themes
@@ -35,7 +35,7 @@ class PPQ_Theme_Loader {
 			'description' => 'Clean, professional design with blue accents',
 			'file'        => 'default.css',
 		],
-		'modern' => [
+		'modern'  => [
 			'name'        => 'Modern',
 			'description' => 'Dark mode with bold typography and contemporary styling',
 			'file'        => 'modern.css',
@@ -62,7 +62,7 @@ class PPQ_Theme_Loader {
 		 *
 		 * @param array $themes Available themes.
 		 */
-		return apply_filters( 'ppq_available_themes', self::$available_themes );
+		return apply_filters( 'pressprimer_quiz_available_themes', self::$available_themes );
 	}
 
 	/**
@@ -85,7 +85,7 @@ class PPQ_Theme_Loader {
 	 *
 	 * @since 1.0.0
 	 *
-	 * @param PPQ_Quiz $quiz Quiz object.
+	 * @param PressPrimer_Quiz_Quiz $quiz Quiz object.
 	 * @return string Theme identifier.
 	 */
 	public static function get_quiz_theme( $quiz ) {
@@ -108,9 +108,9 @@ class PPQ_Theme_Loader {
 		 * @since 1.0.0
 		 *
 		 * @param string   $theme Theme identifier.
-		 * @param PPQ_Quiz $quiz Quiz object.
+		 * @param PressPrimer_Quiz_Quiz $quiz Quiz object.
 		 */
-		return apply_filters( 'ppq_quiz_theme', $theme, $quiz );
+		return apply_filters( 'pressprimer_quiz_quiz_theme', $theme, $quiz );
 	}
 
 	/**
@@ -161,7 +161,7 @@ class PPQ_Theme_Loader {
 		 * @param string $theme_id Theme identifier.
 		 * @param array  $theme Theme info.
 		 */
-		do_action( 'ppq_theme_enqueued', $theme_id, $theme );
+		do_action( 'pressprimer_quiz_theme_enqueued', $theme_id, $theme );
 	}
 
 	/**
@@ -171,7 +171,7 @@ class PPQ_Theme_Loader {
 	 *
 	 * @since 1.0.0
 	 *
-	 * @param PPQ_Quiz $quiz Quiz object.
+	 * @param PressPrimer_Quiz_Quiz $quiz Quiz object.
 	 */
 	public static function enqueue_quiz_theme( $quiz ) {
 		$theme_id = self::get_quiz_theme( $quiz );
@@ -185,7 +185,7 @@ class PPQ_Theme_Loader {
 	 *
 	 * @since 1.0.0
 	 *
-	 * @param PPQ_Quiz $quiz Quiz object.
+	 * @param PressPrimer_Quiz_Quiz $quiz Quiz object.
 	 * @return string Custom CSS or empty string.
 	 */
 	public static function get_custom_css( $quiz ) {
@@ -199,7 +199,7 @@ class PPQ_Theme_Loader {
 			return '';
 		}
 
-		$css = '';
+		$css         = '';
 		$theme_class = self::get_theme_class( self::get_quiz_theme( $quiz ) );
 
 		// Build CSS variable overrides
@@ -232,7 +232,7 @@ class PPQ_Theme_Loader {
 
 		// Border radius override
 		if ( isset( $settings['border_radius'] ) && is_numeric( $settings['border_radius'] ) ) {
-			$radius                     = absint( $settings['border_radius'] );
+			$radius                      = absint( $settings['border_radius'] );
 			$css_vars['--ppq-radius-md'] = $radius . 'px';
 			$css_vars['--ppq-radius-lg'] = ( $radius * 1.5 ) . 'px';
 			$css_vars['--ppq-radius-xl'] = ( $radius * 2 ) . 'px';
@@ -256,7 +256,7 @@ class PPQ_Theme_Loader {
 			 *
 			 * @param bool $allow Whether to allow custom CSS. Default true.
 			 */
-			$allow_custom_css = apply_filters( 'ppq_allow_custom_theme_css', true );
+			$allow_custom_css = apply_filters( 'pressprimer_quiz_allow_custom_theme_css', true );
 
 			if ( $allow_custom_css ) {
 				// Basic sanitization - strip tags and escape
@@ -273,10 +273,10 @@ class PPQ_Theme_Loader {
 		 * @since 1.0.0
 		 *
 		 * @param string   $css Custom CSS.
-		 * @param PPQ_Quiz $quiz Quiz object.
+		 * @param PressPrimer_Quiz_Quiz $quiz Quiz object.
 		 * @param array    $settings Theme settings.
 		 */
-		return apply_filters( 'ppq_quiz_custom_css', $css, $quiz, $settings );
+		return apply_filters( 'pressprimer_quiz_quiz_custom_css', $css, $quiz, $settings );
 	}
 
 	/**
@@ -284,7 +284,7 @@ class PPQ_Theme_Loader {
 	 *
 	 * @since 1.0.0
 	 *
-	 * @param PPQ_Quiz $quiz Quiz object.
+	 * @param PressPrimer_Quiz_Quiz $quiz Quiz object.
 	 */
 	public static function output_custom_css( $quiz ) {
 		$theme_id = self::get_quiz_theme( $quiz );
@@ -314,7 +314,7 @@ class PPQ_Theme_Loader {
 	 * @return string CSS string or empty string.
 	 */
 	public static function get_global_appearance_css() {
-		$settings = get_option( PPQ_Admin_Settings::OPTION_NAME, [] );
+		$settings = get_option( PressPrimer_Quiz_Admin_Settings::OPTION_NAME, [] );
 
 		$css_vars = [];
 
@@ -325,7 +325,7 @@ class PPQ_Theme_Loader {
 
 		// Font size override (base font size)
 		if ( ! empty( $settings['appearance_font_size'] ) ) {
-			$font_size = $settings['appearance_font_size'];
+			$font_size                        = $settings['appearance_font_size'];
 			$css_vars['--ppq-font-size-base'] = $font_size;
 
 			// Calculate relative sizes based on base
@@ -373,7 +373,7 @@ class PPQ_Theme_Loader {
 		if ( ! empty( $settings['appearance_success_color'] ) ) {
 			$success = sanitize_hex_color( $settings['appearance_success_color'] );
 			if ( $success ) {
-				$css_vars['--ppq-success'] = $success;
+				$css_vars['--ppq-success']       = $success;
 				$css_vars['--ppq-success-hover'] = self::adjust_brightness( $success, -20 );
 				$css_vars['--ppq-success-light'] = self::hex_to_rgba( $success, 0.15 );
 			}
@@ -383,7 +383,7 @@ class PPQ_Theme_Loader {
 		if ( ! empty( $settings['appearance_error_color'] ) ) {
 			$error = sanitize_hex_color( $settings['appearance_error_color'] );
 			if ( $error ) {
-				$css_vars['--ppq-error'] = $error;
+				$css_vars['--ppq-error']       = $error;
 				$css_vars['--ppq-error-hover'] = self::adjust_brightness( $error, -20 );
 				$css_vars['--ppq-error-light'] = self::hex_to_rgba( $error, 0.15 );
 			}
@@ -391,7 +391,7 @@ class PPQ_Theme_Loader {
 
 		// Border radius override
 		if ( isset( $settings['appearance_border_radius'] ) && '' !== $settings['appearance_border_radius'] ) {
-			$radius = absint( $settings['appearance_border_radius'] );
+			$radius                      = absint( $settings['appearance_border_radius'] );
 			$css_vars['--ppq-radius-sm'] = max( 0, $radius - 2 ) . 'px';
 			$css_vars['--ppq-radius-md'] = $radius . 'px';
 			$css_vars['--ppq-radius-lg'] = round( $radius * 1.33 ) . 'px';
@@ -404,11 +404,11 @@ class PPQ_Theme_Loader {
 		}
 
 		// Apply to all theme class selectors
-		$themes = self::get_available_themes();
+		$themes    = self::get_available_themes();
 		$selectors = [];
 
 		foreach ( array_keys( $themes ) as $theme_id ) {
-			$class = self::get_theme_class( $theme_id );
+			$class       = self::get_theme_class( $theme_id );
 			$selectors[] = ".{$class}";
 			$selectors[] = ".ppq-quiz-landing.{$class}";
 			$selectors[] = ".ppq-quiz-interface.{$class}";
@@ -430,7 +430,7 @@ class PPQ_Theme_Loader {
 		 * @param string $css Global appearance CSS.
 		 * @param array  $settings Plugin settings.
 		 */
-		return apply_filters( 'ppq_global_appearance_css', $css, $settings );
+		return apply_filters( 'pressprimer_quiz_global_appearance_css', $css, $settings );
 	}
 
 	/**

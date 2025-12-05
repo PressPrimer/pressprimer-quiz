@@ -21,13 +21,13 @@ if ( ! defined( 'ABSPATH' ) ) {
  *
  * @since 1.0.0
  */
-class PPQ_Admin_Banks {
+class PressPrimer_Quiz_Admin_Banks {
 
 	/**
 	 * List table instance
 	 *
 	 * @since 1.0.0
-	 * @var PPQ_Banks_List_Table
+	 * @var PressPrimer_Quiz_Banks_List_Table
 	 */
 	private $list_table;
 
@@ -68,21 +68,25 @@ class PPQ_Admin_Banks {
 	 */
 	public function screen_options() {
 		// Only on list view
-		$action = isset( $_GET['action'] ) ? sanitize_key( $_GET['action'] ) : '';
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only check for display routing
+		$action = isset( $_GET['action'] ) ? sanitize_key( wp_unslash( $_GET['action'] ) ) : '';
 		if ( in_array( $action, [ 'new', 'edit', 'view' ], true ) ) {
 			return;
 		}
 
 		// Add per page option
-		add_screen_option( 'per_page', [
-			'label'   => __( 'Banks per page', 'pressprimer-quiz' ),
-			'default' => 20,
-			'option'  => 'ppq_banks_per_page',
-		] );
+		add_screen_option(
+			'per_page',
+			[
+				'label'   => __( 'Banks per page', 'pressprimer-quiz' ),
+				'default' => 20,
+				'option'  => 'ppq_banks_per_page',
+			]
+		);
 
 		// Instantiate the table and store it
 		require_once __DIR__ . '/class-ppq-banks-list-table.php';
-		$this->list_table = new PPQ_Banks_List_Table();
+		$this->list_table = new PressPrimer_Quiz_Banks_List_Table();
 
 		// Get screen and register columns with it
 		$screen = get_current_screen();
@@ -91,9 +95,12 @@ class PPQ_Admin_Banks {
 			$columns = $this->list_table->get_columns();
 
 			// Register columns with the screen
-			add_filter( "manage_{$screen->id}_columns", function() use ( $columns ) {
-				return $columns;
-			} );
+			add_filter(
+				"manage_{$screen->id}_columns",
+				function () use ( $columns ) {
+					return $columns;
+				}
+			);
 		}
 
 		// Set up filter for saving screen option
@@ -135,8 +142,10 @@ class PPQ_Admin_Banks {
 			);
 		}
 
-		$action = isset( $_GET['action'] ) ? sanitize_key( $_GET['action'] ) : 'list';
-		$bank_id = isset( $_GET['bank_id'] ) ? absint( $_GET['bank_id'] ) : 0;
+		// phpcs:disable WordPress.Security.NonceVerification.Recommended -- Read-only routing parameters
+		$action  = isset( $_GET['action'] ) ? sanitize_key( wp_unslash( $_GET['action'] ) ) : 'list';
+		$bank_id = isset( $_GET['bank_id'] ) ? absint( wp_unslash( $_GET['bank_id'] ) ) : 0;
+		// phpcs:enable WordPress.Security.NonceVerification.Recommended
 
 		switch ( $action ) {
 			case 'new':
@@ -161,7 +170,7 @@ class PPQ_Admin_Banks {
 		// Reuse the list table instance if it exists, otherwise create new one
 		if ( ! $this->list_table ) {
 			require_once __DIR__ . '/class-ppq-banks-list-table.php';
-			$this->list_table = new PPQ_Banks_List_Table();
+			$this->list_table = new PressPrimer_Quiz_Banks_List_Table();
 		}
 
 		$this->list_table->prepare_items();
@@ -196,8 +205,8 @@ class PPQ_Admin_Banks {
 		$bank = null;
 
 		if ( $bank_id > 0 ) {
-			if ( class_exists( 'PPQ_Bank' ) ) {
-				$bank = PPQ_Bank::get( $bank_id );
+			if ( class_exists( 'PressPrimer_Quiz_Bank' ) ) {
+				$bank = PressPrimer_Quiz_Bank::get( $bank_id );
 			}
 
 			if ( ! $bank ) {
@@ -238,7 +247,7 @@ class PPQ_Admin_Banks {
 		// Enqueue Ant Design CSS
 		wp_enqueue_style(
 			'antd',
-			'https://cdn.jsdelivr.net/npm/antd@5.12.0/dist/reset.css',
+			PPQ_PLUGIN_URL . 'assets/css/vendor/antd-reset.css',
 			[],
 			'5.12.0'
 		);
@@ -263,19 +272,19 @@ class PPQ_Admin_Banks {
 		$bank_data = [];
 
 		if ( $bank_id > 0 ) {
-			$bank = PPQ_Bank::get( $bank_id );
+			$bank = PressPrimer_Quiz_Bank::get( $bank_id );
 
 			if ( $bank ) {
 				$bank_data = [
-					'id'          => $bank->id,
-					'uuid'        => $bank->uuid,
-					'name'        => $bank->name,
-					'description' => $bank->description,
-					'owner_id'    => $bank->owner_id,
-					'visibility'  => $bank->visibility,
+					'id'             => $bank->id,
+					'uuid'           => $bank->uuid,
+					'name'           => $bank->name,
+					'description'    => $bank->description,
+					'owner_id'       => $bank->owner_id,
+					'visibility'     => $bank->visibility,
 					'question_count' => $bank->question_count,
-					'created_at'  => $bank->created_at,
-					'updated_at'  => $bank->updated_at,
+					'created_at'     => $bank->created_at,
+					'updated_at'     => $bank->updated_at,
 				];
 			}
 		}
@@ -311,8 +320,8 @@ class PPQ_Admin_Banks {
 		}
 
 		$bank = null;
-		if ( class_exists( 'PPQ_Bank' ) ) {
-			$bank = PPQ_Bank::get( $bank_id );
+		if ( class_exists( 'PressPrimer_Quiz_Bank' ) ) {
+			$bank = PressPrimer_Quiz_Bank::get( $bank_id );
 		}
 
 		if ( ! $bank ) {
@@ -334,19 +343,23 @@ class PPQ_Admin_Banks {
 
 		// Get questions in bank
 		$args = [
-			'limit' => 999,
+			'limit'  => 999,
 			'offset' => 0,
 		];
 
 		// Add filters from request
-		if ( isset( $_GET['filter_type'] ) && ! empty( $_GET['filter_type'] ) ) {
-			$args['type'] = sanitize_key( $_GET['filter_type'] );
+		// phpcs:disable WordPress.Security.NonceVerification.Recommended -- Read-only filter parameters for display
+		$filter_type = isset( $_GET['filter_type'] ) ? sanitize_key( wp_unslash( $_GET['filter_type'] ) ) : '';
+		if ( '' !== $filter_type ) {
+			$args['type'] = $filter_type;
 		}
-		if ( isset( $_GET['filter_difficulty'] ) && ! empty( $_GET['filter_difficulty'] ) ) {
-			$args['difficulty'] = sanitize_key( $_GET['filter_difficulty'] );
+		$filter_difficulty = isset( $_GET['filter_difficulty'] ) ? sanitize_key( wp_unslash( $_GET['filter_difficulty'] ) ) : '';
+		if ( '' !== $filter_difficulty ) {
+			$args['difficulty'] = $filter_difficulty;
 		}
+		// phpcs:enable WordPress.Security.NonceVerification.Recommended
 
-		$questions = $bank->get_questions( $args );
+		$questions   = $bank->get_questions( $args );
 		$total_count = $bank->question_count;
 
 		?>
@@ -407,8 +420,8 @@ class PPQ_Admin_Banks {
 				<div class="ppq-bank-tab-content ppq-bank-tab-content--active" data-tab-content="ai-generate">
 					<?php
 					// Include AI generation panel
-					if ( class_exists( 'PPQ_Admin_AI_Generation' ) ) {
-						$ai_generation = new PPQ_Admin_AI_Generation();
+					if ( class_exists( 'PressPrimer_Quiz_Admin_AI_Generation' ) ) {
+						$ai_generation = new PressPrimer_Quiz_Admin_AI_Generation();
 						$ai_generation->render_panel( $bank_id );
 					}
 					?>
@@ -483,12 +496,14 @@ class PPQ_Admin_Banks {
 									<option value=""><?php esc_html_e( 'All Categories', 'pressprimer-quiz' ); ?></option>
 									<?php
 									// Get categories
-									if ( class_exists( 'PPQ_Category' ) ) {
-										$categories = PPQ_Category::find( [
-											'where' => [ 'taxonomy' => 'category' ],
-											'order_by' => 'name',
-											'order' => 'ASC',
-										] );
+									if ( class_exists( 'PressPrimer_Quiz_Category' ) ) {
+										$categories = PressPrimer_Quiz_Category::find(
+											[
+												'where'    => [ 'taxonomy' => 'category' ],
+												'order_by' => 'name',
+												'order'    => 'ASC',
+											]
+										);
 										foreach ( $categories as $category ) {
 											echo '<option value="' . esc_attr( $category->id ) . '">' . esc_html( $category->name ) . '</option>';
 										}
@@ -503,12 +518,14 @@ class PPQ_Admin_Banks {
 									<option value=""><?php esc_html_e( 'All Tags', 'pressprimer-quiz' ); ?></option>
 									<?php
 									// Get tags
-									if ( class_exists( 'PPQ_Category' ) ) {
-										$tags = PPQ_Category::find( [
-											'where' => [ 'taxonomy' => 'tag' ],
-											'order_by' => 'name',
-											'order' => 'ASC',
-										] );
+									if ( class_exists( 'PressPrimer_Quiz_Category' ) ) {
+										$tags = PressPrimer_Quiz_Category::find(
+											[
+												'where'    => [ 'taxonomy' => 'tag' ],
+												'order_by' => 'name',
+												'order'    => 'ASC',
+											]
+										);
 										foreach ( $tags as $tag ) {
 											echo '<option value="' . esc_attr( $tag->id ) . '">' . esc_html( $tag->name ) . '</option>';
 										}
@@ -569,34 +586,36 @@ class PPQ_Admin_Banks {
 					<input type="hidden" name="action" value="view">
 					<input type="hidden" name="bank_id" value="<?php echo esc_attr( $bank_id ); ?>">
 
+					<?php // phpcs:disable WordPress.Security.NonceVerification.Recommended -- Read-only filter state for selected() ?>
 					<select name="filter_type">
 						<option value=""><?php esc_html_e( 'All Types', 'pressprimer-quiz' ); ?></option>
-						<option value="mc" <?php selected( isset( $_GET['filter_type'] ) ? $_GET['filter_type'] : '', 'mc' ); ?>>
+						<option value="mc" <?php selected( isset( $_GET['filter_type'] ) ? sanitize_key( wp_unslash( $_GET['filter_type'] ) ) : '', 'mc' ); ?>>
 							<?php esc_html_e( 'Multiple Choice', 'pressprimer-quiz' ); ?>
 						</option>
-						<option value="ma" <?php selected( isset( $_GET['filter_type'] ) ? $_GET['filter_type'] : '', 'ma' ); ?>>
+						<option value="ma" <?php selected( isset( $_GET['filter_type'] ) ? sanitize_key( wp_unslash( $_GET['filter_type'] ) ) : '', 'ma' ); ?>>
 							<?php esc_html_e( 'Multiple Answer', 'pressprimer-quiz' ); ?>
 						</option>
-						<option value="tf" <?php selected( isset( $_GET['filter_type'] ) ? $_GET['filter_type'] : '', 'tf' ); ?>>
+						<option value="tf" <?php selected( isset( $_GET['filter_type'] ) ? sanitize_key( wp_unslash( $_GET['filter_type'] ) ) : '', 'tf' ); ?>>
 							<?php esc_html_e( 'True/False', 'pressprimer-quiz' ); ?>
 						</option>
 					</select>
 
 					<select name="filter_difficulty">
 						<option value=""><?php esc_html_e( 'All Difficulties', 'pressprimer-quiz' ); ?></option>
-						<option value="beginner" <?php selected( isset( $_GET['filter_difficulty'] ) ? $_GET['filter_difficulty'] : '', 'beginner' ); ?>>
+						<option value="beginner" <?php selected( isset( $_GET['filter_difficulty'] ) ? sanitize_key( wp_unslash( $_GET['filter_difficulty'] ) ) : '', 'beginner' ); ?>>
 							<?php esc_html_e( 'Beginner', 'pressprimer-quiz' ); ?>
 						</option>
-						<option value="intermediate" <?php selected( isset( $_GET['filter_difficulty'] ) ? $_GET['filter_difficulty'] : '', 'intermediate' ); ?>>
+						<option value="intermediate" <?php selected( isset( $_GET['filter_difficulty'] ) ? sanitize_key( wp_unslash( $_GET['filter_difficulty'] ) ) : '', 'intermediate' ); ?>>
 							<?php esc_html_e( 'Intermediate', 'pressprimer-quiz' ); ?>
 						</option>
-						<option value="advanced" <?php selected( isset( $_GET['filter_difficulty'] ) ? $_GET['filter_difficulty'] : '', 'advanced' ); ?>>
+						<option value="advanced" <?php selected( isset( $_GET['filter_difficulty'] ) ? sanitize_key( wp_unslash( $_GET['filter_difficulty'] ) ) : '', 'advanced' ); ?>>
 							<?php esc_html_e( 'Advanced', 'pressprimer-quiz' ); ?>
 						</option>
-						<option value="expert" <?php selected( isset( $_GET['filter_difficulty'] ) ? $_GET['filter_difficulty'] : '', 'expert' ); ?>>
+						<option value="expert" <?php selected( isset( $_GET['filter_difficulty'] ) ? sanitize_key( wp_unslash( $_GET['filter_difficulty'] ) ) : '', 'expert' ); ?>>
 							<?php esc_html_e( 'Expert', 'pressprimer-quiz' ); ?>
 						</option>
 					</select>
+					<?php // phpcs:enable WordPress.Security.NonceVerification.Recommended ?>
 
 					<button type="submit" class="button"><?php esc_html_e( 'Filter', 'pressprimer-quiz' ); ?></button>
 					<a href="<?php echo esc_url( admin_url( 'admin.php?page=ppq-banks&action=view&bank_id=' . $bank_id ) ); ?>" class="button">
@@ -621,7 +640,7 @@ class PPQ_Admin_Banks {
 						<tbody>
 							<?php foreach ( $questions as $question ) : ?>
 								<?php
-								$revision = $question->get_current_revision();
+								$revision     = $question->get_current_revision();
 								$stem_preview = $revision ? wp_trim_words( wp_strip_all_tags( $revision->stem ), 15 ) : '';
 
 								// Type labels
@@ -630,23 +649,23 @@ class PPQ_Admin_Banks {
 									'ma' => __( 'Multiple Answer', 'pressprimer-quiz' ),
 									'tf' => __( 'True/False', 'pressprimer-quiz' ),
 								];
-								$type_label = isset( $type_labels[ $question->type ] ) ? $type_labels[ $question->type ] : $question->type;
+								$type_label  = isset( $type_labels[ $question->type ] ) ? $type_labels[ $question->type ] : $question->type;
 
 								// Difficulty labels
 								$difficulty_labels = [
-									'beginner' => __( 'Beginner', 'pressprimer-quiz' ),
+									'beginner'     => __( 'Beginner', 'pressprimer-quiz' ),
 									'intermediate' => __( 'Intermediate', 'pressprimer-quiz' ),
-									'advanced' => __( 'Advanced', 'pressprimer-quiz' ),
-									'expert' => __( 'Expert', 'pressprimer-quiz' ),
+									'advanced'     => __( 'Advanced', 'pressprimer-quiz' ),
+									'expert'       => __( 'Expert', 'pressprimer-quiz' ),
 								];
-								$difficulty_label = isset( $difficulty_labels[ $question->difficulty_author ] ) ? $difficulty_labels[ $question->difficulty_author ] : $question->difficulty_author;
+								$difficulty_label  = isset( $difficulty_labels[ $question->difficulty_author ] ) ? $difficulty_labels[ $question->difficulty_author ] : $question->difficulty_author;
 
 								// Get categories
-								$categories = $question->get_categories();
+								$categories     = $question->get_categories();
 								$category_names = [];
 								foreach ( $categories as $cat ) {
 									if ( 'category' === $cat->taxonomy ) {
-										$category_names[] = $cat->name;
+										$category_names[] = esc_html( $cat->name );
 									}
 								}
 								$category_display = ! empty( $category_names ) ? implode( ', ', $category_names ) : '<span class="ppq-text-muted">' . esc_html__( 'None', 'pressprimer-quiz' ) . '</span>';
@@ -669,7 +688,7 @@ class PPQ_Admin_Banks {
 									</td>
 									<td><?php echo esc_html( $type_label ); ?></td>
 									<td><?php echo esc_html( $difficulty_label ); ?></td>
-									<td><?php echo $category_display; // Already escaped above ?></td>
+									<td><?php echo $category_display; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Category names escaped in loop above ?></td>
 									<td>
 										<button
 											type="button"
@@ -1042,7 +1061,7 @@ class PPQ_Admin_Banks {
 	 */
 	public function handle_save() {
 		// Verify nonce
-		if ( ! isset( $_POST['ppq_bank_nonce'] ) || ! wp_verify_nonce( $_POST['ppq_bank_nonce'], 'ppq_save_bank' ) ) {
+		if ( ! isset( $_POST['ppq_bank_nonce'] ) || ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['ppq_bank_nonce'] ) ), 'ppq_save_bank' ) ) {
 			wp_die( esc_html__( 'Security check failed.', 'pressprimer-quiz' ) );
 		}
 
@@ -1051,8 +1070,8 @@ class PPQ_Admin_Banks {
 			wp_die( esc_html__( 'You do not have permission to perform this action.', 'pressprimer-quiz' ) );
 		}
 
-		$bank_id = isset( $_POST['bank_id'] ) ? absint( $_POST['bank_id'] ) : 0;
-		$name = isset( $_POST['bank_name'] ) ? sanitize_text_field( wp_unslash( $_POST['bank_name'] ) ) : '';
+		$bank_id     = isset( $_POST['bank_id'] ) ? absint( wp_unslash( $_POST['bank_id'] ) ) : 0;
+		$name        = isset( $_POST['bank_name'] ) ? sanitize_text_field( wp_unslash( $_POST['bank_name'] ) ) : '';
 		$description = isset( $_POST['bank_description'] ) ? sanitize_textarea_field( wp_unslash( $_POST['bank_description'] ) ) : '';
 
 		// Validate
@@ -1063,8 +1082,8 @@ class PPQ_Admin_Banks {
 		// Check ownership for updates
 		if ( $bank_id > 0 ) {
 			$bank = null;
-			if ( class_exists( 'PPQ_Bank' ) ) {
-				$bank = PPQ_Bank::get( $bank_id );
+			if ( class_exists( 'PressPrimer_Quiz_Bank' ) ) {
+				$bank = PressPrimer_Quiz_Bank::get( $bank_id );
 			}
 
 			if ( ! $bank ) {
@@ -1076,16 +1095,16 @@ class PPQ_Admin_Banks {
 			}
 
 			// Update existing bank
-			$bank->name = $name;
+			$bank->name        = $name;
 			$bank->description = $description;
-			$result = $bank->save();
+			$result            = $bank->save();
 		} else {
 			// Create new bank
-			$bank = new PPQ_Bank();
-			$bank->name = $name;
+			$bank              = new PressPrimer_Quiz_Bank();
+			$bank->name        = $name;
 			$bank->description = $description;
-			$bank->owner_id = get_current_user_id();
-			$result = $bank->save();
+			$bank->owner_id    = get_current_user_id();
+			$result            = $bank->save();
 
 			if ( ! is_wp_error( $result ) ) {
 				$bank_id = $bank->id;
@@ -1100,8 +1119,8 @@ class PPQ_Admin_Banks {
 		wp_safe_redirect(
 			add_query_arg(
 				[
-					'page' => 'ppq-banks',
-					'action' => 'view',
+					'page'    => 'ppq-banks',
+					'action'  => 'view',
 					'bank_id' => $bank_id,
 					'message' => 'bank_saved',
 				],
@@ -1117,8 +1136,13 @@ class PPQ_Admin_Banks {
 	 * @since 1.0.0
 	 */
 	public function handle_delete() {
+		// Verify bank_id is set
+		if ( ! isset( $_GET['bank_id'] ) ) {
+			wp_die( esc_html__( 'Invalid request.', 'pressprimer-quiz' ) );
+		}
+
 		// Verify nonce
-		if ( ! isset( $_GET['_wpnonce'] ) || ! wp_verify_nonce( $_GET['_wpnonce'], 'ppq_delete_bank_' . absint( $_GET['bank_id'] ) ) ) {
+		if ( ! isset( $_GET['_wpnonce'] ) || ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_GET['_wpnonce'] ) ), 'ppq_delete_bank_' . absint( wp_unslash( $_GET['bank_id'] ) ) ) ) {
 			wp_die( esc_html__( 'Security check failed.', 'pressprimer-quiz' ) );
 		}
 
@@ -1127,15 +1151,15 @@ class PPQ_Admin_Banks {
 			wp_die( esc_html__( 'You do not have permission to perform this action.', 'pressprimer-quiz' ) );
 		}
 
-		$bank_id = isset( $_GET['bank_id'] ) ? absint( $_GET['bank_id'] ) : 0;
+		$bank_id = isset( $_GET['bank_id'] ) ? absint( wp_unslash( $_GET['bank_id'] ) ) : 0;
 
 		if ( ! $bank_id ) {
 			wp_die( esc_html__( 'Invalid bank ID.', 'pressprimer-quiz' ) );
 		}
 
 		$bank = null;
-		if ( class_exists( 'PPQ_Bank' ) ) {
-			$bank = PPQ_Bank::get( $bank_id );
+		if ( class_exists( 'PressPrimer_Quiz_Bank' ) ) {
+			$bank = PressPrimer_Quiz_Bank::get( $bank_id );
 		}
 
 		if ( ! $bank ) {
@@ -1158,7 +1182,7 @@ class PPQ_Admin_Banks {
 		wp_safe_redirect(
 			add_query_arg(
 				[
-					'page' => 'ppq-banks',
+					'page'    => 'ppq-banks',
 					'message' => 'bank_deleted',
 				],
 				admin_url( 'admin.php' )
@@ -1174,7 +1198,7 @@ class PPQ_Admin_Banks {
 	 */
 	public function handle_add_question() {
 		// Verify nonce
-		if ( ! isset( $_POST['ppq_add_question_nonce'] ) || ! wp_verify_nonce( $_POST['ppq_add_question_nonce'], 'ppq_add_question_to_bank' ) ) {
+		if ( ! isset( $_POST['ppq_add_question_nonce'] ) || ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['ppq_add_question_nonce'] ) ), 'ppq_add_question_to_bank' ) ) {
 			wp_die( esc_html__( 'Security check failed.', 'pressprimer-quiz' ) );
 		}
 
@@ -1183,20 +1207,17 @@ class PPQ_Admin_Banks {
 			wp_die( esc_html__( 'You do not have permission to perform this action.', 'pressprimer-quiz' ) );
 		}
 
-		$bank_id = isset( $_POST['bank_id'] ) ? absint( $_POST['bank_id'] ) : 0;
-		$question_ids = isset( $_POST['question_ids'] ) ? array_map( 'absint', (array) $_POST['question_ids'] ) : [];
-
-		error_log( '=== PPQ Add Questions Handler ===' );
-		error_log( 'Bank ID: ' . $bank_id );
-		error_log( 'Question IDs received: ' . print_r( $question_ids, true ) );
+		$bank_id = isset( $_POST['bank_id'] ) ? absint( wp_unslash( $_POST['bank_id'] ) ) : 0;
+		// phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- Values sanitized with absint via array_map
+		$question_ids = isset( $_POST['question_ids'] ) ? array_map( 'absint', (array) wp_unslash( $_POST['question_ids'] ) ) : [];
 
 		if ( ! $bank_id || empty( $question_ids ) ) {
 			wp_die( esc_html__( 'Invalid bank or question IDs.', 'pressprimer-quiz' ) );
 		}
 
 		$bank = null;
-		if ( class_exists( 'PPQ_Bank' ) ) {
-			$bank = PPQ_Bank::get( $bank_id );
+		if ( class_exists( 'PressPrimer_Quiz_Bank' ) ) {
+			$bank = PressPrimer_Quiz_Bank::get( $bank_id );
 		}
 
 		if ( ! $bank ) {
@@ -1210,24 +1231,18 @@ class PPQ_Admin_Banks {
 
 		// Add questions to bank
 		foreach ( $question_ids as $question_id ) {
-			$result = $bank->add_question( $question_id );
-			if ( is_wp_error( $result ) ) {
-				error_log( 'Failed to add question ' . $question_id . ': ' . $result->get_error_message() );
-			} else {
-				error_log( 'Successfully added question ' . $question_id . ' to bank ' . $bank_id );
-			}
+			$bank->add_question( $question_id );
 		}
 
 		// Update count
 		$bank->update_question_count();
-		error_log( 'Updated question count for bank ' . $bank_id );
 
 		// Redirect with success message
 		wp_safe_redirect(
 			add_query_arg(
 				[
-					'page' => 'ppq-banks',
-					'action' => 'view',
+					'page'    => 'ppq-banks',
+					'action'  => 'view',
 					'bank_id' => $bank_id,
 					'message' => 'questions_added',
 				],
@@ -1244,7 +1259,7 @@ class PPQ_Admin_Banks {
 	 */
 	public function handle_remove_question() {
 		// Verify nonce
-		if ( ! isset( $_POST['ppq_remove_question_nonce'] ) || ! wp_verify_nonce( $_POST['ppq_remove_question_nonce'], 'ppq_remove_question_from_bank' ) ) {
+		if ( ! isset( $_POST['ppq_remove_question_nonce'] ) || ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['ppq_remove_question_nonce'] ) ), 'ppq_remove_question_from_bank' ) ) {
 			wp_die( esc_html__( 'Security check failed.', 'pressprimer-quiz' ) );
 		}
 
@@ -1253,16 +1268,16 @@ class PPQ_Admin_Banks {
 			wp_die( esc_html__( 'You do not have permission to perform this action.', 'pressprimer-quiz' ) );
 		}
 
-		$bank_id = isset( $_POST['bank_id'] ) ? absint( $_POST['bank_id'] ) : 0;
-		$question_id = isset( $_POST['question_id'] ) ? absint( $_POST['question_id'] ) : 0;
+		$bank_id     = isset( $_POST['bank_id'] ) ? absint( wp_unslash( $_POST['bank_id'] ) ) : 0;
+		$question_id = isset( $_POST['question_id'] ) ? absint( wp_unslash( $_POST['question_id'] ) ) : 0;
 
 		if ( ! $bank_id || ! $question_id ) {
 			wp_die( esc_html__( 'Invalid bank or question ID.', 'pressprimer-quiz' ) );
 		}
 
 		$bank = null;
-		if ( class_exists( 'PPQ_Bank' ) ) {
-			$bank = PPQ_Bank::get( $bank_id );
+		if ( class_exists( 'PressPrimer_Quiz_Bank' ) ) {
+			$bank = PressPrimer_Quiz_Bank::get( $bank_id );
 		}
 
 		if ( ! $bank ) {
@@ -1284,8 +1299,8 @@ class PPQ_Admin_Banks {
 		wp_safe_redirect(
 			add_query_arg(
 				[
-					'page' => 'ppq-banks',
-					'action' => 'view',
+					'page'    => 'ppq-banks',
+					'action'  => 'view',
 					'bank_id' => $bank_id,
 					'message' => 'question_removed',
 				],
@@ -1301,6 +1316,7 @@ class PPQ_Admin_Banks {
 	 * @since 1.0.0
 	 */
 	public function admin_notices() {
+		// phpcs:disable WordPress.Security.NonceVerification.Recommended -- Read-only notice flags from redirect
 		if ( ! isset( $_GET['page'] ) || 'ppq-banks' !== $_GET['page'] ) {
 			return;
 		}
@@ -1309,9 +1325,10 @@ class PPQ_Admin_Banks {
 			return;
 		}
 
-		$message = sanitize_key( $_GET['message'] );
+		$message = sanitize_key( wp_unslash( $_GET['message'] ) );
+		// phpcs:enable WordPress.Security.NonceVerification.Recommended
 		$class = 'notice notice-success is-dismissible';
-		$text = '';
+		$text  = '';
 
 		switch ( $message ) {
 			case 'bank_saved':

@@ -585,7 +585,7 @@ Use CSS custom properties (variables) for theming:
  * @return string Theme class.
  */
 function ppq_get_theme_class( $quiz_id ) {
-    $quiz = PPQ_Quiz::get( $quiz_id );
+    $quiz = PressPrimer_Quiz_Quiz::get( $quiz_id );
     $theme = $quiz ? $quiz->theme : ppq_get_default_theme();
     
     $valid_themes = array( 'default', 'modern', 'minimal' );
@@ -601,7 +601,7 @@ function ppq_get_theme_class( $quiz_id ) {
  * @return string Inline style with CSS variables.
  */
 function ppq_get_custom_styles( $quiz_id ) {
-    $quiz = PPQ_Quiz::get( $quiz_id );
+    $quiz = PressPrimer_Quiz_Quiz::get( $quiz_id );
     
     if ( ! $quiz || empty( $quiz->theme_settings_json ) ) {
         return '';
@@ -653,7 +653,7 @@ function ppq_get_theme_tokens( $theme ) {
         '--ppq-error'     => '#d63638',
     );
     
-    return apply_filters( 'ppq_theme_tokens', $defaults, $theme );
+    return apply_filters( 'pressprimer_quiz_theme_tokens', $defaults, $theme );
 }
 ```
 
@@ -668,7 +668,7 @@ function ppq_get_theme_tokens( $theme ) {
  * @subpackage Customizer
  */
 
-class PPQ_Customizer {
+class PressPrimer_Quiz_Customizer {
     
     /**
      * Initialize customizer
@@ -861,7 +861,7 @@ function ppq_get_resolved_styles( $quiz_id ) {
     
     // Layer per-quiz overrides (highest priority)
     if ( $quiz_id ) {
-        $quiz = PPQ_Quiz::get( $quiz_id );
+        $quiz = PressPrimer_Quiz_Quiz::get( $quiz_id );
         if ( $quiz && ! empty( $quiz->theme_settings_json ) ) {
             $quiz_settings = json_decode( $quiz->theme_settings_json, true );
             if ( is_array( $quiz_settings ) ) {

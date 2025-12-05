@@ -22,7 +22,7 @@ if ( ! defined( 'ABSPATH' ) ) {
  *
  * @since 1.0.0
  */
-class PPQ_Automator_Integration extends \Uncanny_Automator\Integration {
+class PressPrimer_Quiz_Automator_Integration extends \Uncanny_Automator\Integration {
 
 	/**
 	 * Setup the integration

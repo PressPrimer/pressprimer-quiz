@@ -21,7 +21,7 @@ if ( ! defined( 'ABSPATH' ) ) {
  *
  * @since 1.0.0
  */
-class PPQ_Helpers {
+class PressPrimer_Quiz_Helpers {
 
 	/**
 	 * Get client IP address
@@ -36,24 +36,24 @@ class PPQ_Helpers {
 		$ip = '';
 
 		// Check for CloudFlare
-		if ( ! empty( $_SERVER['HTTP_CF_CONNECTING_IP'] ) ) {
-			$ip = $_SERVER['HTTP_CF_CONNECTING_IP'];
-		} elseif ( ! empty( $_SERVER['HTTP_CLIENT_IP'] ) ) {
-			$ip = $_SERVER['HTTP_CLIENT_IP'];
-		} elseif ( ! empty( $_SERVER['HTTP_X_FORWARDED_FOR'] ) ) {
+		if ( isset( $_SERVER['HTTP_CF_CONNECTING_IP'] ) && '' !== $_SERVER['HTTP_CF_CONNECTING_IP'] ) {
+			$ip = sanitize_text_field( wp_unslash( $_SERVER['HTTP_CF_CONNECTING_IP'] ) );
+		} elseif ( isset( $_SERVER['HTTP_CLIENT_IP'] ) && '' !== $_SERVER['HTTP_CLIENT_IP'] ) {
+			$ip = sanitize_text_field( wp_unslash( $_SERVER['HTTP_CLIENT_IP'] ) );
+		} elseif ( isset( $_SERVER['HTTP_X_FORWARDED_FOR'] ) && '' !== $_SERVER['HTTP_X_FORWARDED_FOR'] ) {
 			// X-Forwarded-For can contain multiple IPs, get the first one
-			$ip = explode( ',', $_SERVER['HTTP_X_FORWARDED_FOR'] )[0];
-		} elseif ( ! empty( $_SERVER['HTTP_X_FORWARDED'] ) ) {
-			$ip = $_SERVER['HTTP_X_FORWARDED'];
-		} elseif ( ! empty( $_SERVER['HTTP_FORWARDED_FOR'] ) ) {
-			$ip = $_SERVER['HTTP_FORWARDED_FOR'];
-		} elseif ( ! empty( $_SERVER['HTTP_FORWARDED'] ) ) {
-			$ip = $_SERVER['HTTP_FORWARDED'];
-		} elseif ( ! empty( $_SERVER['REMOTE_ADDR'] ) ) {
-			$ip = $_SERVER['REMOTE_ADDR'];
+			$ip = explode( ',', sanitize_text_field( wp_unslash( $_SERVER['HTTP_X_FORWARDED_FOR'] ) ) )[0];
+		} elseif ( isset( $_SERVER['HTTP_X_FORWARDED'] ) && '' !== $_SERVER['HTTP_X_FORWARDED'] ) {
+			$ip = sanitize_text_field( wp_unslash( $_SERVER['HTTP_X_FORWARDED'] ) );
+		} elseif ( isset( $_SERVER['HTTP_FORWARDED_FOR'] ) && '' !== $_SERVER['HTTP_FORWARDED_FOR'] ) {
+			$ip = sanitize_text_field( wp_unslash( $_SERVER['HTTP_FORWARDED_FOR'] ) );
+		} elseif ( isset( $_SERVER['HTTP_FORWARDED'] ) && '' !== $_SERVER['HTTP_FORWARDED'] ) {
+			$ip = sanitize_text_field( wp_unslash( $_SERVER['HTTP_FORWARDED'] ) );
+		} elseif ( isset( $_SERVER['REMOTE_ADDR'] ) && '' !== $_SERVER['REMOTE_ADDR'] ) {
+			$ip = sanitize_text_field( wp_unslash( $_SERVER['REMOTE_ADDR'] ) );
 		}
 
-		// Sanitize and validate
+		// Validate IP format
 		$ip = trim( $ip );
 		$ip = filter_var( $ip, FILTER_VALIDATE_IP );
 
@@ -201,7 +201,7 @@ class PPQ_Helpers {
 				$parts[] = $hours . 'h';
 			} else {
 				/* translators: %d: number of hours */
-				$parts[] = sprintf( _n( '%d hour', '%d hours', $hours, 'pressprimer-quiz' ), $hours );
+				$parts[] = sprintf( _n( '%d hour', '%d hours', $hours, 'pressprimer-quiz' ), intval( $hours ) );
 			}
 		}
 
@@ -210,7 +210,7 @@ class PPQ_Helpers {
 				$parts[] = $minutes . 'm';
 			} else {
 				/* translators: %d: number of minutes */
-				$parts[] = sprintf( _n( '%d minute', '%d minutes', $minutes, 'pressprimer-quiz' ), $minutes );
+				$parts[] = sprintf( _n( '%d minute', '%d minutes', $minutes, 'pressprimer-quiz' ), intval( $minutes ) );
 			}
 		}
 
@@ -219,7 +219,7 @@ class PPQ_Helpers {
 				$parts[] = $secs . 's';
 			} else {
 				/* translators: %d: number of seconds */
-				$parts[] = sprintf( _n( '%d second', '%d seconds', $secs, 'pressprimer-quiz' ), $secs );
+				$parts[] = sprintf( _n( '%d second', '%d seconds', $secs, 'pressprimer-quiz' ), intval( $secs ) );
 			}
 		}
 

@@ -22,7 +22,23 @@ if ( ! defined( 'ABSPATH' ) ) {
  *
  * @since 1.0.0
  */
-class PPQ_Statistics_Service {
+class PressPrimer_Quiz_Statistics_Service {
+
+	/**
+	 * Cache group for statistics
+	 *
+	 * @since 1.0.0
+	 * @var string
+	 */
+	const CACHE_GROUP = 'ppq_statistics';
+
+	/**
+	 * Default cache expiration in seconds (5 minutes)
+	 *
+	 * @since 1.0.0
+	 * @var int
+	 */
+	const CACHE_EXPIRATION = 300;
 
 	/**
 	 * Get dashboard statistics
@@ -35,6 +51,13 @@ class PPQ_Statistics_Service {
 	 * @return array Statistics array.
 	 */
 	public function get_dashboard_stats( $owner_id = null ) {
+		$cache_key = 'dashboard_stats_' . ( $owner_id ? $owner_id : 'all' );
+		$stats     = wp_cache_get( $cache_key, self::CACHE_GROUP );
+
+		if ( false !== $stats ) {
+			return $stats;
+		}
+
 		global $wpdb;
 
 		$stats = [
@@ -60,17 +83,17 @@ class PPQ_Statistics_Service {
 
 		// Total published quizzes
 		$stats['total_quizzes'] = (int) $wpdb->get_var(
-			"SELECT COUNT(*) FROM {$quizzes_table} WHERE status = 'published'{$owner_where}" // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+			"SELECT COUNT(*) FROM {$quizzes_table} WHERE status = 'published'{$owner_where}" // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared,WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Table name safely constructed; results cached at method level
 		);
 
 		// Total active questions
 		$stats['total_questions'] = (int) $wpdb->get_var(
-			"SELECT COUNT(*) FROM {$questions_table} WHERE deleted_at IS NULL{$owner_where}" // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+			"SELECT COUNT(*) FROM {$questions_table} WHERE deleted_at IS NULL{$owner_where}" // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared,WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Table name safely constructed; results cached at method level
 		);
 
 		// Total question banks
 		$stats['total_banks'] = (int) $wpdb->get_var(
-			"SELECT COUNT(*) FROM {$banks_table} WHERE deleted_at IS NULL{$owner_where}" // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+			"SELECT COUNT(*) FROM {$banks_table} WHERE deleted_at IS NULL{$owner_where}" // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared,WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Table name safely constructed; results cached at method level
 		);
 
 		// Attempts in last 7 days
@@ -82,11 +105,11 @@ class PPQ_Statistics_Service {
 				$wpdb->prepare(
 					"SELECT COUNT(*) FROM {$attempts_table} a
 					 INNER JOIN {$quizzes_table} q ON a.quiz_id = q.id
-					 WHERE a.status = 'submitted' AND a.finished_at >= %s AND q.owner_id = %d",
+					 WHERE a.status = 'submitted' AND a.finished_at >= %s AND q.owner_id = %d", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Table names safely constructed from $wpdb->prefix
 					$seven_days_ago,
 					$owner_id
 				)
-			);
+			); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Results cached at method level
 
 			// Questions answered in last 7 days
 			$stats['questions_answered'] = (int) $wpdb->get_var(
@@ -94,29 +117,29 @@ class PPQ_Statistics_Service {
 					"SELECT COUNT(ai.id) FROM {$attempt_items_table} ai
 					 INNER JOIN {$attempts_table} a ON ai.attempt_id = a.id
 					 INNER JOIN {$quizzes_table} q ON a.quiz_id = q.id
-					 WHERE a.status = 'submitted' AND a.finished_at >= %s AND q.owner_id = %d",
+					 WHERE a.status = 'submitted' AND a.finished_at >= %s AND q.owner_id = %d", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Table names safely constructed from $wpdb->prefix
 					$seven_days_ago,
 					$owner_id
 				)
-			);
+			); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Results cached at method level
 		} else {
 			$stats['recent_attempts'] = (int) $wpdb->get_var(
 				$wpdb->prepare(
 					"SELECT COUNT(*) FROM {$attempts_table}
-					 WHERE status = 'submitted' AND finished_at >= %s",
+					 WHERE status = 'submitted' AND finished_at >= %s", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Table name safely constructed from $wpdb->prefix
 					$seven_days_ago
 				)
-			);
+			); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Results cached at method level
 
 			// Questions answered in last 7 days
 			$stats['questions_answered'] = (int) $wpdb->get_var(
 				$wpdb->prepare(
 					"SELECT COUNT(ai.id) FROM {$attempt_items_table} ai
 					 INNER JOIN {$attempts_table} a ON ai.attempt_id = a.id
-					 WHERE a.status = 'submitted' AND a.finished_at >= %s",
+					 WHERE a.status = 'submitted' AND a.finished_at >= %s", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Table names safely constructed from $wpdb->prefix
 					$seven_days_ago
 				)
-			);
+			); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Results cached at method level
 		}
 
 		// Pass rate in last 7 days
@@ -128,11 +151,11 @@ class PPQ_Statistics_Service {
 						SUM(CASE WHEN a.passed = 1 THEN 1 ELSE 0 END) as passed
 					 FROM {$attempts_table} a
 					 INNER JOIN {$quizzes_table} q ON a.quiz_id = q.id
-					 WHERE a.status = 'submitted' AND a.finished_at >= %s AND q.owner_id = %d",
+					 WHERE a.status = 'submitted' AND a.finished_at >= %s AND q.owner_id = %d", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Table names safely constructed from $wpdb->prefix
 					$seven_days_ago,
 					$owner_id
 				)
-			);
+			); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Results cached at method level
 		} else {
 			$pass_data = $wpdb->get_row(
 				$wpdb->prepare(
@@ -140,10 +163,10 @@ class PPQ_Statistics_Service {
 						COUNT(*) as total,
 						SUM(CASE WHEN passed = 1 THEN 1 ELSE 0 END) as passed
 					 FROM {$attempts_table}
-					 WHERE status = 'submitted' AND finished_at >= %s",
+					 WHERE status = 'submitted' AND finished_at >= %s", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Table name safely constructed from $wpdb->prefix
 					$seven_days_ago
 				)
-			);
+			); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Results cached at method level
 		}
 
 		if ( $pass_data && $pass_data->total > 0 ) {
@@ -163,11 +186,11 @@ class PPQ_Statistics_Service {
 					 WHERE q.status = 'published' AND q.owner_id = %d
 					 GROUP BY q.id
 					 ORDER BY attempt_count DESC
-					 LIMIT 5",
+					 LIMIT 5", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Table names safely constructed from $wpdb->prefix
 					$thirty_days_ago,
 					$owner_id
 				)
-			);
+			); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Results cached at method level
 		} else {
 			$stats['popular_quizzes'] = $wpdb->get_results(
 				$wpdb->prepare(
@@ -178,11 +201,14 @@ class PPQ_Statistics_Service {
 					 WHERE q.status = 'published'
 					 GROUP BY q.id
 					 ORDER BY attempt_count DESC
-					 LIMIT 5",
+					 LIMIT 5", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Table names safely constructed from $wpdb->prefix
 					$thirty_days_ago
 				)
-			);
+			); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Results cached at method level
 		}
+
+		// Cache the results
+		wp_cache_set( $cache_key, $stats, self::CACHE_GROUP, self::CACHE_EXPIRATION );
 
 		/**
 		 * Filter the dashboard statistics before they are returned.
@@ -195,7 +221,7 @@ class PPQ_Statistics_Service {
 		 * @param array    $stats    Dashboard statistics array.
 		 * @param int|null $owner_id Owner ID filter, or null for all.
 		 */
-		return apply_filters( 'ppq_dashboard_stats', $stats, $owner_id );
+		return apply_filters( 'pressprimer_quiz_dashboard_stats', $stats, $owner_id );
 	}
 
 	/**
@@ -238,6 +264,7 @@ class PPQ_Statistics_Service {
 
 		$where_sql = implode( ' AND ', $where );
 
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Dynamic date range queries not suitable for caching
 		$stats = $wpdb->get_row(
 			"SELECT
 				COUNT(*) as total_attempts,
@@ -267,7 +294,7 @@ class PPQ_Statistics_Service {
 		 * @param array $result Overview statistics array.
 		 * @param array $args   Query arguments including date_from, date_to, owner_id.
 		 */
-		return apply_filters( 'ppq_overview_stats', $result, $args );
+		return apply_filters( 'pressprimer_quiz_overview_stats', $result, $args );
 	}
 
 	/**
@@ -337,6 +364,7 @@ class PPQ_Statistics_Service {
 		$offset = ( $args['page'] - 1 ) * $args['per_page'];
 
 		// Main query
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Dynamic report queries with pagination not suitable for caching
 		$results = $wpdb->get_results(
 			$wpdb->prepare(
 				"SELECT
@@ -354,13 +382,14 @@ class PPQ_Statistics_Service {
 				 WHERE {$where_sql}
 				 GROUP BY q.id
 				 ORDER BY {$orderby_column} {$order}
-				 LIMIT %d OFFSET %d", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+				 LIMIT %d OFFSET %d", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Table names and validated clauses safely constructed
 				$args['per_page'],
 				$offset
 			)
 		);
 
 		// Get total count
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Dynamic report queries
 		$total = (int) $wpdb->get_var(
 			"SELECT COUNT(*) FROM {$quizzes_table} q WHERE {$where_sql}" // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 		);
@@ -461,6 +490,7 @@ class PPQ_Statistics_Service {
 		$attempt_items_table = $wpdb->prefix . 'ppq_attempt_items';
 
 		// Main query
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Dynamic report queries with pagination not suitable for caching
 		$results = $wpdb->get_results(
 			$wpdb->prepare(
 				"SELECT
@@ -485,19 +515,20 @@ class PPQ_Statistics_Service {
 				 LEFT JOIN {$users_table} u ON a.user_id = u.ID
 				 WHERE {$where_sql}
 				 ORDER BY {$orderby_column} {$order}
-				 LIMIT %d OFFSET %d", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+				 LIMIT %d OFFSET %d", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Table names and validated clauses safely constructed
 				$args['per_page'],
 				$offset
 			)
 		);
 
 		// Get total count
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Dynamic report queries
 		$total = (int) $wpdb->get_var(
 			"SELECT COUNT(*)
 			 FROM {$attempts_table} a
 			 INNER JOIN {$quizzes_table} q ON a.quiz_id = q.id
 			 LEFT JOIN {$users_table} u ON a.user_id = u.ID
-			 WHERE {$where_sql}" // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+			 WHERE {$where_sql}" // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Table names and validated clauses safely constructed
 		);
 
 		return [
@@ -530,7 +561,7 @@ class PPQ_Statistics_Service {
 		$users_table         = $wpdb->users;
 
 		// Build query with optional owner check
-		$where = [ 'a.id = %d' ];
+		$where  = [ 'a.id = %d' ];
 		$params = [ $attempt_id ];
 
 		if ( $owner_id ) {
@@ -541,6 +572,7 @@ class PPQ_Statistics_Service {
 		$where_sql = implode( ' AND ', $where );
 
 		// Get attempt
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Single attempt detail lookup with dynamic ID, not suitable for caching
 		$attempt = $wpdb->get_row(
 			$wpdb->prepare(
 				"SELECT
@@ -561,7 +593,7 @@ class PPQ_Statistics_Service {
 				 FROM {$attempts_table} a
 				 INNER JOIN {$quizzes_table} q ON a.quiz_id = q.id
 				 LEFT JOIN {$users_table} u ON a.user_id = u.ID
-				 WHERE {$where_sql}", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+				 WHERE {$where_sql}", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Table names and validated clauses safely constructed
 				...$params
 			)
 		);
@@ -573,6 +605,7 @@ class PPQ_Statistics_Service {
 		$revisions_table = $wpdb->prefix . 'ppq_question_revisions';
 
 		// Get attempt items (questions) with full revision data
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Attempt items for specific attempt, not suitable for caching
 		$items = $wpdb->get_results(
 			$wpdb->prepare(
 				"SELECT
@@ -588,7 +621,7 @@ class PPQ_Statistics_Service {
 				 FROM {$attempt_items_table} ai
 				 LEFT JOIN {$revisions_table} qr ON ai.question_revision_id = qr.id
 				 WHERE ai.attempt_id = %d
-				 ORDER BY ai.order_index ASC",
+				 ORDER BY ai.order_index ASC", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Table names safely constructed from $wpdb->prefix
 				$attempt_id
 			)
 		);
@@ -603,20 +636,20 @@ class PPQ_Statistics_Service {
 			$answer_options = [];
 			foreach ( $answers as $idx => $answer ) {
 				$answer_options[] = [
-					'text'        => wp_strip_all_tags( $answer['text'] ?? '' ),
-					'is_correct'  => (bool) ( $answer['correct'] ?? false ),
+					'text'         => wp_strip_all_tags( $answer['text'] ?? '' ),
+					'is_correct'   => (bool) ( $answer['correct'] ?? false ),
 					'was_selected' => in_array( $idx, $selected_indexes, true ),
 				];
 			}
 
 			$formatted_items[] = [
-				'id'             => (int) $item->id,
-				'question_id'    => (int) $item->question_id,
-				'stem'           => wp_strip_all_tags( $item->stem ?? '' ),
-				'is_correct'     => (bool) $item->is_correct,
-				'points_earned'  => (float) ( $item->points_earned ?? 0 ),
-				'time_spent_ms'  => (int) ( $item->time_spent_ms ?? 0 ),
-				'answers'        => $answer_options,
+				'id'            => (int) $item->id,
+				'question_id'   => (int) $item->question_id,
+				'stem'          => wp_strip_all_tags( $item->stem ?? '' ),
+				'is_correct'    => (bool) $item->is_correct,
+				'points_earned' => (float) ( $item->points_earned ?? 0 ),
+				'time_spent_ms' => (int) ( $item->time_spent_ms ?? 0 ),
+				'answers'       => $answer_options,
 			];
 		}
 
@@ -697,6 +730,7 @@ class PPQ_Statistics_Service {
 		$where_sql = implode( ' AND ', $where );
 
 		// Query for daily aggregates
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Uses transient caching above for performance
 		$results = $wpdb->get_results(
 			"SELECT
 				DATE(a.finished_at) as date,
@@ -706,11 +740,11 @@ class PPQ_Statistics_Service {
 			 INNER JOIN {$quizzes_table} q ON a.quiz_id = q.id
 			 WHERE {$where_sql}
 			 GROUP BY DATE(a.finished_at)
-			 ORDER BY date ASC" // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+			 ORDER BY date ASC" // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Table names and validated clauses safely constructed
 		);
 
 		// Build a complete date range with zeros for missing days
-		$data = [];
+		$data    = [];
 		$current = new DateTime( $start_date );
 		$end     = new DateTime( $end_date );
 

@@ -21,7 +21,7 @@ if ( ! defined( 'ABSPATH' ) ) {
  *
  * @since 1.0.0
  */
-class PPQ_Deactivator {
+class PressPrimer_Quiz_Deactivator {
 
 	/**
 	 * Deactivate the plugin
@@ -62,11 +62,12 @@ class PPQ_Deactivator {
 		global $wpdb;
 
 		// Delete all transients that start with ppq_
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Transient cleanup during deactivation
 		$wpdb->query(
 			$wpdb->prepare(
 				"DELETE FROM {$wpdb->options}
 				WHERE option_name LIKE %s
-				OR option_name LIKE %s",
+				OR option_name LIKE %s", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- WordPress core table name
 				$wpdb->esc_like( '_transient_ppq_' ) . '%',
 				$wpdb->esc_like( '_transient_timeout_ppq_' ) . '%'
 			)
@@ -74,11 +75,12 @@ class PPQ_Deactivator {
 
 		// If using site transients (multisite)
 		if ( is_multisite() ) {
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Transient cleanup during deactivation
 			$wpdb->query(
 				$wpdb->prepare(
 					"DELETE FROM {$wpdb->sitemeta}
 					WHERE meta_key LIKE %s
-					OR meta_key LIKE %s",
+					OR meta_key LIKE %s", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- WordPress core table name
 					$wpdb->esc_like( '_site_transient_ppq_' ) . '%',
 					$wpdb->esc_like( '_site_transient_timeout_ppq_' ) . '%'
 				)

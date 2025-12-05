@@ -22,7 +22,7 @@ if ( ! defined( 'ABSPATH' ) ) {
  *
  * @since 1.0.0
  */
-class PPQ_Quiz extends PPQ_Model {
+class PressPrimer_Quiz_Quiz extends PressPrimer_Quiz_Model {
 
 	/**
 	 * Quiz UUID
@@ -301,13 +301,14 @@ class PPQ_Quiz extends PPQ_Model {
 	 * @since 1.0.0
 	 *
 	 * @param string $uuid Quiz UUID.
-	 * @return PPQ_Quiz|null Quiz instance or null if not found.
+	 * @return PressPrimer_Quiz_Quiz|null Quiz instance or null if not found.
 	 */
 	public static function get_by_uuid( string $uuid ) {
 		global $wpdb;
 
 		$table = static::get_full_table_name();
 
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- UUID lookup
 		$row = $wpdb->get_row(
 			$wpdb->prepare(
 				"SELECT * FROM {$table} WHERE uuid = %s", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
@@ -493,7 +494,7 @@ class PPQ_Quiz extends PPQ_Model {
 	 * @since 1.0.0
 	 *
 	 * @param bool $force_refresh Force refresh from database.
-	 * @return array Array of PPQ_Quiz_Item objects.
+	 * @return array Array of PressPrimer_Quiz_Quiz_Item objects.
 	 */
 	public function get_items( bool $force_refresh = false ) {
 		// Only fixed quizzes have items
@@ -509,6 +510,7 @@ class PPQ_Quiz extends PPQ_Model {
 		global $wpdb;
 		$items_table = $wpdb->prefix . 'ppq_quiz_items';
 
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Quiz items retrieval
 		$rows = $wpdb->get_results(
 			$wpdb->prepare(
 				"SELECT * FROM {$items_table} WHERE quiz_id = %d ORDER BY order_index ASC", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
@@ -520,7 +522,7 @@ class PPQ_Quiz extends PPQ_Model {
 
 		if ( $rows ) {
 			foreach ( $rows as $row ) {
-				$this->_items[] = PPQ_Quiz_Item::from_row( $row );
+				$this->_items[] = PressPrimer_Quiz_Quiz_Item::from_row( $row );
 			}
 		}
 
@@ -536,7 +538,7 @@ class PPQ_Quiz extends PPQ_Model {
 	 * @since 1.0.0
 	 *
 	 * @param bool $force_refresh Force refresh from database.
-	 * @return array Array of PPQ_Quiz_Rule objects.
+	 * @return array Array of PressPrimer_Quiz_Quiz_Rule objects.
 	 */
 	public function get_rules( bool $force_refresh = false ) {
 		// Only dynamic quizzes have rules
@@ -552,6 +554,7 @@ class PPQ_Quiz extends PPQ_Model {
 		global $wpdb;
 		$rules_table = $wpdb->prefix . 'ppq_quiz_rules';
 
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Quiz rules retrieval
 		$rows = $wpdb->get_results(
 			$wpdb->prepare(
 				"SELECT * FROM {$rules_table} WHERE quiz_id = %d ORDER BY rule_order ASC", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
@@ -563,7 +566,7 @@ class PPQ_Quiz extends PPQ_Model {
 
 		if ( $rows ) {
 			foreach ( $rows as $row ) {
-				$this->_rules[] = PPQ_Quiz_Rule::from_row( $row );
+				$this->_rules[] = PressPrimer_Quiz_Quiz_Rule::from_row( $row );
 			}
 		}
 
@@ -598,7 +601,7 @@ class PPQ_Quiz extends PPQ_Model {
 			}
 		} else {
 			// Dynamic quiz - generate from rules
-			$rules = $this->get_rules();
+			$rules            = $this->get_rules();
 			$all_question_ids = [];
 
 			foreach ( $rules as $rule ) {
@@ -632,7 +635,7 @@ class PPQ_Quiz extends PPQ_Model {
 	 *
 	 * @since 1.0.0
 	 *
-	 * @return PPQ_Quiz|WP_Error New quiz instance or WP_Error on failure.
+	 * @return PressPrimer_Quiz_Quiz|WP_Error New quiz instance or WP_Error on failure.
 	 */
 	public function duplicate() {
 		global $wpdb;
@@ -693,7 +696,7 @@ class PPQ_Quiz extends PPQ_Model {
 						'weight'      => $item->weight,
 					];
 
-					$result = PPQ_Quiz_Item::create( $item_data );
+					$result = PressPrimer_Quiz_Quiz_Item::create( $item_data );
 
 					if ( is_wp_error( $result ) ) {
 						throw new Exception( $result->get_error_message() );
@@ -714,7 +717,7 @@ class PPQ_Quiz extends PPQ_Model {
 						'question_count'    => $rule->question_count,
 					];
 
-					$result = PPQ_Quiz_Rule::create( $rule_data );
+					$result = PressPrimer_Quiz_Quiz_Rule::create( $rule_data );
 
 					if ( is_wp_error( $result ) ) {
 						throw new Exception( $result->get_error_message() );

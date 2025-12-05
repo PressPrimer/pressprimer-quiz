@@ -21,13 +21,13 @@ if ( ! defined( 'ABSPATH' ) ) {
  *
  * @since 1.0.0
  */
-class PPQ_Plugin {
+class PressPrimer_Quiz_Plugin {
 
 	/**
 	 * Singleton instance
 	 *
 	 * @since 1.0.0
-	 * @var PPQ_Plugin|null
+	 * @var PressPrimer_Quiz_Plugin|null
 	 */
 	private static $instance = null;
 
@@ -39,7 +39,7 @@ class PPQ_Plugin {
 	 *
 	 * @since 1.0.0
 	 *
-	 * @return PPQ_Plugin The plugin instance.
+	 * @return PressPrimer_Quiz_Plugin The plugin instance.
 	 */
 	public static function get_instance() {
 		if ( null === self::$instance ) {
@@ -63,14 +63,14 @@ class PPQ_Plugin {
 	 * Run the plugin
 	 *
 	 * Initializes all plugin components in the correct order.
-	 * This method is called from the ppq_init() function.
+	 * This method is called from the pressprimer_quiz_init() function.
 	 *
 	 * @since 1.0.0
 	 */
 	public function run() {
 		// Check and run migrations
-		if ( class_exists( 'PPQ_Migrator' ) ) {
-			PPQ_Migrator::maybe_migrate();
+		if ( class_exists( 'PressPrimer_Quiz_Migrator' ) ) {
+			PressPrimer_Quiz_Migrator::maybe_migrate();
 		}
 
 		// Initialize components
@@ -94,14 +94,14 @@ class PPQ_Plugin {
 		}
 
 		// Initialize admin class
-		if ( class_exists( 'PPQ_Admin' ) ) {
-			$admin = new PPQ_Admin();
+		if ( class_exists( 'PressPrimer_Quiz_Admin' ) ) {
+			$admin = new PressPrimer_Quiz_Admin();
 			$admin->init();
 		}
 
 		// Initialize onboarding
-		if ( class_exists( 'PPQ_Onboarding' ) ) {
-			PPQ_Onboarding::get_instance();
+		if ( class_exists( 'PressPrimer_Quiz_Onboarding' ) ) {
+			PressPrimer_Quiz_Onboarding::get_instance();
 		}
 	}
 
@@ -114,17 +114,16 @@ class PPQ_Plugin {
 	 */
 	private function init_frontend() {
 		// Initialize shortcodes
-		if ( class_exists( 'PPQ_Shortcodes' ) ) {
-			$shortcodes = new PPQ_Shortcodes();
+		if ( class_exists( 'PressPrimer_Quiz_Shortcodes' ) ) {
+			$shortcodes = new PressPrimer_Quiz_Shortcodes();
 			$shortcodes->init();
 		}
 
 		// Initialize AJAX handlers
-		if ( class_exists( 'PPQ_AJAX_Handler' ) ) {
-			$ajax_handler = new PPQ_AJAX_Handler();
+		if ( class_exists( 'PressPrimer_Quiz_AJAX_Handler' ) ) {
+			$ajax_handler = new PressPrimer_Quiz_AJAX_Handler();
 			$ajax_handler->init();
 		}
-
 	}
 
 	/**
@@ -138,24 +137,24 @@ class PPQ_Plugin {
 	private function init_integrations() {
 		// LearnDash integration
 		if ( defined( 'LEARNDASH_VERSION' ) ) {
-			if ( class_exists( 'PPQ_LearnDash' ) ) {
-				$learndash = new PPQ_LearnDash();
+			if ( class_exists( 'PressPrimer_Quiz_LearnDash' ) ) {
+				$learndash = new PressPrimer_Quiz_LearnDash();
 				$learndash->init();
 			}
 		}
 
 		// TutorLMS integration
 		if ( defined( 'TUTOR_VERSION' ) ) {
-			if ( class_exists( 'PPQ_TutorLMS' ) ) {
-				$tutor = new PPQ_TutorLMS();
+			if ( class_exists( 'PressPrimer_Quiz_TutorLMS' ) ) {
+				$tutor = new PressPrimer_Quiz_TutorLMS();
 				$tutor->init();
 			}
 		}
 
 		// LifterLMS integration
 		if ( defined( 'LLMS_PLUGIN_FILE' ) ) {
-			if ( class_exists( 'PPQ_LifterLMS' ) ) {
-				$lifter = new PPQ_LifterLMS();
+			if ( class_exists( 'PressPrimer_Quiz_LifterLMS' ) ) {
+				$lifter = new PressPrimer_Quiz_LifterLMS();
 				$lifter->init();
 			}
 		}
@@ -163,7 +162,7 @@ class PPQ_Plugin {
 		// Uncanny Automator integration
 		if ( class_exists( 'Uncanny_Automator\Automator_Functions' ) ) {
 			require_once PPQ_PLUGIN_PATH . 'includes/integrations/uncanny-automator/class-ppq-automator-loader.php';
-			$automator = new \Jeero\PressPrimerQuiz\Integrations\UncannyAutomator\PPQ_Automator_Loader();
+			$automator = new \Jeero\PressPrimerQuiz\Integrations\UncannyAutomator\PressPrimer_Quiz_Automator_Loader();
 			$automator->init();
 		}
 	}
@@ -176,8 +175,8 @@ class PPQ_Plugin {
 	 * @since 1.0.0
 	 */
 	private function init_rest_api() {
-		if ( class_exists( 'PPQ_REST_Controller' ) ) {
-			$controller = new PPQ_REST_Controller();
+		if ( class_exists( 'PressPrimer_Quiz_REST_Controller' ) ) {
+			$controller = new PressPrimer_Quiz_REST_Controller();
 			$controller->init();
 		}
 	}
@@ -190,8 +189,8 @@ class PPQ_Plugin {
 	 * @since 1.0.0
 	 */
 	private function init_blocks() {
-		if ( class_exists( 'PPQ_Blocks' ) ) {
-			$blocks = new PPQ_Blocks();
+		if ( class_exists( 'PressPrimer_Quiz_Blocks' ) ) {
+			$blocks = new PressPrimer_Quiz_Blocks();
 			$blocks->init();
 		}
 	}

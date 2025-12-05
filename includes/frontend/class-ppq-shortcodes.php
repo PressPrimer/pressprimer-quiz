@@ -22,7 +22,7 @@ if ( ! defined( 'ABSPATH' ) ) {
  *
  * @since 1.0.0
  */
-class PPQ_Shortcodes {
+class PressPrimer_Quiz_Shortcodes {
 
 	/**
 	 * Initialize shortcodes
@@ -94,7 +94,7 @@ class PPQ_Shortcodes {
 		}
 
 		// Load quiz
-		$quiz = PPQ_Quiz::get( $quiz_id );
+		$quiz = PressPrimer_Quiz_Quiz::get( $quiz_id );
 
 		if ( ! $quiz ) {
 			return $this->render_error( __( 'Quiz not found.', 'pressprimer-quiz' ) );
@@ -109,21 +109,23 @@ class PPQ_Shortcodes {
 		}
 
 		// Check if user wants to retake - ignore attempt parameter if retake is requested
-		$is_retake = isset( $_GET['ppq_retake'] ) && '1' === $_GET['ppq_retake'];
+		// phpcs:disable WordPress.Security.NonceVerification.Recommended -- Read-only URL parameters for quiz display
+		$is_retake = isset( $_GET['ppq_retake'] ) && '1' === sanitize_text_field( wp_unslash( $_GET['ppq_retake'] ) );
 
 		// Check if user is viewing an in-progress or submitted attempt
-		$attempt_id = isset( $_GET['attempt'] ) ? absint( $_GET['attempt'] ) : 0;
+		$attempt_id = isset( $_GET['attempt'] ) ? absint( wp_unslash( $_GET['attempt'] ) ) : 0;
+		// phpcs:enable WordPress.Security.NonceVerification.Recommended
 
 		if ( $attempt_id && ! $is_retake ) {
 			return $this->render_quiz_attempt( $attempt_id );
 		}
 
 		// Render quiz landing page
-		if ( ! class_exists( 'PPQ_Quiz_Renderer' ) ) {
+		if ( ! class_exists( 'PressPrimer_Quiz_Quiz_Renderer' ) ) {
 			return $this->render_error( __( 'Quiz renderer not available.', 'pressprimer-quiz' ) );
 		}
 
-		$renderer = new PPQ_Quiz_Renderer();
+		$renderer = new PressPrimer_Quiz_Quiz_Renderer();
 		return $renderer->render_landing( $quiz );
 	}
 
@@ -136,7 +138,7 @@ class PPQ_Shortcodes {
 	 * @return string Rendered HTML.
 	 */
 	private function render_quiz_attempt( $attempt_id ) {
-		$attempt = PPQ_Attempt::get( $attempt_id );
+		$attempt = PressPrimer_Quiz_Attempt::get( $attempt_id );
 
 		if ( ! $attempt ) {
 			return $this->render_error( __( 'Attempt not found.', 'pressprimer-quiz' ) );
@@ -153,9 +155,10 @@ class PPQ_Shortcodes {
 		// Check if guest with valid token
 		if ( ! is_user_logged_in() && $attempt->guest_token ) {
 			// Check URL parameter first, then cookie
-			$token = isset( $_GET['token'] ) ? sanitize_text_field( $_GET['token'] ) : '';
+			// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only token for guest access verification
+			$token = isset( $_GET['token'] ) ? sanitize_text_field( wp_unslash( $_GET['token'] ) ) : '';
 			if ( ! $token ) {
-				$token = isset( $_COOKIE['ppq_guest_token'] ) ? sanitize_text_field( $_COOKIE['ppq_guest_token'] ) : '';
+				$token = isset( $_COOKIE['ppq_guest_token'] ) ? sanitize_text_field( wp_unslash( $_COOKIE['ppq_guest_token'] ) ) : '';
 			}
 
 			if ( $token === $attempt->guest_token ) {
@@ -179,15 +182,15 @@ class PPQ_Shortcodes {
 			return $this->render_error( __( 'You do not have permission to view this attempt.', 'pressprimer-quiz' ) );
 		}
 
-		if ( ! class_exists( 'PPQ_Quiz_Renderer' ) ) {
+		if ( ! class_exists( 'PressPrimer_Quiz_Quiz_Renderer' ) ) {
 			return $this->render_error( __( 'Quiz renderer not available.', 'pressprimer-quiz' ) );
 		}
 
-		$renderer = new PPQ_Quiz_Renderer();
+		$renderer = new PressPrimer_Quiz_Quiz_Renderer();
 
 		// If submitted, show results
 		if ( 'submitted' === $attempt->status ) {
-			if ( ! class_exists( 'PPQ_Results_Renderer' ) ) {
+			if ( ! class_exists( 'PressPrimer_Quiz_Results_Renderer' ) ) {
 				return $this->render_error( __( 'Results renderer not available.', 'pressprimer-quiz' ) );
 			}
 
@@ -212,10 +215,10 @@ class PPQ_Shortcodes {
 
 			// Enqueue theme CSS
 			if ( $quiz ) {
-				PPQ_Theme_Loader::enqueue_quiz_theme( $quiz );
-				PPQ_Theme_Loader::output_custom_css( $quiz );
+				PressPrimer_Quiz_Theme_Loader::enqueue_quiz_theme( $quiz );
+				PressPrimer_Quiz_Theme_Loader::output_custom_css( $quiz );
 			} else {
-				PPQ_Theme_Loader::enqueue_theme( 'default' );
+				PressPrimer_Quiz_Theme_Loader::enqueue_theme( 'default' );
 			}
 
 			// Enqueue results JavaScript
@@ -241,9 +244,9 @@ class PPQ_Shortcodes {
 				]
 			);
 
-			$results_renderer = new PPQ_Results_Renderer();
-			$output = $results_renderer->render_results( $attempt );
-			$output .= $results_renderer->render_question_review( $attempt );
+			$results_renderer = new PressPrimer_Quiz_Results_Renderer();
+			$output           = $results_renderer->render_results( $attempt );
+			$output          .= $results_renderer->render_question_review( $attempt );
 
 			return $output;
 		}
@@ -297,13 +300,15 @@ class PPQ_Shortcodes {
 		$user_id = get_current_user_id();
 
 		// Get filter and sort parameters from URL
-		$filter_quiz   = isset( $_GET['filter_quiz'] ) ? absint( $_GET['filter_quiz'] ) : 0;
-		$filter_status = isset( $_GET['filter_status'] ) ? sanitize_text_field( $_GET['filter_status'] ) : '';
-		$filter_from   = isset( $_GET['filter_from'] ) ? sanitize_text_field( $_GET['filter_from'] ) : '';
-		$filter_to     = isset( $_GET['filter_to'] ) ? sanitize_text_field( $_GET['filter_to'] ) : '';
-		$sort_by       = isset( $_GET['sort_by'] ) ? sanitize_text_field( $_GET['sort_by'] ) : 'date';
-		$sort_order    = isset( $_GET['sort_order'] ) ? sanitize_text_field( $_GET['sort_order'] ) : 'desc';
-		$paged         = isset( $_GET['paged'] ) ? absint( $_GET['paged'] ) : 1;
+		// phpcs:disable WordPress.Security.NonceVerification.Recommended -- Read-only filter/sort parameters for history display
+		$filter_quiz   = isset( $_GET['filter_quiz'] ) ? absint( wp_unslash( $_GET['filter_quiz'] ) ) : 0;
+		$filter_status = isset( $_GET['filter_status'] ) ? sanitize_text_field( wp_unslash( $_GET['filter_status'] ) ) : '';
+		$filter_from   = isset( $_GET['filter_from'] ) ? sanitize_text_field( wp_unslash( $_GET['filter_from'] ) ) : '';
+		$filter_to     = isset( $_GET['filter_to'] ) ? sanitize_text_field( wp_unslash( $_GET['filter_to'] ) ) : '';
+		$sort_by       = isset( $_GET['sort_by'] ) ? sanitize_text_field( wp_unslash( $_GET['sort_by'] ) ) : 'date';
+		$sort_order    = isset( $_GET['sort_order'] ) ? sanitize_text_field( wp_unslash( $_GET['sort_order'] ) ) : 'desc';
+		$paged         = isset( $_GET['paged'] ) ? absint( wp_unslash( $_GET['paged'] ) ) : 1;
+		// phpcs:enable WordPress.Security.NonceVerification.Recommended
 
 		// Build query
 		global $wpdb;
@@ -342,6 +347,7 @@ class PPQ_Shortcodes {
 		$order = 'desc' === strtolower( $sort_order ) ? 'DESC' : 'ASC';
 
 		// Count total
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- User history pagination, not suitable for caching
 		$total = $wpdb->get_var(
 			"SELECT COUNT(*) FROM {$attempts_table} WHERE {$where_clause}" // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 		);
@@ -352,6 +358,7 @@ class PPQ_Shortcodes {
 		$offset      = ( $paged - 1 ) * $per_page;
 
 		// Get attempts
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- User history pagination, not suitable for caching
 		$attempts = $wpdb->get_results(
 			$wpdb->prepare(
 				"SELECT * FROM {$attempts_table} WHERE {$where_clause} ORDER BY {$sort_column} {$order} LIMIT %d OFFSET %d", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
@@ -361,11 +368,13 @@ class PPQ_Shortcodes {
 		);
 
 		// Get all quizzes for filter dropdown
-		$quizzes = PPQ_Quiz::find( [
-			'where'    => [ 'status' => 'published' ],
-			'order_by' => 'title',
-			'order'    => 'ASC',
-		] );
+		$quizzes = PressPrimer_Quiz_Quiz::find(
+			[
+				'where'    => [ 'status' => 'published' ],
+				'order_by' => 'title',
+				'order'    => 'ASC',
+			]
+		);
 
 		// Start output
 		ob_start();
@@ -377,9 +386,10 @@ class PPQ_Shortcodes {
 			<form method="get" class="ppq-attempts-filters">
 				<?php
 				// Preserve existing query params
+				// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Reading filter params for form preservation
 				foreach ( $_GET as $key => $value ) {
 					if ( ! in_array( $key, [ 'filter_quiz', 'filter_status', 'filter_from', 'filter_to', 'sort_by', 'sort_order', 'paged' ], true ) ) {
-						echo '<input type="hidden" name="' . esc_attr( $key ) . '" value="' . esc_attr( $value ) . '">';
+						echo '<input type="hidden" name="' . esc_attr( sanitize_key( $key ) ) . '" value="' . esc_attr( sanitize_text_field( wp_unslash( $value ) ) ) . '">';
 					}
 				}
 				?>
@@ -435,7 +445,7 @@ class PPQ_Shortcodes {
 					</div>
 
 					<button type="submit" class="ppq-filter-button"><?php esc_html_e( 'Filter', 'pressprimer-quiz' ); ?></button>
-					<a href="<?php echo esc_url( strtok( $_SERVER['REQUEST_URI'], '?' ) ); ?>" class="ppq-clear-filters"><?php esc_html_e( 'Clear', 'pressprimer-quiz' ); ?></a>
+					<a href="<?php echo esc_url( strtok( isset( $_SERVER['REQUEST_URI'] ) ? sanitize_text_field( wp_unslash( $_SERVER['REQUEST_URI'] ) ) : '', '?' ) ); ?>" class="ppq-clear-filters"><?php esc_html_e( 'Clear', 'pressprimer-quiz' ); ?></a>
 				</div>
 			</form>
 
@@ -460,8 +470,8 @@ class PPQ_Shortcodes {
 						<tbody>
 							<?php
 							foreach ( $attempts as $attempt_row ) {
-								$attempt = PPQ_Attempt::from_row( $attempt_row );
-								$quiz    = PPQ_Quiz::get( $attempt->quiz_id );
+								$attempt = PressPrimer_Quiz_Attempt::from_row( $attempt_row );
+								$quiz    = PressPrimer_Quiz_Quiz::get( $attempt->quiz_id );
 
 								if ( ! $quiz ) {
 									continue;
@@ -509,8 +519,8 @@ class PPQ_Shortcodes {
 	 *
 	 * @since 1.0.0
 	 *
-	 * @param PPQ_Attempt $attempt Attempt object.
-	 * @param PPQ_Quiz    $quiz Quiz object.
+	 * @param PressPrimer_Quiz_Attempt $attempt Attempt object.
+	 * @param PressPrimer_Quiz_Quiz    $quiz Quiz object.
 	 */
 	private function render_attempt_row( $attempt, $quiz ) {
 		?>
@@ -576,8 +586,8 @@ class PPQ_Shortcodes {
 	 *
 	 * @since 1.0.0
 	 *
-	 * @param PPQ_Quiz    $quiz Quiz object.
-	 * @param PPQ_Attempt $current_attempt Current attempt.
+	 * @param PressPrimer_Quiz_Quiz    $quiz Quiz object.
+	 * @param PressPrimer_Quiz_Attempt $current_attempt Current attempt.
 	 * @return bool True if can retake.
 	 */
 	private function can_retake_quiz( $quiz, $current_attempt ) {
@@ -585,12 +595,12 @@ class PPQ_Shortcodes {
 
 		// Check max attempts
 		if ( $quiz->max_attempts ) {
-			$attempts        = PPQ_Attempt::get_user_attempts( $quiz->id, $user_id );
+			$attempts        = PressPrimer_Quiz_Attempt::get_user_attempts( $quiz->id, $user_id );
 			$submitted_count = 0;
 
 			foreach ( $attempts as $att ) {
 				if ( 'submitted' === $att->status ) {
-					$submitted_count++;
+					++$submitted_count;
 				}
 			}
 

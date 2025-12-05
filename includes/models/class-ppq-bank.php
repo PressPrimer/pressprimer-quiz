@@ -21,7 +21,7 @@ if ( ! defined( 'ABSPATH' ) ) {
  *
  * @since 1.0.0
  */
-class PPQ_Bank extends PPQ_Model {
+class PressPrimer_Quiz_Bank extends PressPrimer_Quiz_Model {
 
 	/**
 	 * Bank UUID
@@ -143,7 +143,7 @@ class PPQ_Bank extends PPQ_Model {
 
 		// Generate UUID if not provided
 		if ( empty( $data['uuid'] ) ) {
-			$data['uuid'] = PPQ_Helpers::generate_uuid();
+			$data['uuid'] = PressPrimer_Quiz_Helpers::generate_uuid();
 		}
 
 		// Set owner to current user if not provided
@@ -234,7 +234,7 @@ class PPQ_Bank extends PPQ_Model {
 		}
 
 		// Verify question exists
-		if ( class_exists( 'PPQ_Question' ) && ! PPQ_Question::exists( $question_id ) ) {
+		if ( class_exists( 'PressPrimer_Quiz_Question' ) && ! PressPrimer_Quiz_Question::exists( $question_id ) ) {
 			return new WP_Error(
 				'ppq_question_not_found',
 				__( 'Question not found.', 'pressprimer-quiz' )
@@ -410,8 +410,8 @@ class PPQ_Bank extends PPQ_Model {
 		// Build LIMIT
 		$limit_sql = '';
 		if ( null !== $args['limit'] ) {
-			$limit  = absint( $args['limit'] );
-			$offset = absint( $args['offset'] );
+			$limit     = absint( $args['limit'] );
+			$offset    = absint( $args['offset'] );
 			$limit_sql = $offset > 0 ? "LIMIT {$offset}, {$limit}" : "LIMIT {$limit}";
 		}
 
@@ -433,9 +433,9 @@ class PPQ_Bank extends PPQ_Model {
 
 		// Convert to question instances
 		$questions = [];
-		if ( $rows && class_exists( 'PPQ_Question' ) ) {
+		if ( $rows && class_exists( 'PressPrimer_Quiz_Question' ) ) {
 			foreach ( $rows as $row ) {
-				$questions[] = PPQ_Question::from_row( $row );
+				$questions[] = PressPrimer_Quiz_Question::from_row( $row );
 			}
 		}
 
@@ -545,7 +545,7 @@ class PPQ_Bank extends PPQ_Model {
 			'order'    => 'ASC',
 		];
 
-		$args = wp_parse_args( $args, $defaults );
+		$args          = wp_parse_args( $args, $defaults );
 		$args['where'] = [ 'owner_id' => $user_id ];
 
 		return static::find( $args );

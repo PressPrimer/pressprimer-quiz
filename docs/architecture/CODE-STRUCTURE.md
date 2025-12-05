@@ -72,26 +72,26 @@ define( 'PPQ_DB_VERSION', '1.0.0' );
 
 // Autoloader
 require_once PPQ_PLUGIN_PATH . 'includes/class-ppq-autoloader.php';
-PPQ_Autoloader::register();
+PressPrimer_Quiz_Autoloader::register();
 
 // Activation/Deactivation hooks
 register_activation_hook( __FILE__, [ 'PPQ_Activator', 'activate' ] );
 register_deactivation_hook( __FILE__, [ 'PPQ_Deactivator', 'deactivate' ] );
 
 // Initialize plugin
-function ppq_init() {
+function pressprimer_quiz_init() {
     // Load text domain
     load_plugin_textdomain(
         'pressprimer-quiz',
         false,
         dirname( PPQ_PLUGIN_BASENAME ) . '/languages'
     );
-    
+
     // Initialize main plugin class
-    $plugin = PPQ_Plugin::get_instance();
+    $plugin = PressPrimer_Quiz_Plugin::get_instance();
     $plugin->run();
 }
-add_action( 'plugins_loaded', 'ppq_init' );
+add_action( 'plugins_loaded', 'pressprimer_quiz_init' );
 ```
 
 ## Autoloader
@@ -104,7 +104,7 @@ add_action( 'plugins_loaded', 'ppq_init' );
  * @package PressPrimer_Quiz
  */
 
-class PPQ_Autoloader {
+class PressPrimer_Quiz_Autoloader {
     
     /**
      * Class to file mapping for subdirectories
@@ -168,7 +168,7 @@ class PPQ_Autoloader {
  * @package PressPrimer_Quiz
  */
 
-class PPQ_Plugin {
+class PressPrimer_Quiz_Plugin {
     
     /**
      * Singleton instance
@@ -197,7 +197,7 @@ class PPQ_Plugin {
      */
     public function run(): void {
         // Check and run migrations
-        PPQ_Migrator::maybe_migrate();
+        PressPrimer_Quiz_Migrator::maybe_migrate();
         
         // Initialize components
         $this->init_admin();
@@ -215,7 +215,7 @@ class PPQ_Plugin {
             return;
         }
         
-        $admin = new PPQ_Admin();
+        $admin = new PressPrimer_Quiz_Admin();
         $admin->init();
     }
     
@@ -223,10 +223,10 @@ class PPQ_Plugin {
      * Initialize frontend components
      */
     private function init_frontend(): void {
-        $frontend = new PPQ_Frontend();
+        $frontend = new PressPrimer_Quiz_Frontend();
         $frontend->init();
         
-        $shortcodes = new PPQ_Shortcodes();
+        $shortcodes = new PressPrimer_Quiz_Shortcodes();
         $shortcodes->init();
     }
     
@@ -236,25 +236,25 @@ class PPQ_Plugin {
     private function init_integrations(): void {
         // LearnDash
         if ( defined( 'LEARNDASH_VERSION' ) ) {
-            $learndash = new PPQ_LearnDash();
+            $learndash = new PressPrimer_Quiz_LearnDash();
             $learndash->init();
         }
         
         // TutorLMS
         if ( defined( 'TUTOR_VERSION' ) ) {
-            $tutor = new PPQ_TutorLMS();
+            $tutor = new PressPrimer_Quiz_TutorLMS();
             $tutor->init();
         }
         
         // LifterLMS
         if ( defined( 'LLMS_PLUGIN_FILE' ) ) {
-            $lifter = new PPQ_LifterLMS();
+            $lifter = new PressPrimer_Quiz_LifterLMS();
             $lifter->init();
         }
         
         // Uncanny Automator
         if ( class_exists( 'Uncanny_Automator\\Automator_Functions' ) ) {
-            $automator = new PPQ_Automator();
+            $automator = new PressPrimer_Quiz_Automator();
             $automator->init();
         }
     }
@@ -264,7 +264,7 @@ class PPQ_Plugin {
      */
     private function init_rest_api(): void {
         add_action( 'rest_api_init', function() {
-            $controller = new PPQ_REST_Controller();
+            $controller = new PressPrimer_Quiz_REST_Controller();
             $controller->register_routes();
         } );
     }
@@ -300,7 +300,7 @@ Models represent database entities with CRUD operations:
  * @subpackage Models
  */
 
-class PPQ_Question {
+class PressPrimer_Quiz_Question {
     
     public int $id = 0;
     public string $uuid = '';
@@ -403,7 +403,7 @@ class PPQ_Question {
         $question_id = $wpdb->insert_id;
         
         // Create initial revision
-        $revision_id = PPQ_Question_Revision::create( $question_id, [
+        $revision_id = PressPrimer_Quiz_Question_Revision::create( $question_id, [
             'stem' => $data['stem'],
             'answers' => $data['answers'],
             'feedback_correct' => $data['feedback_correct'] ?? null,
@@ -473,7 +473,7 @@ class PPQ_Question {
      */
     public function get_current_revision(): ?PPQ_Question_Revision {
         if ( null === $this->current_revision && $this->current_revision_id ) {
-            $this->current_revision = PPQ_Question_Revision::get( $this->current_revision_id );
+            $this->current_revision = PressPrimer_Quiz_Question_Revision::get( $this->current_revision_id );
         }
         return $this->current_revision;
     }
@@ -483,7 +483,7 @@ class PPQ_Question {
      */
     public function get_categories(): array {
         if ( null === $this->categories ) {
-            $this->categories = PPQ_Category::get_for_question( $this->id, 'category' );
+            $this->categories = PressPrimer_Quiz_Category::get_for_question( $this->id, 'category' );
         }
         return $this->categories;
     }
@@ -493,7 +493,7 @@ class PPQ_Question {
      */
     public function get_tags(): array {
         if ( null === $this->tags ) {
-            $this->tags = PPQ_Category::get_for_question( $this->id, 'tag' );
+            $this->tags = PressPrimer_Quiz_Category::get_for_question( $this->id, 'tag' );
         }
         return $this->tags;
     }
@@ -513,7 +513,7 @@ Services contain business logic:
  * @subpackage Services
  */
 
-class PPQ_Scoring_Service {
+class PressPrimer_Quiz_Scoring_Service {
     
     /**
      * Score a single question response
@@ -613,7 +613,7 @@ class PPQ_Scoring_Service {
         foreach ( $items as $item ) {
             $selected = json_decode( $item->selected_answers_json ?: '[]', true );
             
-            $question = new PPQ_Question();
+            $question = new PressPrimer_Quiz_Question();
             $question->type = $item->type;
             $question->max_points = (float) $item->max_points;
             $question->current_revision_id = $item->question_revision_id;
@@ -669,7 +669,7 @@ Admin classes handle wp-admin functionality:
  * @subpackage Admin
  */
 
-class PPQ_Admin {
+class PressPrimer_Quiz_Admin {
     
     /**
      * Initialize admin hooks
@@ -804,7 +804,7 @@ Frontend classes handle public-facing functionality:
  * @subpackage Frontend
  */
 
-class PPQ_Frontend {
+class PressPrimer_Quiz_Frontend {
     
     /**
      * Initialize frontend hooks

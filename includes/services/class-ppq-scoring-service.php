@@ -23,7 +23,7 @@ if ( ! defined( 'ABSPATH' ) ) {
  *
  * @since 1.0.0
  */
-class PPQ_Scoring_Service {
+class PressPrimer_Quiz_Scoring_Service {
 
 	/**
 	 * Score a single question response
@@ -32,9 +32,9 @@ class PPQ_Scoring_Service {
 	 *
 	 * @since 1.0.0
 	 *
-	 * @param PPQ_Question          $question Question object.
-	 * @param PPQ_Question_Revision $revision Question revision.
-	 * @param array                 $selected_answers Array of selected answer indices.
+	 * @param PressPrimer_Quiz_Question          $question Question object.
+	 * @param PressPrimer_Quiz_Question_Revision $revision Question revision.
+	 * @param array                              $selected_answers Array of selected answer indices.
 	 * @return array Scoring result with is_correct, score, max_points.
 	 */
 	public function score_response( $question, $revision, array $selected_answers ) {
@@ -138,7 +138,7 @@ class PPQ_Scoring_Service {
 		}
 
 		// Calculate correct and incorrect selections
-		$correct_selected = count( array_intersect( $selected_answers, $correct_indices ) );
+		$correct_selected   = count( array_intersect( $selected_answers, $correct_indices ) );
 		$incorrect_selected = count( array_diff( $selected_answers, $correct_indices ) );
 
 		// Determine if completely correct
@@ -146,7 +146,7 @@ class PPQ_Scoring_Service {
 
 		// Calculate proportional score with penalty for incorrect selections
 		$raw_score = ( $correct_selected - $incorrect_selected ) / $total_correct;
-		$score = max( 0, $raw_score ) * $max_points;
+		$score     = max( 0, $raw_score ) * $max_points;
 
 		return [
 			'is_correct'     => $is_correct,
@@ -185,7 +185,7 @@ class PPQ_Scoring_Service {
 	 * @return array|WP_Error Score summary or error.
 	 */
 	public function calculate_attempt_score( int $attempt_id ) {
-		$attempt = PPQ_Attempt::get( $attempt_id );
+		$attempt = PressPrimer_Quiz_Attempt::get( $attempt_id );
 
 		if ( ! $attempt ) {
 			return new WP_Error(
@@ -197,10 +197,10 @@ class PPQ_Scoring_Service {
 		// Get all attempt items
 		$items = $attempt->get_items( true ); // Force refresh
 
-		$total_score = 0;
-		$total_max = 0;
+		$total_score   = 0;
+		$total_max     = 0;
 		$correct_count = 0;
-		$total_count = count( $items );
+		$total_count   = count( $items );
 
 		foreach ( $items as $item ) {
 			// Get question revision
@@ -241,7 +241,7 @@ class PPQ_Scoring_Service {
 			$total_score += $result['score'];
 
 			if ( $result['is_correct'] ) {
-				$correct_count++;
+				++$correct_count;
 			}
 		}
 
@@ -249,14 +249,14 @@ class PPQ_Scoring_Service {
 		$score_percent = $total_max > 0 ? ( $total_score / $total_max ) * 100 : 0;
 
 		// Get quiz to determine if passed
-		$quiz = $attempt->get_quiz();
+		$quiz   = $attempt->get_quiz();
 		$passed = $score_percent >= $quiz->pass_percent;
 
 		// Update attempt with scores
-		$attempt->score_points = round( $total_score, 2 );
-		$attempt->max_points = round( $total_max, 2 );
+		$attempt->score_points  = round( $total_score, 2 );
+		$attempt->max_points    = round( $total_max, 2 );
 		$attempt->score_percent = round( $score_percent, 2 );
-		$attempt->passed = $passed ? 1 : 0;
+		$attempt->passed        = $passed ? 1 : 0;
 		$attempt->save();
 
 		return [
@@ -274,7 +274,7 @@ class PPQ_Scoring_Service {
 	 *
 	 * @since 1.0.0
 	 *
-	 * @return PPQ_Scoring_Service Service instance.
+	 * @return PressPrimer_Quiz_Scoring_Service Service instance.
 	 */
 	public static function instance() {
 		static $instance = null;

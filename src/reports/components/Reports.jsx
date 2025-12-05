@@ -14,11 +14,7 @@ import { Spin, Alert, Card, Row, Col } from 'antd';
 import {
 	TrophyOutlined,
 	ClockCircleOutlined,
-	BarChartOutlined,
-	LineChartOutlined,
-	PieChartOutlined,
-	TeamOutlined,
-	LockOutlined,
+	RocketOutlined,
 } from '@ant-design/icons';
 
 import OverviewCards from './OverviewCards';
@@ -82,40 +78,13 @@ const Reports = ({ initialData = {} }) => {
 			href: 'admin.php?page=ppq-reports&report=recent-attempts',
 		},
 		{
-			key: 'question-analysis',
-			title: __('Question Analysis', 'pressprimer-quiz'),
-			description: __('Identify difficult questions and see which ones students struggle with most.', 'pressprimer-quiz'),
-			icon: <BarChartOutlined />,
-			color: '#722ed1',
+			key: 'coming-soon',
+			title: __('More Reports Coming Soon!', 'pressprimer-quiz'),
+			description: __('We\'re working on additional reports to help you better understand your quiz results.', 'pressprimer-quiz'),
+			icon: <RocketOutlined />,
+			color: '#8c8c8c',
 			available: false,
-			badge: __('Pro', 'pressprimer-quiz'),
-		},
-		{
-			key: 'student-progress',
-			title: __('Student Progress', 'pressprimer-quiz'),
-			description: __('Track individual student performance over time across all quizzes.', 'pressprimer-quiz'),
-			icon: <LineChartOutlined />,
-			color: '#52c41a',
-			available: false,
-			badge: __('Pro', 'pressprimer-quiz'),
-		},
-		{
-			key: 'category-breakdown',
-			title: __('Category Breakdown', 'pressprimer-quiz'),
-			description: __('Analyze performance by question category to identify knowledge gaps.', 'pressprimer-quiz'),
-			icon: <PieChartOutlined />,
-			color: '#eb2f96',
-			available: false,
-			badge: __('Pro', 'pressprimer-quiz'),
-		},
-		{
-			key: 'group-comparison',
-			title: __('Group Comparison', 'pressprimer-quiz'),
-			description: __('Compare quiz performance across different student groups.', 'pressprimer-quiz'),
-			icon: <TeamOutlined />,
-			color: '#13c2c2',
-			available: false,
-			badge: __('Educator', 'pressprimer-quiz'),
+			comingSoon: true,
 		},
 	];
 
@@ -164,7 +133,7 @@ const Reports = ({ initialData = {} }) => {
 							{reports.map((report) => (
 								<Col key={report.key} xs={24} sm={12} lg={8}>
 									<Card
-										className={`ppq-report-card ${!report.available ? 'ppq-report-card--locked' : ''}`}
+										className={`ppq-report-card ${report.comingSoon ? 'ppq-report-card--coming-soon' : ''}`}
 										hoverable={report.available}
 										onClick={() => {
 											if (report.available && report.href) {
@@ -178,12 +147,6 @@ const Reports = ({ initialData = {} }) => {
 										<div className="ppq-report-card-content">
 											<h3 className="ppq-report-card-title">
 												{report.title}
-												{report.badge && (
-													<span className="ppq-report-card-badge">
-														<LockOutlined style={{ marginRight: 4 }} />
-														{report.badge}
-													</span>
-												)}
 											</h3>
 											<p className="ppq-report-card-description">
 												{report.description}

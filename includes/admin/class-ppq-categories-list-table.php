@@ -24,7 +24,7 @@ if ( ! class_exists( 'WP_List_Table' ) ) {
  *
  * @since 1.0.0
  */
-class PPQ_Categories_List_Table extends WP_List_Table {
+class PressPrimer_Quiz_Categories_List_Table extends WP_List_Table {
 
 	/**
 	 * Taxonomy type
@@ -117,9 +117,9 @@ class PPQ_Categories_List_Table extends WP_List_Table {
 		$this->process_bulk_action();
 
 		// Columns
-		$columns = $this->get_columns();
-		$hidden = [];
-		$sortable = $this->get_sortable_columns();
+		$columns               = $this->get_columns();
+		$hidden                = [];
+		$sortable              = $this->get_sortable_columns();
 		$this->_column_headers = [ $columns, $hidden, $sortable ];
 
 		// Build query args
@@ -127,8 +127,9 @@ class PPQ_Categories_List_Table extends WP_List_Table {
 			'where' => [ 'taxonomy' => $this->taxonomy ],
 		];
 
+		// phpcs:disable WordPress.Security.NonceVerification.Recommended -- List table filter params, not form processing
 		// Search
-		if ( ! empty( $_REQUEST['s'] ) ) {
+		if ( isset( $_REQUEST['s'] ) && '' !== $_REQUEST['s'] ) {
 			$search = sanitize_text_field( wp_unslash( $_REQUEST['s'] ) );
 			global $wpdb;
 			$args['where_raw'] = $wpdb->prepare(
@@ -139,11 +140,12 @@ class PPQ_Categories_List_Table extends WP_List_Table {
 		}
 
 		// Ordering
-		$args['order_by'] = ! empty( $_REQUEST['orderby'] ) ? sanitize_key( $_REQUEST['orderby'] ) : 'name';
-		$args['order'] = ! empty( $_REQUEST['order'] ) && 'desc' === strtolower( $_REQUEST['order'] ) ? 'DESC' : 'ASC';
+		$args['order_by'] = isset( $_REQUEST['orderby'] ) && '' !== $_REQUEST['orderby'] ? sanitize_key( wp_unslash( $_REQUEST['orderby'] ) ) : 'name';
+		$args['order']    = isset( $_REQUEST['order'] ) && 'desc' === strtolower( sanitize_key( wp_unslash( $_REQUEST['order'] ) ) ) ? 'DESC' : 'ASC';
+		// phpcs:enable WordPress.Security.NonceVerification.Recommended
 
 		// Get all items (no pagination for now, can add later if needed)
-		$this->items = PPQ_Category::find( $args );
+		$this->items = PressPrimer_Quiz_Category::find( $args );
 
 		// Set pagination (currently showing all)
 		$this->set_pagination_args(
@@ -172,20 +174,20 @@ class PPQ_Categories_List_Table extends WP_List_Table {
 		}
 
 		// Get IDs
-		$ids = isset( $_REQUEST[ $this->_args['singular'] ] ) ? array_map( 'absint', (array) $_REQUEST[ $this->_args['singular'] ] ) : [];
+		$ids = isset( $_REQUEST[ $this->_args['singular'] ] ) ? array_map( 'absint', (array) wp_unslash( $_REQUEST[ $this->_args['singular'] ] ) ) : [];
 
 		if ( empty( $ids ) ) {
 			return;
 		}
 
 		// Verify nonce
-		if ( ! isset( $_REQUEST['_wpnonce'] ) || ! wp_verify_nonce( $_REQUEST['_wpnonce'], 'bulk-' . $this->_args['plural'] ) ) {
+		if ( ! isset( $_REQUEST['_wpnonce'] ) || ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_REQUEST['_wpnonce'] ) ), 'bulk-' . $this->_args['plural'] ) ) {
 			wp_die( esc_html__( 'Security check failed.', 'pressprimer-quiz' ) );
 		}
 
 		// Delete items
 		foreach ( $ids as $id ) {
-			$category = PPQ_Category::get( $id );
+			$category = PressPrimer_Quiz_Category::get( $id );
 			if ( $category ) {
 				$category->delete();
 			}
@@ -196,7 +198,7 @@ class PPQ_Categories_List_Table extends WP_List_Table {
 		wp_safe_redirect(
 			add_query_arg(
 				[
-					'page' => $page_slug,
+					'page'    => $page_slug,
 					'message' => 'deleted',
 				],
 				admin_url( 'admin.php' )
@@ -252,9 +254,9 @@ class PPQ_Categories_List_Table extends WP_List_Table {
 
 		$edit_url = add_query_arg(
 			[
-				'page' => $page_slug,
+				'page'   => $page_slug,
 				'action' => 'edit',
-				'id' => $item->id,
+				'id'     => $item->id,
 			],
 			admin_url( 'admin.php' )
 		);
@@ -262,8 +264,8 @@ class PPQ_Categories_List_Table extends WP_List_Table {
 		$delete_url = wp_nonce_url(
 			add_query_arg(
 				[
-					'action' => 'ppq_delete_category',
-					'id' => $item->id,
+					'action'   => 'ppq_delete_category',
+					'id'       => $item->id,
 					'taxonomy' => $this->taxonomy,
 				],
 				admin_url( 'admin-post.php' )
@@ -274,8 +276,8 @@ class PPQ_Categories_List_Table extends WP_List_Table {
 		$title = '<strong><a href="' . esc_url( $edit_url ) . '">' . esc_html( $item->name ) . '</a></strong>';
 
 		// Row actions
-		$actions = [];
-		$actions['edit'] = '<a href="' . esc_url( $edit_url ) . '">' . __( 'Edit', 'pressprimer-quiz' ) . '</a>';
+		$actions           = [];
+		$actions['edit']   = '<a href="' . esc_url( $edit_url ) . '">' . __( 'Edit', 'pressprimer-quiz' ) . '</a>';
 		$actions['delete'] = '<a href="' . esc_url( $delete_url ) . '" onclick="return confirm(\'' . esc_js( __( 'Are you sure you want to delete this item?', 'pressprimer-quiz' ) ) . '\');">' . __( 'Delete', 'pressprimer-quiz' ) . '</a>';
 
 		return $title . $this->row_actions( $actions );
@@ -294,7 +296,7 @@ class PPQ_Categories_List_Table extends WP_List_Table {
 			return '<span class="ppq-text-muted">' . esc_html__( '(none)', 'pressprimer-quiz' ) . '</span>';
 		}
 
-		$parent = PPQ_Category::get( $item->parent_id );
+		$parent = PressPrimer_Quiz_Category::get( $item->parent_id );
 		if ( ! $parent ) {
 			return '<span class="ppq-text-muted">' . esc_html__( '(unknown)', 'pressprimer-quiz' ) . '</span>';
 		}

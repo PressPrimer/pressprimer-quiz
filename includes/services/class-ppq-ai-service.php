@@ -21,7 +21,7 @@ if ( ! defined( 'ABSPATH' ) ) {
  *
  * @since 1.0.0
  */
-class PPQ_AI_Service {
+class PressPrimer_Quiz_AI_Service {
 
 	/**
 	 * OpenAI API base URL
@@ -176,7 +176,7 @@ class PPQ_AI_Service {
 		}
 
 		// Encrypt the key
-		$encrypted = PPQ_Helpers::encrypt( $api_key );
+		$encrypted = PressPrimer_Quiz_Helpers::encrypt( $api_key );
 
 		if ( is_wp_error( $encrypted ) ) {
 			return $encrypted;
@@ -210,7 +210,7 @@ class PPQ_AI_Service {
 			return '';
 		}
 
-		$decrypted = PPQ_Helpers::decrypt( $encrypted );
+		$decrypted = PressPrimer_Quiz_Helpers::decrypt( $encrypted );
 
 		if ( is_wp_error( $decrypted ) ) {
 			return $decrypted;
@@ -315,7 +315,7 @@ class PPQ_AI_Service {
 		}
 
 		if ( 200 !== $code ) {
-			$body = json_decode( wp_remote_retrieve_body( $response ), true );
+			$body    = json_decode( wp_remote_retrieve_body( $response ), true );
 			$message = isset( $body['error']['message'] )
 				? $body['error']['message']
 				: __( 'Unknown error occurred.', 'pressprimer-quiz' );
@@ -668,8 +668,8 @@ class PPQ_AI_Service {
 			$type_instructions[] = '- MC (Multiple Choice): exactly ONE correct answer, exactly ' . $answer_count . ' options total';
 		}
 		if ( in_array( 'ma', $params['types'], true ) ) {
-			$min_correct = min( 2, $answer_count - 1 );
-			$max_correct = $answer_count - 1;
+			$min_correct         = min( 2, $answer_count - 1 );
+			$max_correct         = $answer_count - 1;
 			$type_instructions[] = '- MA (Multiple Answer): ' . $min_correct . '-' . $max_correct . ' correct answers, exactly ' . $answer_count . ' options total';
 		}
 		if ( in_array( 'tf', $params['types'], true ) ) {
@@ -686,7 +686,7 @@ class PPQ_AI_Service {
 
 		// Build JSON structure based on feedback setting
 		if ( $generate_feedback ) {
-			$json_structure = '{
+			$json_structure      = '{
   "questions": [
     {
       "type": "mc|ma|tf",
@@ -705,7 +705,7 @@ class PPQ_AI_Service {
    - Reference specific concepts from the content
    - Help learners understand their mistakes';
 		} else {
-			$json_structure = '{
+			$json_structure      = '{
   "questions": [
     {
       "type": "mc|ma|tf",
@@ -720,72 +720,52 @@ class PPQ_AI_Service {
 			$feedback_guidelines = '3. **No Feedback Required**: Do not include feedback fields - only stem, type, difficulty, and answers with text and is_correct.';
 		}
 
-		$system = <<<PROMPT
-You are an expert educational assessment designer specializing in creating effective quiz questions that test genuine understanding, not mere recall.
-
-Your task is to generate {$params['count']} high-quality quiz questions from the provided educational content.
-
-## Output Format
-
-You MUST output ONLY valid JSON with no markdown formatting, no code blocks, and no additional text. The response must start with { and end with }.
-
-## JSON Structure
-
-{$json_structure}
-
-## Question Type Requirements
-
-{$type_instructions_str}
-
-## Difficulty Distribution
-
-{$difficulty_instructions}
-
-## Quality Guidelines
-
-1. **Question Stems**:
-   - Write clear, concise questions that test understanding
-   - Avoid negative phrasing (e.g., "Which is NOT...")
-   - Ensure one unambiguous correct answer (or correct set for MA)
-   - Test application and comprehension, not just memorization
-
-2. **Answer Options**:
-   - Make distractors plausible but clearly incorrect
-   - Avoid "all of the above" or "none of the above"
-   - Keep options similar in length and structure
-   - Avoid grammatical clues that give away the answer
-
-{$feedback_guidelines}
-
-4. **Difficulty Levels** (IMPORTANT - distractors must match difficulty):
-   - **Easy**: Tests direct recall or basic understanding
-     * Distractors should be obviously wrong to anyone who read the material
-     * Use clearly unrelated or contradictory options
-     * Questions focus on key definitions, main concepts, or explicit facts
-   - **Medium**: Requires application or analysis
-     * Distractors are plausible but distinguishable with careful thought
-     * May include common misconceptions
-     * Questions require connecting concepts or applying knowledge
-   - **Hard**: Demands synthesis, evaluation, or complex application
-     * Distractors are highly plausible and require deep understanding to eliminate
-     * Include subtle distinctions and near-correct options
-     * Questions may involve multiple concepts or edge cases
-   - **Expert**: Tests advanced mastery and professional-level knowledge
-     * Distractors are extremely plausible, often true in other contexts
-     * Require nuanced understanding of exceptions, limitations, or advanced applications
-     * Questions target expert-level distinctions that novices would miss
-
-## Examples
-
-{$examples}
-
-## Important
-
-- Generate EXACTLY {$params['count']} questions
-- Use ONLY the question types specified: {$types_str}
-- Base ALL questions on the provided content
-- Output raw JSON only - no markdown, no code fences
-PROMPT;
+		$system = 'You are an expert educational assessment designer specializing in creating effective quiz questions that test genuine understanding, not mere recall.' . "\n\n" .
+			'Your task is to generate ' . $params['count'] . ' high-quality quiz questions from the provided educational content.' . "\n\n" .
+			'## Output Format' . "\n\n" .
+			'You MUST output ONLY valid JSON with no markdown formatting, no code blocks, and no additional text. The response must start with { and end with }.' . "\n\n" .
+			'## JSON Structure' . "\n\n" .
+			$json_structure . "\n\n" .
+			'## Question Type Requirements' . "\n\n" .
+			$type_instructions_str . "\n\n" .
+			'## Difficulty Distribution' . "\n\n" .
+			$difficulty_instructions . "\n\n" .
+			'## Quality Guidelines' . "\n\n" .
+			'1. **Question Stems**:' . "\n" .
+			'   - Write clear, concise questions that test understanding' . "\n" .
+			'   - Avoid negative phrasing (e.g., "Which is NOT...")' . "\n" .
+			'   - Ensure one unambiguous correct answer (or correct set for MA)' . "\n" .
+			'   - Test application and comprehension, not just memorization' . "\n\n" .
+			'2. **Answer Options**:' . "\n" .
+			'   - Make distractors plausible but clearly incorrect' . "\n" .
+			'   - Avoid "all of the above" or "none of the above"' . "\n" .
+			'   - Keep options similar in length and structure' . "\n" .
+			'   - Avoid grammatical clues that give away the answer' . "\n\n" .
+			$feedback_guidelines . "\n\n" .
+			'4. **Difficulty Levels** (IMPORTANT - distractors must match difficulty):' . "\n" .
+			'   - **Easy**: Tests direct recall or basic understanding' . "\n" .
+			'     * Distractors should be obviously wrong to anyone who read the material' . "\n" .
+			'     * Use clearly unrelated or contradictory options' . "\n" .
+			'     * Questions focus on key definitions, main concepts, or explicit facts' . "\n" .
+			'   - **Medium**: Requires application or analysis' . "\n" .
+			'     * Distractors are plausible but distinguishable with careful thought' . "\n" .
+			'     * May include common misconceptions' . "\n" .
+			'     * Questions require connecting concepts or applying knowledge' . "\n" .
+			'   - **Hard**: Demands synthesis, evaluation, or complex application' . "\n" .
+			'     * Distractors are highly plausible and require deep understanding to eliminate' . "\n" .
+			'     * Include subtle distinctions and near-correct options' . "\n" .
+			'     * Questions may involve multiple concepts or edge cases' . "\n" .
+			'   - **Expert**: Tests advanced mastery and professional-level knowledge' . "\n" .
+			'     * Distractors are extremely plausible, often true in other contexts' . "\n" .
+			'     * Require nuanced understanding of exceptions, limitations, or advanced applications' . "\n" .
+			'     * Questions target expert-level distinctions that novices would miss' . "\n\n" .
+			'## Examples' . "\n\n" .
+			$examples . "\n\n" .
+			'## Important' . "\n\n" .
+			'- Generate EXACTLY ' . $params['count'] . ' questions' . "\n" .
+			'- Use ONLY the question types specified: ' . $types_str . "\n" .
+			'- Base ALL questions on the provided content' . "\n" .
+			'- Output raw JSON only - no markdown, no code fences';
 
 		$user = "Generate {$params['count']} quiz questions from this educational content:\n\n---\n\n" . $content . "\n\n---\n\nRemember: Output only valid JSON, starting with { and ending with }.";
 
@@ -839,107 +819,95 @@ PROMPT;
 
 		if ( in_array( 'mc', $types, true ) ) {
 			if ( $generate_feedback ) {
-				$examples[] = <<<'EXAMPLE'
-Multiple Choice (MC) example:
-{
-  "type": "mc",
-  "difficulty": "medium",
-  "stem": "What is the primary function of mitochondria in a cell?",
-  "answers": [
-    {"text": "Energy production through ATP synthesis", "is_correct": true, "feedback": "Correct! Mitochondria are often called the 'powerhouse of the cell' because they produce ATP through cellular respiration."},
-    {"text": "Protein synthesis", "is_correct": false, "feedback": "Incorrect. Protein synthesis occurs in ribosomes, not mitochondria."},
-    {"text": "Cell division", "is_correct": false, "feedback": "Incorrect. Cell division is controlled by the nucleus and involves structures like the centrosome."},
-    {"text": "Waste storage", "is_correct": false, "feedback": "Incorrect. Waste storage is primarily handled by vacuoles, especially in plant cells."}
-  ],
-  "feedback_correct": "Excellent! You understand the crucial role mitochondria play in cellular energy production.",
-  "feedback_incorrect": "Mitochondria are responsible for producing ATP through cellular respiration. They convert nutrients into usable energy for the cell."
-}
-EXAMPLE;
+				$examples[] = 'Multiple Choice (MC) example:' . "\n" .
+					'{' . "\n" .
+					'  "type": "mc",' . "\n" .
+					'  "difficulty": "medium",' . "\n" .
+					'  "stem": "What is the primary function of mitochondria in a cell?",' . "\n" .
+					'  "answers": [' . "\n" .
+					'    {"text": "Energy production through ATP synthesis", "is_correct": true, "feedback": "Correct! Mitochondria are often called the \'powerhouse of the cell\' because they produce ATP through cellular respiration."},' . "\n" .
+					'    {"text": "Protein synthesis", "is_correct": false, "feedback": "Incorrect. Protein synthesis occurs in ribosomes, not mitochondria."},' . "\n" .
+					'    {"text": "Cell division", "is_correct": false, "feedback": "Incorrect. Cell division is controlled by the nucleus and involves structures like the centrosome."},' . "\n" .
+					'    {"text": "Waste storage", "is_correct": false, "feedback": "Incorrect. Waste storage is primarily handled by vacuoles, especially in plant cells."}' . "\n" .
+					'  ],' . "\n" .
+					'  "feedback_correct": "Excellent! You understand the crucial role mitochondria play in cellular energy production.",' . "\n" .
+					'  "feedback_incorrect": "Mitochondria are responsible for producing ATP through cellular respiration. They convert nutrients into usable energy for the cell."' . "\n" .
+					'}';
 			} else {
-				$examples[] = <<<'EXAMPLE'
-Multiple Choice (MC) example:
-{
-  "type": "mc",
-  "difficulty": "medium",
-  "stem": "What is the primary function of mitochondria in a cell?",
-  "answers": [
-    {"text": "Energy production through ATP synthesis", "is_correct": true},
-    {"text": "Protein synthesis", "is_correct": false},
-    {"text": "Cell division", "is_correct": false},
-    {"text": "Waste storage", "is_correct": false}
-  ]
-}
-EXAMPLE;
+				$examples[] = 'Multiple Choice (MC) example:' . "\n" .
+					'{' . "\n" .
+					'  "type": "mc",' . "\n" .
+					'  "difficulty": "medium",' . "\n" .
+					'  "stem": "What is the primary function of mitochondria in a cell?",' . "\n" .
+					'  "answers": [' . "\n" .
+					'    {"text": "Energy production through ATP synthesis", "is_correct": true},' . "\n" .
+					'    {"text": "Protein synthesis", "is_correct": false},' . "\n" .
+					'    {"text": "Cell division", "is_correct": false},' . "\n" .
+					'    {"text": "Waste storage", "is_correct": false}' . "\n" .
+					'  ]' . "\n" .
+					'}';
 			}
 		}
 
 		if ( in_array( 'ma', $types, true ) ) {
 			if ( $generate_feedback ) {
-				$examples[] = <<<'EXAMPLE'
-Multiple Answer (MA) example:
-{
-  "type": "ma",
-  "difficulty": "hard",
-  "stem": "Which of the following are characteristics of effective feedback in education? Select all that apply.",
-  "answers": [
-    {"text": "Timely delivery after the performance", "is_correct": true, "feedback": "Correct! Timely feedback allows students to connect it with their actions."},
-    {"text": "Focused on specific behaviors or outcomes", "is_correct": true, "feedback": "Correct! Specific feedback is more actionable than general comments."},
-    {"text": "Always positive to maintain motivation", "is_correct": false, "feedback": "Incorrect. Effective feedback should be honest and constructive, not just positive."},
-    {"text": "Includes guidance for improvement", "is_correct": true, "feedback": "Correct! Actionable guidance helps students know how to improve."},
-    {"text": "Delivered publicly to increase accountability", "is_correct": false, "feedback": "Incorrect. Feedback is often more effective when delivered privately to avoid embarrassment."}
-  ],
-  "feedback_correct": "Great job! You correctly identified the key characteristics of effective educational feedback.",
-  "feedback_incorrect": "Effective feedback should be timely, specific, and include guidance for improvement. It doesn't need to be always positive or delivered publicly."
-}
-EXAMPLE;
+				$examples[] = 'Multiple Answer (MA) example:' . "\n" .
+					'{' . "\n" .
+					'  "type": "ma",' . "\n" .
+					'  "difficulty": "hard",' . "\n" .
+					'  "stem": "Which of the following are characteristics of effective feedback in education? Select all that apply.",' . "\n" .
+					'  "answers": [' . "\n" .
+					'    {"text": "Timely delivery after the performance", "is_correct": true, "feedback": "Correct! Timely feedback allows students to connect it with their actions."},' . "\n" .
+					'    {"text": "Focused on specific behaviors or outcomes", "is_correct": true, "feedback": "Correct! Specific feedback is more actionable than general comments."},' . "\n" .
+					'    {"text": "Always positive to maintain motivation", "is_correct": false, "feedback": "Incorrect. Effective feedback should be honest and constructive, not just positive."},' . "\n" .
+					'    {"text": "Includes guidance for improvement", "is_correct": true, "feedback": "Correct! Actionable guidance helps students know how to improve."},' . "\n" .
+					'    {"text": "Delivered publicly to increase accountability", "is_correct": false, "feedback": "Incorrect. Feedback is often more effective when delivered privately to avoid embarrassment."}' . "\n" .
+					'  ],' . "\n" .
+					'  "feedback_correct": "Great job! You correctly identified the key characteristics of effective educational feedback.",' . "\n" .
+					'  "feedback_incorrect": "Effective feedback should be timely, specific, and include guidance for improvement. It doesn\'t need to be always positive or delivered publicly."' . "\n" .
+					'}';
 			} else {
-				$examples[] = <<<'EXAMPLE'
-Multiple Answer (MA) example:
-{
-  "type": "ma",
-  "difficulty": "hard",
-  "stem": "Which of the following are characteristics of effective feedback in education? Select all that apply.",
-  "answers": [
-    {"text": "Timely delivery after the performance", "is_correct": true},
-    {"text": "Focused on specific behaviors or outcomes", "is_correct": true},
-    {"text": "Always positive to maintain motivation", "is_correct": false},
-    {"text": "Includes guidance for improvement", "is_correct": true},
-    {"text": "Delivered publicly to increase accountability", "is_correct": false}
-  ]
-}
-EXAMPLE;
+				$examples[] = 'Multiple Answer (MA) example:' . "\n" .
+					'{' . "\n" .
+					'  "type": "ma",' . "\n" .
+					'  "difficulty": "hard",' . "\n" .
+					'  "stem": "Which of the following are characteristics of effective feedback in education? Select all that apply.",' . "\n" .
+					'  "answers": [' . "\n" .
+					'    {"text": "Timely delivery after the performance", "is_correct": true},' . "\n" .
+					'    {"text": "Focused on specific behaviors or outcomes", "is_correct": true},' . "\n" .
+					'    {"text": "Always positive to maintain motivation", "is_correct": false},' . "\n" .
+					'    {"text": "Includes guidance for improvement", "is_correct": true},' . "\n" .
+					'    {"text": "Delivered publicly to increase accountability", "is_correct": false}' . "\n" .
+					'  ]' . "\n" .
+					'}';
 			}
 		}
 
 		if ( in_array( 'tf', $types, true ) ) {
 			if ( $generate_feedback ) {
-				$examples[] = <<<'EXAMPLE'
-True/False (TF) example:
-{
-  "type": "tf",
-  "difficulty": "easy",
-  "stem": "The Earth revolves around the Sun in approximately 365 days.",
-  "answers": [
-    {"text": "True", "is_correct": true, "feedback": "Correct! Earth's orbital period around the Sun is approximately 365.25 days, which is why we have leap years."},
-    {"text": "False", "is_correct": false, "feedback": "Incorrect. Earth does complete one orbit around the Sun in about 365 days."}
-  ],
-  "feedback_correct": "Correct! This is the basis for our calendar year.",
-  "feedback_incorrect": "Earth's orbit around the Sun takes approximately 365.25 days, which we round to 365 days for our calendar."
-}
-EXAMPLE;
+				$examples[] = 'True/False (TF) example:' . "\n" .
+					'{' . "\n" .
+					'  "type": "tf",' . "\n" .
+					'  "difficulty": "easy",' . "\n" .
+					'  "stem": "The Earth revolves around the Sun in approximately 365 days.",' . "\n" .
+					'  "answers": [' . "\n" .
+					'    {"text": "True", "is_correct": true, "feedback": "Correct! Earth\'s orbital period around the Sun is approximately 365.25 days, which is why we have leap years."},' . "\n" .
+					'    {"text": "False", "is_correct": false, "feedback": "Incorrect. Earth does complete one orbit around the Sun in about 365 days."}' . "\n" .
+					'  ],' . "\n" .
+					'  "feedback_correct": "Correct! This is the basis for our calendar year.",' . "\n" .
+					'  "feedback_incorrect": "Earth\'s orbit around the Sun takes approximately 365.25 days, which we round to 365 days for our calendar."' . "\n" .
+					'}';
 			} else {
-				$examples[] = <<<'EXAMPLE'
-True/False (TF) example:
-{
-  "type": "tf",
-  "difficulty": "easy",
-  "stem": "The Earth revolves around the Sun in approximately 365 days.",
-  "answers": [
-    {"text": "True", "is_correct": true},
-    {"text": "False", "is_correct": false}
-  ]
-}
-EXAMPLE;
+				$examples[] = 'True/False (TF) example:' . "\n" .
+					'{' . "\n" .
+					'  "type": "tf",' . "\n" .
+					'  "difficulty": "easy",' . "\n" .
+					'  "stem": "The Earth revolves around the Sun in approximately 365 days.",' . "\n" .
+					'  "answers": [' . "\n" .
+					'    {"text": "True", "is_correct": true},' . "\n" .
+					'    {"text": "False", "is_correct": false}' . "\n" .
+					'  ]' . "\n" .
+					'}';
 			}
 		}
 
@@ -960,8 +928,8 @@ EXAMPLE;
 	 */
 	private function call_api( $prompt ) {
 		$request_body = [
-			'model'       => $this->model,
-			'messages'    => [
+			'model'                 => $this->model,
+			'messages'              => [
 				[
 					'role'    => 'system',
 					'content' => $prompt['system'],
@@ -1019,12 +987,6 @@ EXAMPLE;
 	 * @return string|WP_Error Response content or WP_Error.
 	 */
 	private function make_api_request( $request_body ) {
-		// Temporarily increase PHP execution time for long requests
-		$original_time_limit = ini_get( 'max_execution_time' );
-		if ( function_exists( 'set_time_limit' ) && ! ini_get( 'safe_mode' ) ) {
-			@set_time_limit( self::API_TIMEOUT + 60 ); // phpcs:ignore WordPress.PHP.NoSilencedErrors
-		}
-
 		$response = wp_remote_post(
 			self::API_BASE_URL . '/chat/completions',
 			[
@@ -1038,11 +1000,6 @@ EXAMPLE;
 				'sslverify'   => true,
 			]
 		);
-
-		// Restore original time limit
-		if ( function_exists( 'set_time_limit' ) && ! ini_get( 'safe_mode' ) ) {
-			@set_time_limit( (int) $original_time_limit ); // phpcs:ignore WordPress.PHP.NoSilencedErrors
-		}
 
 		if ( is_wp_error( $response ) ) {
 			$error_message = $response->get_error_message();
@@ -1199,9 +1156,9 @@ EXAMPLE;
 
 				if ( ! $in_string ) {
 					if ( '{' === $char ) {
-						$depth++;
+						++$depth;
 					} elseif ( '}' === $char ) {
-						$depth--;
+						--$depth;
 						if ( 0 === $depth ) {
 							$json_end = $i + 1;
 							break;
@@ -1356,9 +1313,9 @@ EXAMPLE;
 	 * @return array|WP_Error Valid questions array with metadata or WP_Error.
 	 */
 	private function validate_questions( $questions ) {
-		$valid_questions = [];
+		$valid_questions              = [];
 		$this->last_validation_errors = [];
-		$total_count = count( $questions );
+		$total_count                  = count( $questions );
 
 		foreach ( $questions as $index => $question ) {
 			// Handle alternative field names that AI might use
@@ -1439,18 +1396,18 @@ EXAMPLE;
 		// Normalize type field
 		if ( isset( $question['type'] ) ) {
 			$type_map = [
-				'multiple_choice'    => 'mc',
-				'multiple-choice'    => 'mc',
-				'multiplechoice'     => 'mc',
-				'single_choice'      => 'mc',
-				'multiple_answer'    => 'ma',
-				'multiple-answer'    => 'ma',
-				'multipleanswer'     => 'ma',
-				'multi_select'       => 'ma',
-				'true_false'         => 'tf',
-				'true-false'         => 'tf',
-				'truefalse'          => 'tf',
-				'boolean'            => 'tf',
+				'multiple_choice' => 'mc',
+				'multiple-choice' => 'mc',
+				'multiplechoice'  => 'mc',
+				'single_choice'   => 'mc',
+				'multiple_answer' => 'ma',
+				'multiple-answer' => 'ma',
+				'multipleanswer'  => 'ma',
+				'multi_select'    => 'ma',
+				'true_false'      => 'tf',
+				'true-false'      => 'tf',
+				'truefalse'       => 'tf',
+				'boolean'         => 'tf',
 			];
 
 			$normalized_type = strtolower( $question['type'] );
@@ -1614,7 +1571,7 @@ EXAMPLE;
 		$correct_count = 0;
 		foreach ( $question['answers'] as $answer ) {
 			if ( ! empty( $answer['is_correct'] ) ) {
-				$correct_count++;
+				++$correct_count;
 			}
 		}
 
@@ -1832,9 +1789,9 @@ EXAMPLE;
 
 		// Return content with truncation flag
 		return [
-			'content'       => $content,
-			'was_truncated' => $was_truncated,
-			'char_count'    => mb_strlen( $content ),
+			'content'        => $content,
+			'was_truncated'  => $was_truncated,
+			'char_count'     => mb_strlen( $content ),
 			'token_estimate' => self::estimate_tokens( $content ),
 		];
 	}
@@ -1958,13 +1915,13 @@ EXAMPLE;
 
 		// Build comprehensive response
 		$response = [
-			'questions'      => isset( $result['questions'] ) ? $result['questions'] : $result,
-			'content_info'   => [
+			'questions'    => isset( $result['questions'] ) ? $result['questions'] : $result,
+			'content_info' => [
 				'was_truncated'  => $prepared['was_truncated'],
 				'char_count'     => $prepared['char_count'],
 				'token_estimate' => $prepared['token_estimate'],
 			],
-			'token_usage'    => $this->get_last_token_usage(),
+			'token_usage'  => $this->get_last_token_usage(),
 		];
 
 		// Add validation metadata if available

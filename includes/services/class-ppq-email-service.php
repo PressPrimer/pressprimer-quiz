@@ -21,7 +21,7 @@ if ( ! defined( 'ABSPATH' ) ) {
  *
  * @since 1.0.0
  */
-class PPQ_Email_Service {
+class PressPrimer_Quiz_Email_Service {
 
 	/**
 	 * Send results email
@@ -36,7 +36,7 @@ class PPQ_Email_Service {
 	 */
 	public static function send_results( $attempt_id, $to_email ) {
 		// Load attempt
-		$attempt = PPQ_Attempt::get( $attempt_id );
+		$attempt = PressPrimer_Quiz_Attempt::get( $attempt_id );
 		if ( ! $attempt || 'submitted' !== $attempt->status ) {
 			return false;
 		}
@@ -53,8 +53,8 @@ class PPQ_Email_Service {
 		}
 
 		// Get email settings
-		$settings = get_option( 'ppq_settings', [] );
-		$from_name = isset( $settings['email_from_name'] ) && $settings['email_from_name']
+		$settings   = get_option( 'ppq_settings', [] );
+		$from_name  = isset( $settings['email_from_name'] ) && $settings['email_from_name']
 			? $settings['email_from_name']
 			: get_bloginfo( 'name' );
 		$from_email = isset( $settings['email_from_email'] ) && $settings['email_from_email']
@@ -65,12 +65,12 @@ class PPQ_Email_Service {
 		$subject_template = isset( $settings['email_results_subject'] ) && $settings['email_results_subject']
 			? $settings['email_results_subject']
 			: __( 'Your results for {quiz_title}', 'pressprimer-quiz' );
-		$body_template = isset( $settings['email_results_body'] ) && $settings['email_results_body']
+		$body_template    = isset( $settings['email_results_body'] ) && $settings['email_results_body']
 			? $settings['email_results_body']
 			: self::get_default_body_template();
 
 		// Get student names
-		$first_name = self::get_first_name( $attempt );
+		$first_name   = self::get_first_name( $attempt );
 		$student_name = self::get_student_name( $attempt );
 
 		// Build token replacements
@@ -96,7 +96,7 @@ class PPQ_Email_Service {
 		}
 
 		// Build results summary HTML for token
-		$results_summary_html = self::build_results_summary_html( $attempt );
+		$results_summary_html        = self::build_results_summary_html( $attempt );
 		$tokens['{results_summary}'] = $results_summary_html;
 
 		// Replace tokens in subject
@@ -119,7 +119,7 @@ class PPQ_Email_Service {
 
 		// Log event if sent successfully
 		if ( $sent ) {
-			do_action( 'ppq_results_email_sent', $attempt_id, $to_email );
+			do_action( 'pressprimer_quiz_results_email_sent', $attempt_id, $to_email );
 		}
 
 		return $sent;
@@ -130,7 +130,7 @@ class PPQ_Email_Service {
 	 *
 	 * @since 1.0.0
 	 *
-	 * @param PPQ_Attempt $attempt Attempt object.
+	 * @param PressPrimer_Quiz_Attempt $attempt Attempt object.
 	 * @return string Student first name.
 	 */
 	private static function get_first_name( $attempt ) {
@@ -163,7 +163,7 @@ class PPQ_Email_Service {
 	 *
 	 * @since 1.0.0
 	 *
-	 * @param PPQ_Attempt $attempt Attempt object.
+	 * @param PressPrimer_Quiz_Attempt $attempt Attempt object.
 	 * @return string Student display name.
 	 */
 	private static function get_student_name( $attempt ) {
@@ -194,12 +194,12 @@ class PPQ_Email_Service {
 	 *
 	 * @since 1.0.0
 	 *
-	 * @param PPQ_Attempt $attempt Attempt object.
+	 * @param PressPrimer_Quiz_Attempt $attempt Attempt object.
 	 * @return string Results URL.
 	 */
 	private static function get_results_url( $attempt ) {
 		// Try to get the quiz page URL
-		$quiz = $attempt->get_quiz();
+		$quiz     = $attempt->get_quiz();
 		$base_url = '';
 
 		if ( $quiz ) {
@@ -233,10 +233,10 @@ class PPQ_Email_Service {
 	 *
 	 * @since 1.0.0
 	 *
-	 * @param string      $body_text Body text with tokens replaced.
-	 * @param PPQ_Attempt $attempt Attempt object.
-	 * @param PPQ_Quiz    $quiz Quiz object.
-	 * @param array       $tokens Token replacements.
+	 * @param string                   $body_text Body text with tokens replaced.
+	 * @param PressPrimer_Quiz_Attempt $attempt Attempt object.
+	 * @param PressPrimer_Quiz_Quiz    $quiz Quiz object.
+	 * @param array                    $tokens Token replacements.
 	 * @return string HTML email body.
 	 */
 	private static function build_html_email( $body_text, $attempt, $quiz, $tokens ) {
@@ -246,17 +246,17 @@ class PPQ_Email_Service {
 		$passed_status = $attempt->passed
 			? __( 'PASSED', 'pressprimer-quiz' )
 			: __( 'FAILED', 'pressprimer-quiz' );
-		$passed_color = $attempt->passed ? '#10b981' : '#ef4444';
-		$passed_bg = $attempt->passed ? '#f0fdf4' : '#fef2f2';
+		$passed_color  = $attempt->passed ? '#10b981' : '#ef4444';
+		$passed_bg     = $attempt->passed ? '#f0fdf4' : '#fef2f2';
 
 		// Get counts
 		$correct_count = 0;
-		$total_count = 0;
-		$items = $attempt->get_items();
+		$total_count   = 0;
+		$items         = $attempt->get_items();
 		foreach ( $items as $item ) {
-			$total_count++;
+			++$total_count;
 			if ( $item->is_correct ) {
-				$correct_count++;
+				++$correct_count;
 			}
 		}
 
@@ -365,24 +365,24 @@ class PPQ_Email_Service {
 	 *
 	 * @since 1.0.0
 	 *
-	 * @param PPQ_Attempt $attempt Attempt object.
+	 * @param PressPrimer_Quiz_Attempt $attempt Attempt object.
 	 * @return string HTML for results summary.
 	 */
 	private static function build_results_summary_html( $attempt ) {
 		$passed_status = $attempt->passed
 			? __( 'PASSED', 'pressprimer-quiz' )
 			: __( 'FAILED', 'pressprimer-quiz' );
-		$passed_color = $attempt->passed ? '#10b981' : '#ef4444';
-		$passed_bg = $attempt->passed ? '#f0fdf4' : '#fef2f2';
+		$passed_color  = $attempt->passed ? '#10b981' : '#ef4444';
+		$passed_bg     = $attempt->passed ? '#f0fdf4' : '#fef2f2';
 
 		// Get counts
 		$correct_count = 0;
-		$total_count = 0;
-		$items = $attempt->get_items();
+		$total_count   = 0;
+		$items         = $attempt->get_items();
 		foreach ( $items as $item ) {
-			$total_count++;
+			++$total_count;
 			if ( $item->is_correct ) {
-				$correct_count++;
+				++$correct_count;
 			}
 		}
 
@@ -394,7 +394,7 @@ class PPQ_Email_Service {
 		);
 
 		// Build inline-styled HTML (email-safe)
-		$html = '<div style="background-color: ' . esc_attr( $passed_bg ) . '; border: 2px solid ' . esc_attr( $passed_color ) . '; border-radius: 8px; padding: 20px; text-align: center; margin-bottom: 20px;">';
+		$html  = '<div style="background-color: ' . esc_attr( $passed_bg ) . '; border: 2px solid ' . esc_attr( $passed_color ) . '; border-radius: 8px; padding: 20px; text-align: center; margin-bottom: 20px;">';
 		$html .= '<div style="font-size: 48px; font-weight: 700; color: #1a1a1a; margin: 0 0 10px;">' . esc_html( round( (float) $attempt->score_percent, 1 ) ) . '%</div>';
 		$html .= '<div style="font-size: 16px; color: #666666; margin-bottom: 15px;">' . esc_html( $details_text ) . '</div>';
 		$html .= '<div style="display: inline-block; padding: 10px 20px; background-color: ' . esc_attr( $passed_color ) . '; color: #ffffff; border-radius: 4px; font-weight: 600; font-size: 14px;">' . esc_html( $passed_status ) . '</div>';
@@ -414,7 +414,7 @@ class PPQ_Email_Service {
 	 */
 	private static function build_test_results_summary_html() {
 		$passed_color = '#10b981';
-		$passed_bg = '#f0fdf4';
+		$passed_bg    = '#f0fdf4';
 
 		$details_text = sprintf(
 			/* translators: 1: correct count, 2: total count */
@@ -424,7 +424,7 @@ class PPQ_Email_Service {
 		);
 
 		// Build inline-styled HTML (email-safe)
-		$html = '<div style="background-color: ' . esc_attr( $passed_bg ) . '; border: 2px solid ' . esc_attr( $passed_color ) . '; border-radius: 8px; padding: 20px; text-align: center; margin-bottom: 20px;">';
+		$html  = '<div style="background-color: ' . esc_attr( $passed_bg ) . '; border: 2px solid ' . esc_attr( $passed_color ) . '; border-radius: 8px; padding: 20px; text-align: center; margin-bottom: 20px;">';
 		$html .= '<div style="font-size: 48px; font-weight: 700; color: #1a1a1a; margin: 0 0 10px;">85%</div>';
 		$html .= '<div style="font-size: 16px; color: #666666; margin-bottom: 15px;">' . esc_html( $details_text ) . '</div>';
 		$html .= '<div style="display: inline-block; padding: 10px 20px; background-color: ' . esc_attr( $passed_color ) . '; color: #ffffff; border-radius: 4px; font-weight: 600; font-size: 14px;">' . esc_html__( 'PASSED', 'pressprimer-quiz' ) . '</div>';
@@ -444,7 +444,7 @@ class PPQ_Email_Service {
 	 * @return string HTML for results button.
 	 */
 	private static function build_results_button_html( $url ) {
-		$html = '<div style="text-align: center; margin: 20px 0;">';
+		$html  = '<div style="text-align: center; margin: 20px 0;">';
 		$html .= '<a href="' . esc_url( $url ) . '" style="display: inline-block; padding: 12px 30px; background-color: #3b82f6; color: #ffffff; text-decoration: none; border-radius: 6px; font-weight: 600;">';
 		$html .= esc_html__( 'View Full Results', 'pressprimer-quiz' );
 		$html .= '</a>';
@@ -458,9 +458,9 @@ class PPQ_Email_Service {
 	 *
 	 * @since 1.0.0
 	 *
-	 * @param string      $logo_url Logo URL.
-	 * @param PPQ_Attempt $attempt Attempt object.
-	 * @param PPQ_Quiz    $quiz Quiz object.
+	 * @param string                   $logo_url Logo URL.
+	 * @param PressPrimer_Quiz_Attempt $attempt Attempt object.
+	 * @param PressPrimer_Quiz_Quiz    $quiz Quiz object.
 	 * @return string Header HTML.
 	 */
 	private static function build_email_header( $logo_url, $attempt, $quiz ) {
@@ -483,10 +483,10 @@ class PPQ_Email_Service {
 		 *
 		 * @param string      $header Header HTML.
 		 * @param string      $logo_url Logo URL.
-		 * @param PPQ_Attempt $attempt Attempt object.
-		 * @param PPQ_Quiz    $quiz Quiz object.
+		 * @param PressPrimer_Quiz_Attempt $attempt Attempt object.
+		 * @param PressPrimer_Quiz_Quiz    $quiz Quiz object.
 		 */
-		return apply_filters( 'ppq_email_header', $header, $logo_url, $attempt, $quiz );
+		return apply_filters( 'pressprimer_quiz_email_header', $header, $logo_url, $attempt, $quiz );
 	}
 
 	/**
@@ -494,8 +494,8 @@ class PPQ_Email_Service {
 	 *
 	 * @since 1.0.0
 	 *
-	 * @param PPQ_Attempt $attempt Attempt object.
-	 * @param PPQ_Quiz    $quiz Quiz object.
+	 * @param PressPrimer_Quiz_Attempt $attempt Attempt object.
+	 * @param PressPrimer_Quiz_Quiz    $quiz Quiz object.
 	 * @return string Footer HTML.
 	 */
 	private static function build_email_footer( $attempt, $quiz ) {
@@ -522,10 +522,10 @@ class PPQ_Email_Service {
 		 * @since 1.0.0
 		 *
 		 * @param string      $footer Footer HTML.
-		 * @param PPQ_Attempt $attempt Attempt object.
-		 * @param PPQ_Quiz    $quiz Quiz object.
+		 * @param PressPrimer_Quiz_Attempt $attempt Attempt object.
+		 * @param PressPrimer_Quiz_Quiz    $quiz Quiz object.
 		 */
-		return apply_filters( 'ppq_email_footer', $footer, $attempt, $quiz );
+		return apply_filters( 'pressprimer_quiz_email_footer', $footer, $attempt, $quiz );
 	}
 
 	/**
@@ -536,7 +536,8 @@ class PPQ_Email_Service {
 	 * @return string Default body template.
 	 */
 	private static function get_default_body_template() {
-		return __( '{results_summary}
+		return __(
+			'{results_summary}
 
 Hi {first_name},
 
@@ -549,7 +550,9 @@ Here are your results:
 
 Good luck with your studies!
 
-{results_url}', 'pressprimer-quiz' );
+{results_url}',
+			'pressprimer-quiz'
+		);
 	}
 
 	/**
@@ -570,13 +573,13 @@ Good luck with your studies!
 
 		// Get current user info for test data
 		$current_user = wp_get_current_user();
-		$first_name = $current_user->first_name ?: $current_user->display_name;
-		$parts = explode( ' ', $first_name );
-		$first_name = $parts[0];
+		$first_name   = $current_user->first_name ?: $current_user->display_name;
+		$parts        = explode( ' ', $first_name );
+		$first_name   = $parts[0];
 
 		// Get email settings
-		$settings = get_option( 'ppq_settings', [] );
-		$from_name = isset( $settings['email_from_name'] ) && $settings['email_from_name']
+		$settings   = get_option( 'ppq_settings', [] );
+		$from_name  = isset( $settings['email_from_name'] ) && $settings['email_from_name']
 			? $settings['email_from_name']
 			: get_bloginfo( 'name' );
 		$from_email = isset( $settings['email_from_email'] ) && $settings['email_from_email']
@@ -587,7 +590,7 @@ Good luck with your studies!
 		$subject_template = isset( $settings['email_results_subject'] ) && $settings['email_results_subject']
 			? $settings['email_results_subject']
 			: __( 'Your results for {quiz_title}', 'pressprimer-quiz' );
-		$body_template = isset( $settings['email_results_body'] ) && $settings['email_results_body']
+		$body_template    = isset( $settings['email_results_body'] ) && $settings['email_results_body']
 			? $settings['email_results_body']
 			: self::get_default_body_template();
 
@@ -794,7 +797,7 @@ Good luck with your studies!
 	 * @param int $attempt_id Attempt ID.
 	 */
 	public static function maybe_send_on_completion( $attempt_id ) {
-		$settings = get_option( 'ppq_settings', [] );
+		$settings  = get_option( 'ppq_settings', [] );
 		$auto_send = isset( $settings['email_results_auto_send'] ) && $settings['email_results_auto_send'];
 
 		if ( ! $auto_send ) {
@@ -802,7 +805,7 @@ Good luck with your studies!
 		}
 
 		// Load attempt
-		$attempt = PPQ_Attempt::get( $attempt_id );
+		$attempt = PressPrimer_Quiz_Attempt::get( $attempt_id );
 		if ( ! $attempt ) {
 			return;
 		}

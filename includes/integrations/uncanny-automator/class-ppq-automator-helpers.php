@@ -21,7 +21,7 @@ if ( ! defined( 'ABSPATH' ) ) {
  *
  * @since 1.0.0
  */
-class PPQ_Automator_Helpers {
+class PressPrimer_Quiz_Automator_Helpers {
 
 	/**
 	 * Get all published quizzes for dropdown options
@@ -33,11 +33,11 @@ class PPQ_Automator_Helpers {
 	public function get_quiz_options() {
 		$options = array();
 
-		if ( ! class_exists( 'PPQ_Quiz' ) ) {
+		if ( ! class_exists( 'PressPrimer_Quiz_Quiz' ) ) {
 			return $options;
 		}
 
-		$quizzes = \PPQ_Quiz::find(
+		$quizzes = \PressPrimer_Quiz_Quiz::find(
 			array(
 				'where'    => array( 'status' => 'published' ),
 				'order_by' => 'title',
@@ -61,8 +61,8 @@ class PPQ_Automator_Helpers {
 	 *
 	 * @since 1.0.0
 	 *
-	 * @param object $attempt PPQ_Attempt object.
-	 * @param object $quiz    PPQ_Quiz object.
+	 * @param object $attempt PressPrimer_Quiz_Attempt object.
+	 * @param object $quiz    PressPrimer_Quiz_Quiz object.
 	 * @return array Token data.
 	 */
 	public function get_quiz_token_data_from_objects( $attempt, $quiz ) {
@@ -96,21 +96,21 @@ class PPQ_Automator_Helpers {
 
 		// Get attempt data.
 		if ( $attempt ) {
-			$data['ATTEMPT_ID']    = $attempt->id ?? '';
-			$data['SCORE']         = round( $attempt->score_percent ?? 0 );
-			$data['SCORE_PERCENT'] = round( $attempt->score_percent ?? 0 ) . '%';
-			$data['POINTS_EARNED'] = $attempt->score_points ?? 0;
+			$data['ATTEMPT_ID']      = $attempt->id ?? '';
+			$data['SCORE']           = round( $attempt->score_percent ?? 0 );
+			$data['SCORE_PERCENT']   = round( $attempt->score_percent ?? 0 ) . '%';
+			$data['POINTS_EARNED']   = $attempt->score_points ?? 0;
 			$data['POINTS_POSSIBLE'] = $attempt->max_points ?? 0;
-			$data['PASSED']        = ! empty( $attempt->passed ) ? __( 'Yes', 'pressprimer-quiz' ) : __( 'No', 'pressprimer-quiz' );
+			$data['PASSED']          = ! empty( $attempt->passed ) ? __( 'Yes', 'pressprimer-quiz' ) : __( 'No', 'pressprimer-quiz' );
 
 			// Get attempt items for counting and Q&A.
-			$items = method_exists( $attempt, 'get_items' ) ? $attempt->get_items() : array();
-			$correct_count = 0;
+			$items           = method_exists( $attempt, 'get_items' ) ? $attempt->get_items() : array();
+			$correct_count   = 0;
 			$total_questions = count( $items );
 
 			foreach ( $items as $item ) {
 				if ( ! empty( $item->is_correct ) ) {
-					$correct_count++;
+					++$correct_count;
 				}
 			}
 
@@ -144,12 +144,13 @@ class PPQ_Automator_Helpers {
 		// Try to find a page with the quiz shortcode.
 		global $wpdb;
 
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Quiz URL lookup from post content
 		$post_id = $wpdb->get_var(
 			$wpdb->prepare(
 				"SELECT ID FROM {$wpdb->posts}
 				WHERE post_status = 'publish'
 				AND post_content LIKE %s
-				LIMIT 1",
+				LIMIT 1", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- WordPress core table name
 				'%[ppq_quiz id="' . $quiz_id . '"%'
 			)
 		);
@@ -159,12 +160,13 @@ class PPQ_Automator_Helpers {
 		}
 
 		// Fallback: check for block.
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Quiz URL lookup from post content
 		$post_id = $wpdb->get_var(
 			$wpdb->prepare(
 				"SELECT ID FROM {$wpdb->posts}
 				WHERE post_status = 'publish'
 				AND post_content LIKE %s
-				LIMIT 1",
+				LIMIT 1", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- WordPress core table name
 				'%<!-- wp:ppq/quiz {"quizId":' . $quiz_id . '%'
 			)
 		);
@@ -187,10 +189,10 @@ class PPQ_Automator_Helpers {
 	private function format_time( $seconds ) {
 		if ( $seconds < 60 ) {
 			/* translators: %d: number of seconds */
-			return sprintf( _n( '%d second', '%d seconds', $seconds, 'pressprimer-quiz' ), $seconds );
+			return sprintf( _n( '%d second', '%d seconds', $seconds, 'pressprimer-quiz' ), intval( $seconds ) );
 		}
 
-		$minutes = floor( $seconds / 60 );
+		$minutes           = floor( $seconds / 60 );
 		$remaining_seconds = $seconds % 60;
 
 		if ( $minutes < 60 ) {
@@ -198,22 +200,22 @@ class PPQ_Automator_Helpers {
 				/* translators: 1: number of minutes, 2: number of seconds */
 				return sprintf(
 					__( '%1$d min %2$d sec', 'pressprimer-quiz' ),
-					$minutes,
-					$remaining_seconds
+					intval( $minutes ),
+					intval( $remaining_seconds )
 				);
 			}
 			/* translators: %d: number of minutes */
-			return sprintf( _n( '%d minute', '%d minutes', $minutes, 'pressprimer-quiz' ), $minutes );
+			return sprintf( _n( '%d minute', '%d minutes', $minutes, 'pressprimer-quiz' ), intval( $minutes ) );
 		}
 
-		$hours = floor( $minutes / 60 );
+		$hours             = floor( $minutes / 60 );
 		$remaining_minutes = $minutes % 60;
 
 		/* translators: 1: number of hours, 2: number of minutes */
 		return sprintf(
 			__( '%1$d hr %2$d min', 'pressprimer-quiz' ),
-			$hours,
-			$remaining_minutes
+			intval( $hours ),
+			intval( $remaining_minutes )
 		);
 	}
 
@@ -222,7 +224,7 @@ class PPQ_Automator_Helpers {
 	 *
 	 * @since 1.0.0
 	 *
-	 * @param array $items Array of PPQ_Attempt_Item objects.
+	 * @param array $items Array of PressPrimer_Quiz_Attempt_Item objects.
 	 * @return array Array with 'text' and 'html' keys.
 	 */
 	private function get_questions_and_answers( $items ) {
@@ -240,14 +242,14 @@ class PPQ_Automator_Helpers {
 
 		$question_num = 0;
 		foreach ( $items as $item ) {
-			$question_num++;
+			++$question_num;
 
 			// Get question revision for the question text and answers.
 			$revision = method_exists( $item, 'get_question_revision' ) ? $item->get_question_revision() : null;
 
-			$question_text = '';
+			$question_text    = '';
 			$user_answer_text = '';
-			$correct = ! empty( $item->is_correct );
+			$correct          = ! empty( $item->is_correct );
 
 			if ( $revision ) {
 				// Get question stem (the question text).
@@ -255,7 +257,7 @@ class PPQ_Automator_Helpers {
 
 				// Get selected answers and convert to text.
 				$selected_indices = method_exists( $item, 'get_selected_answers' ) ? $item->get_selected_answers() : array();
-				$answers = method_exists( $revision, 'get_answers' ) ? $revision->get_answers() : array();
+				$answers          = method_exists( $revision, 'get_answers' ) ? $revision->get_answers() : array();
 
 				if ( ! empty( $selected_indices ) && ! empty( $answers ) ) {
 					$selected_texts = array();
@@ -274,7 +276,7 @@ class PPQ_Automator_Helpers {
 				}
 			}
 
-			$status = $correct ? '✓' : '✗';
+			$status      = $correct ? '✓' : '✗';
 			$status_text = $correct ? __( 'Correct', 'pressprimer-quiz' ) : __( 'Incorrect', 'pressprimer-quiz' );
 
 			// Text format.

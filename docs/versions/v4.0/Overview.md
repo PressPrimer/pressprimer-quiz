@@ -100,16 +100,16 @@ ppq_attempts_archive (
 
 ```php
 // Analytics computation hooks
-do_action('ppq_analytics_computed', $entity_type, $entity_id, $metrics);
-apply_filters('ppq_analytics_metrics', $metrics, $entity_type, $entity_id);
+do_action('pressprimer_quiz_analytics_computed', $entity_type, $entity_id, $metrics);
+apply_filters('pressprimer_quiz_analytics_metrics', $metrics, $entity_type, $entity_id);
 
 // Data management hooks
-do_action('ppq_attempts_archived', $archived_count, $cutoff_date);
-do_action('ppq_integrity_check_completed', $issues_found, $issues_fixed);
+do_action('pressprimer_quiz_attempts_archived', $archived_count, $cutoff_date);
+do_action('pressprimer_quiz_integrity_check_completed', $issues_found, $issues_fixed);
 
 // Dashboard hooks
-apply_filters('ppq_dashboard_widgets', $widgets, $user_id);
-apply_filters('ppq_dashboard_date_range', $start, $end);
+apply_filters('pressprimer_quiz_dashboard_widgets', $widgets, $user_id);
+apply_filters('pressprimer_quiz_dashboard_date_range', $start, $end);
 ```
 
 ---

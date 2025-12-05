@@ -21,7 +21,7 @@ if ( ! defined( 'ABSPATH' ) ) {
  *
  * @since 1.0.0
  */
-class PPQ_Admin_Settings {
+class PressPrimer_Quiz_Admin_Settings {
 
 	/**
 	 * Settings option name
@@ -501,7 +501,8 @@ class PPQ_Admin_Settings {
 	 */
 	public function render_email_body_field() {
 		$settings = get_option( self::OPTION_NAME, [] );
-		$default = __( 'Hi {student_name},
+		$default  = __(
+			'Hi {student_name},
 
 You recently completed the quiz "{quiz_title}".
 
@@ -512,8 +513,10 @@ Here are your results:
 
 Click the button below to view your full results and review your answers.
 
-Good luck with your studies!', 'pressprimer-quiz' );
-		$value = isset( $settings['email_results_body'] ) ? $settings['email_results_body'] : $default;
+Good luck with your studies!',
+			'pressprimer-quiz'
+		);
+		$value    = isset( $settings['email_results_body'] ) ? $settings['email_results_body'] : $default;
 		?>
 		<textarea
 			name="<?php echo esc_attr( self::OPTION_NAME . '[email_results_body]' ); ?>"
@@ -545,8 +548,8 @@ Good luck with your studies!', 'pressprimer-quiz' );
 	 */
 	public function render_openai_api_key_field() {
 		$user_id    = get_current_user_id();
-		$key_status = PPQ_AI_Service::get_api_key_status( $user_id );
-		$model_pref = PPQ_AI_Service::get_model_preference( $user_id );
+		$key_status = PressPrimer_Quiz_AI_Service::get_api_key_status( $user_id );
+		$model_pref = PressPrimer_Quiz_AI_Service::get_model_preference( $user_id );
 		$usage_data = $this->get_user_usage_data( $user_id );
 
 		// Enqueue inline styles for the API key section
@@ -554,7 +557,7 @@ Good luck with your studies!', 'pressprimer-quiz' );
 		?>
 		<div class="ppq-api-key-manager" id="ppq-api-key-manager">
 			<!-- Key Status Indicator -->
-			<div class="ppq-api-key-status <?php echo $key_status['configured'] ? 'ppq-api-key-status--configured' : 'ppq-api-key-status--not-set'; ?>">
+			<div class="ppq-api-key-status <?php echo esc_attr( $key_status['configured'] ? 'ppq-api-key-status--configured' : 'ppq-api-key-status--not-set' ); ?>">
 				<?php if ( $key_status['configured'] ) : ?>
 					<span class="dashicons dashicons-yes-alt ppq-api-key-status-icon"></span>
 					<span class="ppq-api-key-status-text">
@@ -615,12 +618,13 @@ Good luck with your studies!', 'pressprimer-quiz' );
 			</div>
 
 			<!-- Model Selection -->
-			<?php if ( $key_status['configured'] ) :
+			<?php
+			if ( $key_status['configured'] ) :
 				// Fetch available models
-				$api_key = PPQ_AI_Service::get_api_key( $user_id );
+				$api_key          = PressPrimer_Quiz_AI_Service::get_api_key( $user_id );
 				$available_models = [];
 				if ( ! is_wp_error( $api_key ) && ! empty( $api_key ) ) {
-					$fetched_models = PPQ_AI_Service::get_available_models( $api_key );
+					$fetched_models = PressPrimer_Quiz_AI_Service::get_available_models( $api_key );
 					if ( ! is_wp_error( $fetched_models ) ) {
 						$available_models = $fetched_models;
 					}
@@ -629,7 +633,7 @@ Good luck with your studies!', 'pressprimer-quiz' );
 				if ( empty( $available_models ) && ! empty( $model_pref ) ) {
 					$available_models = [ $model_pref ];
 				}
-			?>
+				?>
 			<div class="ppq-api-model-section">
 				<label for="ppq-api-model"><?php esc_html_e( 'Preferred Model:', 'pressprimer-quiz' ); ?></label>
 				<select id="ppq-api-model" class="ppq-api-model-select">
@@ -674,7 +678,7 @@ Good luck with your studies!', 'pressprimer-quiz' );
 					printf(
 						/* translators: %d: rate limit per hour */
 						esc_html__( 'Rate limit: %d requests per hour. Resets automatically.', 'pressprimer-quiz' ),
-						PPQ_AI_Service::RATE_LIMIT_PER_HOUR
+						(int) PressPrimer_Quiz_AI_Service::RATE_LIMIT_PER_HOUR
 					);
 					?>
 				</p>
@@ -1091,7 +1095,7 @@ Good luck with your studies!', 'pressprimer-quiz' );
 	private function get_user_usage_data( $user_id ) {
 		$key           = 'ppq_ai_requests_' . $user_id;
 		$requests      = (int) get_transient( $key );
-		$rate_limit    = PPQ_AI_Service::RATE_LIMIT_PER_HOUR;
+		$rate_limit    = PressPrimer_Quiz_AI_Service::RATE_LIMIT_PER_HOUR;
 		$remaining     = max( 0, $rate_limit - $requests );
 		$usage_percent = ( $requests / $rate_limit ) * 100;
 
@@ -1322,9 +1326,9 @@ Good luck with your studies!', 'pressprimer-quiz' );
 		}
 
 		// Sanitize social sharing fields
-		$sanitized['social_sharing_twitter'] = isset( $input['social_sharing_twitter'] ) && '1' === $input['social_sharing_twitter'];
-		$sanitized['social_sharing_facebook'] = isset( $input['social_sharing_facebook'] ) && '1' === $input['social_sharing_facebook'];
-		$sanitized['social_sharing_linkedin'] = isset( $input['social_sharing_linkedin'] ) && '1' === $input['social_sharing_linkedin'];
+		$sanitized['social_sharing_twitter']       = isset( $input['social_sharing_twitter'] ) && '1' === $input['social_sharing_twitter'];
+		$sanitized['social_sharing_facebook']      = isset( $input['social_sharing_facebook'] ) && '1' === $input['social_sharing_facebook'];
+		$sanitized['social_sharing_linkedin']      = isset( $input['social_sharing_linkedin'] ) && '1' === $input['social_sharing_linkedin'];
 		$sanitized['social_sharing_include_score'] = isset( $input['social_sharing_include_score'] ) && '1' === $input['social_sharing_include_score'];
 
 		// Sanitize social sharing message
@@ -1346,7 +1350,7 @@ Good luck with your studies!', 'pressprimer-quiz' );
 				);
 			} else {
 				// Encrypt and store globally
-				$encrypted = PPQ_Helpers::encrypt( $api_key );
+				$encrypted = PressPrimer_Quiz_Helpers::encrypt( $api_key );
 
 				if ( is_wp_error( $encrypted ) ) {
 					add_settings_error(
@@ -1383,32 +1387,32 @@ Good luck with your studies!', 'pressprimer-quiz' );
 		}
 
 		if ( isset( $input['appearance_primary_color'] ) ) {
-			$color = $input['appearance_primary_color'];
+			$color                                 = $input['appearance_primary_color'];
 			$sanitized['appearance_primary_color'] = ! empty( $color ) ? sanitize_hex_color( $color ) : '';
 		}
 
 		if ( isset( $input['appearance_text_color'] ) ) {
-			$color = $input['appearance_text_color'];
+			$color                              = $input['appearance_text_color'];
 			$sanitized['appearance_text_color'] = ! empty( $color ) ? sanitize_hex_color( $color ) : '';
 		}
 
 		if ( isset( $input['appearance_background_color'] ) ) {
-			$color = $input['appearance_background_color'];
+			$color                                    = $input['appearance_background_color'];
 			$sanitized['appearance_background_color'] = ! empty( $color ) ? sanitize_hex_color( $color ) : '';
 		}
 
 		if ( isset( $input['appearance_success_color'] ) ) {
-			$color = $input['appearance_success_color'];
+			$color                                 = $input['appearance_success_color'];
 			$sanitized['appearance_success_color'] = ! empty( $color ) ? sanitize_hex_color( $color ) : '';
 		}
 
 		if ( isset( $input['appearance_error_color'] ) ) {
-			$color = $input['appearance_error_color'];
+			$color                               = $input['appearance_error_color'];
 			$sanitized['appearance_error_color'] = ! empty( $color ) ? sanitize_hex_color( $color ) : '';
 		}
 
 		if ( isset( $input['appearance_border_radius'] ) ) {
-			$radius = $input['appearance_border_radius'];
+			$radius                                = $input['appearance_border_radius'];
 			$sanitized['appearance_border_radius'] = ( '' !== $radius && null !== $radius ) ? absint( $radius ) : '';
 		}
 
@@ -1454,7 +1458,7 @@ Good luck with your studies!', 'pressprimer-quiz' );
 		// Enqueue Ant Design CSS
 		wp_enqueue_style(
 			'antd',
-			'https://cdn.jsdelivr.net/npm/antd@5.12.0/dist/reset.css',
+			PPQ_PLUGIN_URL . 'assets/css/vendor/antd-reset.css',
 			[],
 			'5.12.0'
 		);
@@ -1514,16 +1518,16 @@ Good luck with your studies!', 'pressprimer-quiz' );
 
 		$user_id    = get_current_user_id();
 		$settings   = get_option( self::OPTION_NAME, [] );
-		$key_status = PPQ_AI_Service::get_api_key_status( $user_id );
-		$model_pref = PPQ_AI_Service::get_model_preference( $user_id );
+		$key_status = PressPrimer_Quiz_AI_Service::get_api_key_status( $user_id );
+		$model_pref = PressPrimer_Quiz_AI_Service::get_model_preference( $user_id );
 		$usage_data = $this->get_user_usage_data( $user_id );
 
 		// Fetch available models if key is configured
 		$available_models = [];
 		if ( $key_status['configured'] ) {
-			$api_key = PPQ_AI_Service::get_api_key( $user_id );
+			$api_key = PressPrimer_Quiz_AI_Service::get_api_key( $user_id );
 			if ( ! is_wp_error( $api_key ) && ! empty( $api_key ) ) {
-				$fetched_models = PPQ_AI_Service::get_available_models( $api_key );
+				$fetched_models = PressPrimer_Quiz_AI_Service::get_available_models( $api_key );
 				if ( ! is_wp_error( $fetched_models ) ) {
 					$available_models = $fetched_models;
 				}
@@ -1531,10 +1535,14 @@ Good luck with your studies!', 'pressprimer-quiz' );
 		}
 
 		// Get statistics (only questions table has deleted_at column)
-		$total_quizzes   = (int) $wpdb->get_var( "SELECT COUNT(*) FROM {$wpdb->prefix}ppq_quizzes" );
-		$total_questions = (int) $wpdb->get_var( "SELECT COUNT(*) FROM {$wpdb->prefix}ppq_questions WHERE deleted_at IS NULL" );
-		$total_banks     = (int) $wpdb->get_var( "SELECT COUNT(*) FROM {$wpdb->prefix}ppq_banks" );
-		$total_attempts  = (int) $wpdb->get_var( "SELECT COUNT(*) FROM {$wpdb->prefix}ppq_attempts" );
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Simple count queries for admin settings display
+		$total_quizzes = (int) $wpdb->get_var( "SELECT COUNT(*) FROM {$wpdb->prefix}ppq_quizzes" ); // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Table name safely constructed
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching
+		$total_questions = (int) $wpdb->get_var( "SELECT COUNT(*) FROM {$wpdb->prefix}ppq_questions WHERE deleted_at IS NULL" ); // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching
+		$total_banks = (int) $wpdb->get_var( "SELECT COUNT(*) FROM {$wpdb->prefix}ppq_banks" ); // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching
+		$total_attempts = (int) $wpdb->get_var( "SELECT COUNT(*) FROM {$wpdb->prefix}ppq_attempts" ); // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 
 		// Get theme font family from WordPress theme
 		$theme_font = $this->get_theme_font_family();
@@ -1561,19 +1569,19 @@ Good luck with your studies!', 'pressprimer-quiz' );
 				],
 			],
 			'systemInfo'   => [
-				'pluginVersion'      => PPQ_VERSION,
-				'dbVersion'          => get_option( 'ppq_db_version', 'Not set' ),
-				'wpVersion'          => get_bloginfo( 'version' ),
-				'memoryLimit'        => WP_MEMORY_LIMIT,
-				'phpVersion'         => PHP_VERSION,
-				'postMaxSize'        => ini_get( 'post_max_size' ),
-				'maxExecutionTime'   => ini_get( 'max_execution_time' ),
-				'mysqlVersion'       => $wpdb->db_version(),
-				'isMultisite'        => is_multisite(),
-				'totalQuizzes'       => $total_quizzes,
-				'totalQuestions'     => $total_questions,
-				'totalBanks'         => $total_banks,
-				'totalAttempts'      => $total_attempts,
+				'pluginVersion'    => PPQ_VERSION,
+				'dbVersion'        => get_option( 'ppq_db_version', 'Not set' ),
+				'wpVersion'        => get_bloginfo( 'version' ),
+				'memoryLimit'      => WP_MEMORY_LIMIT,
+				'phpVersion'       => PHP_VERSION,
+				'postMaxSize'      => ini_get( 'post_max_size' ),
+				'maxExecutionTime' => ini_get( 'max_execution_time' ),
+				'mysqlVersion'     => $wpdb->db_version(),
+				'isMultisite'      => is_multisite(),
+				'totalQuizzes'     => $total_quizzes,
+				'totalQuestions'   => $total_questions,
+				'totalBanks'       => $total_banks,
+				'totalAttempts'    => $total_attempts,
 			],
 		];
 
@@ -1588,7 +1596,7 @@ Good luck with your studies!', 'pressprimer-quiz' );
 		 *
 		 * @param array $data Settings data including settings, apiKeyStatus, systemInfo, etc.
 		 */
-		return apply_filters( 'ppq_settings_data', $data );
+		return apply_filters( 'pressprimer_quiz_settings_data', $data );
 	}
 
 	/**
@@ -1716,7 +1724,7 @@ Good luck with your studies!', 'pressprimer-quiz' );
 		$user_id = get_current_user_id();
 
 		// Handle API key
-		if ( isset( $_POST['api_key'] ) && ! empty( $_POST['api_key'] ) ) {
+		if ( isset( $_POST['api_key'] ) && '' !== $_POST['api_key'] ) {
 			$api_key = sanitize_text_field( wp_unslash( $_POST['api_key'] ) );
 
 			// Basic format validation
@@ -1725,14 +1733,14 @@ Good luck with your studies!', 'pressprimer-quiz' );
 			}
 
 			// Validate the key with OpenAI
-			$validation = PPQ_AI_Service::validate_api_key( $api_key );
+			$validation = PressPrimer_Quiz_AI_Service::validate_api_key( $api_key );
 
 			if ( is_wp_error( $validation ) ) {
 				wp_send_json_error( [ 'message' => $validation->get_error_message() ] );
 			}
 
 			// Save the key
-			$result = PPQ_AI_Service::save_api_key( $user_id, $api_key );
+			$result = PressPrimer_Quiz_AI_Service::save_api_key( $user_id, $api_key );
 
 			if ( is_wp_error( $result ) ) {
 				wp_send_json_error( [ 'message' => $result->get_error_message() ] );
@@ -1744,7 +1752,7 @@ Good luck with your studies!', 'pressprimer-quiz' );
 		// Handle model preference
 		if ( isset( $_POST['model'] ) ) {
 			$model = sanitize_text_field( wp_unslash( $_POST['model'] ) );
-			PPQ_AI_Service::save_model_preference( $user_id, $model );
+			PressPrimer_Quiz_AI_Service::save_model_preference( $user_id, $model );
 			wp_send_json_success( [ 'message' => __( 'Model preference saved.', 'pressprimer-quiz' ) ] );
 		}
 
@@ -1770,14 +1778,14 @@ Good luck with your studies!', 'pressprimer-quiz' );
 		}
 
 		$user_id = get_current_user_id();
-		$api_key = PPQ_AI_Service::get_api_key( $user_id );
+		$api_key = PressPrimer_Quiz_AI_Service::get_api_key( $user_id );
 
 		if ( empty( $api_key ) || is_wp_error( $api_key ) ) {
 			wp_send_json_error( [ 'message' => __( 'No API key configured.', 'pressprimer-quiz' ) ] );
 		}
 
 		// Validate with OpenAI
-		$validation = PPQ_AI_Service::validate_api_key( $api_key );
+		$validation = PressPrimer_Quiz_AI_Service::validate_api_key( $api_key );
 
 		if ( is_wp_error( $validation ) ) {
 			wp_send_json_error( [ 'message' => $validation->get_error_message() ] );
@@ -1807,7 +1815,7 @@ Good luck with your studies!', 'pressprimer-quiz' );
 		$user_id = get_current_user_id();
 
 		// Clear the key (passing empty string)
-		$result = PPQ_AI_Service::save_api_key( $user_id, '' );
+		$result = PressPrimer_Quiz_AI_Service::save_api_key( $user_id, '' );
 
 		if ( is_wp_error( $result ) ) {
 			wp_send_json_error( [ 'message' => $result->get_error_message() ] );
@@ -1835,14 +1843,14 @@ Good luck with your studies!', 'pressprimer-quiz' );
 		}
 
 		$user_id = get_current_user_id();
-		$api_key = PPQ_AI_Service::get_api_key( $user_id );
+		$api_key = PressPrimer_Quiz_AI_Service::get_api_key( $user_id );
 
 		if ( empty( $api_key ) || is_wp_error( $api_key ) ) {
 			wp_send_json_error( [ 'message' => __( 'No API key configured.', 'pressprimer-quiz' ) ] );
 		}
 
 		// Fetch models
-		$models = PPQ_AI_Service::get_available_models( $api_key );
+		$models = PressPrimer_Quiz_AI_Service::get_available_models( $api_key );
 
 		if ( is_wp_error( $models ) ) {
 			wp_send_json_error( [ 'message' => $models->get_error_message() ] );

@@ -1,0 +1,54 @@
+# Distribution Ignore File
+# Files and directories to exclude when building the plugin zip
+
+# Version Control
+.git
+.gitignore
+.gitattributes
+
+# Development Dependencies
+node_modules
+vendor
+composer.phar
+composer.json
+composer.lock
+
+# Build/Source Files
+src
+assets/src
+
+# Testing
+tests
+phpunit.xml
+phpunit.xml.dist
+
+# Code Quality
+phpcs.xml
+phpcs.xml.dist
+.eslintrc
+.eslintrc.js
+.prettierrc
+.stylelintrc
+
+# Editor/IDE
+.editorconfig
+.vscode
+.idea
+*.sublime-project
+*.sublime-workspace
+
+# Documentation (development)
+*.md
+!readme.md
+
+# OS Files
+.DS_Store
+__MACOSX
+._*
+Thumbs.db
+
+# Misc
+.distignore
+.npmrc
+.nvmrc
+package-lock.json

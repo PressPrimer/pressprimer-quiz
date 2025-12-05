@@ -21,7 +21,7 @@ if ( ! defined( 'ABSPATH' ) ) {
  *
  * @since 1.0.0
  */
-class PPQ_Blocks {
+class PressPrimer_Quiz_Blocks {
 
 	/**
 	 * Initialize blocks
@@ -126,27 +126,30 @@ class PPQ_Blocks {
 		);
 
 		// Register block type
-		register_block_type( 'pressprimer-quiz/quiz', [
-			'api_version'     => 2,
-			'title'           => __( 'PPQ Quiz', 'pressprimer-quiz' ),
-			'description'     => __( 'Display a quiz for users to take.', 'pressprimer-quiz' ),
-			'category'        => 'pressprimer-quiz',
-			'icon'            => 'welcome-learn-more',
-			'supports'        => [
-				'html'  => false,
-				'align' => [ 'wide', 'full' ],
-			],
-			'editor_script'   => 'pressprimer-quiz-quiz-block-editor',
-			'editor_style'    => 'pressprimer-quiz-quiz-block-editor-style',
-			'style'           => 'pressprimer-quiz-quiz-block-style',
-			'render_callback' => [ $this, 'render_quiz_block' ],
-			'attributes'      => [
-				'quizId' => [
-					'type'    => 'number',
-					'default' => 0,
+		register_block_type(
+			'pressprimer-quiz/quiz',
+			[
+				'api_version'     => 2,
+				'title'           => __( 'PPQ Quiz', 'pressprimer-quiz' ),
+				'description'     => __( 'Display a quiz for users to take.', 'pressprimer-quiz' ),
+				'category'        => 'pressprimer-quiz',
+				'icon'            => 'welcome-learn-more',
+				'supports'        => [
+					'html'  => false,
+					'align' => [ 'wide', 'full' ],
 				],
-			],
-		] );
+				'editor_script'   => 'pressprimer-quiz-quiz-block-editor',
+				'editor_style'    => 'pressprimer-quiz-quiz-block-editor-style',
+				'style'           => 'pressprimer-quiz-quiz-block-style',
+				'render_callback' => [ $this, 'render_quiz_block' ],
+				'attributes'      => [
+					'quizId' => [
+						'type'    => 'number',
+						'default' => 0,
+					],
+				],
+			]
+		);
 	}
 
 	/**
@@ -169,7 +172,7 @@ class PPQ_Blocks {
 		}
 
 		// Use the shortcode handler to render
-		if ( ! class_exists( 'PPQ_Shortcodes' ) ) {
+		if ( ! class_exists( 'PressPrimer_Quiz_Shortcodes' ) ) {
 			return '<div class="ppq-error">' . esc_html__( 'Quiz renderer not available.', 'pressprimer-quiz' ) . '</div>';
 		}
 
@@ -179,8 +182,8 @@ class PPQ_Blocks {
 		];
 
 		// Call the shortcode handler
-		$shortcodes = new PPQ_Shortcodes();
-		$output = $shortcodes->render_quiz( $shortcode_atts );
+		$shortcodes = new PressPrimer_Quiz_Shortcodes();
+		$output     = $shortcodes->render_quiz( $shortcode_atts );
 
 		// Wrap in block div
 		return '<div class="wp-block-pressprimer-quiz-quiz">' . $output . '</div>';
@@ -226,35 +229,38 @@ class PPQ_Blocks {
 		);
 
 		// Register block type
-		register_block_type( 'pressprimer-quiz/my-attempts', [
-			'api_version'     => 2,
-			'title'           => __( 'PPQ Quiz Attempts', 'pressprimer-quiz' ),
-			'description'     => __( 'Display a list of the current user\'s quiz attempts.', 'pressprimer-quiz' ),
-			'category'        => 'pressprimer-quiz',
-			'icon'            => 'list-view',
-			'supports'        => [
-				'html'  => false,
-				'align' => true,
-			],
-			'editor_script'   => 'pressprimer-quiz-my-attempts-block-editor',
-			'editor_style'    => 'pressprimer-quiz-my-attempts-block-editor-style',
-			'style'           => 'pressprimer-quiz-my-attempts-block-style',
-			'render_callback' => [ $this, 'render_my_attempts_block' ],
-			'attributes'      => [
-				'showScore' => [
-					'type'    => 'boolean',
-					'default' => true,
+		register_block_type(
+			'pressprimer-quiz/my-attempts',
+			[
+				'api_version'     => 2,
+				'title'           => __( 'PPQ Quiz Attempts', 'pressprimer-quiz' ),
+				'description'     => __( 'Display a list of the current user\'s quiz attempts.', 'pressprimer-quiz' ),
+				'category'        => 'pressprimer-quiz',
+				'icon'            => 'list-view',
+				'supports'        => [
+					'html'  => false,
+					'align' => true,
 				],
-				'showDate'  => [
-					'type'    => 'boolean',
-					'default' => true,
+				'editor_script'   => 'pressprimer-quiz-my-attempts-block-editor',
+				'editor_style'    => 'pressprimer-quiz-my-attempts-block-editor-style',
+				'style'           => 'pressprimer-quiz-my-attempts-block-style',
+				'render_callback' => [ $this, 'render_my_attempts_block' ],
+				'attributes'      => [
+					'showScore' => [
+						'type'    => 'boolean',
+						'default' => true,
+					],
+					'showDate'  => [
+						'type'    => 'boolean',
+						'default' => true,
+					],
+					'perPage'   => [
+						'type'    => 'number',
+						'default' => 20,
+					],
 				],
-				'perPage'   => [
-					'type'    => 'number',
-					'default' => 20,
-				],
-			],
-		] );
+			]
+		);
 	}
 
 	/**
@@ -272,7 +278,7 @@ class PPQ_Blocks {
 		$per_page   = isset( $attributes['perPage'] ) ? absint( $attributes['perPage'] ) : 20;
 
 		// Use the shortcode handler to render
-		if ( ! class_exists( 'PPQ_Shortcodes' ) ) {
+		if ( ! class_exists( 'PressPrimer_Quiz_Shortcodes' ) ) {
 			return '<div class="ppq-error">' . esc_html__( 'My Attempts renderer not available.', 'pressprimer-quiz' ) . '</div>';
 		}
 
@@ -282,8 +288,8 @@ class PPQ_Blocks {
 		];
 
 		// Call the shortcode handler
-		$shortcodes = new PPQ_Shortcodes();
-		$output = $shortcodes->render_my_attempts( $shortcode_atts );
+		$shortcodes = new PressPrimer_Quiz_Shortcodes();
+		$output     = $shortcodes->render_my_attempts( $shortcode_atts );
 
 		// If we need to hide score or date, we could filter the output here
 		// For now, we'll use the full output from the shortcode

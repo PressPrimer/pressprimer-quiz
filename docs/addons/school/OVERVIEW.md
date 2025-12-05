@@ -196,21 +196,21 @@ pressprimer-quiz-school/
 ### Hooks Added
 ```php
 // Actions
-do_action('ppq_school_quiz_available', $quiz_id);
-do_action('ppq_school_quiz_expired', $quiz_id);
-do_action('ppq_school_curve_applied', $quiz_id, $curve_type);
-do_action('ppq_school_xapi_sent', $statement_id);
+do_action('pressprimer_quiz_school_quiz_available', $quiz_id);
+do_action('pressprimer_quiz_school_quiz_expired', $quiz_id);
+do_action('pressprimer_quiz_school_curve_applied', $quiz_id, $curve_type);
+do_action('pressprimer_quiz_school_xapi_sent', $statement_id);
 
 // Filters
-apply_filters('ppq_school_curve_methods', $methods);
-apply_filters('ppq_school_xapi_statement', $statement, $attempt);
-apply_filters('ppq_school_availability_message', $message, $quiz);
+apply_filters('pressprimer_quiz_school_curve_methods', $methods);
+apply_filters('pressprimer_quiz_school_xapi_statement', $statement, $attempt);
+apply_filters('pressprimer_quiz_school_availability_message', $message, $quiz);
 ```
 
 ### Quiz Availability Logic
 ```php
 function ppq_is_quiz_available($quiz_id, $user_id = null) {
-    $availability = PPQ_Quiz_Availability::get_for_quiz($quiz_id);
+    $availability = PressPrimer_Quiz_Quiz_Availability::get_for_quiz($quiz_id);
     
     if (!$availability) {
         return true; // No restrictions

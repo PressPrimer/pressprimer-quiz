@@ -26,13 +26,13 @@ if ( ! class_exists( 'WP_List_Table' ) ) {
  *
  * @since 1.0.0
  */
-class PPQ_Admin_Questions {
+class PressPrimer_Quiz_Admin_Questions {
 
 	/**
 	 * List table instance
 	 *
 	 * @since 1.0.0
-	 * @var PPQ_Questions_List_Table
+	 * @var PressPrimer_Quiz_Questions_List_Table
 	 */
 	private $list_table;
 
@@ -70,20 +70,24 @@ class PPQ_Admin_Questions {
 	 */
 	public function screen_options() {
 		// Only on list view
-		$action = isset( $_GET['action'] ) ? sanitize_key( $_GET['action'] ) : '';
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only check for display routing
+		$action = isset( $_GET['action'] ) ? sanitize_key( wp_unslash( $_GET['action'] ) ) : '';
 		if ( in_array( $action, [ 'new', 'edit' ], true ) ) {
 			return;
 		}
 
 		// Add per page option
-		add_screen_option( 'per_page', [
-			'label'   => __( 'Questions per page', 'pressprimer-quiz' ),
-			'default' => 100,
-			'option'  => 'ppq_questions_per_page',
-		] );
+		add_screen_option(
+			'per_page',
+			[
+				'label'   => __( 'Questions per page', 'pressprimer-quiz' ),
+				'default' => 100,
+				'option'  => 'ppq_questions_per_page',
+			]
+		);
 
 		// Instantiate the table and store it
-		$this->list_table = new PPQ_Questions_List_Table();
+		$this->list_table = new PressPrimer_Quiz_Questions_List_Table();
 
 		// Get screen and register columns with it
 		$screen = get_current_screen();
@@ -92,9 +96,12 @@ class PPQ_Admin_Questions {
 			$columns = $this->list_table->get_columns();
 
 			// Register columns with the screen
-			add_filter( "manage_{$screen->id}_columns", function() use ( $columns ) {
-				return $columns;
-			} );
+			add_filter(
+				"manage_{$screen->id}_columns",
+				function () use ( $columns ) {
+					return $columns;
+				}
+			);
 		}
 
 		// Set up filter for saving screen option
@@ -125,10 +132,12 @@ class PPQ_Admin_Questions {
 	 * @since 1.0.0
 	 */
 	public function admin_notices() {
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only check for page routing
 		if ( ! isset( $_GET['page'] ) || 'ppq-questions' !== $_GET['page'] ) {
 			return;
 		}
 
+		// phpcs:disable WordPress.Security.NonceVerification.Recommended -- Read-only notice flags from redirect
 		// Saved notice
 		if ( isset( $_GET['saved'] ) ) {
 			printf(
@@ -147,7 +156,7 @@ class PPQ_Admin_Questions {
 
 		// Deleted notice
 		if ( isset( $_GET['deleted'] ) ) {
-			$count = absint( $_GET['deleted'] );
+			$count = absint( wp_unslash( $_GET['deleted'] ) );
 			printf(
 				'<div class="notice notice-success is-dismissible"><p>%s</p></div>',
 				esc_html(
@@ -159,6 +168,7 @@ class PPQ_Admin_Questions {
 				)
 			);
 		}
+		// phpcs:enable WordPress.Security.NonceVerification.Recommended
 	}
 
 	/**
@@ -177,7 +187,8 @@ class PPQ_Admin_Questions {
 		}
 
 		// Check if we're editing or creating
-		$action = isset( $_GET['action'] ) ? sanitize_key( $_GET['action'] ) : '';
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only check for display routing
+		$action = isset( $_GET['action'] ) ? sanitize_key( wp_unslash( $_GET['action'] ) ) : '';
 
 		if ( in_array( $action, [ 'new', 'edit' ], true ) ) {
 			$this->render_editor();
@@ -194,7 +205,7 @@ class PPQ_Admin_Questions {
 	private function render_list() {
 		// Reuse the list table instance if it exists, otherwise create new one
 		if ( ! $this->list_table ) {
-			$this->list_table = new PPQ_Questions_List_Table();
+			$this->list_table = new PressPrimer_Quiz_Questions_List_Table();
 		}
 
 		$this->list_table->prepare_items();
@@ -226,12 +237,13 @@ class PPQ_Admin_Questions {
 	 * @since 1.0.0
 	 */
 	private function render_editor() {
-		$question_id = isset( $_GET['question'] ) ? absint( $_GET['question'] ) : 0;
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only ID for loading question to edit
+		$question_id = isset( $_GET['question'] ) ? absint( wp_unslash( $_GET['question'] ) ) : 0;
 		$question    = null;
 
 		// Load existing question
 		if ( $question_id > 0 ) {
-			$question = PPQ_Question::get( $question_id );
+			$question = PressPrimer_Quiz_Question::get( $question_id );
 
 			if ( ! $question ) {
 				wp_die( esc_html__( 'Question not found.', 'pressprimer-quiz' ) );
@@ -267,7 +279,7 @@ class PPQ_Admin_Questions {
 		// Enqueue Ant Design CSS
 		wp_enqueue_style(
 			'antd',
-			'https://cdn.jsdelivr.net/npm/antd@5.12.0/dist/reset.css',
+			PPQ_PLUGIN_URL . 'assets/css/vendor/antd-reset.css',
 			[],
 			'5.12.0'
 		);
@@ -292,17 +304,18 @@ class PPQ_Admin_Questions {
 		$question_data = [];
 
 		if ( $question_id > 0 ) {
-			$question = PPQ_Question::get( $question_id );
+			$question = PressPrimer_Quiz_Question::get( $question_id );
 			if ( $question ) {
-				$revision = $question->get_current_revision();
+				$revision   = $question->get_current_revision();
 				$categories = $question->get_categories();
-				$tags = $question->get_tags();
+				$tags       = $question->get_tags();
 
 				// Get bank memberships
 				global $wpdb;
+				// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Question bank membership lookup
 				$bank_ids = $wpdb->get_col(
 					$wpdb->prepare(
-						"SELECT bank_id FROM {$wpdb->prefix}ppq_bank_questions WHERE question_id = %d",
+						"SELECT bank_id FROM {$wpdb->prefix}ppq_bank_questions WHERE question_id = %d", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Table name safely constructed from $wpdb->prefix
 						$question_id
 					)
 				);
@@ -310,17 +323,20 @@ class PPQ_Admin_Questions {
 				$answers = $revision ? $revision->get_answers() : [];
 
 				// Convert answer format for React
-				$answer_index = 0;
-				$react_answers = array_map( function( $answer ) use ( &$answer_index ) {
-					$answer_index++;
-					return [
-						'id'        => $answer['id'] ?? 'answer_' . $answer_index,
-						'text'      => $answer['text'] ?? '',
-						'isCorrect' => $answer['is_correct'] ?? false,
-						'feedback'  => $answer['feedback'] ?? '',
-						'order'     => $answer['order'] ?? $answer_index,
-					];
-				}, $answers );
+				$answer_index  = 0;
+				$react_answers = array_map(
+					function ( $answer ) use ( &$answer_index ) {
+						$answer_index++;
+						return [
+							'id'        => $answer['id'] ?? 'answer_' . $answer_index,
+							'text'      => $answer['text'] ?? '',
+							'isCorrect' => $answer['is_correct'] ?? false,
+							'feedback'  => $answer['feedback'] ?? '',
+							'order'     => $answer['order'] ?? $answer_index,
+						];
+					},
+					$answers
+				);
 
 				$question_data = [
 					'id'                => $question->id,
@@ -332,8 +348,16 @@ class PPQ_Admin_Questions {
 					'answers'           => $react_answers,
 					'feedbackCorrect'   => $revision ? $revision->feedback_correct : '',
 					'feedbackIncorrect' => $revision ? $revision->feedback_incorrect : '',
-					'categories'        => array_map( function( $cat ) { return $cat->id; }, $categories ),
-					'tags'              => array_map( function( $tag ) { return $tag->id; }, $tags ),
+					'categories'        => array_map(
+						function ( $cat ) {
+							return $cat->id; },
+						$categories
+					),
+					'tags'              => array_map(
+						function ( $tag ) {
+							return $tag->id; },
+						$tags
+					),
 					'banks'             => array_map( 'absint', $bank_ids ),
 				];
 			}
@@ -364,10 +388,12 @@ class PPQ_Admin_Questions {
 	 */
 	public function handle_actions() {
 		// Only on questions page
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only page check; nonce verified in individual handlers
 		if ( ! isset( $_GET['page'] ) || 'ppq-questions' !== $_GET['page'] ) {
 			return;
 		}
 
+		// phpcs:disable WordPress.Security.NonceVerification.Recommended -- Nonce verified in individual action handlers below
 		// Handle duplicate action
 		if ( isset( $_GET['action'] ) && 'duplicate' === $_GET['action'] && isset( $_GET['question'] ) ) {
 			$this->handle_duplicate();
@@ -382,6 +408,7 @@ class PPQ_Admin_Questions {
 		if ( isset( $_GET['action'] ) && 'delete' === $_GET['action'] && isset( $_GET['questions'] ) ) {
 			$this->handle_bulk_delete();
 		}
+		// phpcs:enable WordPress.Security.NonceVerification.Recommended
 	}
 
 
@@ -391,14 +418,19 @@ class PPQ_Admin_Questions {
 	 * @since 1.0.0
 	 */
 	private function handle_delete() {
-		check_admin_referer( 'delete-question_' . $_GET['question'] );
+		if ( ! isset( $_GET['question'] ) ) {
+			wp_die( esc_html__( 'Invalid request.', 'pressprimer-quiz' ) );
+		}
+
+		$question_id_raw = absint( wp_unslash( $_GET['question'] ) );
+		check_admin_referer( 'delete-question_' . $question_id_raw );
 
 		if ( ! current_user_can( 'ppq_manage_own' ) && ! current_user_can( 'ppq_manage_all' ) ) {
 			wp_die( esc_html__( 'You do not have permission to delete questions.', 'pressprimer-quiz' ) );
 		}
 
-		$question_id = absint( $_GET['question'] );
-		$question    = PPQ_Question::get( $question_id );
+		$question_id = absint( wp_unslash( $_GET['question'] ) );
+		$question    = PressPrimer_Quiz_Question::get( $question_id );
 
 		if ( ! $question ) {
 			wp_die( esc_html__( 'Question not found.', 'pressprimer-quiz' ) );
@@ -432,11 +464,12 @@ class PPQ_Admin_Questions {
 			wp_die( esc_html__( 'You do not have permission to delete questions.', 'pressprimer-quiz' ) );
 		}
 
-		$question_ids = array_map( 'absint', $_GET['questions'] );
+		// phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotValidated -- Validated above via check_admin_referer
+		$question_ids = isset( $_GET['questions'] ) ? array_map( 'absint', wp_unslash( $_GET['questions'] ) ) : [];
 		$deleted      = 0;
 
 		foreach ( $question_ids as $question_id ) {
-			$question = PPQ_Question::get( $question_id );
+			$question = PressPrimer_Quiz_Question::get( $question_id );
 
 			if ( ! $question ) {
 				continue;
@@ -450,7 +483,7 @@ class PPQ_Admin_Questions {
 			$result = $question->delete();
 
 			if ( ! is_wp_error( $result ) ) {
-				$deleted++;
+				++$deleted;
 			}
 		}
 
@@ -464,14 +497,19 @@ class PPQ_Admin_Questions {
 	 * @since 1.0.0
 	 */
 	private function handle_duplicate() {
-		check_admin_referer( 'duplicate-question_' . $_GET['question'] );
+		if ( ! isset( $_GET['question'] ) ) {
+			wp_die( esc_html__( 'Invalid request.', 'pressprimer-quiz' ) );
+		}
+
+		$question_id_raw = absint( wp_unslash( $_GET['question'] ) );
+		check_admin_referer( 'duplicate-question_' . $question_id_raw );
 
 		if ( ! current_user_can( 'ppq_manage_own' ) && ! current_user_can( 'ppq_manage_all' ) ) {
 			wp_die( esc_html__( 'You do not have permission to duplicate questions.', 'pressprimer-quiz' ) );
 		}
 
-		$question_id = absint( $_GET['question'] );
-		$question    = PPQ_Question::get( $question_id );
+		$question_id = absint( wp_unslash( $_GET['question'] ) );
+		$question    = PressPrimer_Quiz_Question::get( $question_id );
 
 		if ( ! $question ) {
 			wp_die( esc_html__( 'Question not found.', 'pressprimer-quiz' ) );
@@ -494,22 +532,24 @@ class PPQ_Admin_Questions {
 
 		try {
 			// Create new question using static create method
-			$new_question_id = PPQ_Question::create( [
-				'uuid'              => wp_generate_uuid4(),
-				'type'              => $question->type,
-				'difficulty_author' => $question->difficulty_author,
-				'expected_seconds'  => $question->expected_seconds,
-				'max_points'        => $question->max_points,
-				'author_id'         => get_current_user_id(), // Current user becomes author of duplicate
-				'status'            => 'draft', // Start as draft
-			] );
+			$new_question_id = PressPrimer_Quiz_Question::create(
+				[
+					'uuid'              => wp_generate_uuid4(),
+					'type'              => $question->type,
+					'difficulty_author' => $question->difficulty_author,
+					'expected_seconds'  => $question->expected_seconds,
+					'max_points'        => $question->max_points,
+					'author_id'         => get_current_user_id(), // Current user becomes author of duplicate
+					'status'            => 'draft', // Start as draft
+				]
+			);
 
 			if ( is_wp_error( $new_question_id ) ) {
 				throw new Exception( $new_question_id->get_error_message() );
 			}
 
 			// Load the newly created question
-			$new_question = PPQ_Question::get( $new_question_id );
+			$new_question = PressPrimer_Quiz_Question::get( $new_question_id );
 
 			if ( ! $new_question ) {
 				throw new Exception( __( 'Failed to load duplicated question.', 'pressprimer-quiz' ) );
@@ -521,16 +561,16 @@ class PPQ_Admin_Questions {
 			// Regenerate answer IDs
 			$new_answers = [];
 			foreach ( $answers as $answer ) {
-				$new_answer = $answer;
+				$new_answer       = $answer;
 				$new_answer['id'] = 'a' . wp_rand( 1000, 9999 );
-				$new_answers[] = $new_answer;
+				$new_answers[]    = $new_answer;
 			}
 
 			// Prepend "Copy of" to stem to indicate it's a duplicate
 			$duplicated_stem = $revision->stem;
-			if ( 0 !== strpos( strip_tags( $duplicated_stem ), 'Copy of ' ) ) {
+			if ( 0 !== strpos( wp_strip_all_tags( $duplicated_stem ), 'Copy of ' ) ) {
 				// If it's a simple text stem, prepend
-				if ( strip_tags( $duplicated_stem ) === $duplicated_stem ) {
+				if ( wp_strip_all_tags( $duplicated_stem ) === $duplicated_stem ) {
 					$duplicated_stem = 'Copy of ' . $duplicated_stem;
 				} else {
 					// If it has HTML, wrap in a paragraph at the start
@@ -538,16 +578,16 @@ class PPQ_Admin_Questions {
 				}
 			}
 
-			$new_revision = new PPQ_Question_Revision();
-			$new_revision->question_id = $new_question->id;
-			$new_revision->version = 1;
-			$new_revision->stem = $duplicated_stem;
-			$new_revision->answers_json = wp_json_encode( $new_answers );
-			$new_revision->settings_json = $revision->settings_json;
-			$new_revision->feedback_correct = $revision->feedback_correct;
+			$new_revision                     = new PressPrimer_Quiz_Question_Revision();
+			$new_revision->question_id        = $new_question->id;
+			$new_revision->version            = 1;
+			$new_revision->stem               = $duplicated_stem;
+			$new_revision->answers_json       = wp_json_encode( $new_answers );
+			$new_revision->settings_json      = $revision->settings_json;
+			$new_revision->feedback_correct   = $revision->feedback_correct;
 			$new_revision->feedback_incorrect = $revision->feedback_incorrect;
-			$new_revision->content_hash = PPQ_Question_Revision::generate_hash( $new_revision->stem, $new_answers );
-			$new_revision->created_by = get_current_user_id();
+			$new_revision->content_hash       = PressPrimer_Quiz_Question_Revision::generate_hash( $new_revision->stem, $new_answers );
+			$new_revision->created_by         = get_current_user_id();
 
 			$result = $new_revision->save();
 
@@ -557,7 +597,7 @@ class PPQ_Admin_Questions {
 
 			// Update question to point to this revision
 			$new_question->current_revision_id = $new_revision->id;
-			$result = $new_question->save();
+			$result                            = $new_question->save();
 
 			if ( is_wp_error( $result ) ) {
 				throw new Exception( $result->get_error_message() );
@@ -566,24 +606,31 @@ class PPQ_Admin_Questions {
 			// Duplicate categories
 			$categories = $question->get_categories();
 			if ( ! empty( $categories ) ) {
-				$category_ids = array_map( function( $cat ) {
-					return $cat->id;
-				}, $categories );
+				$category_ids = array_map(
+					function ( $cat ) {
+						return $cat->id;
+					},
+					$categories
+				);
 				$new_question->set_categories( $category_ids );
 			}
 
 			// Duplicate tags
 			$tags = $question->get_tags();
 			if ( ! empty( $tags ) ) {
-				$tag_ids = array_map( function( $tag ) {
-					return $tag->id;
-				}, $tags );
+				$tag_ids = array_map(
+					function ( $tag ) {
+						return $tag->id;
+					},
+					$tags
+				);
 				$new_question->set_tags( $tag_ids );
 			}
 
 			// Duplicate bank memberships
 			$bank_memberships_table = $wpdb->prefix . 'ppq_bank_questions';
-			$memberships = $wpdb->get_results(
+			$memberships            = $wpdb->get_results(
+				// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Table name is safely constructed from $wpdb->prefix
 				$wpdb->prepare(
 					"SELECT bank_id FROM {$bank_memberships_table} WHERE question_id = %d",
 					$question_id
@@ -603,8 +650,8 @@ class PPQ_Admin_Questions {
 					);
 
 					// Update bank question count
-					if ( class_exists( 'PPQ_Bank' ) ) {
-						$bank = PPQ_Bank::get( $membership->bank_id );
+					if ( class_exists( 'PressPrimer_Quiz_Bank' ) ) {
+						$bank = PressPrimer_Quiz_Bank::get( $membership->bank_id );
 						if ( $bank ) {
 							$bank->update_question_count();
 						}
@@ -618,9 +665,9 @@ class PPQ_Admin_Questions {
 			wp_safe_redirect(
 				add_query_arg(
 					[
-						'page' => 'ppq-questions',
-						'action' => 'edit',
-						'question' => $new_question->id,
+						'page'       => 'ppq-questions',
+						'action'     => 'edit',
+						'question'   => $new_question->id,
 						'duplicated' => '1',
 					],
 					admin_url( 'admin.php' )
@@ -642,7 +689,7 @@ class PPQ_Admin_Questions {
  *
  * @since 1.0.0
  */
-class PPQ_Questions_List_Table extends WP_List_Table {
+class PressPrimer_Quiz_Questions_List_Table extends WP_List_Table {
 
 	/**
 	 * Constructor
@@ -650,11 +697,13 @@ class PPQ_Questions_List_Table extends WP_List_Table {
 	 * @since 1.0.0
 	 */
 	public function __construct() {
-		parent::__construct([
-			'singular' => 'question',
-			'plural'   => 'questions',
-			'ajax'     => false,
-		]);
+		parent::__construct(
+			[
+				'singular' => 'question',
+				'plural'   => 'questions',
+				'ajax'     => false,
+			]
+		);
 	}
 
 	/**
@@ -744,44 +793,48 @@ class PPQ_Questions_List_Table extends WP_List_Table {
 		$where_clauses   = [ 'deleted_at IS NULL' ];
 		$where_values    = [];
 
+		// phpcs:disable WordPress.Security.NonceVerification.Recommended -- Read-only filters for list table display
 		// Filter by type
-		if ( ! empty( $_GET['type'] ) ) {
+		$get_type = isset( $_GET['type'] ) ? sanitize_key( wp_unslash( $_GET['type'] ) ) : '';
+		if ( '' !== $get_type ) {
 			$where_clauses[] = 'type = %s';
-			$where_values[]  = sanitize_key( $_GET['type'] );
+			$where_values[]  = $get_type;
 		}
 
 		// Filter by difficulty
-		if ( ! empty( $_GET['difficulty'] ) ) {
+		$get_difficulty = isset( $_GET['difficulty'] ) ? sanitize_key( wp_unslash( $_GET['difficulty'] ) ) : '';
+		if ( '' !== $get_difficulty ) {
 			$where_clauses[] = 'difficulty = %s';
-			$where_values[]  = sanitize_key( $_GET['difficulty'] );
+			$where_values[]  = $get_difficulty;
 		}
 
 		// Filter by category
-		if ( ! empty( $_GET['category'] ) ) {
+		$get_category = isset( $_GET['category'] ) ? absint( wp_unslash( $_GET['category'] ) ) : 0;
+		if ( $get_category > 0 ) {
 			$taxonomy_table = $wpdb->prefix . 'ppq_question_tax';
-			$category_id    = absint( $_GET['category'] );
 
 			$where_clauses[] = "id IN (
 				SELECT question_id FROM {$taxonomy_table} WHERE category_id = %d
 			)";
-			$where_values[] = $category_id;
+			$where_values[]  = $get_category;
 		}
 
 		// Filter by bank
-		if ( ! empty( $_GET['bank'] ) ) {
+		$get_bank = isset( $_GET['bank'] ) ? absint( wp_unslash( $_GET['bank'] ) ) : 0;
+		if ( $get_bank > 0 ) {
 			$bank_questions_table = $wpdb->prefix . 'ppq_bank_questions';
-			$bank_id              = absint( $_GET['bank'] );
 
 			$where_clauses[] = "id IN (
 				SELECT question_id FROM {$bank_questions_table} WHERE bank_id = %d
 			)";
-			$where_values[] = $bank_id;
+			$where_values[]  = $get_bank;
 		}
 
 		// Filter by author
-		if ( ! empty( $_GET['author'] ) ) {
+		$get_author = isset( $_GET['author'] ) ? absint( wp_unslash( $_GET['author'] ) ) : 0;
+		if ( $get_author > 0 ) {
 			$where_clauses[] = 'author_id = %d';
-			$where_values[]  = absint( $_GET['author'] );
+			$where_values[]  = $get_author;
 		} elseif ( ! current_user_can( 'ppq_manage_all' ) ) {
 			// Non-admins see only their own questions
 			$where_clauses[] = 'author_id = %d';
@@ -789,22 +842,23 @@ class PPQ_Questions_List_Table extends WP_List_Table {
 		}
 
 		// Search
-		if ( ! empty( $_GET['s'] ) ) {
+		if ( isset( $_GET['s'] ) && '' !== $_GET['s'] ) {
 			$revisions_table = $wpdb->prefix . 'ppq_question_revisions';
-			$search_term     = '%' . $wpdb->esc_like( sanitize_text_field( $_GET['s'] ) ) . '%';
+			$search_term     = '%' . $wpdb->esc_like( sanitize_text_field( wp_unslash( $_GET['s'] ) ) ) . '%';
 
 			// Search in stem via revision
 			$where_clauses[] = "current_revision_id IN (
 				SELECT id FROM {$revisions_table} WHERE stem LIKE %s
 			)";
-			$where_values[] = $search_term;
+			$where_values[]  = $search_term;
 		}
 
 		$where_sql = 'WHERE ' . implode( ' AND ', $where_clauses );
 
 		// Order by
-		$orderby = ! empty( $_GET['orderby'] ) ? sanitize_key( $_GET['orderby'] ) : 'created_at';
-		$order   = ! empty( $_GET['order'] ) && 'asc' === strtolower( $_GET['order'] ) ? 'ASC' : 'DESC';
+		$orderby = isset( $_GET['orderby'] ) && '' !== $_GET['orderby'] ? sanitize_key( wp_unslash( $_GET['orderby'] ) ) : 'created_at';
+		$order   = isset( $_GET['order'] ) && 'asc' === strtolower( sanitize_key( wp_unslash( $_GET['order'] ) ) ) ? 'ASC' : 'DESC';
+		// phpcs:enable WordPress.Security.NonceVerification.Recommended
 
 		$order_sql = "ORDER BY {$orderby} {$order}";
 
@@ -816,26 +870,28 @@ class PPQ_Questions_List_Table extends WP_List_Table {
 		$total_items = $wpdb->get_var( $count_query ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
 
 		// Get items
-		$query = "SELECT * FROM {$questions_table} {$where_sql} {$order_sql} LIMIT %d OFFSET %d";
+		$query        = "SELECT * FROM {$questions_table} {$where_sql} {$order_sql} LIMIT %d OFFSET %d";
 		$query_values = array_merge( $where_values, [ $per_page, $offset ] );
-		$query = $wpdb->prepare( $query, $query_values ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
+		$query        = $wpdb->prepare( $query, $query_values ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
 
 		$rows = $wpdb->get_results( $query ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
 
 		// Convert to question objects
 		$items = [];
 		foreach ( $rows as $row ) {
-			$items[] = PPQ_Question::from_row( $row );
+			$items[] = PressPrimer_Quiz_Question::from_row( $row );
 		}
 
 		$this->items = $items;
 
 		// Set pagination
-		$this->set_pagination_args([
-			'total_items' => $total_items,
-			'per_page'    => $per_page,
-			'total_pages' => ceil( $total_items / $per_page ),
-		]);
+		$this->set_pagination_args(
+			[
+				'total_items' => $total_items,
+				'per_page'    => $per_page,
+				'total_pages' => ceil( $total_items / $per_page ),
+			]
+		);
 
 		// Set columns
 		$this->_column_headers = [
@@ -877,7 +933,8 @@ class PPQ_Questions_List_Table extends WP_List_Table {
 	 * @since 1.0.0
 	 */
 	private function render_type_filter() {
-		$current_type = ! empty( $_GET['type'] ) ? sanitize_key( $_GET['type'] ) : '';
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only filter state for selected()
+		$current_type = isset( $_GET['type'] ) && '' !== $_GET['type'] ? sanitize_key( wp_unslash( $_GET['type'] ) ) : '';
 
 		?>
 		<select name="type">
@@ -901,7 +958,8 @@ class PPQ_Questions_List_Table extends WP_List_Table {
 	 * @since 1.0.0
 	 */
 	private function render_difficulty_filter() {
-		$current_difficulty = ! empty( $_GET['difficulty'] ) ? sanitize_key( $_GET['difficulty'] ) : '';
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only filter state for selected()
+		$current_difficulty = isset( $_GET['difficulty'] ) && '' !== $_GET['difficulty'] ? sanitize_key( wp_unslash( $_GET['difficulty'] ) ) : '';
 
 		?>
 		<select name="difficulty">
@@ -928,8 +986,9 @@ class PPQ_Questions_List_Table extends WP_List_Table {
 	 * @since 1.0.0
 	 */
 	private function render_category_filter() {
-		$current_category = ! empty( $_GET['category'] ) ? absint( $_GET['category'] ) : 0;
-		$categories       = PPQ_Category::get_all( 'category' );
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only filter state for selected()
+		$current_category = isset( $_GET['category'] ) && '' !== $_GET['category'] ? absint( wp_unslash( $_GET['category'] ) ) : 0;
+		$categories       = PressPrimer_Quiz_Category::get_all( 'category' );
 
 		if ( empty( $categories ) ) {
 			return;
@@ -953,9 +1012,10 @@ class PPQ_Questions_List_Table extends WP_List_Table {
 	 * @since 1.0.0
 	 */
 	private function render_bank_filter() {
-		$current_bank = ! empty( $_GET['bank'] ) ? absint( $_GET['bank'] ) : 0;
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only filter state for selected()
+		$current_bank = isset( $_GET['bank'] ) && '' !== $_GET['bank'] ? absint( wp_unslash( $_GET['bank'] ) ) : 0;
 		$user_id      = get_current_user_id();
-		$banks        = PPQ_Bank::get_for_user( $user_id );
+		$banks        = PressPrimer_Quiz_Bank::get_for_user( $user_id );
 
 		if ( empty( $banks ) ) {
 			return;
@@ -979,14 +1039,17 @@ class PPQ_Questions_List_Table extends WP_List_Table {
 	 * @since 1.0.0
 	 */
 	private function render_author_filter() {
-		$current_author = ! empty( $_GET['author'] ) ? absint( $_GET['author'] ) : 0;
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only filter state for selected()
+		$current_author = isset( $_GET['author'] ) && '' !== $_GET['author'] ? absint( wp_unslash( $_GET['author'] ) ) : 0;
 
-		wp_dropdown_users([
-			'name'             => 'author',
-			'show_option_all'  => __( 'All Authors', 'pressprimer-quiz' ),
-			'selected'         => $current_author,
-			'include_selected' => true,
-		]);
+		wp_dropdown_users(
+			[
+				'name'             => 'author',
+				'show_option_all'  => __( 'All Authors', 'pressprimer-quiz' ),
+				'selected'         => $current_author,
+				'include_selected' => true,
+			]
+		);
 	}
 
 	/**
@@ -994,7 +1057,7 @@ class PPQ_Questions_List_Table extends WP_List_Table {
 	 *
 	 * @since 1.0.0
 	 *
-	 * @param PPQ_Question $item Question object.
+	 * @param PressPrimer_Quiz_Question $item Question object.
 	 * @return string Checkbox HTML.
 	 */
 	public function column_cb( $item ) {
@@ -1009,7 +1072,7 @@ class PPQ_Questions_List_Table extends WP_List_Table {
 	 *
 	 * @since 1.0.0
 	 *
-	 * @param PPQ_Question $item Question object.
+	 * @param PressPrimer_Quiz_Question $item Question object.
 	 * @return string Column content.
 	 */
 	public function column_id( $item ) {
@@ -1021,7 +1084,7 @@ class PPQ_Questions_List_Table extends WP_List_Table {
 	 *
 	 * @since 1.0.0
 	 *
-	 * @param PPQ_Question $item Question object.
+	 * @param PressPrimer_Quiz_Question $item Question object.
 	 * @return string Column content.
 	 */
 	public function column_question( $item ) {
@@ -1062,10 +1125,12 @@ class PPQ_Questions_List_Table extends WP_List_Table {
 		if ( current_user_can( 'ppq_manage_own' ) ) {
 			$actions['duplicate'] = sprintf(
 				'<a href="%s">%s</a>',
-				esc_url( wp_nonce_url(
-					admin_url( 'admin.php?page=ppq-questions&action=duplicate&question=' . $item->id ),
-					'duplicate-question_' . $item->id
-				)),
+				esc_url(
+					wp_nonce_url(
+						admin_url( 'admin.php?page=ppq-questions&action=duplicate&question=' . $item->id ),
+						'duplicate-question_' . $item->id
+					)
+				),
 				esc_html__( 'Duplicate', 'pressprimer-quiz' )
 			);
 		}
@@ -1073,10 +1138,12 @@ class PPQ_Questions_List_Table extends WP_List_Table {
 		if ( $can_edit ) {
 			$actions['delete'] = sprintf(
 				'<a href="%s" class="ppq-delete-confirm">%s</a>',
-				esc_url( wp_nonce_url(
-					admin_url( 'admin.php?page=ppq-questions&action=delete&question=' . $item->id ),
-					'delete-question_' . $item->id
-				)),
+				esc_url(
+					wp_nonce_url(
+						admin_url( 'admin.php?page=ppq-questions&action=delete&question=' . $item->id ),
+						'delete-question_' . $item->id
+					)
+				),
 				esc_html__( 'Delete', 'pressprimer-quiz' )
 			);
 		}
@@ -1093,7 +1160,7 @@ class PPQ_Questions_List_Table extends WP_List_Table {
 	 *
 	 * @since 1.0.0
 	 *
-	 * @param PPQ_Question $item Question object.
+	 * @param PressPrimer_Quiz_Question $item Question object.
 	 * @return string Column content.
 	 */
 	public function column_type( $item ) {
@@ -1111,7 +1178,7 @@ class PPQ_Questions_List_Table extends WP_List_Table {
 	 *
 	 * @since 1.0.0
 	 *
-	 * @param PPQ_Question $item Question object.
+	 * @param PressPrimer_Quiz_Question $item Question object.
 	 * @return string Column content.
 	 */
 	public function column_difficulty( $item ) {
@@ -1136,7 +1203,7 @@ class PPQ_Questions_List_Table extends WP_List_Table {
 	 *
 	 * @since 1.0.0
 	 *
-	 * @param PPQ_Question $item Question object.
+	 * @param PressPrimer_Quiz_Question $item Question object.
 	 * @return string Column content.
 	 */
 	public function column_categories( $item ) {
@@ -1146,9 +1213,12 @@ class PPQ_Questions_List_Table extends WP_List_Table {
 			return '—';
 		}
 
-		$category_names = array_map( function ( $cat ) {
-			return esc_html( $cat->name );
-		}, $categories );
+		$category_names = array_map(
+			function ( $cat ) {
+				return esc_html( $cat->name );
+			},
+			$categories
+		);
 
 		return implode( ', ', $category_names );
 	}
@@ -1158,7 +1228,7 @@ class PPQ_Questions_List_Table extends WP_List_Table {
 	 *
 	 * @since 1.0.0
 	 *
-	 * @param PPQ_Question $item Question object.
+	 * @param PressPrimer_Quiz_Question $item Question object.
 	 * @return string Column content.
 	 */
 	public function column_banks( $item ) {
@@ -1182,9 +1252,12 @@ class PPQ_Questions_List_Table extends WP_List_Table {
 			return '—';
 		}
 
-		$bank_names = array_map( function ( $bank ) {
-			return esc_html( $bank->name );
-		}, $banks );
+		$bank_names = array_map(
+			function ( $bank ) {
+				return esc_html( $bank->name );
+			},
+			$banks
+		);
 
 		return implode( ', ', $bank_names );
 	}
@@ -1194,7 +1267,7 @@ class PPQ_Questions_List_Table extends WP_List_Table {
 	 *
 	 * @since 1.0.0
 	 *
-	 * @param PPQ_Question $item Question object.
+	 * @param PressPrimer_Quiz_Question $item Question object.
 	 * @return string Column content.
 	 */
 	public function column_author( $item ) {
@@ -1220,7 +1293,7 @@ class PPQ_Questions_List_Table extends WP_List_Table {
 	 *
 	 * @since 1.0.0
 	 *
-	 * @param PPQ_Question $item Question object.
+	 * @param PressPrimer_Quiz_Question $item Question object.
 	 * @return string Column content.
 	 */
 	public function column_date( $item ) {

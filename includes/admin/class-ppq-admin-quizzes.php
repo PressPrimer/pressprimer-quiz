@@ -26,13 +26,13 @@ if ( ! class_exists( 'WP_List_Table' ) ) {
  *
  * @since 1.0.0
  */
-class PPQ_Admin_Quizzes {
+class PressPrimer_Quiz_Admin_Quizzes {
 
 	/**
 	 * List table instance
 	 *
 	 * @since 1.0.0
-	 * @var PPQ_Quizzes_List_Table
+	 * @var PressPrimer_Quiz_Quizzes_List_Table
 	 */
 	private $list_table;
 
@@ -75,20 +75,24 @@ class PPQ_Admin_Quizzes {
 	 */
 	public function screen_options() {
 		// Only on list view
-		$action = isset( $_GET['action'] ) ? sanitize_key( $_GET['action'] ) : '';
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only check for display routing
+		$action = isset( $_GET['action'] ) ? sanitize_key( wp_unslash( $_GET['action'] ) ) : '';
 		if ( in_array( $action, [ 'new', 'edit' ], true ) ) {
 			return;
 		}
 
 		// Add per page option
-		add_screen_option( 'per_page', [
-			'label'   => __( 'Quizzes per page', 'pressprimer-quiz' ),
-			'default' => 20,
-			'option'  => 'ppq_quizzes_per_page',
-		] );
+		add_screen_option(
+			'per_page',
+			[
+				'label'   => __( 'Quizzes per page', 'pressprimer-quiz' ),
+				'default' => 20,
+				'option'  => 'ppq_quizzes_per_page',
+			]
+		);
 
 		// Instantiate the table and store it
-		$this->list_table = new PPQ_Quizzes_List_Table();
+		$this->list_table = new PressPrimer_Quiz_Quizzes_List_Table();
 
 		// Get screen and register columns with it
 		$screen = get_current_screen();
@@ -97,9 +101,12 @@ class PPQ_Admin_Quizzes {
 			$columns = $this->list_table->get_columns();
 
 			// Register columns with the screen
-			add_filter( "manage_{$screen->id}_columns", function() use ( $columns ) {
-				return $columns;
-			} );
+			add_filter(
+				"manage_{$screen->id}_columns",
+				function () use ( $columns ) {
+					return $columns;
+				}
+			);
 		}
 
 		// Set up filter for saving screen option
@@ -130,13 +137,15 @@ class PPQ_Admin_Quizzes {
 	 * @since 1.0.0
 	 */
 	public function handle_actions() {
-		// Check for POST actions (save)
+		// Check for POST actions (save) - nonce verified in handle_save()
+		// phpcs:ignore WordPress.Security.NonceVerification.Missing -- Nonce verification delegated to handle_save()
 		if ( isset( $_POST['ppq_save_quiz'] ) ) {
 			$this->handle_save();
 		}
 
 		// Check for actions
-		$action = isset( $_GET['action'] ) ? sanitize_key( $_GET['action'] ) : '';
+		// phpcs:disable WordPress.Security.NonceVerification.Recommended -- Nonce verified in individual handlers
+		$action = isset( $_GET['action'] ) ? sanitize_key( wp_unslash( $_GET['action'] ) ) : '';
 
 		if ( 'delete' === $action && isset( $_GET['quiz'] ) ) {
 			$this->handle_delete();
@@ -158,6 +167,7 @@ class PPQ_Admin_Quizzes {
 		if ( isset( $_GET['action2'] ) && 'draft' === $_GET['action2'] && isset( $_GET['quizzes'] ) ) {
 			$this->handle_bulk_draft();
 		}
+		// phpcs:enable WordPress.Security.NonceVerification.Recommended
 	}
 
 	/**
@@ -166,6 +176,7 @@ class PPQ_Admin_Quizzes {
 	 * @since 1.0.0
 	 */
 	public function admin_notices() {
+		// phpcs:disable WordPress.Security.NonceVerification.Recommended -- Read-only notice flags from redirect
 		if ( ! isset( $_GET['page'] ) || 'ppq-quizzes' !== $_GET['page'] ) {
 			return;
 		}
@@ -179,8 +190,8 @@ class PPQ_Admin_Quizzes {
 			<?php
 		}
 
-		if ( isset( $_GET['deleted'] ) && absint( $_GET['deleted'] ) > 0 ) {
-			$count = absint( $_GET['deleted'] );
+		if ( isset( $_GET['deleted'] ) && absint( wp_unslash( $_GET['deleted'] ) ) > 0 ) {
+			$count = absint( wp_unslash( $_GET['deleted'] ) );
 			?>
 			<div class="notice notice-success is-dismissible">
 				<p>
@@ -188,7 +199,7 @@ class PPQ_Admin_Quizzes {
 					printf(
 						/* translators: %d: number of quizzes deleted */
 						esc_html( _n( '%d quiz deleted.', '%d quizzes deleted.', $count, 'pressprimer-quiz' ) ),
-						$count
+						(int) $count
 					);
 					?>
 				</p>
@@ -204,8 +215,8 @@ class PPQ_Admin_Quizzes {
 			<?php
 		}
 
-		if ( isset( $_GET['published'] ) && absint( $_GET['published'] ) > 0 ) {
-			$count = absint( $_GET['published'] );
+		if ( isset( $_GET['published'] ) && absint( wp_unslash( $_GET['published'] ) ) > 0 ) {
+			$count = absint( wp_unslash( $_GET['published'] ) );
 			?>
 			<div class="notice notice-success is-dismissible">
 				<p>
@@ -213,7 +224,7 @@ class PPQ_Admin_Quizzes {
 					printf(
 						/* translators: %d: number of quizzes published */
 						esc_html( _n( '%d quiz published.', '%d quizzes published.', $count, 'pressprimer-quiz' ) ),
-						$count
+						(int) $count
 					);
 					?>
 				</p>
@@ -221,8 +232,8 @@ class PPQ_Admin_Quizzes {
 			<?php
 		}
 
-		if ( isset( $_GET['drafted'] ) && absint( $_GET['drafted'] ) > 0 ) {
-			$count = absint( $_GET['drafted'] );
+		if ( isset( $_GET['drafted'] ) && absint( wp_unslash( $_GET['drafted'] ) ) > 0 ) {
+			$count = absint( wp_unslash( $_GET['drafted'] ) );
 			?>
 			<div class="notice notice-success is-dismissible">
 				<p>
@@ -230,13 +241,14 @@ class PPQ_Admin_Quizzes {
 					printf(
 						/* translators: %d: number of quizzes moved to draft */
 						esc_html( _n( '%d quiz moved to draft.', '%d quizzes moved to draft.', $count, 'pressprimer-quiz' ) ),
-						$count
+						(int) $count
 					);
 					?>
 				</p>
 			</div>
 			<?php
 		}
+		// phpcs:enable WordPress.Security.NonceVerification.Recommended
 	}
 
 	/**
@@ -251,7 +263,8 @@ class PPQ_Admin_Quizzes {
 		}
 
 		// Get action
-		$action = isset( $_GET['action'] ) ? sanitize_key( $_GET['action'] ) : '';
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only check for display routing
+		$action = isset( $_GET['action'] ) ? sanitize_key( wp_unslash( $_GET['action'] ) ) : '';
 
 		// Route to appropriate view
 		if ( 'edit' === $action || 'new' === $action ) {
@@ -271,7 +284,7 @@ class PPQ_Admin_Quizzes {
 	private function render_list() {
 		// Reuse the list table instance if it exists, otherwise create new one
 		if ( ! $this->list_table ) {
-			$this->list_table = new PPQ_Quizzes_List_Table();
+			$this->list_table = new PressPrimer_Quiz_Quizzes_List_Table();
 		}
 
 		$this->list_table->prepare_items();
@@ -301,12 +314,13 @@ class PPQ_Admin_Quizzes {
 	 * @since 1.0.0
 	 */
 	private function render_edit() {
-		$quiz_id = isset( $_GET['quiz'] ) ? absint( $_GET['quiz'] ) : 0;
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only quiz ID for editor display
+		$quiz_id = isset( $_GET['quiz'] ) ? absint( wp_unslash( $_GET['quiz'] ) ) : 0;
 		$quiz    = null;
 
 		// Load quiz if editing
 		if ( $quiz_id ) {
-			$quiz = PPQ_Quiz::get( $quiz_id );
+			$quiz = PressPrimer_Quiz_Quiz::get( $quiz_id );
 
 			if ( ! $quiz ) {
 				wp_die( esc_html__( 'Quiz not found.', 'pressprimer-quiz' ) );
@@ -333,13 +347,14 @@ class PPQ_Admin_Quizzes {
 	 * @since 1.0.0
 	 */
 	private function render_preview() {
-		$quiz_id = isset( $_GET['quiz'] ) ? absint( $_GET['quiz'] ) : 0;
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only quiz ID for preview display
+		$quiz_id = isset( $_GET['quiz'] ) ? absint( wp_unslash( $_GET['quiz'] ) ) : 0;
 
 		if ( ! $quiz_id ) {
 			wp_die( esc_html__( 'Invalid quiz ID.', 'pressprimer-quiz' ) );
 		}
 
-		$quiz = PPQ_Quiz::get( $quiz_id );
+		$quiz = PressPrimer_Quiz_Quiz::get( $quiz_id );
 
 		if ( ! $quiz ) {
 			wp_die( esc_html__( 'Quiz not found.', 'pressprimer-quiz' ) );
@@ -360,7 +375,7 @@ class PPQ_Admin_Quizzes {
 		// Load questions
 		$questions = [];
 		foreach ( $question_ids as $question_id ) {
-			$question = PPQ_Question::get( $question_id );
+			$question = PressPrimer_Quiz_Question::get( $question_id );
 			if ( $question ) {
 				$revision = $question->get_current_revision();
 				if ( $revision ) {
@@ -389,8 +404,8 @@ class PPQ_Admin_Quizzes {
 	 *
 	 * @since 1.0.0
 	 *
-	 * @param PPQ_Quiz $quiz Quiz object.
-	 * @param array    $questions Array of question/revision pairs.
+	 * @param PressPrimer_Quiz_Quiz $quiz Quiz object.
+	 * @param array                 $questions Array of question/revision pairs.
 	 */
 	private function render_preview_page( $quiz, $questions ) {
 		?>
@@ -433,6 +448,7 @@ class PPQ_Admin_Quizzes {
 								<strong><?php esc_html_e( 'Time Limit:', 'pressprimer-quiz' ); ?></strong>
 								<?php
 								$minutes = floor( $quiz->time_limit_seconds / 60 );
+								/* translators: %d: number of minutes for time limit */
 								echo esc_html( sprintf( _n( '%d minute', '%d minutes', $minutes, 'pressprimer-quiz' ), $minutes ) );
 								?>
 							</div>
@@ -470,8 +486,8 @@ class PPQ_Admin_Quizzes {
 							printf(
 								/* translators: 1: current question number, 2: total questions */
 								esc_html__( 'Question %1$d of %2$d', 'pressprimer-quiz' ),
-								$index + 1,
-								count( $questions )
+								(int) ( $index + 1 ),
+								(int) count( $questions )
 							);
 							?>
 						</div>
@@ -511,7 +527,7 @@ class PPQ_Admin_Quizzes {
 
 						<div class="ppq-question-answers">
 							<?php foreach ( $answers as $answer_index => $answer ) : ?>
-								<div class="ppq-answer-option <?php echo $answer['is_correct'] ? 'ppq-answer-correct' : ''; ?>">
+								<div class="ppq-answer-option <?php echo esc_attr( $answer['is_correct'] ? 'ppq-answer-correct' : '' ); ?>">
 									<?php if ( 'multiple_choice' === $question->type || 'true_false' === $question->type ) : ?>
 										<input type="radio" disabled>
 									<?php else : ?>
@@ -566,8 +582,8 @@ class PPQ_Admin_Quizzes {
 							printf(
 								/* translators: 1: correct count, 2: total questions */
 								esc_html__( '%1$d of %2$d', 'pressprimer-quiz' ),
-								$correct,
-								count( $questions )
+								(int) $correct,
+								(int) count( $questions )
 							);
 							?>
 						</div>
@@ -622,7 +638,7 @@ class PPQ_Admin_Quizzes {
 		// Enqueue Ant Design CSS
 		wp_enqueue_style(
 			'antd',
-			'https://cdn.jsdelivr.net/npm/antd@5.12.0/dist/reset.css',
+			PPQ_PLUGIN_URL . 'assets/css/vendor/antd-reset.css',
 			[],
 			'5.12.0'
 		);
@@ -647,31 +663,31 @@ class PPQ_Admin_Quizzes {
 		$quiz_data = [];
 
 		if ( $quiz_id > 0 ) {
-			$quiz = PPQ_Quiz::get( $quiz_id );
+			$quiz = PressPrimer_Quiz_Quiz::get( $quiz_id );
 
 			if ( $quiz ) {
 				$quiz_data = [
-					'id'                     => $quiz->id,
-					'title'                  => $quiz->title,
-					'description'            => $quiz->description,
-					'featured_image_id'      => $quiz->featured_image_id,
-					'status'                 => $quiz->status,
-					'mode'                   => $quiz->mode,
-					'time_limit_seconds'     => $quiz->time_limit_seconds,
-					'pass_percent'           => $quiz->pass_percent,
-					'allow_skip'             => (bool) $quiz->allow_skip,
-					'allow_backward'         => (bool) $quiz->allow_backward,
-					'allow_resume'           => (bool) $quiz->allow_resume,
-					'randomize_questions'    => (bool) $quiz->randomize_questions,
-					'randomize_answers'      => (bool) $quiz->randomize_answers,
-					'page_mode'              => $quiz->page_mode,
-					'questions_per_page'     => $quiz->questions_per_page,
-					'show_answers'           => $quiz->show_answers,
-					'enable_confidence'      => (bool) $quiz->enable_confidence,
-					'theme'                  => $quiz->theme,
-					'max_attempts'           => $quiz->max_attempts,
-					'attempt_delay_minutes'  => $quiz->attempt_delay_minutes,
-					'generation_mode'        => $quiz->generation_mode,
+					'id'                    => $quiz->id,
+					'title'                 => $quiz->title,
+					'description'           => $quiz->description,
+					'featured_image_id'     => $quiz->featured_image_id,
+					'status'                => $quiz->status,
+					'mode'                  => $quiz->mode,
+					'time_limit_seconds'    => $quiz->time_limit_seconds,
+					'pass_percent'          => $quiz->pass_percent,
+					'allow_skip'            => (bool) $quiz->allow_skip,
+					'allow_backward'        => (bool) $quiz->allow_backward,
+					'allow_resume'          => (bool) $quiz->allow_resume,
+					'randomize_questions'   => (bool) $quiz->randomize_questions,
+					'randomize_answers'     => (bool) $quiz->randomize_answers,
+					'page_mode'             => $quiz->page_mode,
+					'questions_per_page'    => $quiz->questions_per_page,
+					'show_answers'          => $quiz->show_answers,
+					'enable_confidence'     => (bool) $quiz->enable_confidence,
+					'theme'                 => $quiz->theme,
+					'max_attempts'          => $quiz->max_attempts,
+					'attempt_delay_minutes' => $quiz->attempt_delay_minutes,
+					'generation_mode'       => $quiz->generation_mode,
 				];
 			}
 		}
@@ -701,7 +717,7 @@ class PPQ_Admin_Quizzes {
 	 */
 	private function handle_save() {
 		// Verify nonce
-		if ( ! isset( $_POST['ppq_quiz_nonce'] ) || ! wp_verify_nonce( $_POST['ppq_quiz_nonce'], 'ppq_save_quiz' ) ) {
+		if ( ! isset( $_POST['ppq_quiz_nonce'] ) || ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['ppq_quiz_nonce'] ) ), 'ppq_save_quiz' ) ) {
 			wp_die( esc_html__( 'Security check failed.', 'pressprimer-quiz' ) );
 		}
 
@@ -710,40 +726,40 @@ class PPQ_Admin_Quizzes {
 			wp_die( esc_html__( 'You do not have permission to save quizzes.', 'pressprimer-quiz' ) );
 		}
 
-		$quiz_id = isset( $_POST['quiz_id'] ) ? absint( $_POST['quiz_id'] ) : 0;
+		$quiz_id = isset( $_POST['quiz_id'] ) ? absint( wp_unslash( $_POST['quiz_id'] ) ) : 0;
 
 		// Prepare data
 		$data = [
-			'title'                 => sanitize_text_field( $_POST['title'] ?? '' ),
-			'description'           => wp_kses_post( $_POST['description'] ?? '' ),
-			'featured_image_id'     => absint( $_POST['featured_image_id'] ?? 0 ),
-			'status'                => sanitize_key( $_POST['status'] ?? 'draft' ),
-			'mode'                  => sanitize_key( $_POST['mode'] ?? 'tutorial' ),
-			'pass_percent'          => floatval( $_POST['pass_percent'] ?? 70 ),
+			'title'                 => isset( $_POST['title'] ) ? sanitize_text_field( wp_unslash( $_POST['title'] ) ) : '',
+			'description'           => isset( $_POST['description'] ) ? wp_kses_post( wp_unslash( $_POST['description'] ) ) : '',
+			'featured_image_id'     => isset( $_POST['featured_image_id'] ) ? absint( wp_unslash( $_POST['featured_image_id'] ) ) : 0,
+			'status'                => isset( $_POST['status'] ) ? sanitize_key( wp_unslash( $_POST['status'] ) ) : 'draft',
+			'mode'                  => isset( $_POST['mode'] ) ? sanitize_key( wp_unslash( $_POST['mode'] ) ) : 'tutorial',
+			'pass_percent'          => isset( $_POST['pass_percent'] ) ? floatval( wp_unslash( $_POST['pass_percent'] ) ) : 70,
 			'allow_skip'            => isset( $_POST['allow_skip'] ) ? 1 : 0,
 			'allow_backward'        => isset( $_POST['allow_backward'] ) ? 1 : 0,
 			'allow_resume'          => isset( $_POST['allow_resume'] ) ? 1 : 0,
 			'randomize_questions'   => isset( $_POST['randomize_questions'] ) ? 1 : 0,
 			'randomize_answers'     => isset( $_POST['randomize_answers'] ) ? 1 : 0,
-			'page_mode'             => sanitize_key( $_POST['page_mode'] ?? 'single' ),
-			'questions_per_page'    => absint( $_POST['questions_per_page'] ?? 1 ),
-			'show_answers'          => sanitize_key( $_POST['show_answers'] ?? 'after_submit' ),
+			'page_mode'             => isset( $_POST['page_mode'] ) ? sanitize_key( wp_unslash( $_POST['page_mode'] ) ) : 'single',
+			'questions_per_page'    => isset( $_POST['questions_per_page'] ) ? absint( wp_unslash( $_POST['questions_per_page'] ) ) : 1,
+			'show_answers'          => isset( $_POST['show_answers'] ) ? sanitize_key( wp_unslash( $_POST['show_answers'] ) ) : 'after_submit',
 			'enable_confidence'     => isset( $_POST['enable_confidence'] ) ? 1 : 0,
-			'theme'                 => sanitize_key( $_POST['theme'] ?? 'default' ),
-			'generation_mode'       => sanitize_key( $_POST['generation_mode'] ?? 'fixed' ),
-			'attempt_delay_minutes' => absint( $_POST['attempt_delay_minutes'] ?? 0 ),
+			'theme'                 => isset( $_POST['theme'] ) ? sanitize_key( wp_unslash( $_POST['theme'] ) ) : 'default',
+			'generation_mode'       => isset( $_POST['generation_mode'] ) ? sanitize_key( wp_unslash( $_POST['generation_mode'] ) ) : 'fixed',
+			'attempt_delay_minutes' => isset( $_POST['attempt_delay_minutes'] ) ? absint( wp_unslash( $_POST['attempt_delay_minutes'] ) ) : 0,
 		];
 
 		// Handle time limit (convert minutes to seconds, or NULL if not enabled)
-		if ( ! empty( $_POST['time_limit_minutes'] ) ) {
-			$data['time_limit_seconds'] = absint( $_POST['time_limit_minutes'] ) * 60;
+		if ( isset( $_POST['time_limit_minutes'] ) && '' !== $_POST['time_limit_minutes'] ) {
+			$data['time_limit_seconds'] = absint( wp_unslash( $_POST['time_limit_minutes'] ) ) * 60;
 		} else {
 			$data['time_limit_seconds'] = null;
 		}
 
 		// Handle max attempts (or NULL if not enabled)
-		if ( ! empty( $_POST['max_attempts'] ) ) {
-			$data['max_attempts'] = absint( $_POST['max_attempts'] );
+		if ( isset( $_POST['max_attempts'] ) && '' !== $_POST['max_attempts'] ) {
+			$data['max_attempts'] = absint( wp_unslash( $_POST['max_attempts'] ) );
 		} else {
 			$data['max_attempts'] = null;
 		}
@@ -751,7 +767,7 @@ class PPQ_Admin_Quizzes {
 		// Update or create
 		if ( $quiz_id ) {
 			// Update existing quiz
-			$quiz = PPQ_Quiz::get( $quiz_id );
+			$quiz = PressPrimer_Quiz_Quiz::get( $quiz_id );
 
 			if ( ! $quiz ) {
 				wp_die( esc_html__( 'Quiz not found.', 'pressprimer-quiz' ) );
@@ -774,11 +790,13 @@ class PPQ_Admin_Quizzes {
 			}
 
 			// Update item weights for fixed quizzes
-			if ( 'fixed' === $quiz->generation_mode && ! empty( $_POST['item_weights'] ) ) {
+			if ( 'fixed' === $quiz->generation_mode && isset( $_POST['item_weights'] ) && ! empty( $_POST['item_weights'] ) ) {
 				global $wpdb;
 				$items_table = $wpdb->prefix . 'ppq_quiz_items';
 
-				foreach ( $_POST['item_weights'] as $item_id => $weight ) {
+				// phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- Values sanitized individually below
+				$item_weights = wp_unslash( $_POST['item_weights'] );
+				foreach ( $item_weights as $item_id => $weight ) {
 					$item_id = absint( $item_id );
 					$weight  = floatval( $weight );
 
@@ -813,7 +831,7 @@ class PPQ_Admin_Quizzes {
 
 		} else {
 			// Create new quiz
-			$quiz_id = PPQ_Quiz::create( $data );
+			$quiz_id = PressPrimer_Quiz_Quiz::create( $data );
 
 			if ( is_wp_error( $quiz_id ) ) {
 				wp_die( esc_html( $quiz_id->get_error_message() ) );
@@ -841,14 +859,19 @@ class PPQ_Admin_Quizzes {
 	 * @since 1.0.0
 	 */
 	private function handle_delete() {
-		check_admin_referer( 'delete-quiz_' . $_GET['quiz'] );
+		if ( ! isset( $_GET['quiz'] ) ) {
+			wp_die( esc_html__( 'Invalid request.', 'pressprimer-quiz' ) );
+		}
+
+		$quiz_id_raw = absint( wp_unslash( $_GET['quiz'] ) );
+		check_admin_referer( 'delete-quiz_' . $quiz_id_raw );
 
 		if ( ! current_user_can( 'ppq_manage_own' ) && ! current_user_can( 'ppq_manage_all' ) ) {
 			wp_die( esc_html__( 'You do not have permission to delete quizzes.', 'pressprimer-quiz' ) );
 		}
 
-		$quiz_id = absint( $_GET['quiz'] );
-		$quiz    = PPQ_Quiz::get( $quiz_id );
+		$quiz_id = absint( wp_unslash( $_GET['quiz'] ) );
+		$quiz    = PressPrimer_Quiz_Quiz::get( $quiz_id );
 
 		if ( ! $quiz ) {
 			wp_die( esc_html__( 'Quiz not found.', 'pressprimer-quiz' ) );
@@ -882,11 +905,12 @@ class PPQ_Admin_Quizzes {
 			wp_die( esc_html__( 'You do not have permission to delete quizzes.', 'pressprimer-quiz' ) );
 		}
 
-		$quiz_ids = array_map( 'absint', $_GET['quizzes'] );
+		// phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotValidated -- Validated above via check_admin_referer
+		$quiz_ids = isset( $_GET['quizzes'] ) ? array_map( 'absint', wp_unslash( $_GET['quizzes'] ) ) : [];
 		$deleted  = 0;
 
 		foreach ( $quiz_ids as $quiz_id ) {
-			$quiz = PPQ_Quiz::get( $quiz_id );
+			$quiz = PressPrimer_Quiz_Quiz::get( $quiz_id );
 
 			if ( ! $quiz ) {
 				continue;
@@ -900,7 +924,7 @@ class PPQ_Admin_Quizzes {
 			$result = $quiz->delete();
 
 			if ( ! is_wp_error( $result ) ) {
-				$deleted++;
+				++$deleted;
 			}
 		}
 
@@ -914,14 +938,19 @@ class PPQ_Admin_Quizzes {
 	 * @since 1.0.0
 	 */
 	private function handle_duplicate() {
-		check_admin_referer( 'duplicate-quiz_' . $_GET['quiz'] );
+		if ( ! isset( $_GET['quiz'] ) ) {
+			wp_die( esc_html__( 'Invalid request.', 'pressprimer-quiz' ) );
+		}
+
+		$quiz_id_raw = absint( wp_unslash( $_GET['quiz'] ) );
+		check_admin_referer( 'duplicate-quiz_' . $quiz_id_raw );
 
 		if ( ! current_user_can( 'ppq_manage_own' ) && ! current_user_can( 'ppq_manage_all' ) ) {
 			wp_die( esc_html__( 'You do not have permission to duplicate quizzes.', 'pressprimer-quiz' ) );
 		}
 
-		$quiz_id = absint( $_GET['quiz'] );
-		$quiz    = PPQ_Quiz::get( $quiz_id );
+		$quiz_id = absint( wp_unslash( $_GET['quiz'] ) );
+		$quiz    = PressPrimer_Quiz_Quiz::get( $quiz_id );
 
 		if ( ! $quiz ) {
 			wp_die( esc_html__( 'Quiz not found.', 'pressprimer-quiz' ) );
@@ -965,11 +994,12 @@ class PPQ_Admin_Quizzes {
 			wp_die( esc_html__( 'You do not have permission to publish quizzes.', 'pressprimer-quiz' ) );
 		}
 
-		$quiz_ids  = array_map( 'absint', $_GET['quizzes'] );
+		// phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotValidated -- Validated above via check_admin_referer
+		$quiz_ids  = isset( $_GET['quizzes'] ) ? array_map( 'absint', wp_unslash( $_GET['quizzes'] ) ) : [];
 		$published = 0;
 
 		foreach ( $quiz_ids as $quiz_id ) {
-			$quiz = PPQ_Quiz::get( $quiz_id );
+			$quiz = PressPrimer_Quiz_Quiz::get( $quiz_id );
 
 			if ( ! $quiz ) {
 				continue;
@@ -985,7 +1015,7 @@ class PPQ_Admin_Quizzes {
 			$result       = $quiz->save();
 
 			if ( ! is_wp_error( $result ) ) {
-				$published++;
+				++$published;
 			}
 		}
 
@@ -1005,11 +1035,12 @@ class PPQ_Admin_Quizzes {
 			wp_die( esc_html__( 'You do not have permission to change quiz status.', 'pressprimer-quiz' ) );
 		}
 
-		$quiz_ids = array_map( 'absint', $_GET['quizzes'] );
+		// phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotValidated -- Validated above via check_admin_referer
+		$quiz_ids = isset( $_GET['quizzes'] ) ? array_map( 'absint', wp_unslash( $_GET['quizzes'] ) ) : [];
 		$drafted  = 0;
 
 		foreach ( $quiz_ids as $quiz_id ) {
-			$quiz = PPQ_Quiz::get( $quiz_id );
+			$quiz = PressPrimer_Quiz_Quiz::get( $quiz_id );
 
 			if ( ! $quiz ) {
 				continue;
@@ -1025,7 +1056,7 @@ class PPQ_Admin_Quizzes {
 			$result       = $quiz->save();
 
 			if ( ! is_wp_error( $result ) ) {
-				$drafted++;
+				++$drafted;
 			}
 		}
 
@@ -1040,7 +1071,7 @@ class PPQ_Admin_Quizzes {
 	 */
 	public function ajax_get_available_questions() {
 		// Verify nonce
-		if ( ! isset( $_POST['nonce'] ) || ! wp_verify_nonce( $_POST['nonce'], 'ppq_get_questions' ) ) {
+		if ( ! isset( $_POST['nonce'] ) || ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['nonce'] ) ), 'ppq_get_questions' ) ) {
 			wp_send_json_error( __( 'Security check failed.', 'pressprimer-quiz' ) );
 		}
 
@@ -1049,7 +1080,7 @@ class PPQ_Admin_Quizzes {
 			wp_send_json_error( __( 'You do not have permission to view questions.', 'pressprimer-quiz' ) );
 		}
 
-		$quiz_id = isset( $_POST['quiz_id'] ) ? absint( $_POST['quiz_id'] ) : 0;
+		$quiz_id = isset( $_POST['quiz_id'] ) ? absint( wp_unslash( $_POST['quiz_id'] ) ) : 0;
 
 		global $wpdb;
 		$questions_table = $wpdb->prefix . 'ppq_questions';
@@ -1071,7 +1102,8 @@ class PPQ_Admin_Quizzes {
 			);
 		}
 
-		$query  .= ' ORDER BY q.id DESC LIMIT 100';
+		$query .= ' ORDER BY q.id DESC LIMIT 100';
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- AJAX search results, not suitable for caching
 		$results = $wpdb->get_results( $query ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
 
 		$questions = [];
@@ -1093,7 +1125,7 @@ class PPQ_Admin_Quizzes {
 	 */
 	public function ajax_add_quiz_questions() {
 		// Verify nonce
-		if ( ! isset( $_POST['nonce'] ) || ! wp_verify_nonce( $_POST['nonce'], 'ppq_add_questions' ) ) {
+		if ( ! isset( $_POST['nonce'] ) || ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['nonce'] ) ), 'ppq_add_questions' ) ) {
 			wp_send_json_error( __( 'Security check failed.', 'pressprimer-quiz' ) );
 		}
 
@@ -1102,15 +1134,16 @@ class PPQ_Admin_Quizzes {
 			wp_send_json_error( __( 'You do not have permission to edit quizzes.', 'pressprimer-quiz' ) );
 		}
 
-		$quiz_id      = isset( $_POST['quiz_id'] ) ? absint( $_POST['quiz_id'] ) : 0;
-		$question_ids = isset( $_POST['question_ids'] ) ? array_map( 'absint', $_POST['question_ids'] ) : [];
+		$quiz_id = isset( $_POST['quiz_id'] ) ? absint( wp_unslash( $_POST['quiz_id'] ) ) : 0;
+		// phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- Values sanitized with absint via array_map
+		$question_ids = isset( $_POST['question_ids'] ) ? array_map( 'absint', wp_unslash( $_POST['question_ids'] ) ) : [];
 
 		if ( ! $quiz_id || empty( $question_ids ) ) {
 			wp_send_json_error( __( 'Invalid data provided.', 'pressprimer-quiz' ) );
 		}
 
 		// Verify quiz exists and user has permission
-		$quiz = PPQ_Quiz::get( $quiz_id );
+		$quiz = PressPrimer_Quiz_Quiz::get( $quiz_id );
 		if ( ! $quiz ) {
 			wp_send_json_error( __( 'Quiz not found.', 'pressprimer-quiz' ) );
 		}
@@ -1122,25 +1155,29 @@ class PPQ_Admin_Quizzes {
 		// Add each question
 		$added = 0;
 		foreach ( $question_ids as $question_id ) {
-			$result = PPQ_Quiz_Item::create( [
-				'quiz_id'     => $quiz_id,
-				'question_id' => $question_id,
-				'weight'      => 1.00,
-			] );
+			$result = PressPrimer_Quiz_Quiz_Item::create(
+				[
+					'quiz_id'     => $quiz_id,
+					'question_id' => $question_id,
+					'weight'      => 1.00,
+				]
+			);
 
 			if ( ! is_wp_error( $result ) ) {
-				$added++;
+				++$added;
 			}
 		}
 
-		wp_send_json_success( [
-			'added'   => $added,
-			'message' => sprintf(
-				/* translators: %d: number of questions added */
-				_n( '%d question added.', '%d questions added.', $added, 'pressprimer-quiz' ),
-				$added
-			),
-		] );
+		wp_send_json_success(
+			[
+				'added'   => $added,
+				'message' => sprintf(
+					/* translators: %d: number of questions added */
+					_n( '%d question added.', '%d questions added.', $added, 'pressprimer-quiz' ),
+					$added
+				),
+			]
+		);
 	}
 
 	/**
@@ -1150,7 +1187,7 @@ class PPQ_Admin_Quizzes {
 	 */
 	public function ajax_remove_quiz_question() {
 		// Verify nonce
-		if ( ! isset( $_POST['nonce'] ) || ! wp_verify_nonce( $_POST['nonce'], 'ppq_remove_question' ) ) {
+		if ( ! isset( $_POST['nonce'] ) || ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['nonce'] ) ), 'ppq_remove_question' ) ) {
 			wp_send_json_error( __( 'Security check failed.', 'pressprimer-quiz' ) );
 		}
 
@@ -1159,20 +1196,20 @@ class PPQ_Admin_Quizzes {
 			wp_send_json_error( __( 'You do not have permission to edit quizzes.', 'pressprimer-quiz' ) );
 		}
 
-		$item_id = isset( $_POST['item_id'] ) ? absint( $_POST['item_id'] ) : 0;
+		$item_id = isset( $_POST['item_id'] ) ? absint( wp_unslash( $_POST['item_id'] ) ) : 0;
 
 		if ( ! $item_id ) {
 			wp_send_json_error( __( 'Invalid item ID.', 'pressprimer-quiz' ) );
 		}
 
 		// Get item
-		$item = PPQ_Quiz_Item::get( $item_id );
+		$item = PressPrimer_Quiz_Quiz_Item::get( $item_id );
 		if ( ! $item ) {
 			wp_send_json_error( __( 'Quiz item not found.', 'pressprimer-quiz' ) );
 		}
 
 		// Verify quiz exists and user has permission
-		$quiz = PPQ_Quiz::get( $item->quiz_id );
+		$quiz = PressPrimer_Quiz_Quiz::get( $item->quiz_id );
 		if ( ! $quiz ) {
 			wp_send_json_error( __( 'Quiz not found.', 'pressprimer-quiz' ) );
 		}
@@ -1188,9 +1225,11 @@ class PPQ_Admin_Quizzes {
 			wp_send_json_error( $result->get_error_message() );
 		}
 
-		wp_send_json_success( [
-			'message' => __( 'Question removed from quiz.', 'pressprimer-quiz' ),
-		] );
+		wp_send_json_success(
+			[
+				'message' => __( 'Question removed from quiz.', 'pressprimer-quiz' ),
+			]
+		);
 	}
 }
 
@@ -1199,7 +1238,7 @@ class PPQ_Admin_Quizzes {
  *
  * @since 1.0.0
  */
-class PPQ_Quizzes_List_Table extends WP_List_Table {
+class PressPrimer_Quiz_Quizzes_List_Table extends WP_List_Table {
 
 	/**
 	 * Constructor
@@ -1207,11 +1246,13 @@ class PPQ_Quizzes_List_Table extends WP_List_Table {
 	 * @since 1.0.0
 	 */
 	public function __construct() {
-		parent::__construct([
-			'singular' => 'quiz',
-			'plural'   => 'quizzes',
-			'ajax'     => false,
-		]);
+		parent::__construct(
+			[
+				'singular' => 'quiz',
+				'plural'   => 'quizzes',
+				'ajax'     => false,
+			]
+		);
 	}
 
 	/**
@@ -1302,31 +1343,35 @@ class PPQ_Quizzes_List_Table extends WP_List_Table {
 		$where_clauses = [];
 		$where_values  = [];
 
+		// phpcs:disable WordPress.Security.NonceVerification.Recommended -- Read-only filter parameters for list table display
 		// Filter by search
-		if ( ! empty( $_GET['s'] ) ) {
+		if ( isset( $_GET['s'] ) && '' !== $_GET['s'] ) {
 			$where_clauses[] = 'title LIKE %s';
-			$where_values[]  = '%' . $wpdb->esc_like( sanitize_text_field( $_GET['s'] ) ) . '%';
+			$where_values[]  = '%' . $wpdb->esc_like( sanitize_text_field( wp_unslash( $_GET['s'] ) ) ) . '%';
 		}
 
 		// Filter by status
-		if ( ! empty( $_GET['status'] ) && 'all' !== $_GET['status'] ) {
+		$get_status = isset( $_GET['status'] ) ? sanitize_key( wp_unslash( $_GET['status'] ) ) : '';
+		if ( '' !== $get_status && 'all' !== $get_status ) {
 			$where_clauses[] = 'status = %s';
-			$where_values[]  = sanitize_key( $_GET['status'] );
+			$where_values[]  = $get_status;
 		}
 
 		// Filter by mode
-		if ( ! empty( $_GET['mode'] ) && 'all' !== $_GET['mode'] ) {
+		$get_mode = isset( $_GET['mode'] ) ? sanitize_key( wp_unslash( $_GET['mode'] ) ) : '';
+		if ( '' !== $get_mode && 'all' !== $get_mode ) {
 			$where_clauses[] = 'mode = %s';
-			$where_values[]  = sanitize_key( $_GET['mode'] );
+			$where_values[]  = $get_mode;
 		}
 
 		// Filter by author (if not manage_all, only show own quizzes)
+		$get_author = isset( $_GET['author'] ) ? sanitize_text_field( wp_unslash( $_GET['author'] ) ) : '';
 		if ( ! current_user_can( 'ppq_manage_all' ) ) {
 			$where_clauses[] = 'owner_id = %d';
 			$where_values[]  = get_current_user_id();
-		} elseif ( ! empty( $_GET['author'] ) && 'all' !== $_GET['author'] ) {
+		} elseif ( '' !== $get_author && 'all' !== $get_author ) {
 			$where_clauses[] = 'owner_id = %d';
-			$where_values[]  = absint( $_GET['author'] );
+			$where_values[]  = absint( $get_author );
 		}
 
 		// Build WHERE clause
@@ -1335,8 +1380,9 @@ class PPQ_Quizzes_List_Table extends WP_List_Table {
 			: '';
 
 		// Get orderby and order
-		$orderby = ! empty( $_GET['orderby'] ) ? sanitize_key( $_GET['orderby'] ) : 'created_at';
-		$order   = ! empty( $_GET['order'] ) ? strtoupper( sanitize_key( $_GET['order'] ) ) : 'DESC';
+		$orderby = isset( $_GET['orderby'] ) && '' !== $_GET['orderby'] ? sanitize_key( wp_unslash( $_GET['orderby'] ) ) : 'created_at';
+		$order   = isset( $_GET['order'] ) && '' !== $_GET['order'] ? strtoupper( sanitize_key( wp_unslash( $_GET['order'] ) ) ) : 'DESC';
+		// phpcs:enable WordPress.Security.NonceVerification.Recommended
 
 		// Validate order
 		if ( ! in_array( $order, [ 'ASC', 'DESC' ], true ) ) {
@@ -1350,30 +1396,36 @@ class PPQ_Quizzes_List_Table extends WP_List_Table {
 			$total_query = $wpdb->prepare( $total_query, $where_values ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
 		}
 
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- List table pagination, not suitable for caching
 		$total_items = $wpdb->get_var( $total_query ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
 
 		// Get items
-		$items_query = "SELECT * FROM {$quizzes_table} {$where_sql} ORDER BY {$orderby} {$order} LIMIT %d OFFSET %d";
+		// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Table name and validated clauses safely constructed
+		$items_query  = "SELECT * FROM {$quizzes_table} {$where_sql} ORDER BY {$orderby} {$order} LIMIT %d OFFSET %d";
 		$query_values = array_merge( $where_values, [ $per_page, $offset ] );
 
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- List table pagination, not suitable for caching
 		$items = $wpdb->get_results(
-			$wpdb->prepare( $items_query, $query_values ) // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
+			// phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- Query is prepared with placeholders
+			$wpdb->prepare( $items_query, $query_values )
 		);
 
 		// Convert to model instances
 		$this->items = [];
 		if ( $items ) {
 			foreach ( $items as $item ) {
-				$this->items[] = PPQ_Quiz::from_row( $item );
+				$this->items[] = PressPrimer_Quiz_Quiz::from_row( $item );
 			}
 		}
 
 		// Set pagination
-		$this->set_pagination_args([
-			'total_items' => $total_items,
-			'per_page'    => $per_page,
-			'total_pages' => ceil( $total_items / $per_page ),
-		]);
+		$this->set_pagination_args(
+			[
+				'total_items' => $total_items,
+				'per_page'    => $per_page,
+				'total_pages' => ceil( $total_items / $per_page ),
+			]
+		);
 
 		// Set columns
 		$columns               = $this->get_columns();
@@ -1387,7 +1439,7 @@ class PPQ_Quizzes_List_Table extends WP_List_Table {
 	 *
 	 * @since 1.0.0
 	 *
-	 * @param PPQ_Quiz $item Quiz object.
+	 * @param PressPrimer_Quiz_Quiz $item Quiz object.
 	 * @return string Column content.
 	 */
 	public function column_cb( $item ) {
@@ -1399,7 +1451,7 @@ class PPQ_Quizzes_List_Table extends WP_List_Table {
 	 *
 	 * @since 1.0.0
 	 *
-	 * @param PPQ_Quiz $item Quiz object.
+	 * @param PressPrimer_Quiz_Quiz $item Quiz object.
 	 * @return string Column content.
 	 */
 	public function column_id( $item ) {
@@ -1411,7 +1463,7 @@ class PPQ_Quizzes_List_Table extends WP_List_Table {
 	 *
 	 * @since 1.0.0
 	 *
-	 * @param PPQ_Quiz $item Quiz object.
+	 * @param PressPrimer_Quiz_Quiz $item Quiz object.
 	 * @return string Column content.
 	 */
 	public function column_title( $item ) {
@@ -1500,7 +1552,7 @@ class PPQ_Quizzes_List_Table extends WP_List_Table {
 	 *
 	 * @since 1.0.0
 	 *
-	 * @param PPQ_Quiz $item Quiz object.
+	 * @param PressPrimer_Quiz_Quiz $item Quiz object.
 	 * @return string Column content.
 	 */
 	public function column_questions( $item ) {
@@ -1509,6 +1561,7 @@ class PPQ_Quizzes_List_Table extends WP_List_Table {
 			$items = $item->get_items();
 			$count = count( $items );
 
+			/* translators: %s: "question" or "questions" depending on count */
 			return sprintf(
 				'%d %s',
 				$count,
@@ -1523,6 +1576,7 @@ class PPQ_Quizzes_List_Table extends WP_List_Table {
 				$total += $rule->question_count;
 			}
 
+			/* translators: %s: "question" or "questions" depending on count */
 			return sprintf(
 				'~%d %s',
 				$total,
@@ -1536,7 +1590,7 @@ class PPQ_Quizzes_List_Table extends WP_List_Table {
 	 *
 	 * @since 1.0.0
 	 *
-	 * @param PPQ_Quiz $item Quiz object.
+	 * @param PressPrimer_Quiz_Quiz $item Quiz object.
 	 * @return string Column content.
 	 */
 	public function column_mode( $item ) {
@@ -1553,7 +1607,7 @@ class PPQ_Quizzes_List_Table extends WP_List_Table {
 	 *
 	 * @since 1.0.0
 	 *
-	 * @param PPQ_Quiz $item Quiz object.
+	 * @param PressPrimer_Quiz_Quiz $item Quiz object.
 	 * @return string Column content.
 	 */
 	public function column_status( $item ) {
@@ -1571,7 +1625,7 @@ class PPQ_Quizzes_List_Table extends WP_List_Table {
 	 *
 	 * @since 1.0.0
 	 *
-	 * @param PPQ_Quiz $item Quiz object.
+	 * @param PressPrimer_Quiz_Quiz $item Quiz object.
 	 * @return string Column content.
 	 */
 	public function column_author( $item ) {
@@ -1602,7 +1656,7 @@ class PPQ_Quizzes_List_Table extends WP_List_Table {
 	 *
 	 * @since 1.0.0
 	 *
-	 * @param PPQ_Quiz $item Quiz object.
+	 * @param PressPrimer_Quiz_Quiz $item Quiz object.
 	 * @return string Column content.
 	 */
 	public function column_date( $item ) {
@@ -1665,7 +1719,8 @@ class PPQ_Quizzes_List_Table extends WP_List_Table {
 	 * @since 1.0.0
 	 */
 	private function render_status_filter() {
-		$current_status = ! empty( $_GET['status'] ) ? sanitize_key( $_GET['status'] ) : 'all';
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only filter state for selected()
+		$current_status = isset( $_GET['status'] ) && '' !== $_GET['status'] ? sanitize_key( wp_unslash( $_GET['status'] ) ) : 'all';
 
 		$statuses = [
 			'all'       => __( 'All Statuses', 'pressprimer-quiz' ),
@@ -1692,7 +1747,8 @@ class PPQ_Quizzes_List_Table extends WP_List_Table {
 	 * @since 1.0.0
 	 */
 	private function render_mode_filter() {
-		$current_mode = ! empty( $_GET['mode'] ) ? sanitize_key( $_GET['mode'] ) : 'all';
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only filter state for selected()
+		$current_mode = isset( $_GET['mode'] ) && '' !== $_GET['mode'] ? sanitize_key( wp_unslash( $_GET['mode'] ) ) : 'all';
 
 		$modes = [
 			'all'      => __( 'All Modes', 'pressprimer-quiz' ),
@@ -1718,12 +1774,14 @@ class PPQ_Quizzes_List_Table extends WP_List_Table {
 	 * @since 1.0.0
 	 */
 	private function render_author_filter() {
-		$current_author = ! empty( $_GET['author'] ) ? absint( $_GET['author'] ) : 0;
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only filter state for selected()
+		$current_author = isset( $_GET['author'] ) && '' !== $_GET['author'] ? absint( wp_unslash( $_GET['author'] ) ) : 0;
 
 		// Get all users who have created quizzes
 		global $wpdb;
 		$quizzes_table = $wpdb->prefix . 'ppq_quizzes';
 
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Admin filter dropdown, not suitable for caching
 		$authors = $wpdb->get_results(
 			"SELECT DISTINCT owner_id FROM {$quizzes_table} ORDER BY owner_id ASC" // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 		);

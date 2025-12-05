@@ -26,7 +26,7 @@ if ( ! defined( 'ABSPATH' ) ) {
  *
  * @since 1.0.0
  */
-class PPQ_TutorLMS {
+class PressPrimer_Quiz_TutorLMS {
 
 	/**
 	 * Meta key for storing the PPQ quiz ID on lessons
@@ -94,7 +94,7 @@ class PPQ_TutorLMS {
 		add_filter( 'tutor_lesson/single/complete_form', [ $this, 'maybe_hide_complete_button' ] );
 
 		// Completion tracking.
-		add_action( 'ppq_quiz_passed', [ $this, 'handle_quiz_passed' ], 10, 2 );
+		add_action( 'pressprimer_quiz_quiz_passed', [ $this, 'handle_quiz_passed' ], 10, 2 );
 
 		// REST API endpoints.
 		add_action( 'rest_api_init', [ $this, 'register_rest_routes' ] );
@@ -142,7 +142,7 @@ class PPQ_TutorLMS {
 		// Get quiz display label if one is selected.
 		$quiz_display = '';
 		if ( $quiz_id ) {
-			$quiz         = PPQ_Quiz::get( $quiz_id );
+			$quiz         = PressPrimer_Quiz_Quiz::get( $quiz_id );
 			$quiz_display = $quiz ? sprintf( '%d - %s', $quiz->id, $quiz->title ) : '';
 		}
 		?>
@@ -160,7 +160,7 @@ class PPQ_TutorLMS {
 					placeholder="<?php esc_attr_e( 'Click to browse or type to search...', 'pressprimer-quiz' ); ?>"
 					value="<?php echo esc_attr( $quiz_display ); ?>"
 					autocomplete="off"
-					<?php echo $quiz_id ? 'readonly' : ''; ?>
+					<?php echo esc_attr( $quiz_id ? 'readonly' : '' ); ?>
 				/>
 				<input
 					type="hidden"
@@ -392,7 +392,7 @@ class PPQ_TutorLMS {
 		}
 
 		// Save quiz ID.
-		$quiz_id = isset( $_POST['ppq_quiz_id'] ) ? absint( $_POST['ppq_quiz_id'] ) : 0;
+		$quiz_id = isset( $_POST['ppq_quiz_id'] ) ? absint( wp_unslash( $_POST['ppq_quiz_id'] ) ) : 0;
 		if ( $quiz_id ) {
 			update_post_meta( $post_id, self::META_KEY_QUIZ_ID, $quiz_id );
 		} else {
@@ -411,23 +411,31 @@ class PPQ_TutorLMS {
 	 */
 	public function register_meta_fields() {
 		foreach ( $this->supported_post_types as $post_type ) {
-			register_post_meta( $post_type, self::META_KEY_QUIZ_ID, [
-				'show_in_rest'  => true,
-				'single'        => true,
-				'type'          => 'integer',
-				'auth_callback' => function() {
-					return current_user_can( 'edit_posts' );
-				},
-			] );
+			register_post_meta(
+				$post_type,
+				self::META_KEY_QUIZ_ID,
+				[
+					'show_in_rest'  => true,
+					'single'        => true,
+					'type'          => 'integer',
+					'auth_callback' => function () {
+						return current_user_can( 'edit_posts' );
+					},
+				]
+			);
 
-			register_post_meta( $post_type, self::META_KEY_REQUIRE_PASS, [
-				'show_in_rest'  => true,
-				'single'        => true,
-				'type'          => 'string',
-				'auth_callback' => function() {
-					return current_user_can( 'edit_posts' );
-				},
-			] );
+			register_post_meta(
+				$post_type,
+				self::META_KEY_REQUIRE_PASS,
+				[
+					'show_in_rest'  => true,
+					'single'        => true,
+					'type'          => 'string',
+					'auth_callback' => function () {
+						return current_user_can( 'edit_posts' );
+					},
+				]
+			);
 		}
 	}
 
@@ -492,7 +500,7 @@ class PPQ_TutorLMS {
 		}
 
 		// phpcs:ignore WordPress.Security.NonceVerification.Recommended
-		$course_id = isset( $_GET['course_id'] ) ? absint( $_GET['course_id'] ) : 0;
+		$course_id = isset( $_GET['course_id'] ) ? absint( wp_unslash( $_GET['course_id'] ) ) : 0;
 
 		// Get existing lesson quiz associations for this course.
 		$lesson_quizzes = $this->get_lesson_quizzes_for_course( $course_id );
@@ -539,25 +547,29 @@ class PPQ_TutorLMS {
 		$lesson_quizzes = [];
 
 		// Get all lessons for this course (lessons are children of topics, which are children of courses).
-		$topics = get_posts( [
-			'post_type'      => 'topics',
-			'post_parent'    => $course_id,
-			'posts_per_page' => -1,
-			'post_status'    => 'any',
-		] );
-
-		foreach ( $topics as $topic ) {
-			$lessons = get_posts( [
-				'post_type'      => 'lesson',
-				'post_parent'    => $topic->ID,
+		$topics = get_posts(
+			[
+				'post_type'      => 'topics',
+				'post_parent'    => $course_id,
 				'posts_per_page' => -1,
 				'post_status'    => 'any',
-			] );
+			]
+		);
+
+		foreach ( $topics as $topic ) {
+			$lessons = get_posts(
+				[
+					'post_type'      => 'lesson',
+					'post_parent'    => $topic->ID,
+					'posts_per_page' => -1,
+					'post_status'    => 'any',
+				]
+			);
 
 			foreach ( $lessons as $lesson ) {
 				$quiz_id = get_post_meta( $lesson->ID, self::META_KEY_QUIZ_ID, true );
 				if ( $quiz_id ) {
-					$quiz = PPQ_Quiz::get( $quiz_id );
+					$quiz = PressPrimer_Quiz_Quiz::get( $quiz_id );
 					if ( $quiz ) {
 						$lesson_quizzes[ $lesson->ID ] = [
 							'id'    => $quiz->id,
@@ -590,10 +602,11 @@ class PPQ_TutorLMS {
 		global $wpdb;
 		$table = $wpdb->prefix . 'ppq_quizzes';
 
-		$recent = isset( $_POST['recent'] ) && $_POST['recent'];
+		$recent = isset( $_POST['recent'] ) && rest_sanitize_boolean( wp_unslash( $_POST['recent'] ) );
 
 		if ( $recent ) {
 			$user_id = get_current_user_id();
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- AJAX search results, not suitable for caching
 			$quizzes = $wpdb->get_results(
 				$wpdb->prepare(
 					"SELECT id, title FROM {$table} WHERE status = 'published' AND owner_id = %d ORDER BY id DESC LIMIT 50", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
@@ -605,12 +618,13 @@ class PPQ_TutorLMS {
 			return;
 		}
 
-		$search = isset( $_POST['search'] ) ? sanitize_text_field( $_POST['search'] ) : '';
+		$search = isset( $_POST['search'] ) ? sanitize_text_field( wp_unslash( $_POST['search'] ) ) : '';
 
 		if ( strlen( $search ) < 2 ) {
 			wp_send_json_success( [ 'quizzes' => [] ] );
 		}
 
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- AJAX search results, not suitable for caching
 		$quizzes = $wpdb->get_results(
 			$wpdb->prepare(
 				"SELECT id, title FROM {$table} WHERE title LIKE %s AND status = 'published' ORDER BY title ASC LIMIT 20", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
@@ -639,9 +653,9 @@ class PPQ_TutorLMS {
 		$user_id   = get_current_user_id();
 
 		if ( $course_id && ! $this->is_user_enrolled( $user_id, $course_id ) ) {
-			echo '<div class="ppq-tutorlms-access-denied">';
-			echo '<p>' . esc_html__( 'Enroll in this course to access the quiz.', 'pressprimer-quiz' ) . '</p>';
-			echo '</div>';
+			echo '<div class="ppq-tutorlms-access-denied">'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Safe HTML
+			echo '<p>' . esc_html__( 'Enroll in this course to access the quiz.', 'pressprimer-quiz' ) . '</p>'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Safe HTML with escaped string
+			echo '</div>'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Safe HTML
 			return;
 		}
 
@@ -658,9 +672,9 @@ class PPQ_TutorLMS {
 			esc_attr( base64_encode( wp_json_encode( $context_data ) ) )
 		);
 
-		echo '<div class="ppq-tutorlms-quiz-wrapper">';
-		echo do_shortcode( $quiz_shortcode );
-		echo '</div>';
+		echo '<div class="ppq-tutorlms-quiz-wrapper">'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Safe HTML
+		echo do_shortcode( $quiz_shortcode ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Shortcode output
+		echo '</div>'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Safe HTML
 	}
 
 	/**
@@ -674,14 +688,16 @@ class PPQ_TutorLMS {
 	 */
 	public function display_topic_quizzes( $course_id ) {
 		// Get all topics for this course.
-		$topics = get_posts( [
-			'post_type'      => 'topics',
-			'post_parent'    => $course_id,
-			'posts_per_page' => -1,
-			'post_status'    => 'publish',
-			'orderby'        => 'menu_order',
-			'order'          => 'ASC',
-		] );
+		$topics = get_posts(
+			[
+				'post_type'      => 'topics',
+				'post_parent'    => $course_id,
+				'posts_per_page' => -1,
+				'post_status'    => 'publish',
+				'orderby'        => 'menu_order',
+				'order'          => 'ASC',
+			]
+		);
 
 		$has_quizzes = false;
 		foreach ( $topics as $topic ) {
@@ -697,7 +713,9 @@ class PPQ_TutorLMS {
 		}
 
 		// Enqueue frontend styles for topic quizzes.
-		wp_add_inline_style( 'tutor-frontend', '
+		wp_add_inline_style(
+			'tutor-frontend',
+			'
 			.ppq-topic-quiz-item {
 				display: flex;
 				align-items: center;
@@ -722,7 +740,8 @@ class PPQ_TutorLMS {
 			.ppq-topic-quiz-item .ppq-quiz-link:hover {
 				text-decoration: underline;
 			}
-		' );
+		'
+		);
 	}
 
 	/**
@@ -741,20 +760,20 @@ class PPQ_TutorLMS {
 			return $contents;
 		}
 
-		$quiz = PPQ_Quiz::get( $quiz_id );
+		$quiz = PressPrimer_Quiz_Quiz::get( $quiz_id );
 		if ( ! $quiz ) {
 			return $contents;
 		}
 
 		// Create a pseudo-content item for the PPQ quiz.
 		$quiz_content = (object) [
-			'ID'             => 'ppq-quiz-' . $quiz_id,
-			'post_title'     => $quiz->title,
-			'post_type'      => 'ppq_quiz',
-			'post_status'    => 'publish',
-			'ppq_quiz_id'    => $quiz_id,
-			'ppq_topic_id'   => $topic_id,
-			'is_ppq_quiz'    => true,
+			'ID'           => 'ppq-quiz-' . $quiz_id,
+			'post_title'   => $quiz->title,
+			'post_type'    => 'ppq_quiz',
+			'post_status'  => 'publish',
+			'ppq_quiz_id'  => $quiz_id,
+			'ppq_topic_id' => $topic_id,
+			'is_ppq_quiz'  => true,
 		];
 
 		// Add to the end of the contents.
@@ -788,8 +807,8 @@ class PPQ_TutorLMS {
 	 *
 	 * @since 1.0.0
 	 *
-	 * @param PPQ_Attempt $attempt Attempt object.
-	 * @param PPQ_Quiz    $quiz    Quiz object.
+	 * @param PressPrimer_Quiz_Attempt $attempt Attempt object.
+	 * @param PressPrimer_Quiz_Quiz    $quiz    Quiz object.
 	 */
 	public function handle_quiz_passed( $attempt, $quiz ) {
 		// Only for logged-in users.
@@ -856,7 +875,7 @@ class PPQ_TutorLMS {
 				 * @param int $lesson_id Lesson post ID.
 				 * @param int $user_id   User ID.
 				 */
-				do_action( 'ppq_tutorlms_lesson_completed', $lesson_id, $user_id );
+				do_action( 'pressprimer_quiz_tutorlms_lesson_completed', $lesson_id, $user_id );
 			}
 		}
 	}
@@ -919,53 +938,65 @@ class PPQ_TutorLMS {
 	 * @since 1.0.0
 	 */
 	public function register_rest_routes() {
-		register_rest_route( 'ppq/v1', '/tutorlms/quizzes/search', [
-			'methods'             => 'GET',
-			'callback'            => [ $this, 'rest_search_quizzes' ],
-			'permission_callback' => function() {
-				return current_user_can( 'edit_posts' );
-			},
-			'args'                => [
-				'search' => [
-					'required'          => false,
-					'sanitize_callback' => 'sanitize_text_field',
+		register_rest_route(
+			'ppq/v1',
+			'/tutorlms/quizzes/search',
+			[
+				'methods'             => 'GET',
+				'callback'            => [ $this, 'rest_search_quizzes' ],
+				'permission_callback' => function () {
+					return current_user_can( 'edit_posts' );
+				},
+				'args'                => [
+					'search' => [
+						'required'          => false,
+						'sanitize_callback' => 'sanitize_text_field',
+					],
+					'recent' => [
+						'required'          => false,
+						'sanitize_callback' => 'absint',
+					],
 				],
-				'recent' => [
-					'required'          => false,
-					'sanitize_callback' => 'absint',
-				],
-			],
-		] );
+			]
+		);
 
-		register_rest_route( 'ppq/v1', '/tutorlms/status', [
-			'methods'             => 'GET',
-			'callback'            => [ $this, 'rest_get_status' ],
-			'permission_callback' => function() {
-				return current_user_can( 'manage_options' );
-			},
-		] );
+		register_rest_route(
+			'ppq/v1',
+			'/tutorlms/status',
+			[
+				'methods'             => 'GET',
+				'callback'            => [ $this, 'rest_get_status' ],
+				'permission_callback' => function () {
+					return current_user_can( 'manage_options' );
+				},
+			]
+		);
 
-		register_rest_route( 'ppq/v1', '/tutorlms/lesson-quiz', [
-			'methods'             => 'POST',
-			'callback'            => [ $this, 'rest_save_lesson_quiz' ],
-			'permission_callback' => function() {
-				return current_user_can( 'edit_posts' );
-			},
-			'args'                => [
-				'course_id' => [
-					'required'          => false,
-					'sanitize_callback' => 'absint',
+		register_rest_route(
+			'ppq/v1',
+			'/tutorlms/lesson-quiz',
+			[
+				'methods'             => 'POST',
+				'callback'            => [ $this, 'rest_save_lesson_quiz' ],
+				'permission_callback' => function () {
+					return current_user_can( 'edit_posts' );
+				},
+				'args'                => [
+					'course_id' => [
+						'required'          => false,
+						'sanitize_callback' => 'absint',
+					],
+					'lesson_id' => [
+						'required'          => true,
+						'sanitize_callback' => 'sanitize_text_field',
+					],
+					'quiz_id'   => [
+						'required'          => true,
+						'sanitize_callback' => 'absint',
+					],
 				],
-				'lesson_id' => [
-					'required'          => true,
-					'sanitize_callback' => 'sanitize_text_field',
-				],
-				'quiz_id'   => [
-					'required'          => true,
-					'sanitize_callback' => 'absint',
-				],
-			],
-		] );
+			]
+		);
 	}
 
 	/**
@@ -984,6 +1015,7 @@ class PPQ_TutorLMS {
 
 		if ( $recent ) {
 			$user_id = get_current_user_id();
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- REST search results, not suitable for caching
 			$quizzes = $wpdb->get_results(
 				$wpdb->prepare(
 					"SELECT id, title FROM {$table} WHERE status = 'published' AND owner_id = %d ORDER BY id DESC LIMIT 50", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
@@ -991,21 +1023,26 @@ class PPQ_TutorLMS {
 				)
 			);
 
-			return new WP_REST_Response( [
-				'success' => true,
-				'quizzes' => $quizzes,
-			] );
+			return new WP_REST_Response(
+				[
+					'success' => true,
+					'quizzes' => $quizzes,
+				]
+			);
 		}
 
 		$search = $request->get_param( 'search' );
 
 		if ( empty( $search ) || strlen( $search ) < 2 ) {
-			return new WP_REST_Response( [
-				'success' => true,
-				'quizzes' => [],
-			] );
+			return new WP_REST_Response(
+				[
+					'success' => true,
+					'quizzes' => [],
+				]
+			);
 		}
 
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- REST search results, not suitable for caching
 		$quizzes = $wpdb->get_results(
 			$wpdb->prepare(
 				"SELECT id, title FROM {$table} WHERE title LIKE %s AND status = 'published' ORDER BY title ASC LIMIT 20", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
@@ -1013,10 +1050,12 @@ class PPQ_TutorLMS {
 			)
 		);
 
-		return new WP_REST_Response( [
-			'success' => true,
-			'quizzes' => $quizzes,
-		] );
+		return new WP_REST_Response(
+			[
+				'success' => true,
+				'quizzes' => $quizzes,
+			]
+		);
 	}
 
 	/**
@@ -1037,19 +1076,22 @@ class PPQ_TutorLMS {
 		// Count how many TutorLMS lessons have PPQ quizzes attached.
 		if ( $status['active'] ) {
 			global $wpdb;
-			$count = $wpdb->get_var(
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Status count query, not suitable for caching
+			$count                      = $wpdb->get_var(
 				$wpdb->prepare(
-					"SELECT COUNT(*) FROM {$wpdb->postmeta} WHERE meta_key = %s AND meta_value != ''",
+					"SELECT COUNT(*) FROM {$wpdb->postmeta} WHERE meta_key = %s AND meta_value != ''", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- WordPress core table name
 					self::META_KEY_QUIZ_ID
 				)
 			);
 			$status['attached_quizzes'] = (int) $count;
 		}
 
-		return new WP_REST_Response( [
-			'success' => true,
-			'status'  => $status,
-		] );
+		return new WP_REST_Response(
+			[
+				'success' => true,
+				'status'  => $status,
+			]
+		);
 	}
 
 	/**
@@ -1068,10 +1110,13 @@ class PPQ_TutorLMS {
 		$is_temp_id = strpos( $lesson_id, 'lesson-' ) === 0;
 
 		if ( $is_temp_id ) {
-			return new WP_REST_Response( [
-				'success' => false,
-				'message' => __( 'Please save the lesson first before attaching a quiz.', 'pressprimer-quiz' ),
-			], 400 );
+			return new WP_REST_Response(
+				[
+					'success' => false,
+					'message' => __( 'Please save the lesson first before attaching a quiz.', 'pressprimer-quiz' ),
+				],
+				400
+			);
 		}
 
 		$lesson_id = absint( $lesson_id );
@@ -1079,29 +1124,38 @@ class PPQ_TutorLMS {
 		// Validate lesson exists.
 		$lesson = get_post( $lesson_id );
 		if ( ! $lesson || 'lesson' !== $lesson->post_type ) {
-			return new WP_REST_Response( [
-				'success' => false,
-				'message' => __( 'Invalid lesson.', 'pressprimer-quiz' ),
-			], 400 );
+			return new WP_REST_Response(
+				[
+					'success' => false,
+					'message' => __( 'Invalid lesson.', 'pressprimer-quiz' ),
+				],
+				400
+			);
 		}
 
 		// Check user can edit this lesson.
 		if ( ! current_user_can( 'edit_post', $lesson_id ) ) {
-			return new WP_REST_Response( [
-				'success' => false,
-				'message' => __( 'Permission denied.', 'pressprimer-quiz' ),
-			], 403 );
+			return new WP_REST_Response(
+				[
+					'success' => false,
+					'message' => __( 'Permission denied.', 'pressprimer-quiz' ),
+				],
+				403
+			);
 		}
 
 		// Save or remove the quiz association.
 		if ( $quiz_id ) {
 			// Validate quiz exists.
-			$quiz = PPQ_Quiz::get( $quiz_id );
+			$quiz = PressPrimer_Quiz_Quiz::get( $quiz_id );
 			if ( ! $quiz ) {
-				return new WP_REST_Response( [
-					'success' => false,
-					'message' => __( 'Quiz not found.', 'pressprimer-quiz' ),
-				], 400 );
+				return new WP_REST_Response(
+					[
+						'success' => false,
+						'message' => __( 'Quiz not found.', 'pressprimer-quiz' ),
+					],
+					400
+				);
 			}
 
 			update_post_meta( $lesson_id, self::META_KEY_QUIZ_ID, $quiz_id );
@@ -1109,10 +1163,12 @@ class PPQ_TutorLMS {
 			delete_post_meta( $lesson_id, self::META_KEY_QUIZ_ID );
 		}
 
-		return new WP_REST_Response( [
-			'success'   => true,
-			'lesson_id' => $lesson_id,
-			'quiz_id'   => $quiz_id,
-		] );
+		return new WP_REST_Response(
+			[
+				'success'   => true,
+				'lesson_id' => $lesson_id,
+				'quiz_id'   => $quiz_id,
+			]
+		);
 	}
 }

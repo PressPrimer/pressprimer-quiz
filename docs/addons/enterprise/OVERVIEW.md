@@ -190,15 +190,15 @@ pressprimer-quiz-enterprise/
 ### Hooks Added
 ```php
 // Actions
-do_action('ppq_enterprise_audit_log', $event_type, $event_data);
-do_action('ppq_enterprise_proctor_incident', $attempt_id, $incident_type);
-do_action('ppq_enterprise_branch_taken', $attempt_id, $from_question, $to_question);
+do_action('pressprimer_quiz_enterprise_audit_log', $event_type, $event_data);
+do_action('pressprimer_quiz_enterprise_proctor_incident', $attempt_id, $incident_type);
+do_action('pressprimer_quiz_enterprise_branch_taken', $attempt_id, $from_question, $to_question);
 
 // Filters
-apply_filters('ppq_enterprise_plugin_name', $name);
-apply_filters('ppq_enterprise_plugin_icon', $icon_url);
-apply_filters('ppq_enterprise_audit_events', $event_types);
-apply_filters('ppq_enterprise_lockdown_settings', $settings);
+apply_filters('pressprimer_quiz_enterprise_plugin_name', $name);
+apply_filters('pressprimer_quiz_enterprise_plugin_icon', $icon_url);
+apply_filters('pressprimer_quiz_enterprise_audit_events', $event_types);
+apply_filters('pressprimer_quiz_enterprise_lockdown_settings', $settings);
 ```
 
 ### Audit Log Schema
@@ -222,10 +222,10 @@ CREATE TABLE wp_ppq_audit_log (
 
 ### Branching Logic
 ```php
-class PPQ_Branching_Engine {
+class PressPrimer_Quiz_Branching_Engine {
     
     public function get_next_question($attempt_id, $current_question_id, $answer) {
-        $rules = PPQ_Branch_Rule::get_for_question($current_question_id);
+        $rules = PressPrimer_Quiz_Branch_Rule::get_for_question($current_question_id);
         
         foreach ($rules as $rule) {
             if ($this->evaluate_condition($rule, $answer)) {

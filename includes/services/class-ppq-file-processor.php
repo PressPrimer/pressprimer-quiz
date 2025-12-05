@@ -22,7 +22,7 @@ if ( ! defined( 'ABSPATH' ) ) {
  *
  * @since 1.0.0
  */
-class PPQ_File_Processor {
+class PressPrimer_Quiz_File_Processor {
 
 	/**
 	 * Maximum file size in bytes (50MB for large PDFs)
@@ -37,7 +37,7 @@ class PPQ_File_Processor {
 	 * @var array
 	 */
 	const ALLOWED_MIME_TYPES = [
-		'application/pdf'                                                         => 'pdf',
+		'application/pdf' => 'pdf',
 		'application/vnd.openxmlformats-officedocument.wordprocessingml.document' => 'docx',
 	];
 
@@ -310,7 +310,7 @@ class PPQ_File_Processor {
 		}
 
 		// Create temp output file
-		$temp_output = wp_tempnam( 'ppq_pdf_' );
+		$temp_output        = wp_tempnam( 'ppq_pdf_' );
 		$this->temp_files[] = $temp_output;
 
 		// Build command with proper escaping
@@ -322,7 +322,7 @@ class PPQ_File_Processor {
 		);
 
 		// Execute command
-		$output = [];
+		$output     = [];
 		$return_var = 0;
 		// phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.system_calls_exec
 		exec( $command, $output, $return_var );
@@ -590,7 +590,7 @@ class PPQ_File_Processor {
 		$text = '';
 
 		// Find all text elements (w:t)
-		$xpath    = new DOMXPath( $dom );
+		$xpath = new DOMXPath( $dom );
 		$xpath->registerNamespace( 'w', 'http://schemas.openxmlformats.org/wordprocessingml/2006/main' );
 
 		// Get paragraphs
@@ -760,7 +760,7 @@ class PPQ_File_Processor {
 		];
 
 		// Check for pdftotext
-		$processor = new self();
+		$processor                        = new self();
 		$capabilities['pdf']['pdftotext'] = (bool) $processor->find_executable( 'pdftotext' );
 
 		return $capabilities;

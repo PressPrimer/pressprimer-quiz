@@ -23,7 +23,7 @@ if ( ! defined( 'ABSPATH' ) ) {
  *
  * @since 1.0.0
  */
-class PPQ_Automator_Loader {
+class PressPrimer_Quiz_Automator_Loader {
 
 	/**
 	 * Initialize the loader
@@ -45,15 +45,15 @@ class PPQ_Automator_Loader {
 		$this->include_files();
 
 		// Create helpers instance.
-		$helpers = new PPQ_Automator_Helpers();
+		$helpers = new PressPrimer_Quiz_Automator_Helpers();
 
 		// Register integration.
-		new PPQ_Automator_Integration();
+		new PressPrimer_Quiz_Automator_Integration();
 
 		// Register triggers with helpers dependency.
-		new Triggers\PPQ_Quiz_Completed( $helpers );
-		new Triggers\PPQ_Quiz_Passed( $helpers );
-		new Triggers\PPQ_Quiz_Failed( $helpers );
+		new Triggers\PressPrimer_Quiz_Quiz_Completed( $helpers );
+		new Triggers\PressPrimer_Quiz_Quiz_Passed( $helpers );
+		new Triggers\PressPrimer_Quiz_Quiz_Failed( $helpers );
 	}
 
 	/**

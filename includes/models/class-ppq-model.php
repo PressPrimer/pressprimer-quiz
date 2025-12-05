@@ -22,7 +22,7 @@ if ( ! defined( 'ABSPATH' ) ) {
  *
  * @since 1.0.0
  */
-abstract class PPQ_Model {
+abstract class PressPrimer_Quiz_Model {
 
 	/**
 	 * Primary key ID
@@ -86,6 +86,7 @@ abstract class PPQ_Model {
 		$id    = absint( $id );
 		$table = static::get_full_table_name();
 
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Custom table queries; caching handled by calling code where appropriate
 		$row = $wpdb->get_row(
 			$wpdb->prepare(
 				"SELECT * FROM {$table} WHERE id = %d", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
@@ -302,14 +303,14 @@ abstract class PPQ_Model {
 			: '';
 
 		// Build ORDER BY clause
-		$order_by = sanitize_sql_orderby( "{$args['order_by']} {$args['order']}" );
+		$order_by  = sanitize_sql_orderby( "{$args['order_by']} {$args['order']}" );
 		$order_sql = $order_by ? "ORDER BY {$order_by}" : '';
 
 		// Build LIMIT clause
 		$limit_sql = '';
 		if ( null !== $args['limit'] ) {
-			$limit = absint( $args['limit'] );
-			$offset = absint( $args['offset'] ?? 0 );
+			$limit     = absint( $args['limit'] );
+			$offset    = absint( $args['offset'] ?? 0 );
 			$limit_sql = $offset > 0
 				? "LIMIT {$offset}, {$limit}"
 				: "LIMIT {$limit}";
@@ -323,7 +324,7 @@ abstract class PPQ_Model {
 			$query = $wpdb->prepare( $query, $where_values ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
 		}
 
-		$rows = $wpdb->get_results( $query ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
+		$rows = $wpdb->get_results( $query ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared,WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Custom table queries with dynamic conditions
 
 		// Convert rows to model instances
 		$results = [];
@@ -374,7 +375,7 @@ abstract class PPQ_Model {
 			$query = $wpdb->prepare( $query, $where_values ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
 		}
 
-		return (int) $wpdb->get_var( $query ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
+		return (int) $wpdb->get_var( $query ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared,WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Custom table count queries
 	}
 
 	/**
@@ -393,6 +394,7 @@ abstract class PPQ_Model {
 		$id    = absint( $id );
 		$table = static::get_full_table_name();
 
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Simple existence check, not worth caching
 		$exists = $wpdb->get_var(
 			$wpdb->prepare(
 				"SELECT COUNT(*) FROM {$table} WHERE id = %d", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared

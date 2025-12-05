@@ -22,7 +22,7 @@ if ( ! defined( 'ABSPATH' ) ) {
  *
  * @since 1.0.0
  */
-class PPQ_Category extends PPQ_Model {
+class PressPrimer_Quiz_Category extends PressPrimer_Quiz_Model {
 
 	/**
 	 * Category ID
@@ -242,6 +242,7 @@ class PPQ_Category extends PPQ_Model {
 				$query .= $wpdb->prepare( ' AND id != %d', $exclude_id );
 			}
 
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Slug uniqueness check
 			$exists = $wpdb->get_var( $query ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
 
 			if ( ! $exists ) {
@@ -249,7 +250,7 @@ class PPQ_Category extends PPQ_Model {
 			}
 
 			$slug = $original_slug . '-' . $suffix;
-			$suffix++;
+			++$suffix;
 		}
 	}
 
@@ -271,6 +272,7 @@ class PPQ_Category extends PPQ_Model {
 		$table       = self::get_full_table_name();
 		$tax_table   = $wpdb->prefix . 'ppq_question_tax';
 
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Question taxonomy lookup
 		$results = $wpdb->get_results(
 			$wpdb->prepare(
 				"SELECT c.*
@@ -278,7 +280,7 @@ class PPQ_Category extends PPQ_Model {
 				INNER JOIN {$tax_table} t ON c.id = t.category_id
 				WHERE t.question_id = %d
 				AND c.taxonomy = %s
-				ORDER BY c.name ASC",
+				ORDER BY c.name ASC", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Table names safely constructed from $wpdb->prefix
 				$question_id,
 				$taxonomy
 			)
@@ -337,11 +339,13 @@ class PPQ_Category extends PPQ_Model {
 		// Build WHERE clause
 		if ( null === $parent_id ) {
 			$where = 'parent_id IS NULL';
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Category hierarchy retrieval
 			$results = $wpdb->get_results(
 				"SELECT * FROM {$table} WHERE taxonomy = 'category' AND {$where} ORDER BY name ASC" // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 			);
 		} else {
 			$parent_id = absint( $parent_id );
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Category hierarchy retrieval
 			$results = $wpdb->get_results(
 				$wpdb->prepare(
 					"SELECT * FROM {$table} WHERE taxonomy = 'category' AND parent_id = %d ORDER BY name ASC", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
@@ -389,11 +393,12 @@ class PPQ_Category extends PPQ_Model {
 			$category_id = absint( $category_id );
 
 			// Count questions
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Count update operation
 			$question_count = $wpdb->get_var(
 				$wpdb->prepare(
 					"SELECT COUNT(DISTINCT question_id)
 					FROM {$tax_table}
-					WHERE category_id = %d",
+					WHERE category_id = %d", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Table name safely constructed from $wpdb->prefix
 					$category_id
 				)
 			);
@@ -408,6 +413,7 @@ class PPQ_Category extends PPQ_Model {
 			);
 		} else {
 			// Update all categories/tags
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Batch count update, table names safely constructed from $wpdb->prefix
 			$wpdb->query(
 				"UPDATE {$table} c
 				SET c.question_count = (
@@ -445,9 +451,10 @@ class PPQ_Category extends PPQ_Model {
 		$tax_table   = $wpdb->prefix . 'ppq_question_tax';
 
 		// Check if already assigned
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Assignment check
 		$exists = $wpdb->get_var(
 			$wpdb->prepare(
-				"SELECT COUNT(*) FROM {$tax_table} WHERE question_id = %d AND category_id = %d",
+				"SELECT COUNT(*) FROM {$tax_table} WHERE question_id = %d AND category_id = %d", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Table name safely constructed from $wpdb->prefix
 				$question_id,
 				$this->id
 			)
@@ -574,9 +581,11 @@ class PPQ_Category extends PPQ_Model {
 
 		// If this is a category with children, move children to parent or root
 		if ( 'category' === $this->taxonomy ) {
-			$children = self::find([
-				'where' => [ 'parent_id' => $this->id ],
-			]);
+			$children = self::find(
+				[
+					'where' => [ 'parent_id' => $this->id ],
+				]
+			);
 
 			if ( ! empty( $children ) ) {
 				foreach ( $children as $child ) {

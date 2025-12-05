@@ -21,7 +21,7 @@ if ( ! defined( 'ABSPATH' ) ) {
  *
  * @since 1.0.0
  */
-class PPQ_LearnDash {
+class PressPrimer_Quiz_LearnDash {
 
 	/**
 	 * Meta key for storing PPQ quiz ID
@@ -78,19 +78,19 @@ class PPQ_LearnDash {
 		add_filter( 'learndash_mark_complete_button', [ $this, 'maybe_hide_mark_complete' ], 10, 2 );
 
 		// Completion tracking
-		add_action( 'ppq_quiz_passed', [ $this, 'handle_quiz_passed' ], 10, 2 );
+		add_action( 'pressprimer_quiz_quiz_passed', [ $this, 'handle_quiz_passed' ], 10, 2 );
 
 		// Prevent course auto-completion when PPQ quiz is attached
 		add_filter( 'learndash_process_mark_complete', [ $this, 'maybe_prevent_course_completion' ], 10, 3 );
 
 		// Quiz access restriction
-		add_filter( 'ppq_quiz_access_allowed', [ $this, 'check_course_restriction' ], 10, 3 );
+		add_filter( 'pressprimer_quiz_quiz_access_allowed', [ $this, 'check_course_restriction' ], 10, 3 );
 
 		// REST API endpoints
 		add_action( 'rest_api_init', [ $this, 'register_rest_routes' ] );
 
 		// Add navigation data to results page
-		add_filter( 'ppq_results_data', [ $this, 'add_navigation_data' ], 10, 2 );
+		add_filter( 'pressprimer_quiz_results_data', [ $this, 'add_navigation_data' ], 10, 2 );
 	}
 
 	/**
@@ -129,14 +129,14 @@ class PPQ_LearnDash {
 	public function render_meta_box( $post ) {
 		wp_nonce_field( 'ppq_learndash_meta_box', 'ppq_learndash_nonce' );
 
-		$quiz_id = get_post_meta( $post->ID, self::META_KEY_QUIZ_ID, true );
+		$quiz_id                 = get_post_meta( $post->ID, self::META_KEY_QUIZ_ID, true );
 		$restrict_until_complete = get_post_meta( $post->ID, self::META_KEY_RESTRICT_UNTIL_COMPLETE, true );
-		$is_course = 'sfwd-courses' === $post->post_type;
+		$is_course               = 'sfwd-courses' === $post->post_type;
 
 		// Get quiz display label if one is selected
 		$quiz_display = '';
 		if ( $quiz_id ) {
-			$quiz = PPQ_Quiz::get( $quiz_id );
+			$quiz         = PressPrimer_Quiz_Quiz::get( $quiz_id );
 			$quiz_display = $quiz ? sprintf( '%d - %s', $quiz->id, $quiz->title ) : '';
 		}
 		?>
@@ -154,7 +154,7 @@ class PPQ_LearnDash {
 					placeholder="<?php esc_attr_e( 'Click to browse or type to search...', 'pressprimer-quiz' ); ?>"
 					value="<?php echo esc_attr( $quiz_display ); ?>"
 					autocomplete="off"
-					<?php echo $quiz_id ? 'readonly' : ''; ?>
+					<?php echo esc_attr( $quiz_id ? 'readonly' : '' ); ?>
 				/>
 				<input
 					type="hidden"
@@ -380,7 +380,7 @@ class PPQ_LearnDash {
 	 */
 	public function save_meta_box( $post_id, $post ) {
 		// Verify nonce
-		if ( ! isset( $_POST['ppq_learndash_nonce'] ) || ! wp_verify_nonce( $_POST['ppq_learndash_nonce'], 'ppq_learndash_meta_box' ) ) {
+		if ( ! isset( $_POST['ppq_learndash_nonce'] ) || ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['ppq_learndash_nonce'] ) ), 'ppq_learndash_meta_box' ) ) {
 			return;
 		}
 
@@ -400,7 +400,7 @@ class PPQ_LearnDash {
 		}
 
 		// Save quiz ID
-		$quiz_id = isset( $_POST['ppq_quiz_id'] ) ? absint( $_POST['ppq_quiz_id'] ) : 0;
+		$quiz_id = isset( $_POST['ppq_quiz_id'] ) ? absint( wp_unslash( $_POST['ppq_quiz_id'] ) ) : 0;
 
 		if ( $quiz_id ) {
 			update_post_meta( $post_id, self::META_KEY_QUIZ_ID, $quiz_id );
@@ -435,7 +435,7 @@ class PPQ_LearnDash {
 					'single'            => true,
 					'show_in_rest'      => true,
 					'sanitize_callback' => 'absint',
-					'auth_callback'     => function() {
+					'auth_callback'     => function () {
 						return current_user_can( 'edit_posts' );
 					},
 				]
@@ -450,7 +450,7 @@ class PPQ_LearnDash {
 				'single'            => true,
 				'show_in_rest'      => true,
 				'sanitize_callback' => 'sanitize_text_field',
-				'auth_callback'     => function() {
+				'auth_callback'     => function () {
 					return current_user_can( 'edit_posts' );
 				},
 			]
@@ -487,13 +487,13 @@ class PPQ_LearnDash {
 				'isCourse'        => 'sfwd-courses' === $screen->post_type,
 				'restNonce'       => wp_create_nonce( 'wp_rest' ),
 				'strings'         => [
-					'panelTitle'       => __( 'PressPrimer Quiz', 'pressprimer-quiz' ),
-					'selectQuiz'       => __( 'Select Quiz', 'pressprimer-quiz' ),
+					'panelTitle'        => __( 'PressPrimer Quiz', 'pressprimer-quiz' ),
+					'selectQuiz'        => __( 'Select Quiz', 'pressprimer-quiz' ),
 					'searchPlaceholder' => __( 'Search for a quiz...', 'pressprimer-quiz' ),
-					'noQuiz'           => __( 'No quiz selected', 'pressprimer-quiz' ),
-					'restrictLabel'    => __( 'Restrict access until all lessons and topics are completed', 'pressprimer-quiz' ),
-					'restrictHelp'     => __( 'When enabled, users must complete all course content before taking the quiz.', 'pressprimer-quiz' ),
-					'quizHelp'         => __( 'The quiz will appear at the end of this content. Users must pass to mark it complete.', 'pressprimer-quiz' ),
+					'noQuiz'            => __( 'No quiz selected', 'pressprimer-quiz' ),
+					'restrictLabel'     => __( 'Restrict access until all lessons and topics are completed', 'pressprimer-quiz' ),
+					'restrictHelp'      => __( 'When enabled, users must complete all course content before taking the quiz.', 'pressprimer-quiz' ),
+					'quizHelp'          => __( 'The quiz will appear at the end of this content. Users must pass to mark it complete.', 'pressprimer-quiz' ),
 				],
 			]
 		);
@@ -526,7 +526,7 @@ class PPQ_LearnDash {
 
 			if ( $restrict && ! $this->is_course_content_complete( $post_id ) ) {
 				// Get the quiz for title
-				$quiz = PPQ_Quiz::get( $quiz_id );
+				$quiz       = PressPrimer_Quiz_Quiz::get( $quiz_id );
 				$quiz_title = $quiz ? $quiz->title : __( 'Quiz', 'pressprimer-quiz' );
 
 				// Get custom message or use default
@@ -570,7 +570,7 @@ class PPQ_LearnDash {
 			return $button;
 		}
 
-		$post_id = is_object( $args['post'] ) ? $args['post']->ID : $args['post'];
+		$post_id   = is_object( $args['post'] ) ? $args['post']->ID : $args['post'];
 		$post_type = get_post_type( $post_id );
 
 		// Only hide for lessons and topics
@@ -594,8 +594,8 @@ class PPQ_LearnDash {
 	 *
 	 * @since 1.0.0
 	 *
-	 * @param PPQ_Attempt $attempt Attempt object.
-	 * @param PPQ_Quiz    $quiz    Quiz object.
+	 * @param PressPrimer_Quiz_Attempt $attempt Attempt object.
+	 * @param PressPrimer_Quiz_Quiz    $quiz    Quiz object.
 	 */
 	public function handle_quiz_passed( $attempt, $quiz ) {
 		// Only for logged-in users
@@ -732,6 +732,7 @@ class PPQ_LearnDash {
 
 		$table = $wpdb->prefix . 'ppq_attempts';
 
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Dynamic user/quiz check, not suitable for caching
 		$passed = $wpdb->get_var(
 			$wpdb->prepare(
 				"SELECT COUNT(*) FROM {$table} WHERE user_id = %d AND quiz_id = %d AND passed = 1 LIMIT 1", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
@@ -792,18 +793,20 @@ class PPQ_LearnDash {
 			return true; // Allow if we can't check
 		}
 
-		$progress = learndash_course_progress( [
-			'user_id'   => $user_id,
-			'course_id' => $course_id,
-			'array'     => true,
-		] );
+		$progress = learndash_course_progress(
+			[
+				'user_id'   => $user_id,
+				'course_id' => $course_id,
+				'array'     => true,
+			]
+		);
 
 		if ( ! is_array( $progress ) ) {
 			return true;
 		}
 
 		// Check if all steps (except the final quiz/course itself) are complete
-		$total = isset( $progress['total'] ) ? (int) $progress['total'] : 0;
+		$total     = isset( $progress['total'] ) ? (int) $progress['total'] : 0;
 		$completed = isset( $progress['completed'] ) ? (int) $progress['completed'] : 0;
 
 		// All lessons/topics should be complete
@@ -815,9 +818,9 @@ class PPQ_LearnDash {
 	 *
 	 * @since 1.0.0
 	 *
-	 * @param bool        $allowed   Current access status.
-	 * @param PPQ_Quiz    $quiz      Quiz object.
-	 * @param PPQ_Attempt $attempt   Attempt object (may be null).
+	 * @param bool                     $allowed   Current access status.
+	 * @param PressPrimer_Quiz_Quiz    $quiz      Quiz object.
+	 * @param PressPrimer_Quiz_Attempt $attempt   Attempt object (may be null).
 	 * @return bool Modified access status.
 	 */
 	public function check_course_restriction( $allowed, $quiz, $attempt ) {
@@ -877,11 +880,12 @@ class PPQ_LearnDash {
 		$table = $wpdb->prefix . 'ppq_quizzes';
 
 		// Check if requesting recent quizzes
-		$recent = isset( $_POST['recent'] ) && $_POST['recent'];
+		$recent = isset( $_POST['recent'] ) && rest_sanitize_boolean( wp_unslash( $_POST['recent'] ) );
 
 		if ( $recent ) {
 			// Get 50 most recent quizzes created by current user
 			$user_id = get_current_user_id();
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- AJAX search results, not suitable for caching
 			$quizzes = $wpdb->get_results(
 				$wpdb->prepare(
 					"SELECT id, title FROM {$table} WHERE status = 'published' AND owner_id = %d ORDER BY id DESC LIMIT 50", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
@@ -893,12 +897,13 @@ class PPQ_LearnDash {
 			return;
 		}
 
-		$search = isset( $_POST['search'] ) ? sanitize_text_field( $_POST['search'] ) : '';
+		$search = isset( $_POST['search'] ) ? sanitize_text_field( wp_unslash( $_POST['search'] ) ) : '';
 
 		if ( strlen( $search ) < 2 ) {
 			wp_send_json_success( [ 'quizzes' => [] ] );
 		}
 
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- AJAX search results, not suitable for caching
 		$quizzes = $wpdb->get_results(
 			$wpdb->prepare(
 				"SELECT id, title FROM {$table} WHERE title LIKE %s AND status = 'published' ORDER BY title ASC LIMIT 20", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
@@ -915,51 +920,67 @@ class PPQ_LearnDash {
 	 * @since 1.0.0
 	 */
 	public function register_rest_routes() {
-		register_rest_route( 'ppq/v1', '/learndash/quizzes/search', [
-			'methods'             => 'GET',
-			'callback'            => [ $this, 'rest_search_quizzes' ],
-			'permission_callback' => function() {
-				return current_user_can( 'edit_posts' );
-			},
-			'args'                => [
-				'search' => [
-					'required'          => false,
-					'sanitize_callback' => 'sanitize_text_field',
+		register_rest_route(
+			'ppq/v1',
+			'/learndash/quizzes/search',
+			[
+				'methods'             => 'GET',
+				'callback'            => [ $this, 'rest_search_quizzes' ],
+				'permission_callback' => function () {
+					return current_user_can( 'edit_posts' );
+				},
+				'args'                => [
+					'search' => [
+						'required'          => false,
+						'sanitize_callback' => 'sanitize_text_field',
+					],
+					'recent' => [
+						'required'          => false,
+						'sanitize_callback' => 'absint',
+					],
 				],
-				'recent' => [
-					'required'          => false,
-					'sanitize_callback' => 'absint',
+			]
+		);
+
+		register_rest_route(
+			'ppq/v1',
+			'/learndash/navigation',
+			[
+				'methods'             => 'GET',
+				'callback'            => [ $this, 'rest_get_navigation' ],
+				'permission_callback' => '__return_true',
+				'args'                => [
+					'post_id' => [
+						'required'          => true,
+						'sanitize_callback' => 'absint',
+					],
 				],
-			],
-		] );
+			]
+		);
 
-		register_rest_route( 'ppq/v1', '/learndash/navigation', [
-			'methods'             => 'GET',
-			'callback'            => [ $this, 'rest_get_navigation' ],
-			'permission_callback' => '__return_true',
-			'args'                => [
-				'post_id' => [
-					'required'          => true,
-					'sanitize_callback' => 'absint',
-				],
-			],
-		] );
+		register_rest_route(
+			'ppq/v1',
+			'/learndash/status',
+			[
+				'methods'             => 'GET',
+				'callback'            => [ $this, 'rest_get_status' ],
+				'permission_callback' => function () {
+					return current_user_can( 'manage_options' );
+				},
+			]
+		);
 
-		register_rest_route( 'ppq/v1', '/learndash/status', [
-			'methods'             => 'GET',
-			'callback'            => [ $this, 'rest_get_status' ],
-			'permission_callback' => function() {
-				return current_user_can( 'manage_options' );
-			},
-		] );
-
-		register_rest_route( 'ppq/v1', '/learndash/settings', [
-			'methods'             => 'POST',
-			'callback'            => [ $this, 'rest_save_settings' ],
-			'permission_callback' => function() {
-				return current_user_can( 'manage_options' );
-			},
-		] );
+		register_rest_route(
+			'ppq/v1',
+			'/learndash/settings',
+			[
+				'methods'             => 'POST',
+				'callback'            => [ $this, 'rest_save_settings' ],
+				'permission_callback' => function () {
+					return current_user_can( 'manage_options' );
+				},
+			]
+		);
 	}
 
 	/**
@@ -973,12 +994,13 @@ class PPQ_LearnDash {
 	public function rest_search_quizzes( $request ) {
 		global $wpdb;
 
-		$table = $wpdb->prefix . 'ppq_quizzes';
+		$table  = $wpdb->prefix . 'ppq_quizzes';
 		$recent = $request->get_param( 'recent' );
 
 		if ( $recent ) {
 			// Get 50 most recent quizzes created by current user
 			$user_id = get_current_user_id();
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- REST search results, not suitable for caching
 			$quizzes = $wpdb->get_results(
 				$wpdb->prepare(
 					"SELECT id, title FROM {$table} WHERE status = 'published' AND owner_id = %d ORDER BY id DESC LIMIT 50", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
@@ -986,21 +1008,26 @@ class PPQ_LearnDash {
 				)
 			);
 
-			return new WP_REST_Response( [
-				'success' => true,
-				'quizzes' => $quizzes,
-			] );
+			return new WP_REST_Response(
+				[
+					'success' => true,
+					'quizzes' => $quizzes,
+				]
+			);
 		}
 
 		$search = $request->get_param( 'search' );
 
 		if ( empty( $search ) || strlen( $search ) < 2 ) {
-			return new WP_REST_Response( [
-				'success' => true,
-				'quizzes' => [],
-			] );
+			return new WP_REST_Response(
+				[
+					'success' => true,
+					'quizzes' => [],
+				]
+			);
 		}
 
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- REST search results, not suitable for caching
 		$quizzes = $wpdb->get_results(
 			$wpdb->prepare(
 				"SELECT id, title FROM {$table} WHERE title LIKE %s AND status = 'published' ORDER BY title ASC LIMIT 20", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
@@ -1008,10 +1035,12 @@ class PPQ_LearnDash {
 			)
 		);
 
-		return new WP_REST_Response( [
-			'success' => true,
-			'quizzes' => $quizzes,
-		] );
+		return new WP_REST_Response(
+			[
+				'success' => true,
+				'quizzes' => $quizzes,
+			]
+		);
 	}
 
 	/**
@@ -1032,7 +1061,8 @@ class PPQ_LearnDash {
 		// Count how many LearnDash posts have PPQ quizzes attached
 		if ( $status['active'] ) {
 			global $wpdb;
-			$count = $wpdb->get_var(
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Status count query, not suitable for caching
+			$count                      = $wpdb->get_var(
 				$wpdb->prepare(
 					"SELECT COUNT(*) FROM {$wpdb->postmeta} WHERE meta_key = %s AND meta_value != ''",
 					self::META_KEY_QUIZ_ID
@@ -1046,11 +1076,13 @@ class PPQ_LearnDash {
 			'restriction_message' => get_option( 'ppq_learndash_restriction_message', '' ),
 		];
 
-		return new WP_REST_Response( [
-			'success'  => true,
-			'status'   => $status,
-			'settings' => $settings,
-		] );
+		return new WP_REST_Response(
+			[
+				'success'  => true,
+				'status'   => $status,
+				'settings' => $settings,
+			]
+		);
 	}
 
 	/**
@@ -1068,9 +1100,11 @@ class PPQ_LearnDash {
 			update_option( 'ppq_learndash_restriction_message', sanitize_textarea_field( $restriction_message ) );
 		}
 
-		return new WP_REST_Response( [
-			'success' => true,
-		] );
+		return new WP_REST_Response(
+			[
+				'success' => true,
+			]
+		);
 	}
 
 	/**
@@ -1084,15 +1118,17 @@ class PPQ_LearnDash {
 	public function rest_get_navigation( $request ) {
 		$post_id = $request->get_param( 'post_id' );
 
-		$next_url = $this->get_next_step_url( $post_id );
+		$next_url  = $this->get_next_step_url( $post_id );
 		$course_id = $this->get_course_id_for_post( $post_id );
 
-		return new WP_REST_Response( [
-			'success'   => true,
-			'next_url'  => $next_url,
-			'course_id' => $course_id,
-			'course_url' => $course_id ? get_permalink( $course_id ) : null,
-		] );
+		return new WP_REST_Response(
+			[
+				'success'    => true,
+				'next_url'   => $next_url,
+				'course_id'  => $course_id,
+				'course_url' => $course_id ? get_permalink( $course_id ) : null,
+			]
+		);
 	}
 
 	/**
@@ -1118,7 +1154,7 @@ class PPQ_LearnDash {
 
 		// Use LearnDash's next step logic if available
 		if ( function_exists( 'learndash_next_post_link' ) ) {
-			$user_id = get_current_user_id();
+			$user_id   = get_current_user_id();
 			$next_link = learndash_next_post_link( '', true, get_post( $post_id ), $user_id, $course_id );
 
 			// Extract URL from link HTML
@@ -1160,7 +1196,7 @@ class PPQ_LearnDash {
 
 			if ( $lesson_id ) {
 				// Get all topics for this lesson
-				$topics = $this->get_lesson_topics( $lesson_id, $course_id );
+				$topics        = $this->get_lesson_topics( $lesson_id, $course_id );
 				$current_index = array_search( $post_id, $topics, true );
 
 				if ( false !== $current_index && isset( $topics[ $current_index + 1 ] ) ) {
@@ -1222,7 +1258,7 @@ class PPQ_LearnDash {
 			$lessons = learndash_get_lesson_list( $course_id );
 
 			if ( is_array( $lessons ) ) {
-				$lesson_ids = wp_list_pluck( $lessons, 'ID' );
+				$lesson_ids    = wp_list_pluck( $lessons, 'ID' );
 				$current_index = array_search( $lesson_id, $lesson_ids, true );
 
 				if ( false !== $current_index && isset( $lesson_ids[ $current_index + 1 ] ) ) {
@@ -1239,8 +1275,8 @@ class PPQ_LearnDash {
 	 *
 	 * @since 1.0.0
 	 *
-	 * @param array       $data    Results data.
-	 * @param PPQ_Attempt $attempt Attempt object.
+	 * @param array                    $data    Results data.
+	 * @param PressPrimer_Quiz_Attempt $attempt Attempt object.
 	 * @return array Modified results data.
 	 */
 	public function add_navigation_data( $data, $attempt ) {
@@ -1252,7 +1288,7 @@ class PPQ_LearnDash {
 		}
 
 		$ld_post_id = (int) $meta['learndash_post_id'];
-		$post_type = get_post_type( $ld_post_id );
+		$post_type  = get_post_type( $ld_post_id );
 
 		// Add LearnDash navigation data
 		$data['learndash'] = [

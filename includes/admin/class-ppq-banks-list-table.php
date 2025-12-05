@@ -24,7 +24,7 @@ if ( ! class_exists( 'WP_List_Table' ) ) {
  *
  * @since 1.0.0
  */
-class PPQ_Banks_List_Table extends WP_List_Table {
+class PressPrimer_Quiz_Banks_List_Table extends WP_List_Table {
 
 	/**
 	 * Constructor
@@ -104,37 +104,39 @@ class PPQ_Banks_List_Table extends WP_List_Table {
 		$this->process_bulk_action();
 
 		// Columns
-		$columns = $this->get_columns();
-		$hidden = get_hidden_columns( $this->screen );
-		$sortable = $this->get_sortable_columns();
+		$columns               = $this->get_columns();
+		$hidden                = get_hidden_columns( $this->screen );
+		$sortable              = $this->get_sortable_columns();
 		$this->_column_headers = [ $columns, $hidden, $sortable ];
 
 		// Pagination
-		$per_page = $this->get_items_per_page( 'ppq_banks_per_page', 20 );
+		$per_page     = $this->get_items_per_page( 'ppq_banks_per_page', 20 );
 		$current_page = $this->get_pagenum();
-		$offset = ( $current_page - 1 ) * $per_page;
+		$offset       = ( $current_page - 1 ) * $per_page;
 
 		// Build query
 		$table = $wpdb->prefix . 'ppq_banks';
 
-		$where = [ '1=1' ];
+		$where        = [ '1=1' ];
 		$where_values = [];
 
+		// phpcs:disable WordPress.Security.NonceVerification.Recommended -- List table filter params, not form processing
 		// Search
-		if ( ! empty( $_REQUEST['s'] ) ) {
-			$search = '%' . $wpdb->esc_like( sanitize_text_field( wp_unslash( $_REQUEST['s'] ) ) ) . '%';
-			$where[] = '(name LIKE %s OR description LIKE %s)';
+		if ( isset( $_REQUEST['s'] ) && '' !== $_REQUEST['s'] ) {
+			$search         = '%' . $wpdb->esc_like( sanitize_text_field( wp_unslash( $_REQUEST['s'] ) ) ) . '%';
+			$where[]        = '(name LIKE %s OR description LIKE %s)';
 			$where_values[] = $search;
 			$where_values[] = $search;
 		}
 
 		// Owner filter (only show user's own if not admin)
+		$get_author = isset( $_REQUEST['author'] ) ? absint( wp_unslash( $_REQUEST['author'] ) ) : 0;
 		if ( ! current_user_can( 'ppq_manage_all' ) ) {
-			$where[] = 'owner_id = %d';
+			$where[]        = 'owner_id = %d';
 			$where_values[] = get_current_user_id();
-		} elseif ( ! empty( $_REQUEST['author'] ) ) {
-			$where[] = 'owner_id = %d';
-			$where_values[] = absint( $_REQUEST['author'] );
+		} elseif ( $get_author > 0 ) {
+			$where[]        = 'owner_id = %d';
+			$where_values[] = $get_author;
 		}
 
 		// No deleted banks
@@ -143,8 +145,9 @@ class PPQ_Banks_List_Table extends WP_List_Table {
 		$where_sql = implode( ' AND ', $where );
 
 		// Ordering
-		$orderby = ! empty( $_REQUEST['orderby'] ) ? sanitize_key( $_REQUEST['orderby'] ) : 'created_at';
-		$order = ! empty( $_REQUEST['order'] ) ? sanitize_key( $_REQUEST['order'] ) : 'DESC';
+		$orderby = isset( $_REQUEST['orderby'] ) && '' !== $_REQUEST['orderby'] ? sanitize_key( wp_unslash( $_REQUEST['orderby'] ) ) : 'created_at';
+		$order   = isset( $_REQUEST['order'] ) && '' !== $_REQUEST['order'] ? sanitize_key( wp_unslash( $_REQUEST['order'] ) ) : 'DESC';
+		// phpcs:enable WordPress.Security.NonceVerification.Recommended
 
 		// Validate orderby
 		$allowed_orderby = [ 'name', 'question_count', 'owner_id', 'created_at' ];
@@ -157,23 +160,31 @@ class PPQ_Banks_List_Table extends WP_List_Table {
 
 		// Get total count
 		if ( ! empty( $where_values ) ) {
+			// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Table name safely constructed from $wpdb->prefix
 			$total_query = "SELECT COUNT(*) FROM {$table} WHERE {$where_sql}";
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- List table pagination, not suitable for caching
+			// phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- Query is prepared with placeholders
 			$total_items = absint( $wpdb->get_var( $wpdb->prepare( $total_query, $where_values ) ) );
 		} else {
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- List table pagination, not suitable for caching
+			// phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared,WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- No user input in query, table name safely constructed from $wpdb->prefix
 			$total_items = absint( $wpdb->get_var( "SELECT COUNT(*) FROM {$table} WHERE {$where_sql}" ) );
 		}
 
 		// Get items
-		$items_query = "SELECT * FROM {$table} WHERE {$where_sql} ORDER BY {$orderby} {$order} LIMIT %d OFFSET %d";
+		// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Table name and validated clauses safely constructed
+		$items_query  = "SELECT * FROM {$table} WHERE {$where_sql} ORDER BY {$orderby} {$order} LIMIT %d OFFSET %d";
 		$query_values = array_merge( $where_values, [ $per_page, $offset ] );
 
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- List table pagination, not suitable for caching
+		// phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- Query is prepared with placeholders
 		$results = $wpdb->get_results( $wpdb->prepare( $items_query, $query_values ) );
 
 		// Convert to bank objects
 		$this->items = [];
-		if ( ! empty( $results ) && class_exists( 'PPQ_Bank' ) ) {
+		if ( ! empty( $results ) && class_exists( 'PressPrimer_Quiz_Bank' ) ) {
 			foreach ( $results as $row ) {
-				$bank = new PPQ_Bank();
+				$bank = new PressPrimer_Quiz_Bank();
 				foreach ( $row as $key => $value ) {
 					$bank->$key = $value;
 				}
@@ -215,14 +226,14 @@ class PPQ_Banks_List_Table extends WP_List_Table {
 		}
 
 		// Verify nonce
-		if ( ! isset( $_REQUEST['_wpnonce'] ) || ! wp_verify_nonce( $_REQUEST['_wpnonce'], 'bulk-' . $this->_args['plural'] ) ) {
+		if ( ! isset( $_REQUEST['_wpnonce'] ) || ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_REQUEST['_wpnonce'] ) ), 'bulk-' . $this->_args['plural'] ) ) {
 			wp_die( esc_html__( 'Security check failed.', 'pressprimer-quiz' ) );
 		}
 
 		// Delete banks
-		if ( class_exists( 'PPQ_Bank' ) ) {
+		if ( class_exists( 'PressPrimer_Quiz_Bank' ) ) {
 			foreach ( $bank_ids as $bank_id ) {
-				$bank = PPQ_Bank::get( $bank_id );
+				$bank = PressPrimer_Quiz_Bank::get( $bank_id );
 				if ( $bank ) {
 					$bank->delete();
 				}
@@ -233,7 +244,7 @@ class PPQ_Banks_List_Table extends WP_List_Table {
 		wp_safe_redirect(
 			add_query_arg(
 				[
-					'page' => 'ppq-banks',
+					'page'    => 'ppq-banks',
 					'message' => 'banks_deleted',
 				],
 				admin_url( 'admin.php' )
@@ -283,8 +294,8 @@ class PPQ_Banks_List_Table extends WP_List_Table {
 	protected function column_name( $item ) {
 		$view_url = add_query_arg(
 			[
-				'page' => 'ppq-banks',
-				'action' => 'view',
+				'page'    => 'ppq-banks',
+				'action'  => 'view',
 				'bank_id' => $item->id,
 			],
 			admin_url( 'admin.php' )
@@ -292,8 +303,8 @@ class PPQ_Banks_List_Table extends WP_List_Table {
 
 		$edit_url = add_query_arg(
 			[
-				'page' => 'ppq-banks',
-				'action' => 'edit',
+				'page'    => 'ppq-banks',
+				'action'  => 'edit',
 				'bank_id' => $item->id,
 			],
 			admin_url( 'admin.php' )
@@ -302,8 +313,8 @@ class PPQ_Banks_List_Table extends WP_List_Table {
 		$delete_url = wp_nonce_url(
 			add_query_arg(
 				[
-					'page' => 'ppq-banks',
-					'action' => 'ppq_delete_bank',
+					'page'    => 'ppq-banks',
+					'action'  => 'ppq_delete_bank',
 					'bank_id' => $item->id,
 				],
 				admin_url( 'admin-post.php' )
@@ -314,12 +325,12 @@ class PPQ_Banks_List_Table extends WP_List_Table {
 		$title = '<strong><a href="' . esc_url( $view_url ) . '">' . esc_html( $item->name ) . '</a></strong>';
 
 		// Row actions
-		$actions = [];
+		$actions         = [];
 		$actions['view'] = '<a href="' . esc_url( $view_url ) . '">' . __( 'View', 'pressprimer-quiz' ) . '</a>';
 
 		// Check ownership for edit/delete
 		if ( current_user_can( 'ppq_manage_all' ) || absint( $item->owner_id ) === get_current_user_id() ) {
-			$actions['edit'] = '<a href="' . esc_url( $edit_url ) . '">' . __( 'Edit', 'pressprimer-quiz' ) . '</a>';
+			$actions['edit']   = '<a href="' . esc_url( $edit_url ) . '">' . __( 'Edit', 'pressprimer-quiz' ) . '</a>';
 			$actions['delete'] = '<a href="' . esc_url( $delete_url ) . '" onclick="return confirm(\'' . esc_js( __( 'Are you sure you want to delete this bank?', 'pressprimer-quiz' ) ) . '\');">' . __( 'Delete', 'pressprimer-quiz' ) . '</a>';
 		}
 
@@ -360,7 +371,7 @@ class PPQ_Banks_List_Table extends WP_List_Table {
 		if ( current_user_can( 'ppq_manage_all' ) ) {
 			$filter_url = add_query_arg(
 				[
-					'page' => 'ppq-banks',
+					'page'   => 'ppq-banks',
 					'author' => $item->owner_id,
 				],
 				admin_url( 'admin.php' )
@@ -381,8 +392,8 @@ class PPQ_Banks_List_Table extends WP_List_Table {
 	 */
 	protected function column_date( $item ) {
 		$timestamp = strtotime( $item->created_at );
-		$date = wp_date( get_option( 'date_format' ), $timestamp );
-		$time = wp_date( get_option( 'time_format' ), $timestamp );
+		$date      = wp_date( get_option( 'date_format' ), $timestamp );
+		$time      = wp_date( get_option( 'time_format' ), $timestamp );
 
 		return sprintf(
 			'%s<br><span class="ppq-text-muted">%s</span>',
@@ -411,12 +422,14 @@ class PPQ_Banks_List_Table extends WP_List_Table {
 	public function search_box( $text, $input_id ) {
 		$input_id = $input_id . '-search-input';
 
-		if ( ! empty( $_REQUEST['orderby'] ) ) {
-			echo '<input type="hidden" name="orderby" value="' . esc_attr( sanitize_key( $_REQUEST['orderby'] ) ) . '" />';
+		// phpcs:disable WordPress.Security.NonceVerification.Recommended -- Read-only hidden form fields
+		if ( isset( $_REQUEST['orderby'] ) && '' !== $_REQUEST['orderby'] ) {
+			echo '<input type="hidden" name="orderby" value="' . esc_attr( sanitize_key( wp_unslash( $_REQUEST['orderby'] ) ) ) . '" />';
 		}
-		if ( ! empty( $_REQUEST['order'] ) ) {
-			echo '<input type="hidden" name="order" value="' . esc_attr( sanitize_key( $_REQUEST['order'] ) ) . '" />';
+		if ( isset( $_REQUEST['order'] ) && '' !== $_REQUEST['order'] ) {
+			echo '<input type="hidden" name="order" value="' . esc_attr( sanitize_key( wp_unslash( $_REQUEST['order'] ) ) ) . '" />';
 		}
+		// phpcs:enable WordPress.Security.NonceVerification.Recommended
 		?>
 		<p class="search-box">
 			<label class="screen-reader-text" for="<?php echo esc_attr( $input_id ); ?>"><?php echo esc_html( $text ); ?>:</label>

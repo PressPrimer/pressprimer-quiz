@@ -19,7 +19,7 @@ if ( ! defined( 'ABSPATH' ) ) {
  *
  * @since 1.0.0
  */
-class PPQ_Onboarding {
+class PressPrimer_Quiz_Onboarding {
 
 	/**
 	 * User meta key for onboarding completion status.
@@ -59,7 +59,7 @@ class PPQ_Onboarding {
 	/**
 	 * Singleton instance.
 	 *
-	 * @var PPQ_Onboarding
+	 * @var PressPrimer_Quiz_Onboarding
 	 */
 	private static $instance = null;
 
@@ -68,7 +68,7 @@ class PPQ_Onboarding {
 	 *
 	 * @since 1.0.0
 	 *
-	 * @return PPQ_Onboarding
+	 * @return PressPrimer_Quiz_Onboarding
 	 */
 	public static function get_instance() {
 		if ( null === self::$instance ) {
@@ -153,7 +153,7 @@ class PPQ_Onboarding {
 		 *
 		 * @param int $user_id The user ID.
 		 */
-		do_action( 'ppq_onboarding_completed', $user_id );
+		do_action( 'pressprimer_quiz_onboarding_completed', $user_id );
 
 		return true;
 	}
@@ -187,7 +187,7 @@ class PPQ_Onboarding {
 		 * @param int  $user_id   The user ID.
 		 * @param bool $permanent Whether the skip is permanent.
 		 */
-		do_action( 'ppq_onboarding_skipped', $user_id, $permanent );
+		do_action( 'pressprimer_quiz_onboarding_skipped', $user_id, $permanent );
 
 		return true;
 	}
@@ -219,7 +219,7 @@ class PPQ_Onboarding {
 		 *
 		 * @param int $user_id The user ID.
 		 */
-		do_action( 'ppq_onboarding_reset', $user_id );
+		do_action( 'pressprimer_quiz_onboarding_reset', $user_id );
 
 		return true;
 	}
@@ -298,7 +298,7 @@ class PPQ_Onboarding {
 		 *
 		 * @param int $user_id The user ID.
 		 */
-		do_action( 'ppq_onboarding_started', $user_id );
+		do_action( 'pressprimer_quiz_onboarding_started', $user_id );
 
 		return true;
 	}
@@ -328,7 +328,7 @@ class PPQ_Onboarding {
 		}
 
 		$action  = isset( $_POST['onboarding_action'] ) ? sanitize_text_field( wp_unslash( $_POST['onboarding_action'] ) ) : '';
-		$step    = isset( $_POST['step'] ) ? absint( $_POST['step'] ) : 0;
+		$step    = isset( $_POST['step'] ) ? absint( wp_unslash( $_POST['step'] ) ) : 0;
 		$user_id = get_current_user_id();
 
 		switch ( $action ) {
@@ -345,7 +345,7 @@ class PPQ_Onboarding {
 				break;
 
 			case 'skip':
-				$permanent = ! empty( $_POST['permanent'] );
+				$permanent = isset( $_POST['permanent'] ) && rest_sanitize_boolean( wp_unslash( $_POST['permanent'] ) );
 				$this->skip_onboarding( $user_id, $permanent );
 				break;
 
@@ -397,7 +397,7 @@ class PPQ_Onboarding {
 				'reports'   => admin_url( 'admin.php?page=ppq-reports' ),
 				'settings'  => admin_url( 'admin.php?page=ppq-settings' ),
 			),
-			'i18n'    => array(
+			'i18n'      => array(
 				'welcome'          => __( 'Welcome to PressPrimer Quiz!', 'pressprimer-quiz' ),
 				'welcomeSubtitle'  => __( 'Create powerful quizzes for your WordPress site in minutes. Let us show you around!', 'pressprimer-quiz' ),
 				'getStarted'       => __( 'Get Started', 'pressprimer-quiz' ),

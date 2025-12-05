@@ -23,7 +23,7 @@ if ( ! defined( 'ABSPATH' ) ) {
  *
  * @since 1.0.0
  */
-class PPQ_Question_Revision extends PPQ_Model {
+class PressPrimer_Quiz_Question_Revision extends PressPrimer_Quiz_Model {
 
 	/**
 	 * Question ID this revision belongs to
@@ -188,8 +188,8 @@ class PPQ_Question_Revision extends PPQ_Model {
 		}
 
 		// Generate content hash
-		$stem    = $data['stem'] ?? '';
-		$answers = ! empty( $data['answers_json'] ) ? $data['answers_json'] : '[]';
+		$stem                 = $data['stem'] ?? '';
+		$answers              = ! empty( $data['answers_json'] ) ? $data['answers_json'] : '[]';
 		$data['content_hash'] = self::generate_hash( $stem, $answers );
 
 		// Set metadata
@@ -380,11 +380,14 @@ class PPQ_Question_Revision extends PPQ_Model {
 		}
 
 		// Sort answers by order/id for consistent hashing
-		usort( $answers, function ( $a, $b ) {
-			$order_a = $a['order'] ?? 0;
-			$order_b = $b['order'] ?? 0;
-			return $order_a - $order_b;
-		});
+		usort(
+			$answers,
+			function ( $a, $b ) {
+				$order_a = $a['order'] ?? 0;
+				$order_b = $b['order'] ?? 0;
+				return $order_a - $order_b;
+			}
+		);
 
 		// Extract just the text and is_correct fields
 		$normalized_answers = [];
@@ -417,7 +420,7 @@ class PPQ_Question_Revision extends PPQ_Model {
 			if ( empty( $this->answers_json ) ) {
 				$this->_answers = [];
 			} else {
-				$answers = json_decode( $this->answers_json, true );
+				$answers        = json_decode( $this->answers_json, true );
 				$this->_answers = is_array( $answers ) ? $answers : [];
 			}
 		}
@@ -454,9 +457,12 @@ class PPQ_Question_Revision extends PPQ_Model {
 	 */
 	public function get_correct_answers() {
 		$answers = $this->get_answers();
-		return array_filter( $answers, function ( $answer ) {
-			return ! empty( $answer['is_correct'] );
-		});
+		return array_filter(
+			$answers,
+			function ( $answer ) {
+				return ! empty( $answer['is_correct'] );
+			}
+		);
 	}
 
 	/**
@@ -486,10 +492,10 @@ class PPQ_Question_Revision extends PPQ_Model {
 	 *
 	 * @since 1.0.0
 	 *
-	 * @param PPQ_Question_Revision $other Other revision to compare.
+	 * @param PressPrimer_Quiz_Question_Revision $other Other revision to compare.
 	 * @return bool True if content matches.
 	 */
-	public function matches_content( PPQ_Question_Revision $other ) {
+	public function matches_content( PressPrimer_Quiz_Question_Revision $other ) {
 		return $this->content_hash === $other->content_hash;
 	}
 
@@ -504,9 +510,11 @@ class PPQ_Question_Revision extends PPQ_Model {
 	 * @return array Array of revision instances.
 	 */
 	public static function find_by_hash( $hash ) {
-		return static::find([
-			'where' => [ 'content_hash' => $hash ],
-		]);
+		return static::find(
+			[
+				'where' => [ 'content_hash' => $hash ],
+			]
+		);
 	}
 
 	/**
@@ -526,7 +534,7 @@ class PPQ_Question_Revision extends PPQ_Model {
 			'order'    => 'DESC',
 		];
 
-		$args = wp_parse_args( $args, $defaults );
+		$args          = wp_parse_args( $args, $defaults );
 		$args['where'] = [ 'question_id' => absint( $question_id ) ];
 
 		return static::find( $args );

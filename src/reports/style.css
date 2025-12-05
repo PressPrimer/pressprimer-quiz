@@ -230,12 +230,12 @@
 	line-height: 1.5;
 }
 
-.ppq-report-card--locked {
-	opacity: 0.7;
-	cursor: not-allowed !important;
+.ppq-report-card--coming-soon {
+	opacity: 0.85;
+	cursor: default !important;
 }
 
-.ppq-report-card--locked:hover {
+.ppq-report-card--coming-soon:hover {
 	transform: none;
 	box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
 }

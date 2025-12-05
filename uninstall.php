@@ -35,7 +35,7 @@ if ( ! defined( 'PPQ_PLUGIN_PATH' ) ) {
  * Only runs if user has explicitly opted in to remove all data.
  * By default, all data is preserved to prevent accidental data loss.
  */
-function ppq_uninstall() {
+function pressprimer_quiz_uninstall() {
 	global $wpdb;
 
 	// Get settings
@@ -52,22 +52,22 @@ function ppq_uninstall() {
 	// Proceed with complete removal
 
 	// Remove all database tables
-	ppq_drop_tables();
+	pressprimer_quiz_drop_tables();
 
 	// Remove all options
-	ppq_remove_options();
+	pressprimer_quiz_remove_options();
 
 	// Remove all user meta
-	ppq_remove_user_meta();
+	pressprimer_quiz_remove_user_meta();
 
 	// Remove all post meta
-	ppq_remove_post_meta();
+	pressprimer_quiz_remove_post_meta();
 
 	// Remove capabilities and roles
-	ppq_remove_capabilities();
+	pressprimer_quiz_remove_capabilities();
 
 	// Clear any remaining transients
-	ppq_clear_transients();
+	pressprimer_quiz_clear_transients();
 }
 
 /**
@@ -75,7 +75,7 @@ function ppq_uninstall() {
  *
  * @since 1.0.0
  */
-function ppq_drop_tables() {
+function pressprimer_quiz_drop_tables() {
 	global $wpdb;
 
 	$tables = [
@@ -106,7 +106,7 @@ function ppq_drop_tables() {
  *
  * @since 1.0.0
  */
-function ppq_remove_options() {
+function pressprimer_quiz_remove_options() {
 	global $wpdb;
 
 	// Delete all options that start with ppq_
@@ -135,7 +135,7 @@ function ppq_remove_options() {
  *
  * @since 1.0.0
  */
-function ppq_remove_user_meta() {
+function pressprimer_quiz_remove_user_meta() {
 	global $wpdb;
 
 	// Delete all user meta that starts with ppq_
@@ -153,7 +153,7 @@ function ppq_remove_user_meta() {
  *
  * @since 1.0.0
  */
-function ppq_remove_post_meta() {
+function pressprimer_quiz_remove_post_meta() {
 	global $wpdb;
 
 	// Delete all post meta that starts with ppq_
@@ -171,7 +171,7 @@ function ppq_remove_post_meta() {
  *
  * @since 1.0.0
  */
-function ppq_remove_capabilities() {
+function pressprimer_quiz_remove_capabilities() {
 	// Remove capabilities from administrator
 	$admin = get_role( 'administrator' );
 	if ( $admin ) {
@@ -198,7 +198,7 @@ function ppq_remove_capabilities() {
  *
  * @since 1.0.0
  */
-function ppq_clear_transients() {
+function pressprimer_quiz_clear_transients() {
 	global $wpdb;
 
 	// Delete all transients that start with ppq_
@@ -227,4 +227,4 @@ function ppq_clear_transients() {
 }
 
 // Run the uninstall
-ppq_uninstall();
+pressprimer_quiz_uninstall();

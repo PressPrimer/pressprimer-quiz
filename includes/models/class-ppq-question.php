@@ -22,7 +22,7 @@ if ( ! defined( 'ABSPATH' ) ) {
  *
  * @since 1.0.0
  */
-class PPQ_Question extends PPQ_Model {
+class PressPrimer_Quiz_Question extends PressPrimer_Quiz_Model {
 
 	/**
 	 * Question UUID
@@ -116,7 +116,7 @@ class PPQ_Question extends PPQ_Model {
 	 * Cached current revision
 	 *
 	 * @since 1.0.0
-	 * @var PPQ_Question_Revision|null
+	 * @var PressPrimer_Quiz_Question_Revision|null
 	 */
 	private $_current_revision = null;
 
@@ -174,7 +174,7 @@ class PPQ_Question extends PPQ_Model {
 	 * @since 1.0.0
 	 *
 	 * @param string $uuid Question UUID.
-	 * @return PPQ_Question|null Question instance or null if not found.
+	 * @return PressPrimer_Quiz_Question|null Question instance or null if not found.
 	 */
 	public static function get_by_uuid( $uuid ) {
 		global $wpdb;
@@ -210,7 +210,7 @@ class PPQ_Question extends PPQ_Model {
 
 		// Generate UUID if not provided
 		if ( empty( $data['uuid'] ) ) {
-			$data['uuid'] = PPQ_Helpers::generate_uuid();
+			$data['uuid'] = PressPrimer_Quiz_Helpers::generate_uuid();
 		}
 
 		// Set author to current user if not provided
@@ -350,7 +350,7 @@ class PPQ_Question extends PPQ_Model {
 	 * @since 1.0.0
 	 *
 	 * @param bool $force Force refresh from database.
-	 * @return PPQ_Question_Revision|null Revision instance or null if not found.
+	 * @return PressPrimer_Quiz_Question_Revision|null Revision instance or null if not found.
 	 */
 	public function get_current_revision( $force = false ) {
 		if ( null === $this->_current_revision || $force ) {
@@ -358,8 +358,8 @@ class PPQ_Question extends PPQ_Model {
 				return null;
 			}
 
-			if ( class_exists( 'PPQ_Question_Revision' ) ) {
-				$this->_current_revision = PPQ_Question_Revision::get( $this->current_revision_id );
+			if ( class_exists( 'PressPrimer_Quiz_Question_Revision' ) ) {
+				$this->_current_revision = PressPrimer_Quiz_Question_Revision::get( $this->current_revision_id );
 			}
 		}
 
@@ -378,8 +378,8 @@ class PPQ_Question extends PPQ_Model {
 	 */
 	public function get_categories( $force = false ) {
 		if ( null === $this->_categories || $force ) {
-			if ( class_exists( 'PPQ_Category' ) ) {
-				$this->_categories = PPQ_Category::get_for_question( $this->id, 'category' );
+			if ( class_exists( 'PressPrimer_Quiz_Category' ) ) {
+				$this->_categories = PressPrimer_Quiz_Category::get_for_question( $this->id, 'category' );
 			} else {
 				$this->_categories = [];
 			}
@@ -400,8 +400,8 @@ class PPQ_Question extends PPQ_Model {
 	 */
 	public function get_tags( $force = false ) {
 		if ( null === $this->_tags || $force ) {
-			if ( class_exists( 'PPQ_Category' ) ) {
-				$this->_tags = PPQ_Category::get_for_question( $this->id, 'tag' );
+			if ( class_exists( 'PressPrimer_Quiz_Category' ) ) {
+				$this->_tags = PressPrimer_Quiz_Category::get_for_question( $this->id, 'tag' );
 			} else {
 				$this->_tags = [];
 			}
@@ -467,8 +467,8 @@ class PPQ_Question extends PPQ_Model {
 		$this->_categories = null;
 
 		// Update counts
-		if ( class_exists( 'PPQ_Category' ) ) {
-			PPQ_Category::update_counts( 'category' );
+		if ( class_exists( 'PressPrimer_Quiz_Category' ) ) {
+			PressPrimer_Quiz_Category::update_counts( 'category' );
 		}
 
 		return true;
@@ -531,8 +531,8 @@ class PPQ_Question extends PPQ_Model {
 		$this->_tags = null;
 
 		// Update counts
-		if ( class_exists( 'PPQ_Category' ) ) {
-			PPQ_Category::update_counts( 'tag' );
+		if ( class_exists( 'PressPrimer_Quiz_Category' ) ) {
+			PressPrimer_Quiz_Category::update_counts( 'tag' );
 		}
 
 		return true;
@@ -616,7 +616,7 @@ class PPQ_Question extends PPQ_Model {
 		}
 
 		if ( $args['exclude_deleted'] ) {
-			// Note: PPQ_Model::find() doesn't support IS NULL,
+			// Note: PressPrimer_Quiz_Model::find() doesn't support IS NULL,
 			// so we'll need to filter after or extend the query
 			// For now, we'll handle this with a custom query
 		}
@@ -662,8 +662,8 @@ class PPQ_Question extends PPQ_Model {
 		// Build LIMIT
 		$limit_sql = '';
 		if ( isset( $args['limit'] ) ) {
-			$limit  = absint( $args['limit'] );
-			$offset = absint( $args['offset'] ?? 0 );
+			$limit     = absint( $args['limit'] );
+			$offset    = absint( $args['offset'] ?? 0 );
 			$limit_sql = $offset > 0 ? "LIMIT {$offset}, {$limit}" : "LIMIT {$limit}";
 		}
 

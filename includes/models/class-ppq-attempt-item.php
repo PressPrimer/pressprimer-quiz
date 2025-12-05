@@ -22,7 +22,7 @@ if ( ! defined( 'ABSPATH' ) ) {
  *
  * @since 1.0.0
  */
-class PPQ_Attempt_Item extends PPQ_Model {
+class PressPrimer_Quiz_Attempt_Item extends PressPrimer_Quiz_Model {
 
 	/**
 	 * Attempt ID
@@ -108,7 +108,7 @@ class PPQ_Attempt_Item extends PPQ_Model {
 	 * Cached question revision
 	 *
 	 * @since 1.0.0
-	 * @var PPQ_Question_Revision|null
+	 * @var PressPrimer_Quiz_Question_Revision|null
 	 */
 	private $_revision = null;
 
@@ -116,7 +116,7 @@ class PPQ_Attempt_Item extends PPQ_Model {
 	 * Cached question
 	 *
 	 * @since 1.0.0
-	 * @var PPQ_Question|null
+	 * @var PressPrimer_Quiz_Question|null
 	 */
 	private $_question = null;
 
@@ -161,11 +161,11 @@ class PPQ_Attempt_Item extends PPQ_Model {
 	 *
 	 * @since 1.0.0
 	 *
-	 * @return PPQ_Question_Revision|null Question revision or null.
+	 * @return PressPrimer_Quiz_Question_Revision|null Question revision or null.
 	 */
 	public function get_question_revision() {
 		if ( null === $this->_revision ) {
-			$this->_revision = PPQ_Question_Revision::get( $this->question_revision_id );
+			$this->_revision = PressPrimer_Quiz_Question_Revision::get( $this->question_revision_id );
 		}
 
 		return $this->_revision;
@@ -178,13 +178,13 @@ class PPQ_Attempt_Item extends PPQ_Model {
 	 *
 	 * @since 1.0.0
 	 *
-	 * @return PPQ_Question|null Question object or null.
+	 * @return PressPrimer_Quiz_Question|null Question object or null.
 	 */
 	public function get_question() {
 		if ( null === $this->_question ) {
 			$revision = $this->get_question_revision();
 			if ( $revision ) {
-				$this->_question = PPQ_Question::get( $revision->question_id );
+				$this->_question = PressPrimer_Quiz_Question::get( $revision->question_id );
 			}
 		}
 
@@ -226,10 +226,10 @@ class PPQ_Attempt_Item extends PPQ_Model {
 		}
 
 		$first = strtotime( $this->first_view_at );
-		$last = strtotime( $this->last_answer_at );
+		$last  = strtotime( $this->last_answer_at );
 
 		$time_spent_seconds = $last - $first;
-		$time_spent_ms = $time_spent_seconds * 1000;
+		$time_spent_ms      = $time_spent_seconds * 1000;
 
 		// Update the field
 		$this->time_spent_ms = max( 0, $time_spent_ms );
@@ -273,7 +273,7 @@ class PPQ_Attempt_Item extends PPQ_Model {
 		}
 
 		$selected = $this->get_selected_answers();
-		$answers = $revision->get_answers();
+		$answers  = $revision->get_answers();
 
 		// Get correct answer indices
 		$correct_indices = [];
@@ -297,7 +297,7 @@ class PPQ_Attempt_Item extends PPQ_Model {
 	 *
 	 * @param int $attempt_id Attempt ID.
 	 * @param int $question_revision_id Question revision ID.
-	 * @return PPQ_Attempt_Item|null Item or null if not found.
+	 * @return PressPrimer_Quiz_Attempt_Item|null Item or null if not found.
 	 */
 	public static function get_by_attempt_and_question( int $attempt_id, int $question_revision_id ) {
 		global $wpdb;
@@ -320,7 +320,7 @@ class PPQ_Attempt_Item extends PPQ_Model {
 	 * @since 1.0.0
 	 *
 	 * @param int $attempt_id Attempt ID.
-	 * @return array Array of PPQ_Attempt_Item objects.
+	 * @return array Array of PressPrimer_Quiz_Attempt_Item objects.
 	 */
 	public static function get_by_attempt( int $attempt_id ) {
 		global $wpdb;
@@ -353,7 +353,7 @@ class PPQ_Attempt_Item extends PPQ_Model {
 	 * @param int $attempt_id Attempt ID.
 	 * @param int $question_revision_id Question revision ID.
 	 * @param int $order_index Order index.
-	 * @return PPQ_Attempt_Item|WP_Error Item object or error.
+	 * @return PressPrimer_Quiz_Attempt_Item|WP_Error Item object or error.
 	 */
 	public static function get_or_create( int $attempt_id, int $question_revision_id, int $order_index = 0 ) {
 		// Try to get existing
@@ -364,12 +364,14 @@ class PPQ_Attempt_Item extends PPQ_Model {
 		}
 
 		// Create new
-		$item_id = static::create([
-			'attempt_id'           => $attempt_id,
-			'question_revision_id' => $question_revision_id,
-			'order_index'          => $order_index,
-			'first_view_at'        => current_time( 'mysql' ),
-		]);
+		$item_id = static::create(
+			[
+				'attempt_id'           => $attempt_id,
+				'question_revision_id' => $question_revision_id,
+				'order_index'          => $order_index,
+				'first_view_at'        => current_time( 'mysql' ),
+			]
+		);
 
 		if ( is_wp_error( $item_id ) ) {
 			return $item_id;

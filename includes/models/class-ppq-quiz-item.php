@@ -22,7 +22,7 @@ if ( ! defined( 'ABSPATH' ) ) {
  *
  * @since 1.0.0
  */
-class PPQ_Quiz_Item extends PPQ_Model {
+class PressPrimer_Quiz_Quiz_Item extends PressPrimer_Quiz_Model {
 
 	/**
 	 * Quiz ID
@@ -110,11 +110,11 @@ class PPQ_Quiz_Item extends PPQ_Model {
 		}
 
 		// Sanitize IDs
-		$data['quiz_id'] = absint( $data['quiz_id'] );
+		$data['quiz_id']     = absint( $data['quiz_id'] );
 		$data['question_id'] = absint( $data['question_id'] );
 
 		// Validate quiz exists
-		if ( ! PPQ_Quiz::exists( $data['quiz_id'] ) ) {
+		if ( ! PressPrimer_Quiz_Quiz::exists( $data['quiz_id'] ) ) {
 			return new WP_Error(
 				'ppq_quiz_not_found',
 				__( 'Quiz not found.', 'pressprimer-quiz' )
@@ -122,7 +122,7 @@ class PPQ_Quiz_Item extends PPQ_Model {
 		}
 
 		// Validate question exists
-		if ( ! PPQ_Question::exists( $data['question_id'] ) ) {
+		if ( ! PressPrimer_Quiz_Question::exists( $data['question_id'] ) ) {
 			return new WP_Error(
 				'ppq_question_not_found',
 				__( 'Question not found.', 'pressprimer-quiz' )
@@ -221,7 +221,7 @@ class PPQ_Quiz_Item extends PPQ_Model {
 	 * @since 1.0.0
 	 *
 	 * @param int $quiz_id Quiz ID.
-	 * @return array Array of PPQ_Quiz_Item objects.
+	 * @return array Array of PressPrimer_Quiz_Quiz_Item objects.
 	 */
 	public static function get_for_quiz( int $quiz_id ) {
 		global $wpdb;
@@ -274,7 +274,7 @@ class PPQ_Quiz_Item extends PPQ_Model {
 
 		try {
 			foreach ( $order_map as $item_id => $new_index ) {
-				$item_id = absint( $item_id );
+				$item_id   = absint( $item_id );
 				$new_index = absint( $new_index );
 
 				$result = $wpdb->update(
@@ -349,10 +349,12 @@ class PPQ_Quiz_Item extends PPQ_Model {
 		}
 
 		// Swap order indexes
-		return self::reorder( [
-			$this->id          => $this->order_index - 1,
-			$previous_item->id => $this->order_index,
-		] );
+		return self::reorder(
+			[
+				$this->id          => $this->order_index - 1,
+				$previous_item->id => $this->order_index,
+			]
+		);
 	}
 
 	/**
@@ -385,10 +387,12 @@ class PPQ_Quiz_Item extends PPQ_Model {
 		}
 
 		// Swap order indexes
-		return self::reorder( [
-			$this->id      => $this->order_index + 1,
-			$next_item->id => $this->order_index,
-		] );
+		return self::reorder(
+			[
+				$this->id      => $this->order_index + 1,
+				$next_item->id => $this->order_index,
+			]
+		);
 	}
 
 	/**
@@ -446,9 +450,9 @@ class PPQ_Quiz_Item extends PPQ_Model {
 	 *
 	 * @since 1.0.0
 	 *
-	 * @return PPQ_Question|null Question object or null if not found.
+	 * @return PressPrimer_Quiz_Question|null Question object or null if not found.
 	 */
 	public function get_question() {
-		return PPQ_Question::get( $this->question_id );
+		return PressPrimer_Quiz_Question::get( $this->question_id );
 	}
 }

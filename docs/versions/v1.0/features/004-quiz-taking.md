@@ -118,7 +118,7 @@ Landing Page → Start Quiz → Questions → Submit → Results
 
 ```php
 function ppq_start_attempt( $quiz_id, $user_id = null, $guest_email = '' ) {
-    $quiz = PPQ_Quiz::get( $quiz_id );
+    $quiz = PressPrimer_Quiz_Quiz::get( $quiz_id );
     
     // Check permissions
     if ( ! ppq_can_take_quiz( $quiz_id, $user_id ) ) {
@@ -153,7 +153,7 @@ function ppq_start_attempt( $quiz_id, $user_id = null, $guest_email = '' ) {
         'questions_json' => wp_json_encode( $questions ),
     ];
     
-    return PPQ_Attempt::create( $attempt_data );
+    return PressPrimer_Quiz_Attempt::create( $attempt_data );
 }
 ```
 
@@ -161,7 +161,7 @@ function ppq_start_attempt( $quiz_id, $user_id = null, $guest_email = '' ) {
 
 ```php
 function ppq_save_answer( $attempt_id, $question_id, $answers ) {
-    $attempt = PPQ_Attempt::get( $attempt_id );
+    $attempt = PressPrimer_Quiz_Attempt::get( $attempt_id );
     
     // Validate ownership
     if ( ! ppq_can_access_attempt( $attempt_id ) ) {
@@ -179,7 +179,7 @@ function ppq_save_answer( $attempt_id, $question_id, $answers ) {
     }
     
     // Save/update answer
-    $item = PPQ_Attempt_Item::get_or_create( $attempt_id, $question_id );
+    $item = PressPrimer_Quiz_Attempt_Item::get_or_create( $attempt_id, $question_id );
     $item->selected_answers_json = wp_json_encode( $answers );
     $item->last_answer_at = current_time( 'mysql' );
     $item->save();
@@ -192,8 +192,8 @@ function ppq_save_answer( $attempt_id, $question_id, $answers ) {
 
 ```php
 function ppq_validate_submission_time( $attempt_id ) {
-    $attempt = PPQ_Attempt::get( $attempt_id );
-    $quiz = PPQ_Quiz::get( $attempt->quiz_id );
+    $attempt = PressPrimer_Quiz_Attempt::get( $attempt_id );
+    $quiz = PressPrimer_Quiz_Quiz::get( $attempt->quiz_id );
     
     if ( ! $quiz->time_limit_seconds ) {
         return true; // No time limit

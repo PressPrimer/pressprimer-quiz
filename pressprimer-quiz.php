@@ -32,29 +32,22 @@ define( 'PPQ_DB_VERSION', '1.0.4' );
 
 // Autoloader
 require_once PPQ_PLUGIN_PATH . 'includes/class-ppq-autoloader.php';
-PPQ_Autoloader::register();
+PressPrimer_Quiz_Autoloader::register();
 
 // Activation/Deactivation hooks
-register_activation_hook( __FILE__, [ 'PPQ_Activator', 'activate' ] );
-register_deactivation_hook( __FILE__, [ 'PPQ_Deactivator', 'deactivate' ] );
+register_activation_hook( __FILE__, [ 'PressPrimer_Quiz_Activator', 'activate' ] );
+register_deactivation_hook( __FILE__, [ 'PressPrimer_Quiz_Deactivator', 'deactivate' ] );
 
 /**
  * Initialize plugin
  *
- * Loads text domain and initializes the main plugin class.
+ * Initializes the main plugin class.
  *
  * @since 1.0.0
  */
-function ppq_init() {
-	// Load text domain
-	load_plugin_textdomain(
-		'pressprimer-quiz',
-		false,
-		dirname( PPQ_PLUGIN_BASENAME ) . '/languages'
-	);
-
+function pressprimer_quiz_init() {
 	// Initialize main plugin class
-	$plugin = PPQ_Plugin::get_instance();
+	$plugin = PressPrimer_Quiz_Plugin::get_instance();
 	$plugin->run();
 }
-add_action( 'plugins_loaded', 'ppq_init' );
+add_action( 'plugins_loaded', 'pressprimer_quiz_init' );

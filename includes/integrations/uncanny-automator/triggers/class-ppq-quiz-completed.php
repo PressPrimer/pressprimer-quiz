@@ -21,12 +21,12 @@ if ( ! defined( 'ABSPATH' ) ) {
  *
  * @since 1.0.0
  */
-class PPQ_Quiz_Completed extends \Uncanny_Automator\Recipe\Trigger {
+class PressPrimer_Quiz_Quiz_Completed extends \Uncanny_Automator\Recipe\Trigger {
 
 	/**
 	 * Helpers instance
 	 *
-	 * @var \Jeero\PressPrimerQuiz\Integrations\UncannyAutomator\PPQ_Automator_Helpers
+	 * @var \Jeero\PressPrimerQuiz\Integrations\UncannyAutomator\PressPrimer_Quiz_Automator_Helpers
 	 */
 	protected $helpers;
 
@@ -57,7 +57,7 @@ class PPQ_Quiz_Completed extends \Uncanny_Automator\Recipe\Trigger {
 		);
 
 		// Hook into the quiz completed action.
-		$this->add_action( 'ppq_quiz_completed', 10, 2 );
+		$this->add_action( 'pressprimer_quiz_quiz_completed', 10, 2 );
 	}
 
 	/**

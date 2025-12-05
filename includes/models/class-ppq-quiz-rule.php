@@ -22,7 +22,7 @@ if ( ! defined( 'ABSPATH' ) ) {
  *
  * @since 1.0.0
  */
-class PPQ_Quiz_Rule extends PPQ_Model {
+class PressPrimer_Quiz_Quiz_Rule extends PressPrimer_Quiz_Model {
 
 	/**
 	 * Quiz ID
@@ -133,7 +133,7 @@ class PPQ_Quiz_Rule extends PPQ_Model {
 		$data['quiz_id'] = absint( $data['quiz_id'] );
 
 		// Validate quiz exists
-		if ( ! PPQ_Quiz::exists( $data['quiz_id'] ) ) {
+		if ( ! PressPrimer_Quiz_Quiz::exists( $data['quiz_id'] ) ) {
 			return new WP_Error(
 				'ppq_quiz_not_found',
 				__( 'Quiz not found.', 'pressprimer-quiz' )
@@ -153,7 +153,7 @@ class PPQ_Quiz_Rule extends PPQ_Model {
 			$data['bank_id'] = absint( $data['bank_id'] );
 
 			// Validate bank exists
-			if ( ! PPQ_Bank::exists( $data['bank_id'] ) ) {
+			if ( ! PressPrimer_Quiz_Bank::exists( $data['bank_id'] ) ) {
 				return new WP_Error(
 					'ppq_bank_not_found',
 					__( 'Bank not found.', 'pressprimer-quiz' )
@@ -187,9 +187,9 @@ class PPQ_Quiz_Rule extends PPQ_Model {
 		if ( isset( $data['difficulties'] ) && is_array( $data['difficulties'] ) ) {
 			// Validate difficulty values
 			$valid_difficulties = [ 'beginner', 'intermediate', 'advanced', 'expert' ];
-			$difficulties = array_filter(
+			$difficulties       = array_filter(
 				$data['difficulties'],
-				function( $diff ) use ( $valid_difficulties ) {
+				function ( $diff ) use ( $valid_difficulties ) {
 					return in_array( $diff, $valid_difficulties, true );
 				}
 			);
@@ -216,6 +216,7 @@ class PPQ_Quiz_Rule extends PPQ_Model {
 
 		$table = static::get_full_table_name();
 
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Rule order calculation
 		$max_order = $wpdb->get_var(
 			$wpdb->prepare(
 				"SELECT MAX(rule_order) FROM {$table} WHERE quiz_id = %d", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
@@ -235,13 +236,14 @@ class PPQ_Quiz_Rule extends PPQ_Model {
 	 * @since 1.0.0
 	 *
 	 * @param int $quiz_id Quiz ID.
-	 * @return array Array of PPQ_Quiz_Rule objects.
+	 * @return array Array of PressPrimer_Quiz_Quiz_Rule objects.
 	 */
 	public static function get_for_quiz( int $quiz_id ) {
 		global $wpdb;
 
 		$table = static::get_full_table_name();
 
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Quiz rules retrieval
 		$rows = $wpdb->get_results(
 			$wpdb->prepare(
 				"SELECT * FROM {$table} WHERE quiz_id = %d ORDER BY rule_order ASC", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
@@ -288,7 +290,7 @@ class PPQ_Quiz_Rule extends PPQ_Model {
 
 		try {
 			foreach ( $order_map as $rule_id => $new_order ) {
-				$rule_id = absint( $rule_id );
+				$rule_id   = absint( $rule_id );
 				$new_order = absint( $new_order );
 
 				$result = $wpdb->update(
@@ -386,87 +388,51 @@ class PPQ_Quiz_Rule extends PPQ_Model {
 	public function get_matching_questions() {
 		global $wpdb;
 
-		$questions_table = $wpdb->prefix . 'ppq_questions';
-		$tax_table = $wpdb->prefix . 'ppq_question_tax';
+		$questions_table      = $wpdb->prefix . 'ppq_questions';
+		$tax_table            = $wpdb->prefix . 'ppq_question_tax';
 		$bank_questions_table = $wpdb->prefix . 'ppq_bank_questions';
-
-		// Debug: Check bank_questions table
-		if ( ! empty( $this->bank_id ) ) {
-			error_log( '=== PPQ Rule Debug for bank_id=' . $this->bank_id . ' ===' );
-
-			// Check how many records exist in bank_questions for this bank
-			$bank_count = $wpdb->get_var(
-				$wpdb->prepare(
-					"SELECT COUNT(*) FROM {$bank_questions_table} WHERE bank_id = %d",
-					$this->bank_id
-				)
-			);
-			error_log( 'Total records in bank_questions for bank ' . $this->bank_id . ': ' . $bank_count );
-
-			// Get question IDs in this bank
-			$bank_question_ids = $wpdb->get_col(
-				$wpdb->prepare(
-					"SELECT question_id FROM {$bank_questions_table} WHERE bank_id = %d",
-					$this->bank_id
-				)
-			);
-			error_log( 'Question IDs in bank: ' . print_r( $bank_question_ids, true ) );
-
-			// For each question, check its status and deleted_at
-			if ( ! empty( $bank_question_ids ) ) {
-				foreach ( $bank_question_ids as $q_id ) {
-					$q_data = $wpdb->get_row(
-						$wpdb->prepare(
-							"SELECT id, status, deleted_at FROM {$questions_table} WHERE id = %d",
-							$q_id
-						)
-					);
-					error_log( 'Question ' . $q_id . ' data: ' . print_r( $q_data, true ) );
-				}
-			}
-		}
 
 		// Start with base query - published and draft questions, non-deleted
 		$where_clauses = [
 			"q.status IN ('published', 'draft')",
 			'q.deleted_at IS NULL',
 		];
-		$join_clauses = [];
-		$where_values = [];
+		$join_clauses  = [];
+		$where_values  = [];
 
 		// Filter by bank if specified
 		if ( ! empty( $this->bank_id ) ) {
-			$join_clauses[] = "INNER JOIN {$bank_questions_table} bq ON q.id = bq.question_id";
+			$join_clauses[]  = "INNER JOIN {$bank_questions_table} bq ON q.id = bq.question_id";
 			$where_clauses[] = 'bq.bank_id = %d';
-			$where_values[] = $this->bank_id;
+			$where_values[]  = $this->bank_id;
 		}
 
 		// Filter by categories if specified
 		$category_ids = $this->get_category_ids();
 		if ( ! empty( $category_ids ) ) {
-			$placeholders = implode( ',', array_fill( 0, count( $category_ids ), '%d' ) );
-			$join_clauses[] = "INNER JOIN {$tax_table} tc ON q.id = tc.question_id";
+			$placeholders    = implode( ',', array_fill( 0, count( $category_ids ), '%d' ) );
+			$join_clauses[]  = "INNER JOIN {$tax_table} tc ON q.id = tc.question_id";
 			$where_clauses[] = "tc.taxonomy = 'category'";
 			$where_clauses[] = "tc.category_id IN ($placeholders)";
-			$where_values = array_merge( $where_values, $category_ids );
+			$where_values    = array_merge( $where_values, $category_ids );
 		}
 
 		// Filter by tags if specified
 		$tag_ids = $this->get_tag_ids();
 		if ( ! empty( $tag_ids ) ) {
-			$placeholders = implode( ',', array_fill( 0, count( $tag_ids ), '%d' ) );
-			$join_clauses[] = "INNER JOIN {$tax_table} tt ON q.id = tt.question_id";
+			$placeholders    = implode( ',', array_fill( 0, count( $tag_ids ), '%d' ) );
+			$join_clauses[]  = "INNER JOIN {$tax_table} tt ON q.id = tt.question_id";
 			$where_clauses[] = "tt.taxonomy = 'tag'";
 			$where_clauses[] = "tt.category_id IN ($placeholders)";
-			$where_values = array_merge( $where_values, $tag_ids );
+			$where_values    = array_merge( $where_values, $tag_ids );
 		}
 
 		// Filter by difficulties if specified
 		$difficulties = $this->get_difficulties();
 		if ( ! empty( $difficulties ) ) {
-			$placeholders = implode( ',', array_fill( 0, count( $difficulties ), '%s' ) );
+			$placeholders    = implode( ',', array_fill( 0, count( $difficulties ), '%s' ) );
 			$where_clauses[] = "q.difficulty_author IN ($placeholders)";
-			$where_values = array_merge( $where_values, $difficulties );
+			$where_values    = array_merge( $where_values, $difficulties );
 		}
 
 		// Build final query
@@ -480,12 +446,8 @@ class PPQ_Quiz_Rule extends PPQ_Model {
 			$query = $wpdb->prepare( $query, $where_values ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
 		}
 
-		error_log( 'PPQ Rule Query: ' . $query );
-
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Dynamic rule-based question matching
 		$results = $wpdb->get_col( $query ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
-
-		error_log( 'PPQ Rule Results: ' . print_r( $results, true ) );
-		error_log( 'PPQ Rule Count: ' . count( $results ) );
 
 		return $results ? array_map( 'absint', $results ) : [];
 	}

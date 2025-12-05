@@ -70,8 +70,8 @@ After submitting a quiz, students see comprehensive results including their scor
 
 ```php
 function ppq_calculate_results( $attempt_id ) {
-    $attempt = PPQ_Attempt::get( $attempt_id );
-    $items = PPQ_Attempt_Item::get_for_attempt( $attempt_id );
+    $attempt = PressPrimer_Quiz_Attempt::get( $attempt_id );
+    $items = PressPrimer_Quiz_Attempt_Item::get_for_attempt( $attempt_id );
     
     $results = [
         'score_points' => 0,

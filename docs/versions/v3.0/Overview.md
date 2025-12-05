@@ -98,16 +98,16 @@ ppq_student_quizzes (
 
 ```php
 // Question behavior hooks
-apply_filters('ppq_shuffle_answers', $shuffle, $question_id, $attempt_id);
-apply_filters('ppq_partial_credit_score', $score, $question_id, $selected, $correct);
+apply_filters('pressprimer_quiz_shuffle_answers', $shuffle, $question_id, $attempt_id);
+apply_filters('pressprimer_quiz_partial_credit_score', $score, $question_id, $selected, $correct);
 
 // Student quiz creation hooks
-do_action('ppq_student_quiz_created', $quiz_id, $owner_id);
-apply_filters('ppq_student_can_create_quiz', $can_create, $user_id);
+do_action('pressprimer_quiz_student_quiz_created', $quiz_id, $owner_id);
+apply_filters('pressprimer_quiz_student_can_create_quiz', $can_create, $user_id);
 
 // Retake policy hooks
-apply_filters('ppq_user_can_retake', $can_retake, $quiz_id, $user_id, $attempt_count);
-do_action('ppq_retake_blocked', $quiz_id, $user_id, $reason);
+apply_filters('pressprimer_quiz_user_can_retake', $can_retake, $quiz_id, $user_id, $attempt_count);
+do_action('pressprimer_quiz_retake_blocked', $quiz_id, $user_id, $reason);
 ```
 
 ---

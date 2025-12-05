@@ -12,7 +12,7 @@ Actions allow external code to execute at specific points in the plugin's lifecy
 Fires when a new quiz is created.
 
 ```php
-do_action( 'ppq_quiz_created', int $quiz_id, array $data );
+do_action( 'pressprimer_quiz_quiz_created', int $quiz_id, array $data );
 ```
 
 **Parameters:**
@@ -25,7 +25,7 @@ do_action( 'ppq_quiz_created', int $quiz_id, array $data );
 Fires when a quiz is updated.
 
 ```php
-do_action( 'ppq_quiz_updated', int $quiz_id, array $changes );
+do_action( 'pressprimer_quiz_quiz_updated', int $quiz_id, array $changes );
 ```
 
 **Parameters:**
@@ -38,7 +38,7 @@ do_action( 'ppq_quiz_updated', int $quiz_id, array $changes );
 Fires when a quiz status changes to published.
 
 ```php
-do_action( 'ppq_quiz_published', int $quiz_id );
+do_action( 'pressprimer_quiz_quiz_published', int $quiz_id );
 ```
 
 ---
@@ -47,7 +47,7 @@ do_action( 'ppq_quiz_published', int $quiz_id );
 Fires when a quiz is deleted (soft delete).
 
 ```php
-do_action( 'ppq_quiz_deleted', int $quiz_id );
+do_action( 'pressprimer_quiz_quiz_deleted', int $quiz_id );
 ```
 
 ---
@@ -58,7 +58,7 @@ do_action( 'ppq_quiz_deleted', int $quiz_id );
 Fires when a user starts a quiz attempt.
 
 ```php
-do_action( 'ppq_attempt_started', int $attempt_id, int $quiz_id, int $user_id );
+do_action( 'pressprimer_quiz_attempt_started', int $attempt_id, int $quiz_id, int $user_id );
 ```
 
 **Parameters:**
@@ -68,7 +68,7 @@ do_action( 'ppq_attempt_started', int $attempt_id, int $quiz_id, int $user_id );
 
 **Example:**
 ```php
-add_action( 'ppq_attempt_started', function( $attempt_id, $quiz_id, $user_id ) {
+add_action( 'pressprimer_quiz_attempt_started', function( $attempt_id, $quiz_id, $user_id ) {
     // Log attempt start
     error_log( "User $user_id started quiz $quiz_id (attempt $attempt_id)" );
 }, 10, 3 );
@@ -80,7 +80,7 @@ add_action( 'ppq_attempt_started', function( $attempt_id, $quiz_id, $user_id ) {
 Fires when an answer is saved (not submitted).
 
 ```php
-do_action( 'ppq_answer_saved', int $attempt_id, int $question_id, array $answer );
+do_action( 'pressprimer_quiz_answer_saved', int $attempt_id, int $question_id, array $answer );
 ```
 
 **Parameters:**
@@ -94,7 +94,7 @@ do_action( 'ppq_answer_saved', int $attempt_id, int $question_id, array $answer 
 Fires when a quiz attempt is submitted.
 
 ```php
-do_action( 'ppq_attempt_submitted', int $attempt_id, bool $passed );
+do_action( 'pressprimer_quiz_attempt_submitted', int $attempt_id, bool $passed );
 ```
 
 **Parameters:**
@@ -103,8 +103,8 @@ do_action( 'ppq_attempt_submitted', int $attempt_id, bool $passed );
 
 **Example:**
 ```php
-add_action( 'ppq_attempt_submitted', function( $attempt_id, $passed ) {
-    $attempt = PPQ_Attempt::get( $attempt_id );
+add_action( 'pressprimer_quiz_attempt_submitted', function( $attempt_id, $passed ) {
+    $attempt = PressPrimer_Quiz_Attempt::get( $attempt_id );
     
     if ( $passed ) {
         // Award badge, send email, etc.
@@ -118,7 +118,7 @@ add_action( 'ppq_attempt_submitted', function( $attempt_id, $passed ) {
 Fires specifically when a user passes a quiz.
 
 ```php
-do_action( 'ppq_quiz_passed', int $quiz_id, int $user_id, float $score_percent, int $attempt_id );
+do_action( 'pressprimer_quiz_quiz_passed', int $quiz_id, int $user_id, float $score_percent, int $attempt_id );
 ```
 
 **Parameters:**
@@ -133,7 +133,7 @@ do_action( 'ppq_quiz_passed', int $quiz_id, int $user_id, float $score_percent, 
 Fires specifically when a user fails a quiz.
 
 ```php
-do_action( 'ppq_quiz_failed', int $quiz_id, int $user_id, float $score_percent, int $attempt_id );
+do_action( 'pressprimer_quiz_quiz_failed', int $quiz_id, int $user_id, float $score_percent, int $attempt_id );
 ```
 
 ---
@@ -142,7 +142,7 @@ do_action( 'ppq_quiz_failed', int $quiz_id, int $user_id, float $score_percent, 
 Fires when an attempt is marked as abandoned (timed out without submission).
 
 ```php
-do_action( 'ppq_attempt_abandoned', int $attempt_id );
+do_action( 'pressprimer_quiz_attempt_abandoned', int $attempt_id );
 ```
 
 ---
@@ -153,7 +153,7 @@ do_action( 'ppq_attempt_abandoned', int $attempt_id );
 Fires when a new question is created.
 
 ```php
-do_action( 'ppq_question_created', int $question_id, array $data );
+do_action( 'pressprimer_quiz_question_created', int $question_id, array $data );
 ```
 
 ---
@@ -162,7 +162,7 @@ do_action( 'ppq_question_created', int $question_id, array $data );
 Fires when a question revision is created (question content updated).
 
 ```php
-do_action( 'ppq_question_revised', int $question_id, int $revision_id );
+do_action( 'pressprimer_quiz_question_revised', int $question_id, int $revision_id );
 ```
 
 ---
@@ -171,7 +171,7 @@ do_action( 'ppq_question_revised', int $question_id, int $revision_id );
 Fires when a question is deleted.
 
 ```php
-do_action( 'ppq_question_deleted', int $question_id );
+do_action( 'pressprimer_quiz_question_deleted', int $question_id );
 ```
 
 ---
@@ -182,7 +182,7 @@ do_action( 'ppq_question_deleted', int $question_id );
 Fires when a group is created.
 
 ```php
-do_action( 'ppq_group_created', int $group_id );
+do_action( 'pressprimer_quiz_group_created', int $group_id );
 ```
 
 ---
@@ -191,7 +191,7 @@ do_action( 'ppq_group_created', int $group_id );
 Fires when a user is added to a group.
 
 ```php
-do_action( 'ppq_member_added_to_group', int $group_id, int $user_id, string $role );
+do_action( 'pressprimer_quiz_member_added_to_group', int $group_id, int $user_id, string $role );
 ```
 
 **Parameters:**
@@ -205,7 +205,7 @@ do_action( 'ppq_member_added_to_group', int $group_id, int $user_id, string $rol
 Fires when a quiz is assigned to a group or user.
 
 ```php
-do_action( 'ppq_quiz_assigned', int $quiz_id, string $assignee_type, int $assignee_id, int $assigned_by );
+do_action( 'pressprimer_quiz_quiz_assigned', int $quiz_id, string $assignee_type, int $assignee_id, int $assigned_by );
 ```
 
 **Parameters:**
@@ -222,7 +222,7 @@ do_action( 'ppq_quiz_assigned', int $quiz_id, string $assignee_type, int $assign
 Fires when AI question generation begins.
 
 ```php
-do_action( 'ppq_ai_generation_started', int $user_id, array $params );
+do_action( 'pressprimer_quiz_ai_generation_started', int $user_id, array $params );
 ```
 
 ---
@@ -231,7 +231,7 @@ do_action( 'ppq_ai_generation_started', int $user_id, array $params );
 Fires when AI question generation completes.
 
 ```php
-do_action( 'ppq_ai_generation_completed', int $user_id, int $question_count, array $question_ids );
+do_action( 'pressprimer_quiz_ai_generation_completed', int $user_id, int $question_count, array $question_ids );
 ```
 
 ---
@@ -242,7 +242,7 @@ do_action( 'ppq_ai_generation_completed', int $user_id, int $question_count, arr
 Fires when plugin settings are saved.
 
 ```php
-do_action( 'ppq_settings_saved', array $settings );
+do_action( 'pressprimer_quiz_settings_saved', array $settings );
 ```
 
 ---
@@ -257,12 +257,12 @@ Filters allow modification of data at specific points.
 Filter the score for a multiple choice question.
 
 ```php
-$score = apply_filters( 'ppq_scoring_mc', float $score, PPQ_Question $question, array $selected_answers );
+$score = apply_filters( 'pressprimer_quiz_scoring_mc', float $score, PPQ_Question $question, array $selected_answers );
 ```
 
 **Example:**
 ```php
-add_filter( 'ppq_scoring_mc', function( $score, $question, $selected ) {
+add_filter( 'pressprimer_quiz_scoring_mc', function( $score, $question, $selected ) {
     // Custom scoring logic
     return $score;
 }, 10, 3 );
@@ -274,7 +274,7 @@ add_filter( 'ppq_scoring_mc', function( $score, $question, $selected ) {
 Filter the score for a multiple answer question.
 
 ```php
-$score = apply_filters( 'ppq_scoring_ma', float $score, PPQ_Question $question, array $selected_answers, array $scoring_details );
+$score = apply_filters( 'pressprimer_quiz_scoring_ma', float $score, PPQ_Question $question, array $selected_answers, array $scoring_details );
 ```
 
 **Parameters:**
@@ -289,7 +289,7 @@ $score = apply_filters( 'ppq_scoring_ma', float $score, PPQ_Question $question, 
 Filter the score for a true/false question.
 
 ```php
-$score = apply_filters( 'ppq_scoring_tf', float $score, PPQ_Question $question, array $selected_answers );
+$score = apply_filters( 'pressprimer_quiz_scoring_tf', float $score, PPQ_Question $question, array $selected_answers );
 ```
 
 ---
@@ -298,7 +298,7 @@ $score = apply_filters( 'ppq_scoring_tf', float $score, PPQ_Question $question, 
 Filter the final attempt score before saving.
 
 ```php
-$score_data = apply_filters( 'ppq_attempt_score', array $score_data, int $attempt_id );
+$score_data = apply_filters( 'pressprimer_quiz_attempt_score', array $score_data, int $attempt_id );
 ```
 
 **Score Data Structure:**
@@ -320,12 +320,12 @@ $score_data = apply_filters( 'ppq_attempt_score', array $score_data, int $attemp
 Filter the questions selected for a quiz attempt.
 
 ```php
-$question_ids = apply_filters( 'ppq_quiz_questions', array $question_ids, int $quiz_id, int $user_id );
+$question_ids = apply_filters( 'pressprimer_quiz_quiz_questions', array $question_ids, int $quiz_id, int $user_id );
 ```
 
 **Example:**
 ```php
-add_filter( 'ppq_quiz_questions', function( $question_ids, $quiz_id, $user_id ) {
+add_filter( 'pressprimer_quiz_quiz_questions', function( $question_ids, $quiz_id, $user_id ) {
     // Customize question selection
     // E.g., exclude questions user answered correctly before
     return $question_ids;
@@ -338,7 +338,7 @@ add_filter( 'ppq_quiz_questions', function( $question_ids, $quiz_id, $user_id ) 
 Filter the rules used for dynamic quiz generation.
 
 ```php
-$rules = apply_filters( 'ppq_dynamic_quiz_rules', array $rules, int $quiz_id );
+$rules = apply_filters( 'pressprimer_quiz_dynamic_quiz_rules', array $rules, int $quiz_id );
 ```
 
 ---
@@ -349,7 +349,7 @@ $rules = apply_filters( 'ppq_dynamic_quiz_rules', array $rules, int $quiz_id );
 Filter the results data sent to the frontend.
 
 ```php
-$results = apply_filters( 'ppq_result_payload', array $results, int $attempt_id );
+$results = apply_filters( 'pressprimer_quiz_result_payload', array $results, int $attempt_id );
 ```
 
 ---
@@ -358,7 +358,7 @@ $results = apply_filters( 'ppq_result_payload', array $results, int $attempt_id 
 Filter the result message shown to the user.
 
 ```php
-$message = apply_filters( 'ppq_result_message', string $message, int $attempt_id, bool $passed );
+$message = apply_filters( 'pressprimer_quiz_result_message', string $message, int $attempt_id, bool $passed );
 ```
 
 ---
@@ -367,7 +367,7 @@ $message = apply_filters( 'ppq_result_message', string $message, int $attempt_id
 Filter the data shown on the quiz landing page.
 
 ```php
-$data = apply_filters( 'ppq_quiz_landing_data', array $data, int $quiz_id, int $user_id );
+$data = apply_filters( 'pressprimer_quiz_quiz_landing_data', array $data, int $quiz_id, int $user_id );
 ```
 
 ---
@@ -378,12 +378,12 @@ $data = apply_filters( 'ppq_quiz_landing_data', array $data, int $quiz_id, int $
 Filter CSS custom properties for a theme.
 
 ```php
-$tokens = apply_filters( 'ppq_theme_tokens', array $tokens, string $theme_name );
+$tokens = apply_filters( 'pressprimer_quiz_theme_tokens', array $tokens, string $theme_name );
 ```
 
 **Example:**
 ```php
-add_filter( 'ppq_theme_tokens', function( $tokens, $theme ) {
+add_filter( 'pressprimer_quiz_theme_tokens', function( $tokens, $theme ) {
     $tokens['--ppq-primary-color'] = '#007bff';
     $tokens['--ppq-success-color'] = '#28a745';
     return $tokens;
@@ -396,7 +396,7 @@ add_filter( 'ppq_theme_tokens', function( $tokens, $theme ) {
 Filter the list of available themes.
 
 ```php
-$themes = apply_filters( 'ppq_available_themes', array $themes );
+$themes = apply_filters( 'pressprimer_quiz_available_themes', array $themes );
 ```
 
 **Default Themes:**
@@ -416,7 +416,7 @@ $themes = apply_filters( 'ppq_available_themes', array $themes );
 Filter the question stem before display.
 
 ```php
-$stem = apply_filters( 'ppq_question_stem', string $stem, PPQ_Question $question );
+$stem = apply_filters( 'pressprimer_quiz_question_stem', string $stem, PPQ_Question $question );
 ```
 
 ---
@@ -425,7 +425,7 @@ $stem = apply_filters( 'ppq_question_stem', string $stem, PPQ_Question $question
 Filter an answer option before display.
 
 ```php
-$option = apply_filters( 'ppq_answer_option', array $option, PPQ_Question $question );
+$option = apply_filters( 'pressprimer_quiz_answer_option', array $option, PPQ_Question $question );
 ```
 
 ---
@@ -436,7 +436,7 @@ $option = apply_filters( 'ppq_answer_option', array $option, PPQ_Question $quest
 Filter the prompt sent to the AI API.
 
 ```php
-$prompt = apply_filters( 'ppq_ai_prompt', string $prompt, array $params );
+$prompt = apply_filters( 'pressprimer_quiz_ai_prompt', string $prompt, array $params );
 ```
 
 ---
@@ -445,7 +445,7 @@ $prompt = apply_filters( 'ppq_ai_prompt', string $prompt, array $params );
 Filter the parsed AI response before creating questions.
 
 ```php
-$questions = apply_filters( 'ppq_ai_response', array $questions, string $raw_response );
+$questions = apply_filters( 'pressprimer_quiz_ai_response', array $questions, string $raw_response );
 ```
 
 ---
@@ -456,12 +456,12 @@ $questions = apply_filters( 'ppq_ai_response', array $questions, string $raw_res
 Filter whether a user can take a specific quiz.
 
 ```php
-$can_take = apply_filters( 'ppq_user_can_take_quiz', bool $can_take, int $quiz_id, int $user_id );
+$can_take = apply_filters( 'pressprimer_quiz_user_can_take_quiz', bool $can_take, int $quiz_id, int $user_id );
 ```
 
 **Example:**
 ```php
-add_filter( 'ppq_user_can_take_quiz', function( $can_take, $quiz_id, $user_id ) {
+add_filter( 'pressprimer_quiz_user_can_take_quiz', function( $can_take, $quiz_id, $user_id ) {
     // Add custom access control
     if ( ! user_has_required_prerequisite( $user_id ) ) {
         return false;
@@ -476,7 +476,7 @@ add_filter( 'ppq_user_can_take_quiz', function( $can_take, $quiz_id, $user_id ) 
 Filter whether a user can view attempt results.
 
 ```php
-$can_view = apply_filters( 'ppq_user_can_view_results', bool $can_view, int $attempt_id, int $user_id );
+$can_view = apply_filters( 'pressprimer_quiz_user_can_view_results', bool $can_view, int $attempt_id, int $user_id );
 ```
 
 ---
@@ -487,7 +487,7 @@ $can_view = apply_filters( 'ppq_user_can_view_results', bool $can_view, int $att
 Filter the rate limit for quiz attempts.
 
 ```php
-$limit = apply_filters( 'ppq_rate_limit_attempts', int $limit, int $user_id );
+$limit = apply_filters( 'pressprimer_quiz_rate_limit_attempts', int $limit, int $user_id );
 ```
 
 Default: 10 attempts per 10 minutes
@@ -498,7 +498,7 @@ Default: 10 attempts per 10 minutes
 Filter the rate limit for AI generation requests.
 
 ```php
-$limit = apply_filters( 'ppq_rate_limit_ai', int $limit, int $user_id );
+$limit = apply_filters( 'pressprimer_quiz_rate_limit_ai', int $limit, int $user_id );
 ```
 
 Default: 20 requests per hour
@@ -511,7 +511,7 @@ Default: 20 requests per hour
 Filter email headers.
 
 ```php
-$headers = apply_filters( 'ppq_email_headers', array $headers, string $email_type );
+$headers = apply_filters( 'pressprimer_quiz_email_headers', array $headers, string $email_type );
 ```
 
 ---
@@ -520,7 +520,7 @@ $headers = apply_filters( 'ppq_email_headers', array $headers, string $email_typ
 Filter email content before sending.
 
 ```php
-$content = apply_filters( 'ppq_email_content', string $content, string $email_type, array $data );
+$content = apply_filters( 'pressprimer_quiz_email_content', string $content, string $email_type, array $data );
 ```
 
 ---
@@ -533,7 +533,7 @@ $content = apply_filters( 'ppq_email_content', string $content, string $email_ty
 Fires when a PressPrimer quiz linked to LearnDash is passed.
 
 ```php
-do_action( 'ppq_learndash_quiz_passed', int $lesson_id, int $quiz_id, int $user_id, int $attempt_id );
+do_action( 'pressprimer_quiz_learndash_quiz_passed', int $lesson_id, int $quiz_id, int $user_id, int $attempt_id );
 ```
 
 ---
@@ -542,7 +542,7 @@ do_action( 'ppq_learndash_quiz_passed', int $lesson_id, int $quiz_id, int $user_
 Filter whether completing the quiz should mark the lesson complete.
 
 ```php
-$should_complete = apply_filters( 'ppq_learndash_should_complete_lesson', bool $should_complete, int $lesson_id, int $attempt_id );
+$should_complete = apply_filters( 'pressprimer_quiz_learndash_should_complete_lesson', bool $should_complete, int $lesson_id, int $attempt_id );
 ```
 
 ---
@@ -553,7 +553,7 @@ $should_complete = apply_filters( 'ppq_learndash_should_complete_lesson', bool $
 Fires when a PressPrimer quiz linked to TutorLMS is completed.
 
 ```php
-do_action( 'ppq_tutor_quiz_completed', int $lesson_id, int $quiz_id, int $user_id, bool $passed );
+do_action( 'pressprimer_quiz_tutor_quiz_completed', int $lesson_id, int $quiz_id, int $user_id, bool $passed );
 ```
 
 ---
@@ -564,7 +564,7 @@ do_action( 'ppq_tutor_quiz_completed', int $lesson_id, int $quiz_id, int $user_i
 Fires when a PressPrimer quiz linked to LifterLMS is completed.
 
 ```php
-do_action( 'ppq_lifter_quiz_completed', int $lesson_id, int $quiz_id, int $user_id, bool $passed );
+do_action( 'pressprimer_quiz_lifter_quiz_completed', int $lesson_id, int $quiz_id, int $user_id, bool $passed );
 ```
 
 ---
@@ -577,9 +577,9 @@ do_action( 'ppq_lifter_quiz_completed', int $lesson_id, int $quiz_id, int $user_
 /**
  * Add time bonus to scores
  */
-add_filter( 'ppq_attempt_score', function( $score_data, $attempt_id ) {
-    $attempt = PPQ_Attempt::get( $attempt_id );
-    $quiz = PPQ_Quiz::get( $attempt->quiz_id );
+add_filter( 'pressprimer_quiz_attempt_score', function( $score_data, $attempt_id ) {
+    $attempt = PressPrimer_Quiz_Attempt::get( $attempt_id );
+    $quiz = PressPrimer_Quiz_Quiz::get( $attempt->quiz_id );
     
     // If finished in under half the time limit, add 5% bonus
     if ( $quiz->time_limit_seconds ) {
@@ -599,9 +599,9 @@ add_filter( 'ppq_attempt_score', function( $score_data, $attempt_id ) {
 /**
  * Send results to external LRS
  */
-add_action( 'ppq_attempt_submitted', function( $attempt_id, $passed ) {
-    $attempt = PPQ_Attempt::get( $attempt_id );
-    $quiz = PPQ_Quiz::get( $attempt->quiz_id );
+add_action( 'pressprimer_quiz_attempt_submitted', function( $attempt_id, $passed ) {
+    $attempt = PressPrimer_Quiz_Attempt::get( $attempt_id );
+    $quiz = PressPrimer_Quiz_Quiz::get( $attempt->quiz_id );
     $user = get_user_by( 'id', $attempt->user_id );
     
     // Build xAPI statement
@@ -640,7 +640,7 @@ add_action( 'ppq_attempt_submitted', function( $attempt_id, $passed ) {
 /**
  * Require course enrollment to take quiz
  */
-add_filter( 'ppq_user_can_take_quiz', function( $can_take, $quiz_id, $user_id ) {
+add_filter( 'pressprimer_quiz_user_can_take_quiz', function( $can_take, $quiz_id, $user_id ) {
     // Get course associated with quiz
     $course_id = get_post_meta( get_quiz_post_id( $quiz_id ), 'ppq_required_course', true );
     

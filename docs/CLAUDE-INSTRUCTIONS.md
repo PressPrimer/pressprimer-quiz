@@ -70,8 +70,9 @@ Key points:
 | Type | Prefix | Example |
 |------|--------|---------|
 | Database tables | `wp_ppq_` | `wp_ppq_questions` |
-| PHP functions | `ppq_` | `ppq_get_question()` |
-| PHP classes | `PPQ_` | `class PPQ_Question` |
+| **Global PHP functions** | `pressprimer_quiz_` | `pressprimer_quiz_init()` |
+| **PHP classes** | `PressPrimer_Quiz_` | `class PressPrimer_Quiz_Question` |
+| **Hooks (actions/filters)** | `pressprimer_quiz_` | `do_action( 'pressprimer_quiz_quiz_passed' )` |
 | CSS classes | `ppq-` | `.ppq-quiz-container` |
 | JavaScript | `PPQ` | `PPQ.submitQuiz()` |
 | Shortcodes | `ppq_` | `[ppq_quiz]` |
@@ -81,6 +82,8 @@ Key points:
 | Transients | `ppq_` | `get_transient( 'ppq_report_cache' )` |
 | Capabilities | `ppq_` | `ppq_manage_all` |
 | Nonces | `ppq_` | `ppq_submit_quiz` |
+
+**Important:** Global namespace identifiers (functions, classes, and hooks) must use the full `pressprimer_quiz_` or `PressPrimer_Quiz_` prefix to meet WordPress.org Plugin Check requirements. The shorter `ppq_` prefix is acceptable for internal identifiers like options, meta keys, capabilities, CSS classes, and JavaScript since these are either stored values or scoped to plugin output.
 
 ### Security Requirements
 

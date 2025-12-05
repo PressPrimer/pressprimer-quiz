@@ -178,7 +178,7 @@ function ppq_detect_lms_plugins() {
         );
     }
     
-    return apply_filters( 'ppq_active_lms_integrations', $active );
+    return apply_filters( 'pressprimer_quiz_active_lms_integrations', $active );
 }
 ```
 
@@ -193,7 +193,7 @@ function ppq_detect_lms_plugins() {
  * @subpackage Integrations
  */
 
-class PPQ_LearnDash {
+class PressPrimer_Quiz_LearnDash {
     
     /**
      * Initialize integration
@@ -207,10 +207,10 @@ class PPQ_LearnDash {
         add_filter( 'learndash_content', array( $this, 'append_quiz_to_content' ), 20, 2 );
         
         // Completion handling
-        add_action( 'ppq_quiz_passed', array( $this, 'handle_quiz_passed' ), 10, 4 );
+        add_action( 'pressprimer_quiz_quiz_passed', array( $this, 'handle_quiz_passed' ), 10, 4 );
         
         // Access control
-        add_filter( 'ppq_user_can_take_quiz', array( $this, 'check_learndash_access' ), 10, 3 );
+        add_filter( 'pressprimer_quiz_user_can_take_quiz', array( $this, 'check_learndash_access' ), 10, 3 );
     }
     
     /**
@@ -365,7 +365,7 @@ class PPQ_LearnDash {
                 if ( $course_id ) {
                     learndash_process_mark_complete( $user_id, $post_id, false, $course_id );
                     
-                    do_action( 'ppq_learndash_quiz_passed', $post_id, $quiz_id, $user_id, $attempt_id );
+                    do_action( 'pressprimer_quiz_learndash_quiz_passed', $post_id, $quiz_id, $user_id, $attempt_id );
                 }
             }
         }
@@ -421,7 +421,7 @@ class PPQ_LearnDash {
  * @subpackage Integrations
  */
 
-class PPQ_TutorLMS {
+class PressPrimer_Quiz_TutorLMS {
     
     /**
      * Initialize integration
@@ -438,7 +438,7 @@ class PPQ_TutorLMS {
         add_action( 'tutor_lesson/single/after/content', array( $this, 'render_quiz_in_lesson' ) );
         
         // Completion
-        add_action( 'ppq_quiz_passed', array( $this, 'handle_quiz_passed' ), 10, 4 );
+        add_action( 'pressprimer_quiz_quiz_passed', array( $this, 'handle_quiz_passed' ), 10, 4 );
     }
     
     /**
@@ -467,7 +467,7 @@ class PPQ_TutorLMS {
             if ( function_exists( 'tutor_utils' ) ) {
                 tutor_utils()->mark_lesson_complete( $lesson_id, $user_id );
                 
-                do_action( 'ppq_tutor_quiz_completed', $lesson_id, $quiz_id, $user_id, true );
+                do_action( 'pressprimer_quiz_tutor_quiz_completed', $lesson_id, $quiz_id, $user_id, true );
             }
         }
     }
@@ -487,7 +487,7 @@ class PPQ_TutorLMS {
  * @subpackage Integrations
  */
 
-class PPQ_LifterLMS {
+class PressPrimer_Quiz_LifterLMS {
     
     /**
      * Initialize integration
@@ -501,7 +501,7 @@ class PPQ_LifterLMS {
         add_action( 'lifterlms_single_lesson_after_summary', array( $this, 'render_quiz' ) );
         
         // Completion
-        add_action( 'ppq_quiz_passed', array( $this, 'handle_quiz_passed' ), 10, 4 );
+        add_action( 'pressprimer_quiz_quiz_passed', array( $this, 'handle_quiz_passed' ), 10, 4 );
     }
     
     /**
@@ -527,7 +527,7 @@ class PPQ_LifterLMS {
         if ( '1' === $require_pass && function_exists( 'llms_mark_complete' ) ) {
             llms_mark_complete( $user_id, $lesson_id, 'lesson' );
             
-            do_action( 'ppq_lifter_quiz_completed', $lesson_id, $quiz_id, $user_id, true );
+            do_action( 'pressprimer_quiz_lifter_quiz_completed', $lesson_id, $quiz_id, $user_id, true );
         }
     }
     
@@ -546,7 +546,7 @@ class PPQ_LifterLMS {
  * @subpackage Integrations
  */
 
-class PPQ_Automator {
+class PressPrimer_Quiz_Automator {
     
     /**
      * Initialize integration
@@ -574,13 +574,13 @@ class PPQ_Automator {
      */
     private function register_triggers() {
         // User completes quiz
-        add_action( 'ppq_attempt_submitted', array( $this, 'trigger_quiz_completed' ), 10, 2 );
+        add_action( 'pressprimer_quiz_attempt_submitted', array( $this, 'trigger_quiz_completed' ), 10, 2 );
         
         // User passes quiz
-        add_action( 'ppq_quiz_passed', array( $this, 'trigger_quiz_passed' ), 10, 4 );
+        add_action( 'pressprimer_quiz_quiz_passed', array( $this, 'trigger_quiz_passed' ), 10, 4 );
         
         // User fails quiz
-        add_action( 'ppq_quiz_failed', array( $this, 'trigger_quiz_failed' ), 10, 4 );
+        add_action( 'pressprimer_quiz_quiz_failed', array( $this, 'trigger_quiz_failed' ), 10, 4 );
     }
     
     /**
@@ -590,12 +590,12 @@ class PPQ_Automator {
      * @param bool $passed     Whether passed.
      */
     public function trigger_quiz_completed( $attempt_id, $passed ) {
-        $attempt = PPQ_Attempt::get( $attempt_id );
+        $attempt = PressPrimer_Quiz_Attempt::get( $attempt_id );
         if ( ! $attempt || ! $attempt->user_id ) {
             return; // Skip guests for Automator
         }
         
-        $quiz = PPQ_Quiz::get( $attempt->quiz_id );
+        $quiz = PressPrimer_Quiz_Quiz::get( $attempt->quiz_id );
         
         $args = array(
             'code'           => 'PPQ_QUIZ_COMPLETED',
@@ -625,8 +625,8 @@ class PPQ_Automator {
             return;
         }
         
-        $quiz = PPQ_Quiz::get( $quiz_id );
-        $attempt = PPQ_Attempt::get( $attempt_id );
+        $quiz = PressPrimer_Quiz_Quiz::get( $quiz_id );
+        $attempt = PressPrimer_Quiz_Attempt::get( $attempt_id );
         
         $args = array(
             'code'           => 'PPQ_QUIZ_PASSED',
@@ -655,8 +655,8 @@ class PPQ_Automator {
             return;
         }
         
-        $quiz = PPQ_Quiz::get( $quiz_id );
-        $attempt = PPQ_Attempt::get( $attempt_id );
+        $quiz = PressPrimer_Quiz_Quiz::get( $quiz_id );
+        $attempt = PressPrimer_Quiz_Attempt::get( $attempt_id );
         
         // Calculate remaining attempts
         $attempts_used = ppq_count_user_attempts( $quiz_id, $user_id );

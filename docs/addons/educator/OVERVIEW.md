@@ -162,13 +162,13 @@ pressprimer-quiz-educator/
 ### Hooks Added
 ```php
 // Actions
-do_action('ppq_educator_group_created', $group_id);
-do_action('ppq_educator_assignment_created', $assignment_id);
-do_action('ppq_educator_questions_imported', $question_ids);
+do_action('pressprimer_quiz_educator_group_created', $group_id);
+do_action('pressprimer_quiz_educator_assignment_created', $assignment_id);
+do_action('pressprimer_quiz_educator_questions_imported', $question_ids);
 
 // Filters
-apply_filters('ppq_educator_import_formats', $formats);
-apply_filters('ppq_educator_export_data', $data, $format);
+apply_filters('pressprimer_quiz_educator_import_formats', $formats);
+apply_filters('pressprimer_quiz_educator_export_data', $data, $format);
 ```
 
 ### Automator Integration

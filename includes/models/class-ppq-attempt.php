@@ -22,7 +22,7 @@ if ( ! defined( 'ABSPATH' ) ) {
  *
  * @since 1.0.0
  */
-class PPQ_Attempt extends PPQ_Model {
+class PressPrimer_Quiz_Attempt extends PressPrimer_Quiz_Model {
 
 	/**
 	 * Attempt UUID
@@ -191,7 +191,7 @@ class PPQ_Attempt extends PPQ_Model {
 	 * Cached quiz object
 	 *
 	 * @since 1.0.0
-	 * @var PPQ_Quiz|null
+	 * @var PressPrimer_Quiz_Quiz|null
 	 */
 	private $_quiz = null;
 
@@ -248,7 +248,7 @@ class PPQ_Attempt extends PPQ_Model {
 	 */
 	public static function create_for_user( int $quiz_id, int $user_id ) {
 		// Load quiz
-		$quiz = PPQ_Quiz::get( $quiz_id );
+		$quiz = PressPrimer_Quiz_Quiz::get( $quiz_id );
 		if ( ! $quiz ) {
 			return new WP_Error(
 				'ppq_quiz_not_found',
@@ -332,7 +332,7 @@ class PPQ_Attempt extends PPQ_Model {
 		// Build questions JSON with revision IDs
 		$questions_data = [];
 		foreach ( $question_ids as $index => $question_id ) {
-			$question = PPQ_Question::get( $question_id );
+			$question = PressPrimer_Quiz_Question::get( $question_id );
 			if ( ! $question || ! $question->current_revision_id ) {
 				continue;
 			}
@@ -359,16 +359,16 @@ class PPQ_Attempt extends PPQ_Model {
 
 		// Create attempt
 		$attempt_data = [
-			'uuid'           => wp_generate_uuid4(),
-			'quiz_id'        => $quiz_id,
-			'user_id'        => $user_id,
-			'guest_email'    => null,
-			'guest_token'    => null,
-			'status'         => 'in_progress',
+			'uuid'             => wp_generate_uuid4(),
+			'quiz_id'          => $quiz_id,
+			'user_id'          => $user_id,
+			'guest_email'      => null,
+			'guest_token'      => null,
+			'status'           => 'in_progress',
 			'current_position' => 0,
-			'questions_json' => wp_json_encode( $questions_data ),
-			'meta_json'      => ! empty( $meta ) ? wp_json_encode( $meta ) : null,
-			'started_at'     => current_time( 'mysql' ),
+			'questions_json'   => wp_json_encode( $questions_data ),
+			'meta_json'        => ! empty( $meta ) ? wp_json_encode( $meta ) : null,
+			'started_at'       => current_time( 'mysql' ),
 		];
 
 		$attempt_id = static::create( $attempt_data );
@@ -385,9 +385,9 @@ class PPQ_Attempt extends PPQ_Model {
 			$result = $wpdb->insert(
 				$items_table,
 				[
-					'attempt_id'           => $attempt_id,
-					'question_revision_id' => $question_data['revision_id'],
-					'order_index'          => $question_data['order'],
+					'attempt_id'            => $attempt_id,
+					'question_revision_id'  => $question_data['revision_id'],
+					'order_index'           => $question_data['order'],
 					'selected_answers_json' => '[]',
 				],
 				[ '%d', '%d', '%d', '%s' ]
@@ -439,7 +439,7 @@ class PPQ_Attempt extends PPQ_Model {
 		}
 
 		// Load quiz
-		$quiz = PPQ_Quiz::get( $quiz_id );
+		$quiz = PressPrimer_Quiz_Quiz::get( $quiz_id );
 		if ( ! $quiz ) {
 			return new WP_Error(
 				'ppq_quiz_not_found',
@@ -484,7 +484,7 @@ class PPQ_Attempt extends PPQ_Model {
 		// Build questions JSON with revision IDs
 		$questions_data = [];
 		foreach ( $question_ids as $index => $question_id ) {
-			$question = PPQ_Question::get( $question_id );
+			$question = PressPrimer_Quiz_Question::get( $question_id );
 			if ( ! $question || ! $question->current_revision_id ) {
 				continue;
 			}
@@ -510,16 +510,16 @@ class PPQ_Attempt extends PPQ_Model {
 
 		// Create attempt
 		$attempt_data = [
-			'uuid'              => wp_generate_uuid4(),
-			'quiz_id'           => $quiz_id,
-			'user_id'           => null,
-			'guest_email'       => $email,
-			'guest_token'       => $token,
-			'token_expires_at'  => $token_expires,
-			'status'            => 'in_progress',
-			'current_position'  => 0,
-			'questions_json'    => wp_json_encode( $questions_data ),
-			'started_at'        => current_time( 'mysql' ),
+			'uuid'             => wp_generate_uuid4(),
+			'quiz_id'          => $quiz_id,
+			'user_id'          => null,
+			'guest_email'      => $email,
+			'guest_token'      => $token,
+			'token_expires_at' => $token_expires,
+			'status'           => 'in_progress',
+			'current_position' => 0,
+			'questions_json'   => wp_json_encode( $questions_data ),
+			'started_at'       => current_time( 'mysql' ),
 		];
 
 		$attempt_id = static::create( $attempt_data );
@@ -536,9 +536,9 @@ class PPQ_Attempt extends PPQ_Model {
 			$result = $wpdb->insert(
 				$items_table,
 				[
-					'attempt_id'           => $attempt_id,
-					'question_revision_id' => $question_data['revision_id'],
-					'order_index'          => $question_data['order'],
+					'attempt_id'            => $attempt_id,
+					'question_revision_id'  => $question_data['revision_id'],
+					'order_index'           => $question_data['order'],
 					'selected_answers_json' => '[]',
 				],
 				[ '%d', '%d', '%d', '%s' ]
@@ -579,7 +579,7 @@ class PPQ_Attempt extends PPQ_Model {
 	 * @since 1.0.0
 	 *
 	 * @param bool $force_refresh Force refresh from database.
-	 * @return array Array of PPQ_Attempt_Item objects.
+	 * @return array Array of PressPrimer_Quiz_Attempt_Item objects.
 	 */
 	public function get_items( bool $force_refresh = false ) {
 		// Return cached items if available
@@ -601,7 +601,7 @@ class PPQ_Attempt extends PPQ_Model {
 
 		if ( $rows ) {
 			foreach ( $rows as $row ) {
-				$this->_items[] = PPQ_Attempt_Item::from_row( $row );
+				$this->_items[] = PressPrimer_Quiz_Attempt_Item::from_row( $row );
 			}
 		}
 
@@ -706,9 +706,9 @@ class PPQ_Attempt extends PPQ_Model {
 		// Calculate elapsed time using WordPress timezone-aware functions
 		// started_at is stored in WordPress local time via current_time('mysql')
 		$started_timestamp = strtotime( get_gmt_from_date( $this->started_at ) );
-		$now = time(); // UTC timestamp
-		$elapsed_seconds = $now - $started_timestamp;
-		$elapsed_ms = $elapsed_seconds * 1000;
+		$now               = time(); // UTC timestamp
+		$elapsed_seconds   = $now - $started_timestamp;
+		$elapsed_ms        = $elapsed_seconds * 1000;
 
 		// Score the attempt - this updates scores in the database
 		$scoring_result = $this->score_attempt();
@@ -720,21 +720,21 @@ class PPQ_Attempt extends PPQ_Model {
 		// Reload from database to get updated score values
 		$refreshed = static::get( $this->id );
 		if ( $refreshed ) {
-			$this->score_points = $refreshed->score_points;
-			$this->max_points = $refreshed->max_points;
+			$this->score_points  = $refreshed->score_points;
+			$this->max_points    = $refreshed->max_points;
 			$this->score_percent = $refreshed->score_percent;
-			$this->passed = $refreshed->passed;
+			$this->passed        = $refreshed->passed;
 		}
 
 		// Get quiz to check passing percentage
-		$quiz = $this->get_quiz();
+		$quiz   = $this->get_quiz();
 		$passed = $this->score_percent >= $quiz->pass_percent ? 1 : 0;
 
 		// Update attempt
-		$this->status = 'submitted';
+		$this->status      = 'submitted';
 		$this->finished_at = current_time( 'mysql' );
-		$this->elapsed_ms = $elapsed_ms;
-		$this->passed = $passed;
+		$this->elapsed_ms  = $elapsed_ms;
+		$this->passed      = $passed;
 
 		$result = $this->save();
 
@@ -747,20 +747,20 @@ class PPQ_Attempt extends PPQ_Model {
 		 *
 		 * @since 1.0.0
 		 *
-		 * @param PPQ_Attempt $attempt The submitted attempt object.
-		 * @param PPQ_Quiz    $quiz    The quiz object.
+		 * @param PressPrimer_Quiz_Attempt $attempt The submitted attempt object.
+		 * @param PressPrimer_Quiz_Quiz    $quiz    The quiz object.
 		 */
-		do_action( 'ppq_attempt_submitted', $this, $quiz );
+		do_action( 'pressprimer_quiz_attempt_submitted', $this, $quiz );
 
 		/**
 		 * Fires when a user completes a quiz (pass or fail).
 		 *
 		 * @since 1.0.0
 		 *
-		 * @param PPQ_Attempt $attempt The submitted attempt object.
-		 * @param PPQ_Quiz    $quiz    The quiz object.
+		 * @param PressPrimer_Quiz_Attempt $attempt The submitted attempt object.
+		 * @param PressPrimer_Quiz_Quiz    $quiz    The quiz object.
 		 */
-		do_action( 'ppq_quiz_completed', $this, $quiz );
+		do_action( 'pressprimer_quiz_quiz_completed', $this, $quiz );
 
 		// Fire pass/fail specific hooks
 		if ( $passed ) {
@@ -769,20 +769,20 @@ class PPQ_Attempt extends PPQ_Model {
 			 *
 			 * @since 1.0.0
 			 *
-			 * @param PPQ_Attempt $attempt The submitted attempt object.
-			 * @param PPQ_Quiz    $quiz    The quiz object.
+			 * @param PressPrimer_Quiz_Attempt $attempt The submitted attempt object.
+			 * @param PressPrimer_Quiz_Quiz    $quiz    The quiz object.
 			 */
-			do_action( 'ppq_quiz_passed', $this, $quiz );
+			do_action( 'pressprimer_quiz_quiz_passed', $this, $quiz );
 		} else {
 			/**
 			 * Fires when a user fails a quiz.
 			 *
 			 * @since 1.0.0
 			 *
-			 * @param PPQ_Attempt $attempt The submitted attempt object.
-			 * @param PPQ_Quiz    $quiz    The quiz object.
+			 * @param PressPrimer_Quiz_Attempt $attempt The submitted attempt object.
+			 * @param PressPrimer_Quiz_Quiz    $quiz    The quiz object.
 			 */
-			do_action( 'ppq_quiz_failed', $this, $quiz );
+			do_action( 'pressprimer_quiz_quiz_failed', $this, $quiz );
 		}
 
 		return true;
@@ -798,8 +798,8 @@ class PPQ_Attempt extends PPQ_Model {
 	 * @return bool|WP_Error True on success, WP_Error on failure.
 	 */
 	private function score_attempt() {
-		$scoring_service = PPQ_Scoring_Service::instance();
-		$result = $scoring_service->calculate_attempt_score( $this->id );
+		$scoring_service = PressPrimer_Quiz_Scoring_Service::instance();
+		$result          = $scoring_service->calculate_attempt_score( $this->id );
 
 		if ( is_wp_error( $result ) ) {
 			return $result;
@@ -834,8 +834,8 @@ class PPQ_Attempt extends PPQ_Model {
 		// Calculate elapsed time using WordPress timezone-aware functions
 		// started_at is stored in WordPress local time via current_time('mysql')
 		$started_timestamp = strtotime( get_gmt_from_date( $this->started_at ) );
-		$now = time(); // UTC timestamp
-		$elapsed_seconds = $now - $started_timestamp;
+		$now               = time(); // UTC timestamp
+		$elapsed_seconds   = $now - $started_timestamp;
 
 		// 30 second grace period for network latency
 		$grace_period = 30;
@@ -877,11 +877,11 @@ class PPQ_Attempt extends PPQ_Model {
 	 *
 	 * @since 1.0.0
 	 *
-	 * @return PPQ_Quiz|null Quiz object or null.
+	 * @return PressPrimer_Quiz_Quiz|null Quiz object or null.
 	 */
 	public function get_quiz() {
 		if ( null === $this->_quiz ) {
-			$this->_quiz = PPQ_Quiz::get( $this->quiz_id );
+			$this->_quiz = PressPrimer_Quiz_Quiz::get( $this->quiz_id );
 		}
 
 		return $this->_quiz;
@@ -894,7 +894,7 @@ class PPQ_Attempt extends PPQ_Model {
 	 *
 	 * @param int $quiz_id Quiz ID.
 	 * @param int $user_id User ID.
-	 * @return array Array of PPQ_Attempt objects.
+	 * @return array Array of PressPrimer_Quiz_Attempt objects.
 	 */
 	public static function get_user_attempts( int $quiz_id, int $user_id ) {
 		global $wpdb;
@@ -925,7 +925,7 @@ class PPQ_Attempt extends PPQ_Model {
 	 *
 	 * @param int $quiz_id Quiz ID.
 	 * @param int $user_id User ID.
-	 * @return PPQ_Attempt|null Attempt object or null.
+	 * @return PressPrimer_Quiz_Attempt|null Attempt object or null.
 	 */
 	public static function get_user_in_progress( int $quiz_id, int $user_id ) {
 		global $wpdb;
@@ -949,7 +949,7 @@ class PPQ_Attempt extends PPQ_Model {
 	 *
 	 * @param int $quiz_id Quiz ID.
 	 * @param int $user_id User ID.
-	 * @return PPQ_Attempt|null Attempt object or null.
+	 * @return PressPrimer_Quiz_Attempt|null Attempt object or null.
 	 */
 	public static function get_last_user_attempt( int $quiz_id, int $user_id ) {
 		global $wpdb;
@@ -973,7 +973,7 @@ class PPQ_Attempt extends PPQ_Model {
 	 *
 	 * @param int    $quiz_id Quiz ID.
 	 * @param string $email Guest email.
-	 * @return PPQ_Attempt|null Attempt object or null.
+	 * @return PressPrimer_Quiz_Attempt|null Attempt object or null.
 	 */
 	public static function get_guest_in_progress( int $quiz_id, string $email ) {
 		global $wpdb;
@@ -996,7 +996,7 @@ class PPQ_Attempt extends PPQ_Model {
 	 * @since 1.0.0
 	 *
 	 * @param string $token Guest token.
-	 * @return PPQ_Attempt|null Attempt object or null.
+	 * @return PressPrimer_Quiz_Attempt|null Attempt object or null.
 	 */
 	public static function get_by_token( string $token ) {
 		global $wpdb;
@@ -1031,7 +1031,7 @@ class PPQ_Attempt extends PPQ_Model {
 		}
 
 		// Check if current time is past expiration
-		$now = current_time( 'timestamp' );
+		$now     = current_time( 'timestamp' );
 		$expires = strtotime( $this->token_expires_at );
 
 		return $now > $expires;
@@ -1090,7 +1090,7 @@ class PPQ_Attempt extends PPQ_Model {
 		}
 
 		// Generate new token
-		$this->guest_token = bin2hex( random_bytes( 32 ) );
+		$this->guest_token      = bin2hex( random_bytes( 32 ) );
 		$this->token_expires_at = gmdate( 'Y-m-d H:i:s', strtotime( '+30 days' ) );
 
 		return $this->save();

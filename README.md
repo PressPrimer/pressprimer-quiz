@@ -17,7 +17,7 @@ PressPrimer Quiz is a powerful and flexible quiz plugin designed for WordPress. 
 
 ## Requirements
 
-- WordPress 6.0 or higher
+- WordPress 6.4 or higher
 - PHP 7.4 or higher
 
 ## Installation

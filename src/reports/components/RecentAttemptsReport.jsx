@@ -262,6 +262,9 @@ const RecentAttemptsReport = () => {
 		},
 	];
 
+	// Get the plugin URL from localized data
+	const pluginUrl = window.ppqReportsData?.pluginUrl || '';
+
 	return (
 		<div className="ppq-reports-container">
 			{/* Header */}
@@ -281,6 +284,11 @@ const RecentAttemptsReport = () => {
 					</h1>
 					<p>{__('View individual student quiz attempts with scores, status, and detailed breakdowns.', 'pressprimer-quiz')}</p>
 				</div>
+				<img
+					src={`${pluginUrl}assets/images/reports-mascot.png`}
+					alt=""
+					className="ppq-reports-header-mascot"
+				/>
 			</div>
 
 			{/* Error Alert */}
@@ -350,6 +358,7 @@ const RecentAttemptsReport = () => {
 						onChange={handleTableChange}
 						size="middle"
 						className="ppq-reports-table"
+						sortDirections={['ascend', 'descend', 'ascend']}
 						onRow={(record) => ({
 							onClick: () => handleRowClick(record),
 							style: { cursor: 'pointer' },

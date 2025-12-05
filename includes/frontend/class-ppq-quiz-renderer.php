@@ -48,6 +48,29 @@ class PPQ_Quiz_Renderer {
 		if ( $is_logged_in ) {
 			$previous_attempts = PPQ_Attempt::get_user_attempts( $quiz->id, $user_id );
 			$in_progress_attempt = PPQ_Attempt::get_user_in_progress( $quiz->id, $user_id );
+
+			// Auto-abandon stale in-progress attempts (no answers, older than 1 hour)
+			if ( $in_progress_attempt ) {
+				$items = $in_progress_attempt->get_items();
+				$has_any_answer = false;
+				foreach ( $items as $item ) {
+					if ( ! empty( $item->get_selected_answers() ) ) {
+						$has_any_answer = true;
+						break;
+					}
+				}
+
+				// If no answers and started more than 1 hour ago, abandon it
+				if ( ! $has_any_answer ) {
+					$started_timestamp = strtotime( $in_progress_attempt->started_at );
+					$one_hour_ago = time() - 3600;
+					if ( $started_timestamp < $one_hour_ago ) {
+						$in_progress_attempt->status = 'abandoned';
+						$in_progress_attempt->save();
+						$in_progress_attempt = null; // Clear so we don't show resume
+					}
+				}
+			}
 		}
 
 		// Check attempt limits
@@ -130,11 +153,24 @@ class PPQ_Quiz_Renderer {
 					<?php endif; ?>
 				</header>
 
+				<?php
+				/**
+				 * Fires before the quiz meta section on the landing page.
+				 *
+				 * @since 1.0.0
+				 *
+				 * @param PPQ_Quiz $quiz The quiz object.
+				 */
+				do_action( 'ppq_before_quiz_meta', $quiz );
+				?>
+
 				<div class="ppq-quiz-meta">
 					<div class="ppq-quiz-meta-grid">
 
 						<?php
 						// Quiz mode information for tooltip
+						// translators: Quiz type labels - Fixed means same questions for everyone,
+						// Random means questions are randomly selected, Adaptive adjusts difficulty
 						$mode_label = '';
 						$mode_tooltip = '';
 						if ( 'fixed' === $quiz->generation_mode ) {
@@ -212,10 +248,34 @@ class PPQ_Quiz_Renderer {
 							</div>
 						<?php endif; ?>
 
+						<?php
+						/**
+						 * Fires after the default quiz meta items, inside the meta grid.
+						 *
+						 * Use this to add custom meta items to the quiz landing page.
+						 * Each item should use the ppq-meta-item class structure.
+						 *
+						 * @since 1.0.0
+						 *
+						 * @param PPQ_Quiz $quiz           The quiz object.
+						 * @param int      $question_count Number of questions in the quiz.
+						 */
+						do_action( 'ppq_quiz_meta_items', $quiz, $question_count );
+						?>
+
 					</div>
 				</div>
 
 				<?php
+				/**
+				 * Fires after the quiz meta section on the landing page.
+				 *
+				 * @since 1.0.0
+				 *
+				 * @param PPQ_Quiz $quiz The quiz object.
+				 */
+				do_action( 'ppq_after_quiz_meta', $quiz );
+
 				// Count submitted attempts for display
 				$submitted_attempts = array_filter( $previous_attempts, function( $a ) {
 					return 'submitted' === $a->status;
@@ -237,11 +297,11 @@ class PPQ_Quiz_Renderer {
 								<div class="ppq-attempt-card">
 									<div class="ppq-attempt-info">
 										<span class="ppq-attempt-date">
-											<?php echo esc_html( date_i18n( get_option( 'date_format' ), strtotime( $attempt->started_at ) ) ); ?>
+											<?php echo esc_html( wp_date( get_option( 'date_format' ), strtotime( $attempt->started_at ) ) ); ?>
 										</span>
 										<?php if ( null !== $attempt->score_percent ) : ?>
 											<span class="ppq-attempt-score <?php echo $attempt->passed ? 'ppq-passed' : 'ppq-failed'; ?>">
-												<?php echo esc_html( number_format( $attempt->score_percent, 1 ) . '%' ); ?>
+												<?php echo esc_html( number_format_i18n( $attempt->score_percent, 1 ) . '%' ); ?>
 												<?php if ( $attempt->passed ) : ?>
 													<span class="ppq-pass-badge" aria-label="<?php esc_attr_e( 'Passed', 'pressprimer-quiz' ); ?>">✓</span>
 												<?php endif; ?>
@@ -341,8 +401,8 @@ class PPQ_Quiz_Renderer {
 			// Submit the attempt
 			$submit_result = $attempt->submit();
 
-			// Get quiz
-			$timed_out_quiz = $attempt->get_quiz();
+			// Build results URL using current page as base
+			$results_url = add_query_arg( 'attempt', $attempt->id, get_permalink() );
 
 			// Build helpful message with options
 			ob_start();
@@ -354,13 +414,10 @@ class PPQ_Quiz_Renderer {
 				</div>
 
 				<?php if ( ! is_wp_error( $submit_result ) ) : ?>
-					<div class="ppq-quiz-actions">
-						<p><?php esc_html_e( 'Your attempt has been saved. What would you like to do next?', 'pressprimer-quiz' ); ?></p>
-						<div class="ppq-button-group">
-							<a href="<?php echo esc_url( get_permalink( $timed_out_quiz->id ) ); ?>" class="ppq-button ppq-button-primary">
-								<?php esc_html_e( 'Return to Quiz Page', 'pressprimer-quiz' ); ?>
-							</a>
-						</div>
+					<div class="ppq-quiz-actions" style="text-align: center;">
+						<a href="<?php echo esc_url( $results_url ); ?>" class="ppq-button ppq-button-primary" style="display: inline-block; padding: 12px 24px; background: #3b82f6; color: #ffffff; text-decoration: none; border-radius: 6px; font-weight: 600;">
+							<?php esc_html_e( 'View Your Results', 'pressprimer-quiz' ); ?>
+						</a>
 					</div>
 				<?php else : ?>
 					<div class="ppq-notice ppq-notice-error">
@@ -392,7 +449,9 @@ class PPQ_Quiz_Renderer {
 		$time_limit = null;
 		if ( $quiz->time_limit_seconds ) {
 			$time_limit = $quiz->time_limit_seconds;
-			$elapsed = time() - strtotime( $attempt->started_at );
+			// Use timezone-aware calculation - started_at is in WordPress local time
+			$started_timestamp = strtotime( get_gmt_from_date( $attempt->started_at ) );
+			$elapsed = time() - $started_timestamp;
 			$time_remaining = max( 0, $time_limit - $elapsed );
 		}
 
@@ -413,16 +472,46 @@ class PPQ_Quiz_Renderer {
 			}
 		}
 
+		/**
+		 * Fires before the quiz interface is rendered.
+		 *
+		 * @since 1.0.0
+		 *
+		 * @param PPQ_Attempt $attempt The current attempt object.
+		 * @param PPQ_Quiz    $quiz    The quiz object.
+		 */
+		do_action( 'ppq_before_quiz_interface', $attempt, $quiz );
+
 		// Start output buffering
 		ob_start();
 
 		?>
+		<!-- Skip link for keyboard users -->
+		<a href="#ppq-questions-container" class="ppq-skip-link"><?php esc_html_e( 'Skip to questions', 'pressprimer-quiz' ); ?></a>
+
 		<div class="ppq-quiz-interface <?php echo esc_attr( $theme_class ); ?>"
+			 role="main"
+			 aria-label="<?php esc_attr_e( 'Quiz', 'pressprimer-quiz' ); ?>"
 			 data-attempt-id="<?php echo esc_attr( $attempt->id ); ?>"
 			 data-quiz-id="<?php echo esc_attr( $quiz->id ); ?>"
+			 data-quiz-mode="<?php echo esc_attr( $quiz->mode ); ?>"
 			 data-time-limit="<?php echo esc_attr( $time_limit ); ?>"
 			 data-time-remaining="<?php echo esc_attr( $time_remaining ); ?>"
 			 data-start-question="<?php echo esc_attr( $first_unanswered ); ?>">
+
+			<?php
+			/**
+			 * Fires at the start of the quiz interface, inside the container.
+			 *
+			 * Use this to add custom content at the top of the quiz interface.
+			 *
+			 * @since 1.0.0
+			 *
+			 * @param PPQ_Attempt $attempt The current attempt object.
+			 * @param PPQ_Quiz    $quiz    The quiz object.
+			 */
+			do_action( 'ppq_quiz_interface_start', $attempt, $quiz );
+			?>
 
 			<!-- Quiz Header -->
 			<div class="ppq-quiz-interface-header">
@@ -430,15 +519,16 @@ class PPQ_Quiz_Renderer {
 					<h1 class="ppq-quiz-interface-title"><?php echo esc_html( $quiz->title ); ?></h1>
 
 					<div class="ppq-quiz-interface-meta">
-						<span class="ppq-quiz-interface-meta-item">
+						<span class="ppq-quiz-interface-meta-item" aria-label="<?php esc_attr_e( 'Question progress', 'pressprimer-quiz' ); ?>">
 							<span class="ppq-meta-icon" aria-hidden="true">📝</span>
 							<span class="ppq-progress-text">
 								<span class="ppq-current-question">1</span> / <?php echo esc_html( count( $items ) ); ?>
+								<span class="ppq-sr-only"><?php esc_html_e( 'questions', 'pressprimer-quiz' ); ?></span>
 							</span>
 						</span>
 
 						<?php if ( $time_limit ) : ?>
-							<span class="ppq-quiz-interface-meta-item ppq-timer-container">
+							<span class="ppq-quiz-interface-meta-item ppq-timer-container" role="timer" aria-live="off" aria-label="<?php esc_attr_e( 'Time remaining', 'pressprimer-quiz' ); ?>">
 								<span class="ppq-meta-icon" aria-hidden="true">⏱️</span>
 								<span class="ppq-timer" id="ppq-timer" data-remaining="<?php echo esc_attr( $time_remaining ); ?>">
 									<?php echo esc_html( $this->format_time( $time_remaining ) ); ?>
@@ -449,23 +539,24 @@ class PPQ_Quiz_Renderer {
 				</div>
 
 				<!-- Progress Bar -->
-				<div class="ppq-progress-bar-container">
+				<div class="ppq-progress-bar-container" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100" aria-label="<?php esc_attr_e( 'Quiz progress', 'pressprimer-quiz' ); ?>">
 					<div class="ppq-progress-bar" style="width: 0%;" id="ppq-progress-bar"></div>
 				</div>
 			</div>
 
 			<!-- Questions Container -->
-			<div class="ppq-questions-container">
+			<div class="ppq-questions-container" id="ppq-questions-container" role="region" aria-label="<?php esc_attr_e( 'Quiz questions', 'pressprimer-quiz' ); ?>">
 				<?php foreach ( $items as $index => $item ) : ?>
 					<?php echo $this->render_question( $item, $index, count( $items ) ); ?>
 				<?php endforeach; ?>
 			</div>
 
 			<!-- Navigation and Submit -->
-			<div class="ppq-quiz-navigation">
+			<nav class="ppq-quiz-navigation" role="navigation" aria-label="<?php esc_attr_e( 'Quiz navigation', 'pressprimer-quiz' ); ?>">
 				<button type="button"
 						class="ppq-button ppq-button-secondary ppq-nav-button ppq-prev-button"
 						id="ppq-prev-button"
+						aria-label="<?php esc_attr_e( 'Previous question', 'pressprimer-quiz' ); ?>"
 						disabled>
 					<span class="ppq-button-icon" aria-hidden="true">←</span>
 					<?php esc_html_e( 'Previous', 'pressprimer-quiz' ); ?>
@@ -475,6 +566,7 @@ class PPQ_Quiz_Renderer {
 					<button type="button"
 							class="ppq-button ppq-button-primary ppq-submit-quiz-button"
 							id="ppq-submit-button"
+							aria-label="<?php esc_attr_e( 'Submit quiz', 'pressprimer-quiz' ); ?>"
 							style="display: none;">
 						<?php esc_html_e( 'Submit Quiz', 'pressprimer-quiz' ); ?>
 					</button>
@@ -482,15 +574,16 @@ class PPQ_Quiz_Renderer {
 
 				<button type="button"
 						class="ppq-button ppq-button-secondary ppq-nav-button ppq-next-button"
-						id="ppq-next-button">
+						id="ppq-next-button"
+						aria-label="<?php esc_attr_e( 'Next question', 'pressprimer-quiz' ); ?>">
 					<?php esc_html_e( 'Next', 'pressprimer-quiz' ); ?>
 					<span class="ppq-button-icon" aria-hidden="true">→</span>
 				</button>
-			</div>
+			</nav>
 
 			<!-- Auto-save indicator -->
-			<div class="ppq-autosave-indicator" id="ppq-autosave-indicator" style="display: none;">
-				<span class="ppq-autosave-icon">💾</span>
+			<div class="ppq-autosave-indicator" id="ppq-autosave-indicator" role="status" aria-live="polite" style="display: none;">
+				<span class="ppq-autosave-icon" aria-hidden="true">💾</span>
 				<span class="ppq-autosave-text"><?php esc_html_e( 'Saved', 'pressprimer-quiz' ); ?></span>
 			</div>
 
@@ -556,7 +649,7 @@ class PPQ_Quiz_Renderer {
 						printf(
 							/* translators: %s: points value */
 							esc_html__( '%s points', 'pressprimer-quiz' ),
-							number_format( $question->max_points, 0 )
+							number_format_i18n( $question->max_points, 0 )
 						);
 						?>
 					</span>
@@ -596,10 +689,42 @@ class PPQ_Quiz_Renderer {
 				</p>
 			<?php endif; ?>
 
+			<!-- Check Answer button for tutorial mode (hidden in timed mode) -->
+			<div class="ppq-check-answer-container" style="display: none;">
+				<button type="button" class="ppq-button ppq-button-primary ppq-check-answer-button">
+					<?php esc_html_e( 'Check Answer', 'pressprimer-quiz' ); ?>
+				</button>
+			</div>
+
+			<!-- Feedback container for tutorial mode (hidden until answer checked) -->
+			<div class="ppq-feedback" style="display: none;">
+				<div class="ppq-feedback-result"></div>
+				<div class="ppq-feedback-text"></div>
+				<button type="button" class="ppq-button ppq-button-primary ppq-continue-button">
+					<?php esc_html_e( 'Continue', 'pressprimer-quiz' ); ?>
+				</button>
+			</div>
+
 		</div>
 		<?php
 
-		return ob_get_clean();
+		$output = ob_get_clean();
+
+		/**
+		 * Filter the rendered question HTML.
+		 *
+		 * Allows modification of individual question output including stem,
+		 * answers, and hint text.
+		 *
+		 * @since 1.0.0
+		 *
+		 * @param string           $output   The rendered question HTML.
+		 * @param PPQ_Attempt_Item $item     The attempt item object.
+		 * @param PPQ_Question     $question The question object.
+		 * @param int              $index    The question index (0-based).
+		 * @param int              $total    Total number of questions.
+		 */
+		return apply_filters( 'ppq_render_question', $output, $item, $question, $index, $total );
 	}
 
 	/**
@@ -673,6 +798,15 @@ class PPQ_Quiz_Renderer {
 					'unansweredMany'     => __( 'You have {count} unanswered questions.', 'pressprimer-quiz' ),
 					'goToQuestion'       => __( 'Go to Question {question}', 'pressprimer-quiz' ),
 					'submitAnyway'       => __( 'Submit Anyway', 'pressprimer-quiz' ),
+					'correct'            => __( 'Correct!', 'pressprimer-quiz' ),
+					// Accessibility strings for screen readers
+					'fiveMinuteWarning'  => __( 'Warning: Five minutes remaining!', 'pressprimer-quiz' ),
+					'oneMinuteWarning'   => __( 'Warning: One minute remaining!', 'pressprimer-quiz' ),
+					/* translators: %1$s: current question number, %2$s: total questions */
+					'questionOf'         => __( 'Question {current} of {total}', 'pressprimer-quiz' ),
+					'incorrect'          => __( 'Incorrect', 'pressprimer-quiz' ),
+					'checkAnswer'        => __( 'Check Answer', 'pressprimer-quiz' ),
+					'checking'           => __( 'Checking...', 'pressprimer-quiz' ),
 				],
 			]
 		);

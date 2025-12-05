@@ -119,6 +119,9 @@ const Reports = ({ initialData = {} }) => {
 		},
 	];
 
+	// Get the plugin URL from localized data
+	const pluginUrl = window.ppqReportsData?.pluginUrl || '';
+
 	return (
 		<div className="ppq-reports-container">
 			{/* Header */}
@@ -127,6 +130,11 @@ const Reports = ({ initialData = {} }) => {
 					<h1>{__('Reports', 'pressprimer-quiz')}</h1>
 					<p>{__('View quiz performance and student results.', 'pressprimer-quiz')}</p>
 				</div>
+				<img
+					src={`${pluginUrl}assets/images/reports-mascot.png`}
+					alt=""
+					className="ppq-reports-header-mascot"
+				/>
 			</div>
 
 			{/* Error Alert */}

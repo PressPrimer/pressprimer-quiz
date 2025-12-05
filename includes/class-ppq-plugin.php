@@ -125,10 +125,6 @@ class PPQ_Plugin {
 			$ajax_handler->init();
 		}
 
-		// Initialize Open Graph tags for results pages
-		if ( class_exists( 'PPQ_Results_Renderer' ) ) {
-			PPQ_Results_Renderer::init_og_tags();
-		}
 	}
 
 	/**

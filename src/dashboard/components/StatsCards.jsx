@@ -25,54 +25,46 @@ import {
  * @param {boolean} props.loading Loading state
  */
 const StatsCards = ({ stats, loading }) => {
+	// Consistent blue styling for all card icons
+	const iconColor = '#1890ff';
+	const iconBgColor = '#e6f7ff';
+
 	const cards = [
 		{
 			key: 'quizzes',
 			label: __('Published Quizzes', 'pressprimer-quiz'),
 			value: stats?.total_quizzes ?? '-',
 			icon: <FileTextOutlined />,
-			color: '#1890ff',
-			bgColor: '#e6f7ff',
 		},
 		{
 			key: 'questions',
 			label: __('Total Questions', 'pressprimer-quiz'),
 			value: stats?.total_questions ?? '-',
 			icon: <QuestionCircleOutlined />,
-			color: '#722ed1',
-			bgColor: '#f9f0ff',
 		},
 		{
 			key: 'banks',
 			label: __('Question Banks', 'pressprimer-quiz'),
 			value: stats?.total_banks ?? '-',
 			icon: <FolderOutlined />,
-			color: '#13c2c2',
-			bgColor: '#e6fffb',
 		},
 		{
 			key: 'attempts',
 			label: __('Attempts (7 days)', 'pressprimer-quiz'),
 			value: stats?.recent_attempts ?? '-',
 			icon: <CheckCircleOutlined />,
-			color: '#52c41a',
-			bgColor: '#f6ffed',
 		},
 		{
 			key: 'questions_answered',
 			label: __('Questions Answered (7 days)', 'pressprimer-quiz'),
 			value: stats?.questions_answered ?? '-',
 			icon: <EditOutlined />,
-			color: '#eb2f96',
-			bgColor: '#fff0f6',
 		},
 		{
 			key: 'pass_rate',
 			label: __('Pass Rate (7 days)', 'pressprimer-quiz'),
 			value: stats?.recent_pass_rate !== undefined ? `${stats.recent_pass_rate}%` : '-',
 			icon: <PercentageOutlined />,
-			color: '#fa8c16',
-			bgColor: '#fff7e6',
 		},
 	];
 
@@ -82,7 +74,7 @@ const StatsCards = ({ stats, loading }) => {
 				<div key={card.key} className="ppq-stats-card">
 					<div
 						className="ppq-stats-card-icon"
-						style={{ color: card.color, backgroundColor: card.bgColor }}
+						style={{ color: iconColor, backgroundColor: iconBgColor }}
 					>
 						{card.icon}
 					</div>

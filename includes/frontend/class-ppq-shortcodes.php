@@ -520,7 +520,7 @@ class PPQ_Shortcodes {
 			</td>
 			<td class="ppq-attempt-score">
 				<?php if ( 'submitted' === $attempt->status && null !== $attempt->score_percent ) : ?>
-					<?php echo esc_html( number_format( $attempt->score_percent, 1 ) ); ?>%
+					<?php echo esc_html( number_format_i18n( $attempt->score_percent, 1 ) ); ?>%
 				<?php else : ?>
 					<span class="ppq-text-muted">—</span>
 				<?php endif; ?>
@@ -539,7 +539,7 @@ class PPQ_Shortcodes {
 				<?php endif; ?>
 			</td>
 			<td class="ppq-attempt-date">
-				<?php echo esc_html( date_i18n( get_option( 'date_format' ) . ' ' . get_option( 'time_format' ), strtotime( $attempt->started_at ) ) ); ?>
+				<?php echo esc_html( wp_date( get_option( 'date_format' ) . ' ' . get_option( 'time_format' ), strtotime( $attempt->started_at ) ) ); ?>
 			</td>
 			<td class="ppq-attempt-duration">
 				<?php if ( $attempt->elapsed_ms ) : ?>

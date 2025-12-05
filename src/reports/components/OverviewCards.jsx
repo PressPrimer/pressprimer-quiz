@@ -42,38 +42,34 @@ const formatDuration = (seconds) => {
  * @param {boolean} props.loading Loading state
  */
 const OverviewCards = ({ stats, loading }) => {
+	// Consistent blue styling for all card icons
+	const iconColor = '#1890ff';
+	const iconBgColor = '#e6f7ff';
+
 	const cards = [
 		{
 			key: 'total_attempts',
 			label: __('Total Attempts', 'pressprimer-quiz'),
 			value: stats?.total_attempts ?? '-',
 			icon: <LineChartOutlined />,
-			color: '#1890ff',
-			bgColor: '#e6f7ff',
 		},
 		{
 			key: 'avg_score',
 			label: __('Average Score', 'pressprimer-quiz'),
 			value: stats?.avg_score !== undefined ? `${stats.avg_score}%` : '-',
 			icon: <PercentageOutlined />,
-			color: '#722ed1',
-			bgColor: '#f9f0ff',
 		},
 		{
 			key: 'pass_rate',
 			label: __('Pass Rate', 'pressprimer-quiz'),
 			value: stats?.pass_rate !== undefined ? `${stats.pass_rate}%` : '-',
 			icon: <CheckCircleOutlined />,
-			color: '#52c41a',
-			bgColor: '#f6ffed',
 		},
 		{
 			key: 'avg_time',
 			label: __('Avg. Time', 'pressprimer-quiz'),
 			value: formatDuration(stats?.avg_time_seconds),
 			icon: <ClockCircleOutlined />,
-			color: '#fa8c16',
-			bgColor: '#fff7e6',
 		},
 	];
 
@@ -83,7 +79,7 @@ const OverviewCards = ({ stats, loading }) => {
 				<div key={card.key} className="ppq-overview-card">
 					<div
 						className="ppq-overview-card-icon"
-						style={{ color: card.color, backgroundColor: card.bgColor }}
+						style={{ color: iconColor, backgroundColor: iconBgColor }}
 					>
 						{card.icon}
 					</div>

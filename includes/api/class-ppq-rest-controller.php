@@ -297,6 +297,13 @@ class PPQ_REST_Controller {
 			'callback'            => [ $this, 'get_activity_chart' ],
 			'permission_callback' => [ $this, 'check_permission' ],
 		] );
+
+		// Email endpoints
+		register_rest_route( 'ppq/v1', '/email/test', [
+			'methods'             => WP_REST_Server::CREATABLE,
+			'callback'            => [ $this, 'send_test_email' ],
+			'permission_callback' => [ $this, 'check_settings_permission' ],
+		] );
 	}
 
 	/**
@@ -1632,6 +1639,14 @@ class PPQ_REST_Controller {
 			$sanitized['email_results_body'] = wp_kses_post( $data['email_results_body'] );
 		}
 
+		if ( isset( $data['email_logo_url'] ) ) {
+			$sanitized['email_logo_url'] = esc_url_raw( $data['email_logo_url'] );
+		}
+
+		if ( isset( $data['email_logo_id'] ) ) {
+			$sanitized['email_logo_id'] = absint( $data['email_logo_id'] );
+		}
+
 		// Sharing settings
 		if ( isset( $data['social_sharing_twitter'] ) ) {
 			$sanitized['social_sharing_twitter'] = (bool) $data['social_sharing_twitter'];
@@ -1996,5 +2011,34 @@ class PPQ_REST_Controller {
 			'success' => true,
 			'data'    => $data,
 		], 200 );
+	}
+
+	/**
+	 * Send test email
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param WP_REST_Request $request Request object.
+	 * @return WP_REST_Response|WP_Error Response object or error.
+	 */
+	public function send_test_email( $request ) {
+		$data = $request->get_json_params();
+		$email = sanitize_email( $data['email'] ?? '' );
+
+		if ( empty( $email ) || ! is_email( $email ) ) {
+			return new WP_Error( 'invalid_email', __( 'Please provide a valid email address.', 'pressprimer-quiz' ), [ 'status' => 400 ] );
+		}
+
+		// Send test email
+		$sent = PPQ_Email_Service::send_test_email( $email );
+
+		if ( $sent ) {
+			return new WP_REST_Response( [
+				'success' => true,
+				'message' => __( 'Test email sent successfully.', 'pressprimer-quiz' ),
+			], 200 );
+		} else {
+			return new WP_Error( 'send_failed', __( 'Failed to send test email. Please check your email configuration.', 'pressprimer-quiz' ), [ 'status' => 500 ] );
+		}
 	}
 }

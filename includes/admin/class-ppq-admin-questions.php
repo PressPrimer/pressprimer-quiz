@@ -1232,8 +1232,8 @@ class PPQ_Questions_List_Table extends WP_List_Table {
 
 		return sprintf(
 			'<abbr title="%s">%s</abbr>',
-			esc_attr( date_i18n( 'Y/m/d g:i:s a', $timestamp ) ),
-			esc_html( date_i18n( 'Y/m/d', $timestamp ) )
+			esc_attr( wp_date( 'Y/m/d g:i:s a', $timestamp ) ),
+			esc_html( wp_date( 'Y/m/d', $timestamp ) )
 		);
 	}
 

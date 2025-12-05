@@ -1618,13 +1618,13 @@ class PPQ_Quizzes_List_Table extends WP_List_Table {
 		if ( $time_diff < DAY_IN_SECONDS ) {
 			return sprintf(
 				'<abbr title="%s">%s</abbr>',
-				esc_attr( date_i18n( get_option( 'date_format' ) . ' ' . get_option( 'time_format' ), $timestamp ) ),
+				esc_attr( wp_date( get_option( 'date_format' ) . ' ' . get_option( 'time_format' ), $timestamp ) ),
 				/* translators: %s: human-readable time difference */
 				sprintf( esc_html__( '%s ago', 'pressprimer-quiz' ), human_time_diff( $timestamp ) )
 			);
 		}
 
-		return date_i18n( get_option( 'date_format' ), $timestamp );
+		return wp_date( get_option( 'date_format' ), $timestamp );
 	}
 
 	/**

@@ -202,6 +202,10 @@
 		hasUnsavedChanges: false,
 		isOnline: true,
 
+		// Timer warning tracking (for screen reader announcements)
+		fiveMinuteWarningAnnounced: false,
+		oneMinuteWarningAnnounced: false,
+
 		/**
 		 * Initialize quiz interface
 		 */
@@ -215,9 +219,14 @@
 			// Get quiz data
 			this.attemptId = this.$container.data('attempt-id');
 			this.quizId = this.$container.data('quiz-id');
+			this.quizMode = this.$container.data('quiz-mode') || 'timed';
 			this.timeLimit = this.$container.data('time-limit');
 			this.timeRemaining = this.$container.data('time-remaining');
 			this.totalQuestions = $('.ppq-question').length;
+
+			// Tutorial mode tracking
+			this.feedbackShown = {}; // Track which questions have shown feedback
+			this.isCheckingAnswer = false; // Prevent double-clicks on Check button
 
 			// Get start question (first unanswered for resume, default 0)
 			var startQuestion = parseInt(this.$container.data('start-question'), 10) || 0;
@@ -239,6 +248,45 @@
 
 			// Show starting question (first unanswered on resume, or first question)
 			this.showQuestion(startQuestion);
+
+			// In tutorial mode, show Check button on current question if not already checked
+			if (this.quizMode === 'tutorial') {
+				this.updateCheckButtonVisibility();
+			}
+
+			// Create screen reader live region for announcements
+			this.createScreenReaderRegion();
+		},
+
+		/**
+		 * Create a live region for screen reader announcements
+		 */
+		createScreenReaderRegion: function() {
+			if ($('#ppq-sr-announcements').length === 0) {
+				$('body').append(
+					'<div id="ppq-sr-announcements" class="ppq-sr-only" role="status" aria-live="polite" aria-atomic="true"></div>'
+				);
+			}
+		},
+
+		/**
+		 * Announce a message to screen readers
+		 *
+		 * @param {string} message The message to announce
+		 * @param {string} priority 'polite' or 'assertive'
+		 */
+		announceToScreenReader: function(message, priority) {
+			priority = priority || 'polite';
+			const $region = $('#ppq-sr-announcements');
+
+			// Set the appropriate aria-live value
+			$region.attr('aria-live', priority);
+
+			// Clear and set message (clearing first ensures the message is announced even if identical)
+			$region.text('');
+			setTimeout(function() {
+				$region.text(message);
+			}, 100);
 		},
 
 		/**
@@ -326,6 +374,44 @@
 					self.nextQuestion();
 				}
 			});
+
+			// Tutorial mode: Continue button after feedback
+			$(document).on('click', '.ppq-continue-button', function(e) {
+				e.preventDefault();
+				self.handleContinueAfterFeedback($(this));
+			});
+
+			// Tutorial mode: Check Answer button
+			$(document).on('click', '.ppq-check-answer-button', function(e) {
+				e.preventDefault();
+				self.handleCheckAnswer($(this));
+			});
+		},
+
+		/**
+		 * Handle continue button click after feedback (tutorial mode)
+		 *
+		 * @param {jQuery} $button The continue button
+		 */
+		handleContinueAfterFeedback: function($button) {
+			const $question = $button.closest('.ppq-question');
+			const questionIndex = $question.data('question-index');
+
+			// Hide feedback
+			$question.find('.ppq-feedback').slideUp(200);
+
+			// Show navigation buttons again
+			$('#ppq-prev-button').show();
+
+			// If this is the last question, show submit button
+			if (questionIndex === this.totalQuestions - 1) {
+				$('#ppq-submit-button').show();
+				$('#ppq-next-button').hide();
+			} else {
+				// Show next button and auto-advance to next question
+				$('#ppq-next-button').show();
+				this.nextQuestion();
+			}
 		},
 
 		/**
@@ -467,7 +553,8 @@
 			$('.ppq-question').hide();
 
 			// Show current question
-			$('.ppq-question[data-question-index="' + index + '"]').fadeIn(200);
+			const $question = $('.ppq-question[data-question-index="' + index + '"]');
+			$question.fadeIn(200);
 
 			// Update current index
 			this.currentQuestionIndex = index;
@@ -475,6 +562,22 @@
 			// Update UI
 			this.updateProgress();
 			this.updateNavButtons();
+
+			// In tutorial mode, update Check button visibility
+			if (this.quizMode === 'tutorial') {
+				this.updateCheckButtonVisibility();
+			}
+
+			// Announce question change to screen readers
+			const questionNumber = index + 1;
+			this.announceToScreenReader(
+				(ppqQuiz.strings.questionOf || 'Question {current} of {total}')
+					.replace('{current}', questionNumber)
+					.replace('{total}', this.totalQuestions)
+			);
+
+			// Move focus to the question for keyboard users
+			$question.attr('tabindex', '-1').focus();
 		},
 
 		/**
@@ -542,7 +645,13 @@
 		handleAnswerChange: function($input) {
 			const $question = $input.closest('.ppq-question');
 			const questionType = $question.data('question-type');
+			const questionIndex = $question.data('question-index');
 			const $option = $input.closest('.ppq-answer-option');
+
+			// If feedback is already shown for this question (tutorial mode), ignore changes
+			if (this.feedbackShown[questionIndex]) {
+				return;
+			}
 
 			// For radio buttons (MC/TF) - remove other selections
 			if ($input.attr('type') === 'radio') {
@@ -565,6 +674,171 @@
 
 			// Trigger auto-save
 			this.triggerAutoSave($input);
+
+			// In tutorial mode, update Check button visibility when answer changes
+			if (this.quizMode === 'tutorial' && !this.feedbackShown[questionIndex]) {
+				this.updateCheckButtonVisibility();
+			}
+		},
+
+		/**
+		 * Update Check button visibility for current question (tutorial mode)
+		 *
+		 * Shows Check button if question has at least one answer selected
+		 * and hasn't been checked yet.
+		 */
+		updateCheckButtonVisibility: function() {
+			if (this.quizMode !== 'tutorial') {
+				return;
+			}
+
+			const $currentQuestion = $('.ppq-question[data-question-index="' + this.currentQuestionIndex + '"]');
+			const questionIndex = this.currentQuestionIndex;
+			const $checkContainer = $currentQuestion.find('.ppq-check-answer-container');
+
+			// If already checked, hide the button
+			if (this.feedbackShown[questionIndex]) {
+				$checkContainer.hide();
+				return;
+			}
+
+			// Check if any answer is selected
+			const hasAnswer = $currentQuestion.find('.ppq-answer-input:checked').length > 0;
+
+			if (hasAnswer) {
+				$checkContainer.slideDown(200);
+			} else {
+				$checkContainer.slideUp(200);
+			}
+		},
+
+		/**
+		 * Handle Check Answer button click (tutorial mode)
+		 *
+		 * Submits the answer to the server for validation and displays feedback.
+		 *
+		 * @param {jQuery} $button The check answer button
+		 */
+		handleCheckAnswer: function($button) {
+			const self = this;
+
+			// Prevent double-clicks
+			if (this.isCheckingAnswer) {
+				return;
+			}
+
+			const $question = $button.closest('.ppq-question');
+			const questionIndex = $question.data('question-index');
+			const itemId = $question.data('item-id');
+
+			// Check if already checked
+			if (this.feedbackShown[questionIndex]) {
+				return;
+			}
+
+			// Get selected answers
+			let selectedAnswers = [];
+			$question.find('.ppq-answer-input:checked').each(function() {
+				selectedAnswers.push(parseInt($(this).val(), 10));
+			});
+
+			// Require at least one answer
+			if (selectedAnswers.length === 0) {
+				return;
+			}
+
+			// Set checking state
+			this.isCheckingAnswer = true;
+			$button.prop('disabled', true).text(ppqQuiz.strings.checking || 'Checking...');
+
+			// Submit to server
+			$.ajax({
+				url: ppqQuiz.ajaxUrl,
+				type: 'POST',
+				data: {
+					action: 'ppq_check_answer',
+					nonce: ppqQuiz.nonce,
+					attempt_id: this.attemptId,
+					item_id: itemId,
+					answers: selectedAnswers
+				},
+				success: function(response) {
+					self.isCheckingAnswer = false;
+
+					if (response.success) {
+						self.showQuestionFeedback($question, response.data);
+					} else {
+						// Re-enable button on error
+						$button.prop('disabled', false).text(ppqQuiz.strings.checkAnswer || 'Check Answer');
+						alert(response.data.message || ppqQuiz.strings.error);
+					}
+				},
+				error: function() {
+					self.isCheckingAnswer = false;
+					$button.prop('disabled', false).text(ppqQuiz.strings.checkAnswer || 'Check Answer');
+					alert(ppqQuiz.strings.error);
+				}
+			});
+		},
+
+		/**
+		 * Show feedback for a question after server validation (tutorial mode)
+		 *
+		 * @param {jQuery} $question The question element
+		 * @param {Object} data Response data from server
+		 */
+		showQuestionFeedback: function($question, data) {
+			const questionIndex = $question.data('question-index');
+
+			// Mark feedback as shown
+			this.feedbackShown[questionIndex] = true;
+
+			// Hide Check button
+			$question.find('.ppq-check-answer-container').hide();
+
+			// Disable answer inputs
+			$question.find('.ppq-answer-input').prop('disabled', true);
+			$question.addClass('ppq-feedback-shown');
+
+			// Show correct/incorrect styling on answers
+			$question.find('.ppq-answer-option').each(function() {
+				const $opt = $(this);
+				const answerIndex = parseInt($opt.find('.ppq-answer-input').val(), 10);
+				const isThisCorrect = data.correct_indices.indexOf(answerIndex) !== -1;
+				const isSelected = $opt.hasClass('ppq-selected');
+
+				if (isThisCorrect) {
+					$opt.addClass('ppq-correct');
+				} else if (isSelected && !isThisCorrect) {
+					$opt.addClass('ppq-incorrect');
+				}
+			});
+
+			// Build feedback display
+			const $feedback = $question.find('.ppq-feedback');
+			const resultClass = data.is_correct ? 'ppq-feedback-correct' : 'ppq-feedback-incorrect';
+			const resultText = data.is_correct
+				? (ppqQuiz.strings.correct || 'Correct!')
+				: (ppqQuiz.strings.incorrect || 'Incorrect');
+
+			$feedback.find('.ppq-feedback-result')
+				.removeClass('ppq-feedback-correct ppq-feedback-incorrect')
+				.addClass(resultClass)
+				.html('<strong>' + resultText + '</strong>');
+
+			// Show feedback text if provided
+			const $feedbackText = $feedback.find('.ppq-feedback-text');
+			if (data.feedback_text) {
+				$feedbackText.html(data.feedback_text).show();
+			} else {
+				$feedbackText.hide();
+			}
+
+			// Show feedback container
+			$feedback.slideDown(300);
+
+			// Hide navigation buttons while feedback is shown
+			$('#ppq-next-button, #ppq-prev-button, #ppq-submit-button').hide();
 		},
 
 		/**
@@ -699,6 +973,7 @@
 		 * @param {string} message Optional custom message for failed state
 		 */
 		showAutoSaveIndicator: function(state, message) {
+			const self = this;
 			const $indicator = $('#ppq-autosave-indicator');
 			const $text = $indicator.find('.ppq-autosave-text');
 			const $icon = $indicator.find('.ppq-autosave-icon');
@@ -712,11 +987,16 @@
 				$text.text(ppqQuiz.strings.saved);
 				$icon.text('✓');
 				$indicator.removeClass('ppq-autosave-saving ppq-autosave-error');
+				// Announce save success to screen readers
+				self.announceToScreenReader(ppqQuiz.strings.saved || 'Answer saved');
 			} else if (state === 'failed') {
 				// Use custom message if provided, otherwise use default
-				$text.text(message || ppqQuiz.strings.saveFailed);
+				const errorMsg = message || ppqQuiz.strings.saveFailed;
+				$text.text(errorMsg);
 				$icon.text('⚠️');
 				$indicator.removeClass('ppq-autosave-saving').addClass('ppq-autosave-error');
+				// Announce error to screen readers (assertive for errors)
+				self.announceToScreenReader(errorMsg, 'assertive');
 			}
 
 			// Show indicator
@@ -747,13 +1027,31 @@
 				const timeString = self.padZero(minutes) + ':' + self.padZero(seconds);
 				$timer.text(timeString);
 
-				// Update timer styling based on time remaining
+				// Update timer styling and announce warnings
 				if (self.timeRemaining <= 60) {
 					// Last minute - danger (red, fast pulse)
 					$timer.removeClass('ppq-timer-warning').addClass('ppq-timer-danger');
+
+					// Announce one minute warning to screen readers (once)
+					if (!self.oneMinuteWarningAnnounced) {
+						self.oneMinuteWarningAnnounced = true;
+						self.announceToScreenReader(
+							ppqQuiz.strings.oneMinuteWarning || 'Warning: One minute remaining!',
+							'assertive'
+						);
+					}
 				} else if (self.timeRemaining <= 300) {
 					// Last 5 minutes - warning (orange, slow pulse)
 					$timer.addClass('ppq-timer-warning').removeClass('ppq-timer-danger');
+
+					// Announce five minute warning to screen readers (once)
+					if (!self.fiveMinuteWarningAnnounced) {
+						self.fiveMinuteWarningAnnounced = true;
+						self.announceToScreenReader(
+							ppqQuiz.strings.fiveMinuteWarning || 'Warning: Five minutes remaining!',
+							'polite'
+						);
+					}
 				}
 
 				// Time expired - auto-submit

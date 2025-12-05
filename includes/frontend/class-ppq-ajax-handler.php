@@ -49,6 +49,10 @@ class PPQ_AJAX_Handler {
 		// Email results (logged in and guests)
 		add_action( 'wp_ajax_ppq_email_results', [ $this, 'email_results' ] );
 		add_action( 'wp_ajax_nopriv_ppq_email_results', [ $this, 'email_results' ] );
+
+		// Check answer - Tutorial Mode (logged in and guests)
+		add_action( 'wp_ajax_ppq_check_answer', [ $this, 'check_answer' ] );
+		add_action( 'wp_ajax_nopriv_ppq_check_answer', [ $this, 'check_answer' ] );
 	}
 
 	/**
@@ -482,5 +486,130 @@ class PPQ_AJAX_Handler {
 				'message' => __( 'Failed to send email. Please try again later.', 'pressprimer-quiz' ),
 			] );
 		}
+	}
+
+	/**
+	 * Check answer for a single question (Tutorial Mode)
+	 *
+	 * Validates the answer, saves it, and returns feedback including
+	 * which answers are correct/incorrect.
+	 *
+	 * @since 1.0.0
+	 */
+	public function check_answer() {
+		// Verify nonce
+		if ( ! check_ajax_referer( 'ppq_quiz_nonce', 'nonce', false ) ) {
+			wp_send_json_error( [
+				'message' => __( 'Security check failed.', 'pressprimer-quiz' ),
+			] );
+		}
+
+		// Get parameters
+		$attempt_id = isset( $_POST['attempt_id'] ) ? absint( $_POST['attempt_id'] ) : 0;
+		$item_id    = isset( $_POST['item_id'] ) ? absint( $_POST['item_id'] ) : 0;
+
+		if ( ! $attempt_id || ! $item_id ) {
+			wp_send_json_error( [
+				'message' => __( 'Invalid parameters.', 'pressprimer-quiz' ),
+			] );
+		}
+
+		// Load attempt
+		$attempt = PPQ_Attempt::get( $attempt_id );
+
+		if ( ! $attempt ) {
+			wp_send_json_error( [
+				'message' => __( 'Attempt not found.', 'pressprimer-quiz' ),
+			] );
+		}
+
+		// Verify user can access this attempt
+		if ( ! $this->can_access_attempt( $attempt ) ) {
+			wp_send_json_error( [
+				'message' => __( 'You do not have permission to access this attempt.', 'pressprimer-quiz' ),
+			] );
+		}
+
+		// Check if attempt is in progress
+		if ( 'in_progress' !== $attempt->status ) {
+			wp_send_json_error( [
+				'message' => __( 'This attempt is not in progress.', 'pressprimer-quiz' ),
+			] );
+		}
+
+		// Verify this is a tutorial mode quiz
+		$quiz = $attempt->get_quiz();
+		if ( ! $quiz || 'tutorial' !== $quiz->mode ) {
+			wp_send_json_error( [
+				'message' => __( 'Answer checking is only available in tutorial mode.', 'pressprimer-quiz' ),
+			] );
+		}
+
+		// Get the attempt item
+		$item = PPQ_Attempt_Item::get( $item_id );
+
+		if ( ! $item || (int) $item->attempt_id !== $attempt_id ) {
+			wp_send_json_error( [
+				'message' => __( 'Question not found.', 'pressprimer-quiz' ),
+			] );
+		}
+
+		// Get selected answers from POST
+		$selected_answers = isset( $_POST['answers'] ) ? $_POST['answers'] : [];
+
+		// Ensure selected_answers is an array
+		if ( ! is_array( $selected_answers ) ) {
+			$selected_answers = [ $selected_answers ];
+		}
+
+		// Convert to integers and filter empty values
+		$selected_answers = array_map( 'intval', array_filter( $selected_answers, function( $v ) {
+			return '' !== $v && null !== $v;
+		} ) );
+
+		// Save the answer
+		$attempt->save_answer( $item_id, $selected_answers );
+
+		// Get question revision for correct answers and feedback
+		$revision = $item->get_question_revision();
+
+		if ( ! $revision ) {
+			wp_send_json_error( [
+				'message' => __( 'Question data not found.', 'pressprimer-quiz' ),
+			] );
+		}
+
+		$answers = $revision->get_answers();
+
+		// Determine correct answer indices
+		$correct_indices = [];
+		foreach ( $answers as $answer_index => $answer ) {
+			if ( ! empty( $answer['is_correct'] ) ) {
+				$correct_indices[] = $answer_index;
+			}
+		}
+
+		// Check if the answer is correct
+		$sorted_selected = $selected_answers;
+		$sorted_correct = $correct_indices;
+		sort( $sorted_selected );
+		sort( $sorted_correct );
+		$is_correct = ( $sorted_selected === $sorted_correct );
+
+		// Get appropriate feedback text
+		$feedback_text = '';
+		if ( $is_correct && ! empty( $revision->feedback_correct ) ) {
+			$feedback_text = $revision->feedback_correct;
+		} elseif ( ! $is_correct && ! empty( $revision->feedback_incorrect ) ) {
+			$feedback_text = $revision->feedback_incorrect;
+		}
+
+		// Return response with correct answers revealed
+		wp_send_json_success( [
+			'is_correct'       => $is_correct,
+			'correct_indices'  => $correct_indices,
+			'selected_indices' => $selected_answers,
+			'feedback_text'    => $feedback_text,
+		] );
 	}
 }

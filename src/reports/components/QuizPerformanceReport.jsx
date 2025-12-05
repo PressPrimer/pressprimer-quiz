@@ -180,6 +180,9 @@ const QuizPerformanceReport = () => {
 		},
 	];
 
+	// Get the plugin URL from localized data
+	const pluginUrl = window.ppqReportsData?.pluginUrl || '';
+
 	return (
 		<div className="ppq-reports-container">
 			{/* Header */}
@@ -199,6 +202,11 @@ const QuizPerformanceReport = () => {
 					</h1>
 					<p>{__('See how each quiz is performing with attempt counts, average scores, and pass rates.', 'pressprimer-quiz')}</p>
 				</div>
+				<img
+					src={`${pluginUrl}assets/images/reports-mascot.png`}
+					alt=""
+					className="ppq-reports-header-mascot"
+				/>
 			</div>
 
 			{/* Error Alert */}
@@ -246,6 +254,7 @@ const QuizPerformanceReport = () => {
 						onChange={handleTableChange}
 						size="middle"
 						className="ppq-reports-table"
+						sortDirections={['ascend', 'descend', 'ascend']}
 					/>
 				</Spin>
 			</Card>

@@ -1448,6 +1448,9 @@ Good luck with your studies!', 'pressprimer-quiz' );
 	 * @since 1.0.0
 	 */
 	private function enqueue_react_settings() {
+		// Enqueue WordPress media library for logo selection
+		wp_enqueue_media();
+
 		// Enqueue Ant Design CSS
 		wp_enqueue_style(
 			'antd',
@@ -1537,6 +1540,7 @@ Good luck with your studies!', 'pressprimer-quiz' );
 		$theme_font = $this->get_theme_font_family();
 
 		return [
+			'pluginUrl'    => PPQ_PLUGIN_URL,
 			'settings'     => $settings,
 			'apiKeyStatus' => $key_status,
 			'apiModels'    => $available_models,
@@ -1572,6 +1576,19 @@ Good luck with your studies!', 'pressprimer-quiz' );
 				'totalAttempts'      => $total_attempts,
 			],
 		];
+
+		/**
+		 * Filter the settings data passed to the React settings panel.
+		 *
+		 * Allows adding custom tabs, sections, or data to the settings page.
+		 * Note: You'll also need to add corresponding React components to display
+		 * custom settings data.
+		 *
+		 * @since 1.0.0
+		 *
+		 * @param array $data Settings data including settings, apiKeyStatus, systemInfo, etc.
+		 */
+		return apply_filters( 'ppq_settings_data', $data );
 	}
 
 	/**

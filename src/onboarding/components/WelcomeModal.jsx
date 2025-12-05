@@ -10,7 +10,6 @@
 import { useState, useEffect, useRef } from '@wordpress/element';
 import { __ } from '@wordpress/i18n';
 import { Button, Checkbox } from 'antd';
-import { RocketOutlined } from '@ant-design/icons';
 
 /**
  * WelcomeModal Component
@@ -22,6 +21,8 @@ import { RocketOutlined } from '@ant-design/icons';
  * @param {Function} props.onSkip Skip tour callback
  */
 const WelcomeModal = ({ title, content, onStart, onSkip }) => {
+	// Get plugin URL for logo
+	const pluginUrl = window.ppqOnboardingData?.pluginUrl || window.ppqDashboardData?.pluginUrl || '';
 	const [dontShowAgain, setDontShowAgain] = useState(false);
 	const modalRef = useRef(null);
 	const startButtonRef = useRef(null);
@@ -60,8 +61,12 @@ const WelcomeModal = ({ title, content, onStart, onSkip }) => {
 	return (
 		<div className="ppq-onboarding-overlay" role="dialog" aria-modal="true" aria-labelledby="ppq-welcome-title">
 			<div ref={modalRef} className="ppq-onboarding-modal ppq-onboarding-modal--welcome">
-				<div className="ppq-onboarding-modal__icon">
-					<RocketOutlined />
+				<div className="ppq-onboarding-modal__logo">
+					<img
+						src={`${pluginUrl}assets/images/PressPrimer-Logo.svg`}
+						alt="PressPrimer"
+						className="ppq-onboarding-modal__logo-img"
+					/>
 				</div>
 
 				<h1 id="ppq-welcome-title" className="ppq-onboarding-modal__title">

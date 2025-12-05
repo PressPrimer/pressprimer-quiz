@@ -25,92 +25,6 @@ if ( ! defined( 'ABSPATH' ) ) {
 class PPQ_Results_Renderer {
 
 	/**
-	 * Initialize Open Graph meta tags
-	 *
-	 * Hooks into wp_head to add OG tags when viewing quiz results.
-	 *
-	 * @since 1.0.0
-	 */
-	public static function init_og_tags() {
-		add_action( 'wp_head', [ __CLASS__, 'output_og_tags' ] );
-	}
-
-	/**
-	 * Output Open Graph meta tags
-	 *
-	 * Adds OG tags to <head> when viewing quiz results for better social sharing.
-	 *
-	 * @since 1.0.0
-	 */
-	public static function output_og_tags() {
-		// Check if we're viewing a quiz attempt
-		if ( ! isset( $_GET['attempt'] ) ) {
-			return;
-		}
-
-		$attempt_id = absint( $_GET['attempt'] );
-		if ( ! $attempt_id ) {
-			return;
-		}
-
-		// Load attempt
-		$attempt = PPQ_Attempt::get( $attempt_id );
-		if ( ! $attempt || 'submitted' !== $attempt->status ) {
-			return;
-		}
-
-		// Load quiz
-		$quiz = $attempt->get_quiz();
-		if ( ! $quiz ) {
-			return;
-		}
-
-		// Get settings
-		$settings        = get_option( 'ppq_settings', [] );
-		$include_score   = isset( $settings['social_sharing_include_score'] ) ? $settings['social_sharing_include_score'] : true;
-		$message_template = isset( $settings['social_sharing_message'] ) ? $settings['social_sharing_message'] : 'I just completed {quiz_title} at {website_url} with a score of {score}%!';
-
-		// Build title and description
-		$title = $quiz->title;
-		$description = str_replace(
-			[ '{quiz_title}', '{pass_status}', '{score}', '{website_url}' ],
-			[
-				$quiz->title,
-				$attempt->passed ? __( 'Passed', 'pressprimer-quiz' ) : __( 'Failed', 'pressprimer-quiz' ),
-				$include_score ? round( (float) $attempt->score_percent, 1 ) : '',
-				home_url( '/' ),
-			],
-			$message_template
-		);
-
-		// Clean up extra spaces if score wasn't included
-		$description = preg_replace( '/\s+/', ' ', $description );
-		$description = trim( $description );
-
-		// Get current URL
-		$url = ( is_ssl() ? 'https://' : 'http://' ) . $_SERVER['HTTP_HOST'] . $_SERVER['REQUEST_URI'];
-
-		// Get site name
-		$site_name = get_bloginfo( 'name' );
-
-		// Output OG tags
-		?>
-<!-- PressPrimer Quiz Open Graph Tags -->
-<meta property="og:type" content="article" />
-<meta property="og:title" content="<?php echo esc_attr( $title ); ?>" />
-<meta property="og:description" content="<?php echo esc_attr( $description ); ?>" />
-<meta property="og:url" content="<?php echo esc_url( $url ); ?>" />
-<meta property="og:site_name" content="<?php echo esc_attr( $site_name ); ?>" />
-		<?php
-		// Add Twitter card tags
-		?>
-<meta name="twitter:card" content="summary" />
-<meta name="twitter:title" content="<?php echo esc_attr( $title ); ?>" />
-<meta name="twitter:description" content="<?php echo esc_attr( $description ); ?>" />
-		<?php
-	}
-
-	/**
 	 * Render results page
 	 *
 	 * Displays comprehensive results after quiz submission.
@@ -134,20 +48,101 @@ class PPQ_Results_Renderer {
 		// Calculate comprehensive results
 		$results = $this->calculate_results( $attempt );
 
+		/**
+		 * Filter the calculated results data before rendering.
+		 *
+		 * Allows modification of score data, category breakdowns, and confidence stats
+		 * before they are displayed to the user.
+		 *
+		 * @since 1.0.0
+		 *
+		 * @param array       $results Calculated results including score_percent, category_scores, confidence_stats.
+		 * @param PPQ_Attempt $attempt The attempt object.
+		 * @param PPQ_Quiz    $quiz    The quiz object.
+		 */
+		$results = apply_filters( 'ppq_results_data', $results, $attempt, $quiz );
+
 		// Get theme class
 		$theme_class = PPQ_Theme_Loader::get_theme_class( PPQ_Theme_Loader::get_quiz_theme( $quiz ) );
+
+		/**
+		 * Filter which sections are displayed on the results page.
+		 *
+		 * Return an array of section IDs to display. Remove items to hide sections.
+		 * Default sections: header, guest_notice, score_summary, email_notice,
+		 * category_breakdown, confidence, feedback, actions.
+		 *
+		 * @since 1.0.0
+		 *
+		 * @param array       $sections Array of section IDs to display.
+		 * @param PPQ_Attempt $attempt  The attempt object.
+		 * @param PPQ_Quiz    $quiz     The quiz object.
+		 */
+		$sections = apply_filters( 'ppq_results_sections', [
+			'header',
+			'guest_notice',
+			'score_summary',
+			'email_notice',
+			'category_breakdown',
+			'confidence',
+			'feedback',
+			'actions',
+		], $attempt, $quiz );
 
 		// Build output
 		ob_start();
 		?>
 		<div class="ppq-results-container <?php echo esc_attr( $theme_class ); ?>">
-			<?php $this->render_results_header( $attempt, $quiz, $results ); ?>
-			<?php $this->render_guest_token_notice( $attempt ); ?>
-			<?php $this->render_score_summary( $attempt, $quiz, $results ); ?>
-			<?php $this->render_category_breakdown( $results ); ?>
-			<?php $this->render_confidence_calibration( $results ); ?>
-			<?php $this->render_score_feedback( $quiz, $results ); ?>
-			<?php $this->render_results_actions( $attempt, $quiz ); ?>
+			<?php
+			/**
+			 * Fires before the results content is rendered.
+			 *
+			 * @since 1.0.0
+			 *
+			 * @param PPQ_Attempt $attempt The attempt object.
+			 * @param PPQ_Quiz    $quiz    The quiz object.
+			 * @param array       $results The calculated results data.
+			 */
+			do_action( 'ppq_before_results', $attempt, $quiz, $results );
+
+			if ( in_array( 'header', $sections, true ) ) {
+				$this->render_results_header( $attempt, $quiz, $results );
+			}
+			if ( in_array( 'guest_notice', $sections, true ) ) {
+				$this->render_guest_token_notice( $attempt );
+			}
+			if ( in_array( 'score_summary', $sections, true ) ) {
+				$this->render_score_summary( $attempt, $quiz, $results );
+			}
+			if ( in_array( 'email_notice', $sections, true ) ) {
+				$this->render_email_sent_notice( $attempt );
+			}
+			if ( in_array( 'category_breakdown', $sections, true ) ) {
+				$this->render_category_breakdown( $results, $attempt, $quiz );
+			}
+			if ( in_array( 'confidence', $sections, true ) ) {
+				$this->render_confidence_calibration( $results );
+			}
+			if ( in_array( 'feedback', $sections, true ) ) {
+				$this->render_score_feedback( $quiz, $results );
+			}
+			if ( in_array( 'actions', $sections, true ) ) {
+				$this->render_results_actions( $attempt, $quiz );
+			}
+
+			/**
+			 * Fires after the results content is rendered.
+			 *
+			 * Use this to add custom sections to the results page.
+			 *
+			 * @since 1.0.0
+			 *
+			 * @param PPQ_Attempt $attempt The attempt object.
+			 * @param PPQ_Quiz    $quiz    The quiz object.
+			 * @param array       $results The calculated results data.
+			 */
+			do_action( 'ppq_after_results', $attempt, $quiz, $results );
+			?>
 		</div>
 		<?php
 		return ob_get_clean();
@@ -230,6 +225,7 @@ class PPQ_Results_Renderer {
 	 */
 	private function render_score_summary( $attempt, $quiz, $results ) {
 		$passed_class = $attempt->passed ? 'ppq-passed' : 'ppq-failed';
+		/* translators: All caps pass/fail status shown on results page */
 		$passed_text  = $attempt->passed
 			? __( 'PASSED', 'pressprimer-quiz' )
 			: __( 'FAILED', 'pressprimer-quiz' );
@@ -289,14 +285,71 @@ class PPQ_Results_Renderer {
 	}
 
 	/**
+	 * Render email sent notice
+	 *
+	 * Shows a notice when auto-send email is enabled and the student has an email.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param PPQ_Attempt $attempt Attempt object.
+	 */
+	private function render_email_sent_notice( $attempt ) {
+		// Check if auto-send is enabled
+		$settings = get_option( 'ppq_settings', [] );
+		$auto_send = isset( $settings['email_results_auto_send'] ) && $settings['email_results_auto_send'];
+
+		if ( ! $auto_send ) {
+			return;
+		}
+
+		// Check if student has an email address
+		$has_email = false;
+		if ( $attempt->user_id ) {
+			$user = get_userdata( $attempt->user_id );
+			if ( $user && $user->user_email ) {
+				$has_email = true;
+			}
+		} elseif ( $attempt->guest_email ) {
+			$has_email = true;
+		}
+
+		if ( ! $has_email ) {
+			return;
+		}
+
+		?>
+		<div class="ppq-email-sent-notice">
+			<span class="ppq-email-sent-icon">📧</span>
+			<span class="ppq-email-sent-text"><?php esc_html_e( 'A copy of your results has been sent to your email address.', 'pressprimer-quiz' ); ?></span>
+		</div>
+		<?php
+	}
+
+	/**
 	 * Render category breakdown
 	 *
 	 * @since 1.0.0
 	 *
-	 * @param array $results Results data.
+	 * @param array       $results Results data.
+	 * @param PPQ_Attempt $attempt Attempt object.
+	 * @param PPQ_Quiz    $quiz    Quiz object.
 	 */
-	private function render_category_breakdown( $results ) {
+	private function render_category_breakdown( $results, $attempt = null, $quiz = null ) {
 		if ( empty( $results['category_scores'] ) ) {
+			return;
+		}
+
+		/**
+		 * Filter whether to show the category breakdown section.
+		 *
+		 * @since 1.0.0
+		 *
+		 * @param bool        $show    Whether to show category breakdown. Default true.
+		 * @param array       $results The results data with category_scores.
+		 * @param PPQ_Attempt $attempt The attempt object.
+		 * @param PPQ_Quiz    $quiz    The quiz object.
+		 */
+		if ( ! apply_filters( 'ppq_show_category_breakdown', true, $results, $attempt, $quiz ) ) {
 			return;
 		}
 
@@ -422,6 +475,18 @@ class PPQ_Results_Renderer {
 		?>
 		<div class="ppq-results-actions">
 			<?php
+			/**
+			 * Fires at the start of the results actions area.
+			 *
+			 * Use this to add custom buttons at the beginning of the actions section.
+			 *
+			 * @since 1.0.0
+			 *
+			 * @param PPQ_Attempt $attempt The attempt object.
+			 * @param PPQ_Quiz    $quiz    The quiz object.
+			 */
+			do_action( 'ppq_results_actions_start', $attempt, $quiz );
+
 			// LearnDash "Continue" button (only if passed and has next URL)
 			if ( $ld_nav && $attempt->passed && ! empty( $ld_nav['next_url'] ) ) :
 				?>
@@ -455,13 +520,21 @@ class PPQ_Results_Renderer {
 			<?php
 			// Email results button
 			$this->render_email_button( $attempt );
+
+			/**
+			 * Fires at the end of the results actions area.
+			 *
+			 * Use this to add custom buttons at the end of the actions section.
+			 *
+			 * @since 1.0.0
+			 *
+			 * @param PPQ_Attempt $attempt The attempt object.
+			 * @param PPQ_Quiz    $quiz    The quiz object.
+			 */
+			do_action( 'ppq_results_actions_end', $attempt, $quiz );
 			?>
 		</div>
 
-		<?php
-		// Social sharing buttons
-		$this->render_social_sharing( $attempt, $quiz );
-		?>
 		<?php
 	}
 
@@ -546,139 +619,6 @@ class PPQ_Results_Renderer {
 		</button>
 		<div class="ppq-email-status" style="display: none;"></div>
 		<?php
-	}
-
-	/**
-	 * Render social sharing buttons
-	 *
-	 * @since 1.0.0
-	 *
-	 * @param PPQ_Attempt $attempt Attempt object.
-	 * @param PPQ_Quiz    $quiz Quiz object.
-	 */
-	private function render_social_sharing( $attempt, $quiz ) {
-		// Get social sharing settings
-		$settings        = get_option( 'ppq_settings', [] );
-		$twitter_enabled = isset( $settings['social_sharing_twitter'] ) && $settings['social_sharing_twitter'];
-		$facebook_enabled = isset( $settings['social_sharing_facebook'] ) && $settings['social_sharing_facebook'];
-		$linkedin_enabled = isset( $settings['social_sharing_linkedin'] ) && $settings['social_sharing_linkedin'];
-
-		// Check if any network is enabled
-		if ( ! $twitter_enabled && ! $facebook_enabled && ! $linkedin_enabled ) {
-			return;
-		}
-
-		$include_score = isset( $settings['social_sharing_include_score'] ) ? $settings['social_sharing_include_score'] : true;
-		$message_template = isset( $settings['social_sharing_message'] ) ? $settings['social_sharing_message'] : 'I just completed {quiz_title} at {website_url} with a score of {score}%!';
-
-		// Build share message
-		$share_message = $this->build_share_message( $message_template, $attempt, $quiz, $include_score );
-		$share_url     = $this->get_share_url();
-
-		?>
-		<div class="ppq-social-sharing">
-			<h3 class="ppq-social-title"><?php esc_html_e( 'Share Your Results', 'pressprimer-quiz' ); ?></h3>
-			<div class="ppq-social-buttons">
-				<?php if ( $twitter_enabled ) : ?>
-					<?php
-					$twitter_url = add_query_arg(
-						[
-							'text' => rawurlencode( $share_message ),
-							'url'  => rawurlencode( $share_url ),
-						],
-						'https://twitter.com/intent/tweet'
-					);
-					?>
-					<a href="<?php echo esc_url( $twitter_url ); ?>" target="_blank" rel="noopener noreferrer" class="ppq-social-button ppq-twitter">
-						<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-							<path d="M23 3a10.9 10.9 0 01-3.14 1.53 4.48 4.48 0 00-7.86 3v1A10.66 10.66 0 013 4s-4 9 5 13a11.64 11.64 0 01-7 2c9 5 20 0 20-11.5a4.5 4.5 0 00-.08-.83A7.72 7.72 0 0023 3z"></path>
-						</svg>
-						<?php esc_html_e( 'Twitter', 'pressprimer-quiz' ); ?>
-					</a>
-				<?php endif; ?>
-
-				<?php if ( $facebook_enabled ) : ?>
-					<?php
-					$facebook_url = add_query_arg(
-						[
-							'u' => rawurlencode( $share_url ),
-						],
-						'https://www.facebook.com/sharer/sharer.php'
-					);
-					?>
-					<a href="<?php echo esc_url( $facebook_url ); ?>" target="_blank" rel="noopener noreferrer" class="ppq-social-button ppq-facebook">
-						<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-							<path d="M18 2h-3a5 5 0 00-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 011-1h3z"></path>
-						</svg>
-						<?php esc_html_e( 'Facebook', 'pressprimer-quiz' ); ?>
-					</a>
-				<?php endif; ?>
-
-				<?php if ( $linkedin_enabled ) : ?>
-					<?php
-					$linkedin_url = add_query_arg(
-						[
-							'mini'  => 'true',
-							'url'   => rawurlencode( $share_url ),
-							'title' => rawurlencode( $share_message ),
-						],
-						'https://www.linkedin.com/shareArticle'
-					);
-					?>
-					<a href="<?php echo esc_url( $linkedin_url ); ?>" target="_blank" rel="noopener noreferrer" class="ppq-social-button ppq-linkedin">
-						<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-							<path d="M16 8a6 6 0 016 6v7h-4v-7a2 2 0 00-2-2 2 2 0 00-2 2v7h-4v-7a6 6 0 016-6zM2 9h4v12H2z"></path>
-							<circle cx="4" cy="4" r="2"></circle>
-						</svg>
-						<?php esc_html_e( 'LinkedIn', 'pressprimer-quiz' ); ?>
-					</a>
-				<?php endif; ?>
-			</div>
-		</div>
-		<?php
-	}
-
-	/**
-	 * Build share message from template
-	 *
-	 * @since 1.0.0
-	 *
-	 * @param string      $template Message template.
-	 * @param PPQ_Attempt $attempt Attempt object.
-	 * @param PPQ_Quiz    $quiz Quiz object.
-	 * @param bool        $include_score Include score in message.
-	 * @return string Formatted message.
-	 */
-	private function build_share_message( $template, $attempt, $quiz, $include_score ) {
-		$replacements = [
-			'{quiz_title}'  => $quiz->title,
-			'{pass_status}' => $attempt->passed ? __( 'Passed', 'pressprimer-quiz' ) : __( 'Failed', 'pressprimer-quiz' ),
-			'{website_url}' => home_url( '/' ),
-		];
-
-		if ( $include_score ) {
-			$replacements['{score}'] = round( (float) $attempt->score_percent, 1 );
-		} else {
-			// Remove score token if not including score
-			$replacements['{score}'] = '';
-		}
-
-		return str_replace( array_keys( $replacements ), array_values( $replacements ), $template );
-	}
-
-	/**
-	 * Get share URL
-	 *
-	 * @since 1.0.0
-	 *
-	 * @return string Current page URL.
-	 */
-	private function get_share_url() {
-		// Get current URL
-		$url = ( is_ssl() ? 'https://' : 'http://' ) . $_SERVER['HTTP_HOST'] . $_SERVER['REQUEST_URI'];
-
-		// Remove attempt, token, and timed_out parameters to share clean quiz URL
-		return remove_query_arg( [ 'attempt', 'token', 'timed_out' ], $url );
 	}
 
 	/**
@@ -794,6 +734,7 @@ class PPQ_Results_Renderer {
 				<?php if ( $quiz->enable_confidence && null !== $item->confidence ) : ?>
 					<span class="ppq-review-confidence">
 						<?php
+						/* translators: Student's confidence level when answering the question */
 						$confidence_text = $item->confidence
 							? __( 'Confident', 'pressprimer-quiz' )
 							: __( 'Not Confident', 'pressprimer-quiz' );
@@ -810,7 +751,7 @@ class PPQ_Results_Renderer {
 						printf(
 							/* translators: %s: points earned */
 							esc_html__( 'Partial credit: %s points', 'pressprimer-quiz' ),
-							esc_html( number_format( $item->score_points, 2 ) )
+							esc_html( number_format_i18n( $item->score_points, 2 ) )
 						);
 						?>
 					</span>

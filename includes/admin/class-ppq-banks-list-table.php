@@ -380,8 +380,9 @@ class PPQ_Banks_List_Table extends WP_List_Table {
 	 * @return string Date column HTML.
 	 */
 	protected function column_date( $item ) {
-		$date = mysql2date( get_option( 'date_format' ), $item->created_at );
-		$time = mysql2date( get_option( 'time_format' ), $item->created_at );
+		$timestamp = strtotime( $item->created_at );
+		$date = wp_date( get_option( 'date_format' ), $timestamp );
+		$time = wp_date( get_option( 'time_format' ), $timestamp );
 
 		return sprintf(
 			'%s<br><span class="ppq-text-muted">%s</span>',

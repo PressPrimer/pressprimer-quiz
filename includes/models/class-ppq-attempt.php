@@ -703,9 +703,10 @@ class PPQ_Attempt extends PPQ_Model {
 		// submission even if time has expired - this saves the user's answers.
 		// The timeout check is enforced when resuming attempts or saving new answers.
 
-		// Calculate elapsed time
-		$started_timestamp = strtotime( $this->started_at );
-		$now = time();
+		// Calculate elapsed time using WordPress timezone-aware functions
+		// started_at is stored in WordPress local time via current_time('mysql')
+		$started_timestamp = strtotime( get_gmt_from_date( $this->started_at ) );
+		$now = time(); // UTC timestamp
 		$elapsed_seconds = $now - $started_timestamp;
 		$elapsed_ms = $elapsed_seconds * 1000;
 
@@ -821,7 +822,7 @@ class PPQ_Attempt extends PPQ_Model {
 		$quiz = $this->get_quiz();
 
 		// No time limit
-		if ( ! $quiz->time_limit_seconds ) {
+		if ( ! $quiz || ! $quiz->time_limit_seconds ) {
 			return false;
 		}
 
@@ -830,9 +831,10 @@ class PPQ_Attempt extends PPQ_Model {
 			return false;
 		}
 
-		// Calculate elapsed time
-		$started_timestamp = strtotime( $this->started_at );
-		$now = time();
+		// Calculate elapsed time using WordPress timezone-aware functions
+		// started_at is stored in WordPress local time via current_time('mysql')
+		$started_timestamp = strtotime( get_gmt_from_date( $this->started_at ) );
+		$now = time(); // UTC timestamp
 		$elapsed_seconds = $now - $started_timestamp;
 
 		// 30 second grace period for network latency

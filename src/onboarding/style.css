@@ -56,6 +56,17 @@
 	background: linear-gradient(135deg, #52c41a 0%, #389e0d 100%);
 }
 
+/* Logo for welcome modal */
+.ppq-onboarding-modal__logo {
+	margin: 0 auto 32px;
+	text-align: center;
+}
+
+.ppq-onboarding-modal__logo-img {
+	max-height: 75px;
+	width: auto;
+}
+
 .ppq-onboarding-modal__title {
 	font-size: 28px;
 	font-weight: 700;
@@ -83,6 +94,25 @@
 	height: 44px;
 	font-size: 16px;
 	font-weight: 500;
+}
+
+/* Welcome modal specific button styles - teal color */
+.ppq-onboarding-modal--welcome .ppq-onboarding-modal__start-btn {
+	background-color: #14B8A6 !important;
+	border-color: #14B8A6 !important;
+}
+
+.ppq-onboarding-modal--welcome .ppq-onboarding-modal__start-btn:hover {
+	background-color: #0d9488 !important;
+	border-color: #0d9488 !important;
+}
+
+.ppq-onboarding-modal--welcome .ppq-onboarding-modal__skip-btn {
+	color: #14B8A6;
+}
+
+.ppq-onboarding-modal--welcome .ppq-onboarding-modal__skip-btn:hover {
+	color: #0d9488;
 }
 
 .ppq-onboarding-modal__skip-btn {

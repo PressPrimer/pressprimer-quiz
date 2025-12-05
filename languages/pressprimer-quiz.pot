@@ -1,0 +1,1259 @@
+# Copyright (C) 2025 PressPrimer
+# This file is distributed under the same license as the PressPrimer Quiz plugin.
+msgid ""
+msgstr ""
+"Project-Id-Version: PressPrimer Quiz 1.0.0\n"
+"Report-Msgid-Bugs-To: https://wordpress.org/support/plugin/pressprimer-quiz\n"
+"POT-Creation-Date: 2025-12-04 00:00:00+00:00\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"Language: \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+"X-Generator: Claude Code\n"
+"X-Domain: pressprimer-quiz\n"
+
+#. Plugin Name of the plugin
+msgid "PressPrimer Quiz"
+msgstr ""
+
+#. Description of the plugin
+msgid "A powerful quiz and assessment plugin for WordPress."
+msgstr ""
+
+#. Author of the plugin
+msgid "PressPrimer"
+msgstr ""
+
+#. Author URI of the plugin
+msgid "https://pressprimer.com"
+msgstr ""
+
+#: includes/admin/class-ppq-admin.php
+msgid "Quizzes"
+msgstr ""
+
+#: includes/admin/class-ppq-admin.php
+msgid "Questions"
+msgstr ""
+
+#: includes/admin/class-ppq-admin.php
+msgid "Question Banks"
+msgstr ""
+
+#: includes/admin/class-ppq-admin.php
+msgid "Reports"
+msgstr ""
+
+#: includes/admin/class-ppq-admin.php
+msgid "Settings"
+msgstr ""
+
+#: includes/admin/class-ppq-admin.php
+msgid "Dashboard"
+msgstr ""
+
+#: includes/admin/class-ppq-admin-settings.php
+msgid "General"
+msgstr ""
+
+#: includes/admin/class-ppq-admin-settings.php
+msgid "Quiz Defaults"
+msgstr ""
+
+#: includes/admin/class-ppq-admin-settings.php
+msgid "Email"
+msgstr ""
+
+#: includes/admin/class-ppq-admin-settings.php
+msgid "API Keys"
+msgstr ""
+
+#: includes/admin/class-ppq-admin-settings.php
+msgid "Advanced"
+msgstr ""
+
+#: includes/admin/class-ppq-admin-settings.php
+msgid "General plugin settings."
+msgstr ""
+
+#: includes/admin/class-ppq-admin-settings.php
+msgid "Default values used when creating new quizzes."
+msgstr ""
+
+#: includes/admin/class-ppq-admin-settings.php
+msgid "Configure email notifications sent by the plugin."
+msgstr ""
+
+#: includes/admin/class-ppq-admin-settings.php
+msgid "Configure your personal OpenAI API key for AI-powered question generation. Your key is stored securely and encrypted."
+msgstr ""
+
+#: includes/admin/class-ppq-admin-settings.php
+msgid "Advanced settings. Use caution when modifying these options."
+msgstr ""
+
+#: includes/admin/class-ppq-admin-settings.php
+msgid "Passing Score"
+msgstr ""
+
+#: includes/admin/class-ppq-admin-settings.php
+msgid "Default passing score for new quizzes (percentage)."
+msgstr ""
+
+#: includes/admin/class-ppq-admin-settings.php
+msgid "Quiz Mode"
+msgstr ""
+
+#: includes/admin/class-ppq-admin-settings.php
+msgid "Tutorial"
+msgstr ""
+
+#: includes/admin/class-ppq-admin-settings.php
+msgid "Timed"
+msgstr ""
+
+#: includes/admin/class-ppq-admin-settings.php
+msgid "Time Limit"
+msgstr ""
+
+#: includes/admin/class-ppq-admin-settings.php
+msgid "minutes"
+msgstr ""
+
+#: includes/admin/class-ppq-admin-settings.php
+msgid "Default time limit for timed quizzes. Set to 0 for unlimited time."
+msgstr ""
+
+#: includes/admin/class-ppq-admin-settings.php
+msgid "Max Attempts"
+msgstr ""
+
+#: includes/admin/class-ppq-admin-settings.php
+msgid "Default maximum attempts per user. Set to 0 for unlimited attempts."
+msgstr ""
+
+#: includes/admin/class-ppq-admin-settings.php
+msgid "Allow Backward Navigation"
+msgstr ""
+
+#: includes/admin/class-ppq-admin-settings.php
+msgid "Allow users to go back to previous questions by default."
+msgstr ""
+
+#: includes/admin/class-ppq-admin-settings.php
+msgid "Randomize Questions"
+msgstr ""
+
+#: includes/admin/class-ppq-admin-settings.php
+msgid "Randomize question order by default."
+msgstr ""
+
+#: includes/admin/class-ppq-admin-settings.php
+msgid "Randomize Answers"
+msgstr ""
+
+#: includes/admin/class-ppq-admin-settings.php
+msgid "Randomize answer options by default."
+msgstr ""
+
+#: includes/admin/class-ppq-admin-settings.php
+msgid "Theme"
+msgstr ""
+
+#: includes/admin/class-ppq-admin-settings.php
+msgid "Default"
+msgstr ""
+
+#: includes/admin/class-ppq-admin-settings.php
+msgid "Modern"
+msgstr ""
+
+#: includes/admin/class-ppq-admin-settings.php
+msgid "Minimal"
+msgstr ""
+
+#: includes/admin/class-ppq-admin-settings.php
+msgid "Default visual theme for quizzes."
+msgstr ""
+
+#: includes/admin/class-ppq-admin-settings.php
+msgid "Email From Name"
+msgstr ""
+
+#: includes/admin/class-ppq-admin-settings.php
+msgid "Email From Address"
+msgstr ""
+
+#: includes/admin/class-ppq-admin-settings.php
+msgid "Send Results Email"
+msgstr ""
+
+#: includes/admin/class-ppq-admin-settings.php
+msgid "Never"
+msgstr ""
+
+#: includes/admin/class-ppq-admin-settings.php
+msgid "Always"
+msgstr ""
+
+#: includes/admin/class-ppq-admin-settings.php
+msgid "On Pass Only"
+msgstr ""
+
+#: includes/admin/class-ppq-admin-settings.php
+msgid "OpenAI API Key"
+msgstr ""
+
+#: includes/admin/class-ppq-admin-settings.php
+msgid "Save API Key"
+msgstr ""
+
+#: includes/admin/class-ppq-admin-settings.php
+msgid "Remove API Key"
+msgstr ""
+
+#: includes/admin/class-ppq-admin-settings.php
+msgid "Validate API Key"
+msgstr ""
+
+#: includes/admin/class-ppq-admin-settings.php
+msgid "API key is valid and working correctly."
+msgstr ""
+
+#: includes/admin/class-ppq-admin-settings.php
+msgid "API key saved and validated successfully."
+msgstr ""
+
+#: includes/admin/class-ppq-admin-settings.php
+msgid "API key removed successfully."
+msgstr ""
+
+#: includes/admin/class-ppq-admin-settings.php
+msgid "API key not configured."
+msgstr ""
+
+#: includes/admin/class-ppq-admin-settings.php
+#: includes/admin/class-ppq-admin-questions.php
+#: includes/admin/class-ppq-admin-quizzes.php
+msgid "Delete"
+msgstr ""
+
+#: includes/admin/class-ppq-admin-settings.php
+#: includes/admin/class-ppq-admin-questions.php
+#: includes/admin/class-ppq-admin-quizzes.php
+msgid "Edit"
+msgstr ""
+
+#: includes/admin/class-ppq-admin-settings.php
+#: includes/admin/class-ppq-admin-questions.php
+#: includes/admin/class-ppq-admin-quizzes.php
+msgid "Cancel"
+msgstr ""
+
+#: includes/admin/class-ppq-admin-settings.php
+#: includes/admin/class-ppq-admin-questions.php
+#: includes/admin/class-ppq-admin-quizzes.php
+msgid "Save"
+msgstr ""
+
+#: includes/admin/class-ppq-admin-questions.php
+msgid "Add New Question"
+msgstr ""
+
+#: includes/admin/class-ppq-admin-questions.php
+msgid "Edit Question"
+msgstr ""
+
+#: includes/admin/class-ppq-admin-questions.php
+msgid "Question"
+msgstr ""
+
+#: includes/admin/class-ppq-admin-questions.php
+msgid "Type"
+msgstr ""
+
+#: includes/admin/class-ppq-admin-questions.php
+msgid "Difficulty"
+msgstr ""
+
+#: includes/admin/class-ppq-admin-questions.php
+msgid "Categories"
+msgstr ""
+
+#: includes/admin/class-ppq-admin-questions.php
+msgid "Banks"
+msgstr ""
+
+#: includes/admin/class-ppq-admin-questions.php
+msgid "Author"
+msgstr ""
+
+#: includes/admin/class-ppq-admin-questions.php
+msgid "Date"
+msgstr ""
+
+#: includes/admin/class-ppq-admin-questions.php
+msgid "Multiple Choice"
+msgstr ""
+
+#: includes/admin/class-ppq-admin-questions.php
+msgid "Multiple Answer"
+msgstr ""
+
+#: includes/admin/class-ppq-admin-questions.php
+msgid "True/False"
+msgstr ""
+
+#: includes/admin/class-ppq-admin-questions.php
+msgid "Easy"
+msgstr ""
+
+#: includes/admin/class-ppq-admin-questions.php
+msgid "Medium"
+msgstr ""
+
+#: includes/admin/class-ppq-admin-questions.php
+msgid "Hard"
+msgstr ""
+
+#: includes/admin/class-ppq-admin-questions.php
+msgid "Question Stem"
+msgstr ""
+
+#: includes/admin/class-ppq-admin-questions.php
+msgid "Enter your question here..."
+msgstr ""
+
+#: includes/admin/class-ppq-admin-questions.php
+msgid "Answer Options"
+msgstr ""
+
+#: includes/admin/class-ppq-admin-questions.php
+msgid "Add Answer"
+msgstr ""
+
+#: includes/admin/class-ppq-admin-questions.php
+msgid "Correct"
+msgstr ""
+
+#: includes/admin/class-ppq-admin-questions.php
+msgid "Incorrect"
+msgstr ""
+
+#: includes/admin/class-ppq-admin-questions.php
+msgid "Feedback (Correct Answer)"
+msgstr ""
+
+#: includes/admin/class-ppq-admin-questions.php
+msgid "Feedback (Incorrect Answer)"
+msgstr ""
+
+#: includes/admin/class-ppq-admin-questions.php
+msgid "Points"
+msgstr ""
+
+#: includes/admin/class-ppq-admin-questions.php
+msgid "Search Questions"
+msgstr ""
+
+#: includes/admin/class-ppq-admin-questions.php
+msgid "No questions found."
+msgstr ""
+
+#: includes/admin/class-ppq-admin-questions.php
+msgid "Duplicate"
+msgstr ""
+
+#: includes/admin/class-ppq-admin-questions.php
+#. translators: %d: number of questions deleted
+msgid "%d question deleted."
+msgid_plural "%d questions deleted."
+msgstr[0] ""
+msgstr[1] ""
+
+#: includes/admin/class-ppq-admin-quizzes.php
+msgid "Add New Quiz"
+msgstr ""
+
+#: includes/admin/class-ppq-admin-quizzes.php
+msgid "Edit Quiz"
+msgstr ""
+
+#: includes/admin/class-ppq-admin-quizzes.php
+msgid "Quiz"
+msgstr ""
+
+#: includes/admin/class-ppq-admin-quizzes.php
+msgid "Title"
+msgstr ""
+
+#: includes/admin/class-ppq-admin-quizzes.php
+msgid "Mode"
+msgstr ""
+
+#: includes/admin/class-ppq-admin-quizzes.php
+msgid "Status"
+msgstr ""
+
+#: includes/admin/class-ppq-admin-quizzes.php
+msgid "Draft"
+msgstr ""
+
+#: includes/admin/class-ppq-admin-quizzes.php
+msgid "Published"
+msgstr ""
+
+#: includes/admin/class-ppq-admin-quizzes.php
+msgid "Description"
+msgstr ""
+
+#: includes/admin/class-ppq-admin-quizzes.php
+msgid "No quizzes found."
+msgstr ""
+
+#: includes/admin/class-ppq-admin-quizzes.php
+msgid "Preview"
+msgstr ""
+
+#: includes/admin/class-ppq-admin-quizzes.php
+#. translators: %d: number of quizzes deleted
+msgid "%d quiz deleted."
+msgid_plural "%d quizzes deleted."
+msgstr[0] ""
+msgstr[1] ""
+
+#: includes/admin/class-ppq-admin-quizzes.php
+#. translators: %d: number of quizzes published
+msgid "%d quiz published."
+msgid_plural "%d quizzes published."
+msgstr[0] ""
+msgstr[1] ""
+
+#: includes/admin/class-ppq-admin-quizzes.php
+#. translators: %d: number of quizzes moved to draft
+msgid "%d quiz moved to draft."
+msgid_plural "%d quizzes moved to draft."
+msgstr[0] ""
+msgstr[1] ""
+
+#: includes/admin/class-ppq-admin-quizzes.php
+#. translators: %d: minutes
+msgid "%d minute"
+msgid_plural "%d minutes"
+msgstr[0] ""
+msgstr[1] ""
+
+#: includes/admin/class-ppq-admin-quizzes.php
+#. translators: %s: human-readable time difference
+msgid "%s ago"
+msgstr ""
+
+#: includes/admin/class-ppq-admin-banks.php
+msgid "Add New Bank"
+msgstr ""
+
+#: includes/admin/class-ppq-admin-banks.php
+msgid "Edit Bank"
+msgstr ""
+
+#: includes/admin/class-ppq-admin-banks.php
+msgid "Bank Name"
+msgstr ""
+
+#: includes/admin/class-ppq-admin-banks.php
+msgid "No question banks found."
+msgstr ""
+
+#: includes/frontend/class-ppq-quiz-renderer.php
+msgid "Quiz"
+msgstr ""
+
+#: includes/frontend/class-ppq-quiz-renderer.php
+msgid "Skip to questions"
+msgstr ""
+
+#: includes/frontend/class-ppq-quiz-renderer.php
+msgid "Fixed Quiz"
+msgstr ""
+
+#: includes/frontend/class-ppq-quiz-renderer.php
+msgid "Random Quiz"
+msgstr ""
+
+#: includes/frontend/class-ppq-quiz-renderer.php
+msgid "Adaptive Quiz"
+msgstr ""
+
+#: includes/frontend/class-ppq-quiz-renderer.php
+msgid "All participants will receive the same questions in the same order."
+msgstr ""
+
+#: includes/frontend/class-ppq-quiz-renderer.php
+msgid "Questions are randomly selected from question pools each time you take the quiz."
+msgstr ""
+
+#: includes/frontend/class-ppq-quiz-renderer.php
+msgid "Question difficulty adapts based on your performance."
+msgstr ""
+
+#: includes/frontend/class-ppq-quiz-renderer.php
+msgid "Passing Score"
+msgstr ""
+
+#: includes/frontend/class-ppq-quiz-renderer.php
+msgid "Previous Attempts"
+msgstr ""
+
+#: includes/frontend/class-ppq-quiz-renderer.php
+msgid "Passed"
+msgstr ""
+
+#: includes/frontend/class-ppq-quiz-renderer.php
+msgid "Start Quiz"
+msgstr ""
+
+#: includes/frontend/class-ppq-quiz-renderer.php
+msgid "Resume Quiz"
+msgstr ""
+
+#: includes/frontend/class-ppq-quiz-renderer.php
+msgid "Retake Quiz"
+msgstr ""
+
+#: includes/frontend/class-ppq-quiz-renderer.php
+#. translators: %d: maximum number of attempts
+msgid "You have reached the maximum number of attempts (%d) for this quiz."
+msgstr ""
+
+#: includes/frontend/class-ppq-quiz-renderer.php
+#. translators: %d: minutes to wait
+msgid "Please wait %d minute before retaking this quiz."
+msgid_plural "Please wait %d minutes before retaking this quiz."
+msgstr[0] ""
+msgstr[1] ""
+
+#: includes/frontend/class-ppq-quiz-renderer.php
+msgid "Question"
+msgstr ""
+
+#: includes/frontend/class-ppq-quiz-renderer.php
+#. translators: %s: points value
+msgid "%s points"
+msgstr ""
+
+#: includes/frontend/class-ppq-quiz-renderer.php
+msgid "Previous"
+msgstr ""
+
+#: includes/frontend/class-ppq-quiz-renderer.php
+msgid "Next"
+msgstr ""
+
+#: includes/frontend/class-ppq-quiz-renderer.php
+msgid "Submit Quiz"
+msgstr ""
+
+#: includes/frontend/class-ppq-quiz-renderer.php
+msgid "Check Answer"
+msgstr ""
+
+#: includes/frontend/class-ppq-quiz-renderer.php
+msgid "Progress"
+msgstr ""
+
+#: includes/frontend/class-ppq-quiz-renderer.php
+msgid "Timer"
+msgstr ""
+
+#: includes/frontend/class-ppq-quiz-renderer.php
+msgid "Navigation"
+msgstr ""
+
+#: includes/frontend/class-ppq-quiz-renderer.php
+msgid "Go to question"
+msgstr ""
+
+#: includes/frontend/class-ppq-results-renderer.php
+msgid "Quiz Results"
+msgstr ""
+
+#: includes/frontend/class-ppq-results-renderer.php
+msgid "Your Score"
+msgstr ""
+
+#: includes/frontend/class-ppq-results-renderer.php
+msgid "Failed"
+msgstr ""
+
+#: includes/frontend/class-ppq-results-renderer.php
+msgid "Time Spent"
+msgstr ""
+
+#: includes/frontend/class-ppq-results-renderer.php
+msgid "Category Breakdown"
+msgstr ""
+
+#: includes/frontend/class-ppq-results-renderer.php
+msgid "Question Review"
+msgstr ""
+
+#: includes/frontend/class-ppq-results-renderer.php
+#. translators: %s: points earned
+msgid "Partial credit: %s points"
+msgstr ""
+
+#: includes/frontend/class-ppq-results-renderer.php
+msgid "Your Answer"
+msgstr ""
+
+#: includes/frontend/class-ppq-results-renderer.php
+msgid "Correct Answer"
+msgstr ""
+
+#: includes/frontend/class-ppq-results-renderer.php
+msgid "View Results"
+msgstr ""
+
+#: includes/frontend/class-ppq-results-renderer.php
+msgid "Try Again"
+msgstr ""
+
+#: includes/frontend/class-ppq-shortcodes.php
+msgid "My Quiz Attempts"
+msgstr ""
+
+#: includes/frontend/class-ppq-shortcodes.php
+msgid "Score"
+msgstr ""
+
+#: includes/frontend/class-ppq-shortcodes.php
+msgid "Duration"
+msgstr ""
+
+#: includes/frontend/class-ppq-shortcodes.php
+msgid "Actions"
+msgstr ""
+
+#: includes/frontend/class-ppq-shortcodes.php
+msgid "In Progress"
+msgstr ""
+
+#: includes/frontend/class-ppq-shortcodes.php
+msgid "Abandoned"
+msgstr ""
+
+#: includes/frontend/class-ppq-shortcodes.php
+msgid "You haven't taken any quizzes yet."
+msgstr ""
+
+#: includes/frontend/class-ppq-shortcodes.php
+msgid "Please log in to view your quiz attempts."
+msgstr ""
+
+#: includes/frontend/class-ppq-ajax-handler.php
+#: includes/api/class-ppq-rest-controller.php
+msgid "Invalid quiz ID."
+msgstr ""
+
+#: includes/frontend/class-ppq-ajax-handler.php
+msgid "Quiz not found."
+msgstr ""
+
+#: includes/frontend/class-ppq-ajax-handler.php
+msgid "This quiz is not available."
+msgstr ""
+
+#: includes/frontend/class-ppq-ajax-handler.php
+msgid "Invalid request."
+msgstr ""
+
+#: includes/frontend/class-ppq-ajax-handler.php
+msgid "Failed to save answer."
+msgstr ""
+
+#: includes/frontend/class-ppq-ajax-handler.php
+msgid "Answer saved."
+msgstr ""
+
+#: includes/frontend/class-ppq-ajax-handler.php
+#. translators: %d: number of answers saved
+msgid "%d answer saved."
+msgid_plural "%d answers saved."
+msgstr[0] ""
+msgstr[1] ""
+
+#: includes/frontend/class-ppq-ajax-handler.php
+msgid "Quiz submitted successfully."
+msgstr ""
+
+#: includes/services/class-ppq-email-service.php
+msgid "Quiz Results"
+msgstr ""
+
+#: includes/services/class-ppq-ai-service.php
+msgid "API key is required."
+msgstr ""
+
+#: includes/services/class-ppq-ai-service.php
+msgid "Content is required for question generation."
+msgstr ""
+
+#: includes/services/class-ppq-ai-service.php
+msgid "Failed to connect to AI service."
+msgstr ""
+
+#: includes/services/class-ppq-ai-service.php
+msgid "AI service error."
+msgstr ""
+
+#: includes/utilities/class-ppq-helpers.php
+#. translators: %d: hours
+msgid "%d hour"
+msgid_plural "%d hours"
+msgstr[0] ""
+msgstr[1] ""
+
+#: includes/utilities/class-ppq-helpers.php
+#. translators: %d: minutes
+msgid "%d minute"
+msgid_plural "%d minutes"
+msgstr[0] ""
+msgstr[1] ""
+
+#: includes/utilities/class-ppq-helpers.php
+#. translators: %d: seconds
+msgid "%d second"
+msgid_plural "%d seconds"
+msgstr[0] ""
+msgstr[1] ""
+
+#: includes/utilities/class-ppq-helpers.php
+msgid "0 seconds"
+msgstr ""
+
+#: includes/integrations/class-ppq-learndash.php
+msgid "PressPrimer Quiz"
+msgstr ""
+
+#: includes/integrations/class-ppq-learndash.php
+msgid "Select a quiz to display in this lesson."
+msgstr ""
+
+#: includes/integrations/class-ppq-learndash.php
+msgid "Select Quiz"
+msgstr ""
+
+#: includes/integrations/class-ppq-learndash.php
+msgid "No Quiz"
+msgstr ""
+
+#: includes/integrations/class-ppq-learndash.php
+msgid "Require passing to complete lesson"
+msgstr ""
+
+#: includes/integrations/class-ppq-tutorlms.php
+msgid "Enroll in this course to access the quiz."
+msgstr ""
+
+#: includes/integrations/class-ppq-lifterlms.php
+msgid "Enroll in this course to access the quiz."
+msgstr ""
+
+#: includes/integrations/uncanny-automator/class-ppq-automator-helpers.php
+msgid "Quiz Title"
+msgstr ""
+
+#: includes/integrations/uncanny-automator/class-ppq-automator-helpers.php
+msgid "Quiz ID"
+msgstr ""
+
+#: includes/integrations/uncanny-automator/class-ppq-automator-helpers.php
+msgid "Score (Percentage)"
+msgstr ""
+
+#: includes/integrations/uncanny-automator/class-ppq-automator-helpers.php
+msgid "Score (Points)"
+msgstr ""
+
+#: includes/integrations/uncanny-automator/class-ppq-automator-helpers.php
+msgid "Max Points"
+msgstr ""
+
+#: includes/integrations/uncanny-automator/class-ppq-automator-helpers.php
+msgid "Pass/Fail Status"
+msgstr ""
+
+#: includes/integrations/uncanny-automator/class-ppq-automator-helpers.php
+msgid "Time Spent"
+msgstr ""
+
+#: includes/integrations/uncanny-automator/class-ppq-automator-helpers.php
+msgid "Attempt ID"
+msgstr ""
+
+#: includes/integrations/uncanny-automator/triggers/class-ppq-quiz-completed.php
+msgid "A user completes {{a quiz}}"
+msgstr ""
+
+#: includes/integrations/uncanny-automator/triggers/class-ppq-quiz-passed.php
+msgid "A user passes {{a quiz}}"
+msgstr ""
+
+#: includes/integrations/uncanny-automator/triggers/class-ppq-quiz-failed.php
+msgid "A user fails {{a quiz}}"
+msgstr ""
+
+#: includes/admin/class-ppq-onboarding.php
+msgid "Unauthorized access."
+msgstr ""
+
+#: includes/admin/class-ppq-onboarding.php
+msgid "Invalid action."
+msgstr ""
+
+#: includes/admin/class-ppq-admin-ai-generation.php
+msgid "Generate Questions"
+msgstr ""
+
+#: includes/admin/class-ppq-admin-ai-generation.php
+#. translators: %d: number of questions generated
+msgid "%d question generated successfully."
+msgid_plural "%d questions generated successfully."
+msgstr[0] ""
+msgstr[1] ""
+
+#: includes/admin/class-ppq-admin-ai-generation.php
+msgid "Upload a file (PDF or Word) or paste text to generate questions."
+msgstr ""
+
+#: includes/admin/class-ppq-admin-ai-generation.php
+msgid "Paste Content"
+msgstr ""
+
+#: includes/admin/class-ppq-admin-ai-generation.php
+msgid "Upload File"
+msgstr ""
+
+#: includes/admin/class-ppq-admin-ai-generation.php
+msgid "Number of Questions"
+msgstr ""
+
+#: includes/admin/class-ppq-admin-ai-generation.php
+msgid "Question Types"
+msgstr ""
+
+#: includes/admin/class-ppq-admin-ai-generation.php
+msgid "Generate"
+msgstr ""
+
+#: includes/admin/class-ppq-admin-ai-generation.php
+msgid "Generating..."
+msgstr ""
+
+#: includes/blocks/class-ppq-blocks.php
+msgid "Quiz Block"
+msgstr ""
+
+#: includes/blocks/class-ppq-blocks.php
+msgid "Display a PressPrimer Quiz"
+msgstr ""
+
+#: includes/blocks/class-ppq-blocks.php
+msgid "My Attempts Block"
+msgstr ""
+
+#: includes/blocks/class-ppq-blocks.php
+msgid "Display the current user's quiz attempts"
+msgstr ""
+
+#: includes/models/class-ppq-attempt.php
+msgid "You are not authorized to view this quiz."
+msgstr ""
+
+#: includes/models/class-ppq-attempt.php
+msgid "Maximum attempts reached."
+msgstr ""
+
+#: includes/class-ppq-activator.php
+msgid "PressPrimer Quiz requires WordPress %s or higher."
+msgstr ""
+
+#: includes/class-ppq-activator.php
+msgid "PressPrimer Quiz requires PHP %s or higher."
+msgstr ""
+
+#. JavaScript strings passed via wp_localize_script
+
+#: assets/js/quiz.js
+msgid "Error"
+msgstr ""
+
+#: assets/js/quiz.js
+msgid "Email is required for guest users."
+msgstr ""
+
+#: assets/js/quiz.js
+msgid "Saving..."
+msgstr ""
+
+#: assets/js/quiz.js
+msgid "Saved"
+msgstr ""
+
+#: assets/js/quiz.js
+msgid "Save failed"
+msgstr ""
+
+#: assets/js/quiz.js
+msgid "Question {current} of {total}"
+msgstr ""
+
+#: assets/js/quiz.js
+msgid "Checking..."
+msgstr ""
+
+#: assets/js/quiz.js
+msgid "Correct!"
+msgstr ""
+
+#: assets/js/quiz.js
+msgid "Warning: One minute remaining!"
+msgstr ""
+
+#: assets/js/quiz.js
+msgid "Warning: Five minutes remaining!"
+msgstr ""
+
+#: assets/js/quiz.js
+msgid "Are you sure you want to submit this quiz?"
+msgstr ""
+
+#: assets/js/quiz.js
+msgid "You have unanswered questions."
+msgstr ""
+
+#: assets/js/quiz.js
+msgid "Submit Anyway"
+msgstr ""
+
+#: assets/js/quiz.js
+msgid "Go Back"
+msgstr ""
+
+#: assets/js/admin.js
+msgid "Are you sure you want to delete this item?"
+msgstr ""
+
+#: assets/js/admin.js
+msgid "Delete Item"
+msgstr ""
+
+#: assets/js/admin.js
+msgid "Yes"
+msgstr ""
+
+#: assets/js/admin.js
+msgid "No"
+msgstr ""
+
+#: assets/js/admin.js
+msgid "OK"
+msgstr ""
+
+#: assets/js/admin.js
+msgid "Confirm"
+msgstr ""
+
+#: assets/js/admin.js
+msgid "An error occurred."
+msgstr ""
+
+#. React components using @wordpress/i18n
+
+#: src/dashboard/components/Dashboard.jsx
+msgid "Welcome to PressPrimer Quiz! Here's an overview of recent quiz activity."
+msgstr ""
+
+#: src/reports/components/Reports.jsx
+msgid "View quiz performance and student results."
+msgstr ""
+
+#: src/reports/components/Reports.jsx
+msgid "Available Reports"
+msgstr ""
+
+#: src/reports/components/Reports.jsx
+msgid "Quiz Performance"
+msgstr ""
+
+#: src/reports/components/Reports.jsx
+msgid "See how each quiz is performing with attempt counts, average scores, and pass rates."
+msgstr ""
+
+#: src/reports/components/Reports.jsx
+msgid "Recent Attempts"
+msgstr ""
+
+#: src/reports/components/Reports.jsx
+msgid "View individual student quiz attempts with scores, status, and detailed breakdowns."
+msgstr ""
+
+#: src/reports/components/Reports.jsx
+msgid "Question Analysis"
+msgstr ""
+
+#: src/reports/components/Reports.jsx
+msgid "Identify difficult questions and see which ones students struggle with most."
+msgstr ""
+
+#: src/reports/components/Reports.jsx
+msgid "Student Progress"
+msgstr ""
+
+#: src/reports/components/Reports.jsx
+msgid "Track individual student performance over time across all quizzes."
+msgstr ""
+
+#: src/reports/components/Reports.jsx
+msgid "Category Breakdown"
+msgstr ""
+
+#: src/reports/components/Reports.jsx
+msgid "Analyze performance by question category to identify knowledge gaps."
+msgstr ""
+
+#: src/reports/components/Reports.jsx
+msgid "Group Comparison"
+msgstr ""
+
+#: src/reports/components/Reports.jsx
+msgid "Compare quiz performance across different student groups."
+msgstr ""
+
+#: src/reports/components/Reports.jsx
+msgid "Pro"
+msgstr ""
+
+#: src/reports/components/Reports.jsx
+msgid "Educator"
+msgstr ""
+
+#: src/reports/components/Reports.jsx
+msgid "Loading..."
+msgstr ""
+
+#: src/reports/components/OverviewCards.jsx
+msgid "Total Attempts"
+msgstr ""
+
+#: src/reports/components/OverviewCards.jsx
+msgid "Average Score"
+msgstr ""
+
+#: src/reports/components/OverviewCards.jsx
+msgid "Pass Rate"
+msgstr ""
+
+#: src/reports/components/OverviewCards.jsx
+msgid "Avg. Time"
+msgstr ""
+
+#: src/reports/components/DateRangePicker.jsx
+msgid "Last 7 days"
+msgstr ""
+
+#: src/reports/components/DateRangePicker.jsx
+msgid "Last 30 days"
+msgstr ""
+
+#: src/reports/components/DateRangePicker.jsx
+msgid "Last 90 days"
+msgstr ""
+
+#: src/reports/components/DateRangePicker.jsx
+msgid "All time"
+msgstr ""
+
+#: src/reports/components/DateRangePicker.jsx
+msgid "Custom"
+msgstr ""
+
+#: src/reports/components/DateRangePicker.jsx
+msgid "Date Range:"
+msgstr ""
+
+#: src/reports/components/AttemptDetailModal.jsx
+msgid "Attempt Details"
+msgstr ""
+
+#: src/reports/components/AttemptDetailModal.jsx
+msgid "Close"
+msgstr ""
+
+#: src/reports/components/AttemptDetailModal.jsx
+msgid "Student Information"
+msgstr ""
+
+#: src/reports/components/AttemptDetailModal.jsx
+msgid "Name"
+msgstr ""
+
+#: src/reports/components/AttemptDetailModal.jsx
+msgid "Guest"
+msgstr ""
+
+#: src/reports/components/AttemptDetailModal.jsx
+msgid "Not provided"
+msgstr ""
+
+#: src/reports/components/AttemptDetailModal.jsx
+msgid "Quiz Results"
+msgstr ""
+
+#: src/reports/components/AttemptDetailModal.jsx
+msgid "Result"
+msgstr ""
+
+#: src/reports/components/AttemptDetailModal.jsx
+msgid "Timing"
+msgstr ""
+
+#: src/reports/components/QuizPerformanceReport.jsx
+msgid "All Reports"
+msgstr ""
+
+#: src/reports/components/QuizPerformanceReport.jsx
+msgid "Attempts"
+msgstr ""
+
+#: src/reports/components/QuizPerformanceReport.jsx
+msgid "Avg Score"
+msgstr ""
+
+#: src/reports/components/QuizPerformanceReport.jsx
+msgid "Avg Time"
+msgstr ""
+
+#: src/reports/components/QuizPerformanceReport.jsx
+msgid "Search quizzes..."
+msgstr ""
+
+#: src/bank-editor/components/BankEditor.jsx
+msgid "Bank created successfully!"
+msgstr ""
+
+#: src/bank-editor/components/BankEditor.jsx
+msgid "Bank updated successfully!"
+msgstr ""
+
+#: src/bank-editor/components/BankEditor.jsx
+msgid "Failed to save bank. Please try again."
+msgstr ""
+
+#: src/bank-editor/components/BankEditor.jsx
+msgid "Are you sure you want to delete this bank? This action cannot be undone."
+msgstr ""
+
+#: src/bank-editor/components/BankEditor.jsx
+msgid "Bank deleted successfully!"
+msgstr ""
+
+#: src/bank-editor/components/BankEditor.jsx
+msgid "Failed to delete bank. Please try again."
+msgstr ""
+
+#: src/bank-editor/components/BankEditor.jsx
+msgid "Add Question Bank"
+msgstr ""
+
+#: src/bank-editor/components/BankEditor.jsx
+msgid "Edit Question Bank"
+msgstr ""
+
+#: src/bank-editor/components/BankEditor.jsx
+msgid "Create Bank"
+msgstr ""
+
+#: src/bank-editor/components/BankEditor.jsx
+msgid "Update Bank"
+msgstr ""
+
+#: src/bank-editor/components/BankEditor.jsx
+msgid "Please enter a bank name"
+msgstr ""
+
+#: src/bank-editor/components/BankEditor.jsx
+msgid "Name cannot exceed 200 characters"
+msgstr ""
+
+#: src/bank-editor/components/BankEditor.jsx
+msgid "Enter a descriptive name for this question bank"
+msgstr ""
+
+#: src/bank-editor/components/BankEditor.jsx
+msgid "Optional description of the bank's purpose or contents"
+msgstr ""
+
+#: src/bank-editor/components/BankEditor.jsx
+msgid "Description cannot exceed 2,000 characters"
+msgstr ""
+
+#: src/bank-editor/components/BankEditor.jsx
+msgid "Enter description (optional)"
+msgstr ""
+
+#: src/bank-editor/components/BankEditor.jsx
+msgid "Visibility"
+msgstr ""
+
+#: src/bank-editor/components/BankEditor.jsx
+msgid "Private - Only Me"
+msgstr ""
+
+#: src/bank-editor/components/BankEditor.jsx
+msgid "Shared - All Teachers"
+msgstr ""
+
+#: src/bank-editor/components/BankEditor.jsx
+msgid "Shared - My Groups"
+msgstr ""
+
+#: src/bank-editor/components/BankEditor.jsx
+msgid "Delete Bank"
+msgstr ""
+
+#: src/settings-panel/components/SettingsPage.jsx
+msgid "Configure your quiz plugin settings and customize default behavior."
+msgstr ""
+
+#: src/onboarding/components/WelcomeScreen.jsx
+msgid "Welcome to PressPrimer Quiz!"
+msgstr ""
+
+#: src/onboarding/components/WelcomeScreen.jsx
+msgid "Get Started"
+msgstr ""
+
+#: src/onboarding/components/WelcomeScreen.jsx
+msgid "Skip for Now"
+msgstr ""
+
+#: src/onboarding/components/WelcomeScreen.jsx
+msgid "Don't show this again"
+msgstr ""
+
+#: src/onboarding/components/WizardNavigation.jsx
+msgid "Back"
+msgstr ""
+
+#: src/onboarding/components/WizardNavigation.jsx
+msgid "Skip"
+msgstr ""
+
+#: src/onboarding/components/WizardNavigation.jsx
+msgid "Finish"
+msgstr ""

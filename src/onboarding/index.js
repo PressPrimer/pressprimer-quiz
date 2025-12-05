@@ -5,9 +5,24 @@
  * @since 1.0.0
  */
 
-import { render } from '@wordpress/element';
+import { render, unmountComponentAtNode } from '@wordpress/element';
 import Onboarding from './components/Onboarding';
 import './style.css';
+
+/**
+ * Get or create the onboarding container
+ */
+const getContainer = () => {
+	let container = document.getElementById('ppq-onboarding-root');
+
+	if (!container) {
+		container = document.createElement('div');
+		container.id = 'ppq-onboarding-root';
+		document.body.appendChild(container);
+	}
+
+	return container;
+};
 
 /**
  * Initialize the onboarding tour
@@ -21,15 +36,7 @@ const initOnboarding = () => {
 		return;
 	}
 
-	// Create a container for the onboarding
-	let container = document.getElementById('ppq-onboarding-root');
-
-	if (!container) {
-		container = document.createElement('div');
-		container.id = 'ppq-onboarding-root';
-		document.body.appendChild(container);
-	}
-
+	const container = getContainer();
 	render(<Onboarding initialData={onboardingData} />, container);
 };
 
@@ -59,16 +66,16 @@ window.ppqLaunchOnboarding = async () => {
 		console.error('Failed to reset onboarding:', err);
 	}
 
-	// Create container if needed
-	let container = document.getElementById('ppq-onboarding-root');
+	const container = getContainer();
 
-	if (!container) {
-		container = document.createElement('div');
-		container.id = 'ppq-onboarding-root';
-		document.body.appendChild(container);
+	// Unmount existing instance first to ensure clean state
+	try {
+		unmountComponentAtNode(container);
+	} catch (e) {
+		// Ignore errors if nothing mounted
 	}
 
-	// Force show from step 1
+	// Force show from step 1 with fresh state
 	const launchData = {
 		...onboardingData,
 		state: {
@@ -78,5 +85,8 @@ window.ppqLaunchOnboarding = async () => {
 		},
 	};
 
-	render(<Onboarding initialData={launchData} />, container);
+	// Small delay to ensure unmount completes
+	setTimeout(() => {
+		render(<Onboarding initialData={launchData} key={Date.now()} />, container);
+	}, 50);
 };

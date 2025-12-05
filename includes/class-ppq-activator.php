@@ -33,9 +33,9 @@ class PPQ_Activator {
 	 */
 	public static function activate() {
 		// Check WordPress version
-		if ( version_compare( get_bloginfo( 'version' ), '6.0', '<' ) ) {
+		if ( version_compare( get_bloginfo( 'version' ), '6.4', '<' ) ) {
 			wp_die(
-				esc_html__( 'PressPrimer Quiz requires WordPress 6.0 or higher.', 'pressprimer-quiz' ),
+				esc_html__( 'PressPrimer Quiz requires WordPress 6.4 or higher.', 'pressprimer-quiz' ),
 				esc_html__( 'Plugin Activation Error', 'pressprimer-quiz' ),
 				[ 'back_link' => true ]
 			);

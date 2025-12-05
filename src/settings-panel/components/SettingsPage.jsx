@@ -17,7 +17,6 @@ import {
 	SettingOutlined,
 	ApiOutlined,
 	MailOutlined,
-	ShareAltOutlined,
 	InfoCircleOutlined,
 	ToolOutlined,
 	SaveOutlined,
@@ -28,7 +27,6 @@ import GeneralTab from './GeneralTab';
 import AppearanceTab from './AppearanceTab';
 import IntegrationsTab from './IntegrationsTab';
 import EmailTab from './EmailTab';
-import SharingTab from './SharingTab';
 import StatusTab from './StatusTab';
 import AdvancedTab from './AdvancedTab';
 
@@ -59,12 +57,6 @@ const TABS = [
 		label: __('Email', 'pressprimer-quiz'),
 		icon: <MailOutlined />,
 		component: EmailTab,
-	},
-	{
-		id: 'sharing',
-		label: __('Sharing', 'pressprimer-quiz'),
-		icon: <ShareAltOutlined />,
-		component: SharingTab,
 	},
 	{
 		id: 'status',
@@ -135,12 +127,22 @@ const SettingsPage = ({ settingsData = {} }) => {
 	 */
 	const ActiveTabComponent = TABS.find(tab => tab.id === activeTab)?.component || GeneralTab;
 
+	// Get the plugin URL from localized data
+	const pluginUrl = window.ppqSettingsData?.pluginUrl || '';
+
 	return (
 		<div className="ppq-settings-container">
 			{/* Header */}
 			<div className="ppq-settings-header">
-				<h1>{__('PressPrimer Quiz Settings', 'pressprimer-quiz')}</h1>
-				<p>{__('Configure your quiz plugin settings, integrations, and preferences.', 'pressprimer-quiz')}</p>
+				<div className="ppq-settings-header-content">
+					<h1>{__('Settings', 'pressprimer-quiz')}</h1>
+					<p>{__('Configure your quiz plugin settings, integrations, and preferences.', 'pressprimer-quiz')}</p>
+				</div>
+				<img
+					src={`${pluginUrl}assets/images/construction-mascot.png`}
+					alt=""
+					className="ppq-settings-header-mascot"
+				/>
 			</div>
 
 			{/* Main Layout */}

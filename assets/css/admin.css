@@ -835,3 +835,73 @@
 .ppq-modal-footer .ppq-modal-cancel {
 	background: #fff;
 }
+
+/* ==========================================================================
+   RTL (Right-to-Left) Language Support
+   ========================================================================== */
+
+.rtl .ppq-admin-page {
+	direction: rtl;
+	text-align: right;
+}
+
+/* Forms */
+.rtl .ppq-form-field label {
+	text-align: right;
+}
+
+.rtl .ppq-form-description {
+	text-align: right;
+}
+
+/* Tables */
+.rtl .ppq-admin-table th,
+.rtl .ppq-admin-table td {
+	text-align: right;
+}
+
+/* Row actions */
+.rtl .ppq-row-actions {
+	direction: rtl;
+}
+
+/* Modal */
+.rtl .ppq-modal-content {
+	text-align: right;
+}
+
+.rtl .ppq-modal-footer {
+	flex-direction: row-reverse;
+}
+
+/* List tables */
+.rtl .column-actions {
+	text-align: left;
+}
+
+/* Navigation */
+.rtl .ppq-admin-nav {
+	flex-direction: row-reverse;
+}
+
+/* Notices */
+.rtl .ppq-notice {
+	border-left: none;
+	border-right: 4px solid;
+}
+
+.rtl .ppq-notice-success {
+	border-right-color: #00a32a;
+}
+
+.rtl .ppq-notice-error {
+	border-right-color: #d63638;
+}
+
+.rtl .ppq-notice-warning {
+	border-right-color: #dba617;
+}
+
+.rtl .ppq-notice-info {
+	border-right-color: #72aee6;
+}

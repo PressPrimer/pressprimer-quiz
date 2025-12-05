@@ -64,6 +64,34 @@
 }
 
 /* ==========================================================================
+   Email Sent Notice
+   ========================================================================== */
+
+.ppq-email-sent-notice {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	gap: 0.5rem;
+	background: #ecfdf5;
+	border: 1px solid #10b981;
+	border-radius: 6px;
+	padding: 0.875rem 1.25rem;
+	margin-bottom: 2rem;
+	text-align: center;
+}
+
+.ppq-email-sent-icon {
+	font-size: 1.125rem;
+	flex-shrink: 0;
+}
+
+.ppq-email-sent-text {
+	color: #065f46;
+	font-size: 0.9375rem;
+	line-height: 1.5;
+}
+
+/* ==========================================================================
    Score Summary
    ========================================================================== */
 
@@ -293,88 +321,6 @@
 
 .ppq-feedback-content p:last-child {
 	margin-bottom: 0;
-}
-
-/* ==========================================================================
-   Social Sharing
-   ========================================================================== */
-
-.ppq-social-sharing {
-	background: #fff;
-	border: 1px solid #e5e5e5;
-	border-radius: 8px;
-	padding: 2rem;
-	margin-bottom: 2rem;
-	text-align: center;
-}
-
-.ppq-social-sharing .ppq-section-title {
-	font-size: 1.25rem;
-	margin-bottom: 1rem;
-}
-
-.ppq-social-buttons {
-	display: flex;
-	justify-content: center;
-	gap: 1rem;
-	flex-wrap: wrap;
-}
-
-.ppq-social-button {
-	display: inline-flex;
-	align-items: center;
-	gap: 0.5rem;
-	padding: 0.75rem 1.5rem;
-	border: none;
-	border-radius: 6px;
-	font-size: 1rem;
-	font-weight: 600;
-	text-decoration: none;
-	color: #fff;
-	cursor: pointer;
-	transition: all 0.2s ease;
-}
-
-.ppq-social-button:hover {
-	transform: translateY(-2px);
-	box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-	color: #fff;
-	text-decoration: none;
-}
-
-.ppq-social-button:active {
-	transform: translateY(0);
-}
-
-/* Twitter/X Button */
-.ppq-social-button.ppq-twitter {
-	background: #1da1f2;
-}
-
-.ppq-social-button.ppq-twitter:hover {
-	background: #1a8cd8;
-}
-
-/* Facebook Button */
-.ppq-social-button.ppq-facebook {
-	background: #1877f2;
-}
-
-.ppq-social-button.ppq-facebook:hover {
-	background: #166fe5;
-}
-
-/* LinkedIn Button */
-.ppq-social-button.ppq-linkedin {
-	background: #0a66c2;
-}
-
-.ppq-social-button.ppq-linkedin:hover {
-	background: #004182;
-}
-
-.ppq-social-icon {
-	font-size: 1.25rem;
 }
 
 /* ==========================================================================
@@ -843,19 +789,6 @@
 		gap: 1rem;
 	}
 
-	.ppq-social-sharing {
-		padding: 1.5rem;
-	}
-
-	.ppq-social-buttons {
-		flex-direction: column;
-	}
-
-	.ppq-social-button {
-		width: 100%;
-		justify-content: center;
-	}
-
 	.ppq-results-actions {
 		flex-direction: column;
 	}
@@ -1265,4 +1198,73 @@
 	.ppq-review-option {
 		border-width: 3px;
 	}
+}
+
+/* ==========================================================================
+   RTL (Right-to-Left) Language Support
+   ========================================================================== */
+
+[dir="rtl"] .ppq-results {
+	direction: rtl;
+	text-align: right;
+}
+
+/* Score summary */
+[dir="rtl"] .ppq-score-summary {
+	text-align: right;
+}
+
+/* Stats grid */
+[dir="rtl"] .ppq-stats-grid {
+	direction: rtl;
+}
+
+/* Category breakdown */
+[dir="rtl"] .ppq-category-item {
+	flex-direction: row-reverse;
+}
+
+[dir="rtl"] .ppq-category-bar {
+	flex-direction: row-reverse;
+}
+
+[dir="rtl"] .ppq-category-fill {
+	transform-origin: right;
+}
+
+/* Review items */
+[dir="rtl"] .ppq-review-item {
+	text-align: right;
+}
+
+[dir="rtl"] .ppq-review-header {
+	flex-direction: row-reverse;
+}
+
+[dir="rtl"] .ppq-review-indicator {
+	margin-left: var(--ppq-space-sm);
+	margin-right: 0;
+}
+
+[dir="rtl"] .ppq-review-options {
+	text-align: right;
+}
+
+[dir="rtl"] .ppq-review-option {
+	flex-direction: row-reverse;
+}
+
+[dir="rtl"] .ppq-option-marker {
+	margin-left: var(--ppq-space-sm);
+	margin-right: 0;
+}
+
+/* Feedback sections */
+[dir="rtl"] .ppq-feedback {
+	text-align: right;
+}
+
+/* Actions */
+[dir="rtl"] .ppq-results-actions {
+	flex-direction: row-reverse;
 }

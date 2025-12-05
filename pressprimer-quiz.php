@@ -4,7 +4,7 @@
  * Plugin URI:        https://pressprimer.com/quiz
  * Description:       Enterprise-grade quiz and assessment platform for WordPress educators.
  * Version:           1.0.0
- * Requires at least: 6.0
+ * Requires at least: 6.4
  * Requires PHP:      7.4
  * Author:            PressPrimer
  * Author URI:        https://pressprimer.com

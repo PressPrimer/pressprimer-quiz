@@ -385,10 +385,11 @@ class PPQ_Onboarding {
 	 */
 	public function get_js_data() {
 		return array(
-			'state'   => $this->get_onboarding_state(),
-			'nonce'   => wp_create_nonce( 'ppq_admin' ),
-			'ajaxUrl' => admin_url( 'admin-ajax.php' ),
-			'urls'    => array(
+			'state'     => $this->get_onboarding_state(),
+			'nonce'     => wp_create_nonce( 'ppq_admin' ),
+			'ajaxUrl'   => admin_url( 'admin-ajax.php' ),
+			'pluginUrl' => PPQ_PLUGIN_URL,
+			'urls'      => array(
 				'dashboard' => admin_url( 'admin.php?page=ppq-dashboard' ),
 				'questions' => admin_url( 'admin.php?page=ppq-questions' ),
 				'banks'     => admin_url( 'admin.php?page=ppq-banks' ),

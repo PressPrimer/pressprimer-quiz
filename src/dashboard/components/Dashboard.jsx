@@ -92,13 +92,20 @@ const Dashboard = ({ initialData = {} }) => {
 		}
 	}, []);
 
+	// Get the plugin URL from localized data
+	const pluginUrl = window.ppqDashboardData?.pluginUrl || '';
+
 	return (
 		<div className="ppq-dashboard-container">
 			{/* Header */}
 			<div className="ppq-dashboard-header">
 				<div className="ppq-dashboard-header-content">
-					<h1>{__('Dashboard', 'pressprimer-quiz')}</h1>
-					<p>{__('Welcome to PressPrimer Quiz. Here\'s an overview of your quiz activity.', 'pressprimer-quiz')}</p>
+					<img
+						src={`${pluginUrl}assets/images/PressPrimer-Logo-White.svg`}
+						alt="PressPrimer Quiz"
+						className="ppq-dashboard-logo"
+					/>
+					<p>{__('Welcome to PressPrimer Quiz! Here\'s an overview of recent quiz activity.', 'pressprimer-quiz')}</p>
 				</div>
 			</div>
 

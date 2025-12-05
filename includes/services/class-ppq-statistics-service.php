@@ -184,7 +184,18 @@ class PPQ_Statistics_Service {
 			);
 		}
 
-		return $stats;
+		/**
+		 * Filter the dashboard statistics before they are returned.
+		 *
+		 * Allows adding custom statistics or modifying existing ones for the
+		 * admin dashboard display.
+		 *
+		 * @since 1.0.0
+		 *
+		 * @param array    $stats    Dashboard statistics array.
+		 * @param int|null $owner_id Owner ID filter, or null for all.
+		 */
+		return apply_filters( 'ppq_dashboard_stats', $stats, $owner_id );
 	}
 
 	/**
@@ -238,12 +249,25 @@ class PPQ_Statistics_Service {
 			 WHERE {$where_sql}" // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 		);
 
-		return [
+		$result = [
 			'total_attempts'   => (int) ( $stats->total_attempts ?? 0 ),
 			'avg_score'        => (float) ( $stats->avg_score ?? 0 ),
 			'pass_rate'        => (float) ( $stats->pass_rate ?? 0 ),
 			'avg_time_seconds' => (int) ( $stats->avg_time_seconds ?? 0 ),
 		];
+
+		/**
+		 * Filter the overview statistics for reports page.
+		 *
+		 * Allows adding custom metrics or modifying existing ones for
+		 * the reports overview cards.
+		 *
+		 * @since 1.0.0
+		 *
+		 * @param array $result Overview statistics array.
+		 * @param array $args   Query arguments including date_from, date_to, owner_id.
+		 */
+		return apply_filters( 'ppq_overview_stats', $result, $args );
 	}
 
 	/**

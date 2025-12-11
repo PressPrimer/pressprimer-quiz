@@ -106,15 +106,26 @@ class PressPrimer_Quiz_AJAX_Handler {
 		// Get guest email if provided
 		$guest_email = isset( $_POST['guest_email'] ) ? sanitize_email( wp_unslash( $_POST['guest_email'] ) ) : '';
 
+		// Capture source URL from referer (the page where the quiz shortcode is embedded)
+		// Strip query parameters to get clean base URL for linking back
+		$source_url = isset( $_POST['source_url'] ) ? esc_url_raw( wp_unslash( $_POST['source_url'] ) ) : '';
+		if ( empty( $source_url ) && isset( $_SERVER['HTTP_REFERER'] ) ) {
+			$source_url = esc_url_raw( wp_unslash( $_SERVER['HTTP_REFERER'] ) );
+		}
+		// Remove query string to avoid issues with ppq_retake, attempt, etc.
+		if ( ! empty( $source_url ) ) {
+			$source_url = strtok( $source_url, '?' );
+		}
+
 		// Create attempt
 		$user_id = get_current_user_id();
 
 		if ( $user_id > 0 ) {
 			// Logged-in user
-			$attempt = PressPrimer_Quiz_Attempt::create_for_user( $quiz_id, $user_id );
+			$attempt = PressPrimer_Quiz_Attempt::create_for_user( $quiz_id, $user_id, $source_url );
 		} else {
 			// Guest user
-			$attempt = PressPrimer_Quiz_Attempt::create_for_guest( $quiz_id, $guest_email );
+			$attempt = PressPrimer_Quiz_Attempt::create_for_guest( $quiz_id, $guest_email, $source_url );
 		}
 
 		if ( is_wp_error( $attempt ) ) {
@@ -204,7 +215,12 @@ class PressPrimer_Quiz_AJAX_Handler {
 		// phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- Complex data structure sanitized in foreach loop below
 		$answers = isset( $_POST['answers'] ) ? wp_unslash( $_POST['answers'] ) : [];
 
-		if ( empty( $answers ) || ! is_array( $answers ) ) {
+		// Get confidence values
+		// phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- Values sanitized with absint below
+		$confidence_values = isset( $_POST['confidence'] ) ? wp_unslash( $_POST['confidence'] ) : [];
+
+		// If no answers and no confidence values, return error
+		if ( ( empty( $answers ) || ! is_array( $answers ) ) && ( empty( $confidence_values ) || ! is_array( $confidence_values ) ) ) {
 			wp_send_json_error(
 				[
 					'message' => __( 'No answers provided.', 'pressprimer-quiz' ),
@@ -214,21 +230,66 @@ class PressPrimer_Quiz_AJAX_Handler {
 
 		// Save each answer
 		$saved_count = 0;
-		foreach ( $answers as $item_id => $selected_answers ) {
-			$item_id = absint( $item_id );
+		if ( ! empty( $answers ) && is_array( $answers ) ) {
+			foreach ( $answers as $item_id => $selected_answers ) {
+				$item_id = absint( $item_id );
 
-			// Ensure selected_answers is an array
-			if ( ! is_array( $selected_answers ) ) {
-				$selected_answers = [ $selected_answers ];
+				// Ensure selected_answers is an array
+				if ( ! is_array( $selected_answers ) ) {
+					$selected_answers = [ $selected_answers ];
+				}
+
+				// Convert to integers
+				$selected_answers = array_map( 'intval', $selected_answers );
+
+				// Get confidence for this item if set
+				$confidence = isset( $confidence_values[ $item_id ] ) ? (bool) absint( $confidence_values[ $item_id ] ) : false;
+
+				// Save answer with confidence
+				$result = $attempt->save_answer( $item_id, $selected_answers, $confidence );
+
+				if ( ! is_wp_error( $result ) ) {
+					++$saved_count;
+				}
 			}
+		}
 
-			// Convert to integers
-			$selected_answers = array_map( 'intval', $selected_answers );
+		// Save confidence-only updates (when confidence changes without answer change)
+		if ( ! empty( $confidence_values ) && is_array( $confidence_values ) ) {
+			global $wpdb;
+			$items_table = $wpdb->prefix . 'ppq_attempt_items';
 
-			// Save answer
-			$result = $attempt->save_answer( $item_id, $selected_answers );
+			foreach ( $confidence_values as $item_id => $confidence_value ) {
+				$item_id = absint( $item_id );
 
-			if ( ! is_wp_error( $result ) ) {
+				// Skip if we already saved this item with its answer above
+				if ( isset( $answers[ $item_id ] ) ) {
+					continue;
+				}
+
+				// Verify the item belongs to this attempt
+				$exists = $wpdb->get_var(
+					$wpdb->prepare(
+						"SELECT id FROM {$items_table} WHERE id = %d AND attempt_id = %d", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+						$item_id,
+						$attempt->id
+					)
+				);
+
+				if ( ! $exists ) {
+					continue;
+				}
+
+				// Update confidence only for this item
+				$confidence = absint( $confidence_value ) ? 1 : 0;
+				$wpdb->update(
+					$items_table,
+					[ 'confidence' => $confidence ],
+					[ 'id' => $item_id ],
+					[ '%d' ],
+					[ '%d' ]
+				);
+
 				++$saved_count;
 			}
 		}

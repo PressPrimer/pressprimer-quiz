@@ -28,7 +28,12 @@ define( 'PPQ_PLUGIN_FILE', __FILE__ );
 define( 'PPQ_PLUGIN_PATH', plugin_dir_path( __FILE__ ) );
 define( 'PPQ_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
 define( 'PPQ_PLUGIN_BASENAME', plugin_basename( __FILE__ ) );
-define( 'PPQ_DB_VERSION', '1.0.4' );
+define( 'PPQ_DB_VERSION', '1.0.6' );
+
+// Composer autoloader (for smalot/pdfparser and other vendor dependencies)
+if ( file_exists( PPQ_PLUGIN_PATH . 'vendor/autoload.php' ) ) {
+	require_once PPQ_PLUGIN_PATH . 'vendor/autoload.php';
+}
 
 // Autoloader
 require_once PPQ_PLUGIN_PATH . 'includes/class-ppq-autoloader.php';
@@ -37,6 +42,9 @@ PressPrimer_Quiz_Autoloader::register();
 // Activation/Deactivation hooks
 register_activation_hook( __FILE__, [ 'PressPrimer_Quiz_Activator', 'activate' ] );
 register_deactivation_hook( __FILE__, [ 'PressPrimer_Quiz_Deactivator', 'deactivate' ] );
+
+// Multisite: Hook for new site creation to set up tables
+add_action( 'wp_initialize_site', [ 'PressPrimer_Quiz_Activator', 'activate_new_site' ], 10, 1 );
 
 /**
  * Initialize plugin

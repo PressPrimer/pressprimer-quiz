@@ -38,18 +38,18 @@ class PressPrimer_Quiz_AI_Service {
 	const DEFAULT_MODEL = 'gpt-4';
 
 	/**
-	 * Maximum content length for generation (100,000 characters)
+	 * Maximum content length for generation (250,000 characters)
 	 *
 	 * @var int
 	 */
-	const MAX_CONTENT_LENGTH = 100000;
+	const MAX_CONTENT_LENGTH = 250000;
 
 	/**
 	 * Rate limit per hour
 	 *
 	 * @var int
 	 */
-	const RATE_LIMIT_PER_HOUR = 30;
+	const RATE_LIMIT_PER_HOUR = 100;
 
 	/**
 	 * API timeout in seconds
@@ -197,26 +197,35 @@ class PressPrimer_Quiz_AI_Service {
 	 * @param int $user_id User ID.
 	 * @return string|WP_Error Decrypted API key or WP_Error.
 	 */
-	public static function get_api_key( $user_id ) {
-		$user_id = absint( $user_id );
+	public static function get_api_key( $user_id = null ) {
+		// Get site-wide API key configured by admin in Settings
+		$site_key = get_option( 'ppq_site_openai_api_key', '' );
 
-		if ( ! $user_id ) {
-			return '';
+		if ( ! empty( $site_key ) ) {
+			$decrypted = PressPrimer_Quiz_Helpers::decrypt( $site_key );
+
+			if ( ! is_wp_error( $decrypted ) && ! empty( $decrypted ) ) {
+				return $decrypted;
+			}
 		}
 
-		$encrypted = get_user_meta( $user_id, 'ppq_openai_api_key', true );
+		// Backwards compatibility: check legacy user_meta storage
+		// This supports existing installations where the key was stored per-user
+		$admin_users = get_users( [ 'role' => 'administrator', 'number' => 1 ] );
+		if ( ! empty( $admin_users ) ) {
+			$admin_id  = $admin_users[0]->ID;
+			$encrypted = get_user_meta( $admin_id, 'ppq_openai_api_key', true );
 
-		if ( empty( $encrypted ) ) {
-			return '';
+			if ( ! empty( $encrypted ) ) {
+				$decrypted = PressPrimer_Quiz_Helpers::decrypt( $encrypted );
+
+				if ( ! is_wp_error( $decrypted ) && ! empty( $decrypted ) ) {
+					return $decrypted;
+				}
+			}
 		}
 
-		$decrypted = PressPrimer_Quiz_Helpers::decrypt( $encrypted );
-
-		if ( is_wp_error( $decrypted ) ) {
-			return $decrypted;
-		}
-
-		return $decrypted;
+		return '';
 	}
 
 	/**
@@ -614,8 +623,8 @@ class PressPrimer_Quiz_AI_Service {
 
 		$params = wp_parse_args( $params, $defaults );
 
-		// Validate count (1-100)
-		$params['count'] = max( 1, min( 100, absint( $params['count'] ) ) );
+		// Validate count (1-50)
+		$params['count'] = max( 1, min( 50, absint( $params['count'] ) ) );
 
 		// Validate types
 		$valid_types = [ 'mc', 'ma', 'tf' ];
@@ -762,12 +771,13 @@ class PressPrimer_Quiz_AI_Service {
 			'## Examples' . "\n\n" .
 			$examples . "\n\n" .
 			'## Important' . "\n\n" .
-			'- Generate EXACTLY ' . $params['count'] . ' questions' . "\n" .
+			'- Generate EXACTLY ' . $params['count'] . ' questions - not fewer, not more' . "\n" .
 			'- Use ONLY the question types specified: ' . $types_str . "\n" .
 			'- Base ALL questions on the provided content' . "\n" .
-			'- Output raw JSON only - no markdown, no code fences';
+			'- Output raw JSON only - no markdown, no code fences' . "\n" .
+			'- Do NOT stop early - you must generate all ' . $params['count'] . ' questions';
 
-		$user = "Generate {$params['count']} quiz questions from this educational content:\n\n---\n\n" . $content . "\n\n---\n\nRemember: Output only valid JSON, starting with { and ending with }.";
+		$user = "Generate EXACTLY {$params['count']} quiz questions from this educational content:\n\n---\n\n" . $content . "\n\n---\n\nCRITICAL: You must generate exactly {$params['count']} questions. Do not stop until you have generated all {$params['count']} questions. Output only valid JSON, starting with { and ending with }.";
 
 		return [
 			'system' => $system,
@@ -939,7 +949,7 @@ class PressPrimer_Quiz_AI_Service {
 					'content' => $prompt['user'],
 				],
 			],
-			'max_completion_tokens' => 16000,
+			'max_completion_tokens' => 64000,
 		];
 
 		// GPT-5.x models don't support temperature parameter (only default value of 1)
@@ -1659,17 +1669,17 @@ class PressPrimer_Quiz_AI_Service {
 	}
 
 	/**
-	 * Get API key status for user
+	 * Get API key status
 	 *
-	 * Returns the status of API key configuration for a user.
+	 * Returns the status of site-wide API key configuration.
 	 *
 	 * @since 1.0.0
 	 *
-	 * @param int $user_id User ID.
+	 * @param int $user_id Deprecated. User ID is no longer used.
 	 * @return array Status information.
 	 */
-	public static function get_api_key_status( $user_id ) {
-		$api_key = self::get_api_key( $user_id );
+	public static function get_api_key_status( $user_id = null ) {
+		$api_key = self::get_api_key();
 
 		if ( is_wp_error( $api_key ) ) {
 			return [

@@ -255,7 +255,8 @@ class PressPrimer_Quiz_Statistics_Service {
 		}
 
 		if ( $args['date_to'] ) {
-			$where[] = $wpdb->prepare( 'a.finished_at <= %s', $args['date_to'] );
+			// Append end of day time to include the entire end date
+			$where[] = $wpdb->prepare( 'a.finished_at <= %s', $args['date_to'] . ' 23:59:59' );
 		}
 
 		if ( $args['owner_id'] ) {
@@ -346,7 +347,8 @@ class PressPrimer_Quiz_Statistics_Service {
 			$date_where .= $wpdb->prepare( ' AND a.finished_at >= %s', $args['date_from'] );
 		}
 		if ( $args['date_to'] ) {
-			$date_where .= $wpdb->prepare( ' AND a.finished_at <= %s', $args['date_to'] );
+			// Append end of day time to include the entire end date
+			$date_where .= $wpdb->prepare( ' AND a.finished_at <= %s', $args['date_to'] . ' 23:59:59' );
 		}
 
 		// Validate orderby
@@ -454,7 +456,8 @@ class PressPrimer_Quiz_Statistics_Service {
 		}
 
 		if ( $args['date_to'] ) {
-			$where[] = $wpdb->prepare( 'a.finished_at <= %s', $args['date_to'] );
+			// Append end of day time to include the entire end date
+			$where[] = $wpdb->prepare( 'a.finished_at <= %s', $args['date_to'] . ' 23:59:59' );
 		}
 
 		if ( $args['owner_id'] ) {

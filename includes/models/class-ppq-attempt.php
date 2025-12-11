@@ -81,6 +81,14 @@ class PressPrimer_Quiz_Attempt extends PressPrimer_Quiz_Model {
 	public $token_expires_at;
 
 	/**
+	 * Source URL where the quiz was taken
+	 *
+	 * @since 1.0.0
+	 * @var string|null
+	 */
+	public $source_url;
+
+	/**
 	 * Start timestamp
 	 *
 	 * @since 1.0.0
@@ -220,6 +228,7 @@ class PressPrimer_Quiz_Attempt extends PressPrimer_Quiz_Model {
 			'user_id',
 			'guest_email',
 			'guest_token',
+			'source_url',
 			'started_at',
 			'finished_at',
 			'elapsed_ms',
@@ -242,11 +251,12 @@ class PressPrimer_Quiz_Attempt extends PressPrimer_Quiz_Model {
 	 *
 	 * @since 1.0.0
 	 *
-	 * @param int $quiz_id Quiz ID.
-	 * @param int $user_id User ID.
+	 * @param int    $quiz_id    Quiz ID.
+	 * @param int    $user_id    User ID.
+	 * @param string $source_url Optional. URL of the page where the quiz was started.
 	 * @return int|WP_Error Attempt ID on success, WP_Error on failure.
 	 */
-	public static function create_for_user( int $quiz_id, int $user_id ) {
+	public static function create_for_user( int $quiz_id, int $user_id, string $source_url = '' ) {
 		// Load quiz
 		$quiz = PressPrimer_Quiz_Quiz::get( $quiz_id );
 		if ( ! $quiz ) {
@@ -267,12 +277,9 @@ class PressPrimer_Quiz_Attempt extends PressPrimer_Quiz_Model {
 		// Check for existing in-progress attempt
 		$existing_in_progress = static::get_user_in_progress( $quiz_id, $user_id );
 		if ( $existing_in_progress ) {
-			// If the attempt can be resumed, return error
+			// If the attempt can be resumed, return it so the user can continue
 			if ( $existing_in_progress->can_resume() ) {
-				return new WP_Error(
-					'ppq_attempt_in_progress',
-					__( 'You already have an in-progress attempt for this quiz.', 'pressprimer-quiz' )
-				);
+				return $existing_in_progress;
 			}
 
 			// If it can't be resumed (timed out or quiz doesn't allow resume), abandon it
@@ -364,6 +371,7 @@ class PressPrimer_Quiz_Attempt extends PressPrimer_Quiz_Model {
 			'user_id'          => $user_id,
 			'guest_email'      => null,
 			'guest_token'      => null,
+			'source_url'       => $source_url ?: null,
 			'status'           => 'in_progress',
 			'current_position' => 0,
 			'questions_json'   => wp_json_encode( $questions_data ),
@@ -382,16 +390,24 @@ class PressPrimer_Quiz_Attempt extends PressPrimer_Quiz_Model {
 		$items_table = $wpdb->prefix . 'ppq_attempt_items';
 
 		foreach ( $questions_data as $question_data ) {
-			$result = $wpdb->insert(
-				$items_table,
-				[
-					'attempt_id'            => $attempt_id,
-					'question_revision_id'  => $question_data['revision_id'],
-					'order_index'           => $question_data['order'],
-					'selected_answers_json' => '[]',
-				],
-				[ '%d', '%d', '%d', '%s' ]
-			);
+			$item_data = [
+				'attempt_id'            => $attempt_id,
+				'question_revision_id'  => $question_data['revision_id'],
+				'order_index'           => $question_data['order'],
+				'selected_answers_json' => '[]',
+			];
+			$formats = [ '%d', '%d', '%d', '%s' ];
+
+			// Generate randomized answer order if quiz setting enabled
+			if ( $quiz->randomize_answers ) {
+				$answer_order = static::generate_answer_order( $question_data['revision_id'] );
+				if ( $answer_order ) {
+					$item_data['answer_order_json'] = $answer_order;
+					$formats[]                      = '%s';
+				}
+			}
+
+			$result = $wpdb->insert( $items_table, $item_data, $formats );
 
 			// Check for insert error
 			if ( false === $result ) {
@@ -424,11 +440,12 @@ class PressPrimer_Quiz_Attempt extends PressPrimer_Quiz_Model {
 	 *
 	 * @since 1.0.0
 	 *
-	 * @param int    $quiz_id Quiz ID.
-	 * @param string $email   Guest email address.
+	 * @param int    $quiz_id    Quiz ID.
+	 * @param string $email      Guest email address.
+	 * @param string $source_url Optional. URL of the page where the quiz was started.
 	 * @return int|WP_Error Attempt ID on success, WP_Error on failure.
 	 */
-	public static function create_for_guest( int $quiz_id, string $email ) {
+	public static function create_for_guest( int $quiz_id, string $email, string $source_url = '' ) {
 		// Validate email
 		$email = sanitize_email( $email );
 		if ( ! is_email( $email ) ) {
@@ -458,12 +475,9 @@ class PressPrimer_Quiz_Attempt extends PressPrimer_Quiz_Model {
 		// Check for existing in-progress attempt for this email
 		$existing_in_progress = static::get_guest_in_progress( $quiz_id, $email );
 		if ( $existing_in_progress ) {
-			// If the attempt can be resumed, return error
+			// If the attempt can be resumed, return it so the user can continue
 			if ( $existing_in_progress->can_resume() ) {
-				return new WP_Error(
-					'ppq_attempt_in_progress',
-					__( 'You already have an in-progress attempt for this quiz.', 'pressprimer-quiz' )
-				);
+				return $existing_in_progress;
 			}
 
 			// If it can't be resumed (timed out or quiz doesn't allow resume), abandon it
@@ -516,6 +530,7 @@ class PressPrimer_Quiz_Attempt extends PressPrimer_Quiz_Model {
 			'guest_email'      => $email,
 			'guest_token'      => $token,
 			'token_expires_at' => $token_expires,
+			'source_url'       => $source_url ?: null,
 			'status'           => 'in_progress',
 			'current_position' => 0,
 			'questions_json'   => wp_json_encode( $questions_data ),
@@ -533,16 +548,24 @@ class PressPrimer_Quiz_Attempt extends PressPrimer_Quiz_Model {
 		$items_table = $wpdb->prefix . 'ppq_attempt_items';
 
 		foreach ( $questions_data as $question_data ) {
-			$result = $wpdb->insert(
-				$items_table,
-				[
-					'attempt_id'            => $attempt_id,
-					'question_revision_id'  => $question_data['revision_id'],
-					'order_index'           => $question_data['order'],
-					'selected_answers_json' => '[]',
-				],
-				[ '%d', '%d', '%d', '%s' ]
-			);
+			$item_data = [
+				'attempt_id'            => $attempt_id,
+				'question_revision_id'  => $question_data['revision_id'],
+				'order_index'           => $question_data['order'],
+				'selected_answers_json' => '[]',
+			];
+			$formats = [ '%d', '%d', '%d', '%s' ];
+
+			// Generate randomized answer order if quiz setting enabled
+			if ( $quiz->randomize_answers ) {
+				$answer_order = static::generate_answer_order( $question_data['revision_id'] );
+				if ( $answer_order ) {
+					$item_data['answer_order_json'] = $answer_order;
+					$formats[]                      = '%s';
+				}
+			}
+
+			$result = $wpdb->insert( $items_table, $item_data, $formats );
 
 			// Check for insert error
 			if ( false === $result ) {
@@ -672,6 +695,60 @@ class PressPrimer_Quiz_Attempt extends PressPrimer_Quiz_Model {
 			$answer_data,
 			[ 'id' => $existing->id ],
 			[ '%s', '%s', '%d' ],
+			[ '%d' ]
+		);
+
+		// Clear cached items
+		$this->_items = null;
+
+		return true;
+	}
+
+	/**
+	 * Update confidence only for an attempt item
+	 *
+	 * Updates just the confidence value without changing the answer.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param int  $item_id    Attempt item ID.
+	 * @param bool $confidence Confidence value.
+	 * @return bool|WP_Error True on success, WP_Error on failure.
+	 */
+	public function update_confidence( int $item_id, bool $confidence ) {
+		// Validate attempt is in progress
+		if ( 'in_progress' !== $this->status ) {
+			return new WP_Error(
+				'ppq_attempt_completed',
+				__( 'This attempt has already been submitted.', 'pressprimer-quiz' )
+			);
+		}
+
+		global $wpdb;
+		$items_table = $wpdb->prefix . 'ppq_attempt_items';
+
+		// Verify the item belongs to this attempt
+		$existing = $wpdb->get_row(
+			$wpdb->prepare(
+				"SELECT * FROM {$items_table} WHERE id = %d AND attempt_id = %d", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+				$item_id,
+				$this->id
+			)
+		);
+
+		if ( ! $existing ) {
+			return new WP_Error(
+				'ppq_invalid_item',
+				__( 'This question is not part of this quiz attempt.', 'pressprimer-quiz' )
+			);
+		}
+
+		// Update confidence
+		$wpdb->update(
+			$items_table,
+			[ 'confidence' => $confidence ? 1 : 0 ],
+			[ 'id' => $item_id ],
+			[ '%d' ],
 			[ '%d' ]
 		);
 
@@ -1094,5 +1171,35 @@ class PressPrimer_Quiz_Attempt extends PressPrimer_Quiz_Model {
 		$this->token_expires_at = gmdate( 'Y-m-d H:i:s', strtotime( '+30 days' ) );
 
 		return $this->save();
+	}
+
+	/**
+	 * Generate randomized answer order for a question
+	 *
+	 * Creates a shuffled array of answer indices to use for display order.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param int $revision_id Question revision ID.
+	 * @return string|null JSON-encoded answer order, or null if not needed.
+	 */
+	private static function generate_answer_order( int $revision_id ) {
+		$revision = PressPrimer_Quiz_Question_Revision::get( $revision_id );
+		if ( ! $revision ) {
+			return null;
+		}
+
+		$answers = $revision->get_answers();
+		if ( empty( $answers ) || count( $answers ) < 2 ) {
+			return null;
+		}
+
+		// Create array of indices [0, 1, 2, ...]
+		$order = range( 0, count( $answers ) - 1 );
+
+		// Shuffle the order
+		shuffle( $order );
+
+		return wp_json_encode( $order );
 	}
 }

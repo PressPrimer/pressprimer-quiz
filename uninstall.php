@@ -73,57 +73,95 @@ function pressprimer_quiz_uninstall() {
 /**
  * Drop all plugin database tables
  *
+ * Handles both single site and multisite installations.
+ * For multisite, drops tables for all sites in the network.
+ *
  * @since 1.0.0
  */
 function pressprimer_quiz_drop_tables() {
 	global $wpdb;
 
-	$tables = [
-		$wpdb->prefix . 'ppq_questions',
-		$wpdb->prefix . 'ppq_question_revisions',
-		$wpdb->prefix . 'ppq_categories',
-		$wpdb->prefix . 'ppq_question_tax',
-		$wpdb->prefix . 'ppq_banks',
-		$wpdb->prefix . 'ppq_bank_questions',
-		$wpdb->prefix . 'ppq_quizzes',
-		$wpdb->prefix . 'ppq_quiz_items',
-		$wpdb->prefix . 'ppq_quiz_rules',
-		$wpdb->prefix . 'ppq_groups',
-		$wpdb->prefix . 'ppq_group_members',
-		$wpdb->prefix . 'ppq_assignments',
-		$wpdb->prefix . 'ppq_attempts',
-		$wpdb->prefix . 'ppq_attempt_items',
-		$wpdb->prefix . 'ppq_events',
+	// Table names without prefix
+	$table_names = [
+		'ppq_questions',
+		'ppq_question_revisions',
+		'ppq_categories',
+		'ppq_question_tax',
+		'ppq_banks',
+		'ppq_bank_questions',
+		'ppq_quizzes',
+		'ppq_quiz_items',
+		'ppq_quiz_rules',
+		'ppq_groups',
+		'ppq_group_members',
+		'ppq_assignments',
+		'ppq_attempts',
+		'ppq_attempt_items',
+		'ppq_events',
 	];
 
-	foreach ( $tables as $table ) {
-		$wpdb->query( "DROP TABLE IF EXISTS {$table}" ); // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+	if ( is_multisite() ) {
+		// Get all site IDs in the network
+		$site_ids = get_sites( [ 'fields' => 'ids' ] );
+
+		foreach ( $site_ids as $site_id ) {
+			$prefix = $wpdb->get_blog_prefix( $site_id );
+
+			foreach ( $table_names as $table_name ) {
+				$full_table_name = $prefix . $table_name;
+				$wpdb->query( "DROP TABLE IF EXISTS {$full_table_name}" ); // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+			}
+		}
+	} else {
+		// Single site installation
+		foreach ( $table_names as $table_name ) {
+			$full_table_name = $wpdb->prefix . $table_name;
+			$wpdb->query( "DROP TABLE IF EXISTS {$full_table_name}" ); // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		}
 	}
 }
 
 /**
  * Remove all plugin options
  *
+ * Handles both single site and multisite installations.
+ * For multisite, removes options from all sites and network options.
+ *
  * @since 1.0.0
  */
 function pressprimer_quiz_remove_options() {
 	global $wpdb;
 
-	// Delete all options that start with ppq_
-	$wpdb->query(
-		$wpdb->prepare(
-			"DELETE FROM {$wpdb->options}
-			WHERE option_name LIKE %s",
-			$wpdb->esc_like( 'ppq_' ) . '%'
-		)
-	);
-
-	// If multisite, delete site options
 	if ( is_multisite() ) {
+		// Get all site IDs in the network
+		$site_ids = get_sites( [ 'fields' => 'ids' ] );
+
+		foreach ( $site_ids as $site_id ) {
+			$prefix = $wpdb->get_blog_prefix( $site_id );
+
+			// Delete all options that start with ppq_ for this site
+			$wpdb->query(
+				$wpdb->prepare(
+					"DELETE FROM {$prefix}options WHERE option_name LIKE %s", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+					$wpdb->esc_like( 'ppq_' ) . '%'
+				)
+			);
+		}
+
+		// Delete network-wide site options
 		$wpdb->query(
 			$wpdb->prepare(
 				"DELETE FROM {$wpdb->sitemeta}
 				WHERE meta_key LIKE %s",
+				$wpdb->esc_like( 'ppq_' ) . '%'
+			)
+		);
+	} else {
+		// Single site - delete all options that start with ppq_
+		$wpdb->query(
+			$wpdb->prepare(
+				"DELETE FROM {$wpdb->options}
+				WHERE option_name LIKE %s",
 				$wpdb->esc_like( 'ppq_' ) . '%'
 			)
 		);
@@ -169,9 +207,32 @@ function pressprimer_quiz_remove_post_meta() {
 /**
  * Remove capabilities from all roles
  *
+ * Handles both single site and multisite installations.
+ * For multisite, removes capabilities from all sites.
+ *
  * @since 1.0.0
  */
 function pressprimer_quiz_remove_capabilities() {
+	if ( is_multisite() ) {
+		// Get all site IDs in the network
+		$site_ids = get_sites( [ 'fields' => 'ids' ] );
+
+		foreach ( $site_ids as $site_id ) {
+			switch_to_blog( $site_id );
+			pressprimer_quiz_remove_site_capabilities();
+			restore_current_blog();
+		}
+	} else {
+		pressprimer_quiz_remove_site_capabilities();
+	}
+}
+
+/**
+ * Remove capabilities from roles for a single site
+ *
+ * @since 1.0.0
+ */
+function pressprimer_quiz_remove_site_capabilities() {
 	// Remove capabilities from administrator
 	$admin = get_role( 'administrator' );
 	if ( $admin ) {

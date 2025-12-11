@@ -293,8 +293,13 @@ abstract class PressPrimer_Quiz_Model {
 
 		if ( ! empty( $args['where'] ) ) {
 			foreach ( $args['where'] as $field => $value ) {
-				$where_clauses[] = "`{$field}` = %s";
-				$where_values[]  = $value;
+				if ( null === $value ) {
+					// Use IS NULL for null values
+					$where_clauses[] = "`{$field}` IS NULL";
+				} else {
+					$where_clauses[] = "`{$field}` = %s";
+					$where_values[]  = $value;
+				}
 			}
 		}
 

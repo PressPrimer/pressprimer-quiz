@@ -127,6 +127,11 @@ class PressPrimer_Quiz_Categories_List_Table extends WP_List_Table {
 			'where' => [ 'taxonomy' => $this->taxonomy ],
 		];
 
+		// Filter by owner for users who can only manage their own content
+		if ( ! current_user_can( 'ppq_manage_all' ) ) {
+			$args['where']['created_by'] = get_current_user_id();
+		}
+
 		// phpcs:disable WordPress.Security.NonceVerification.Recommended -- List table filter params, not form processing
 		// Search
 		if ( isset( $_REQUEST['s'] ) && '' !== $_REQUEST['s'] ) {

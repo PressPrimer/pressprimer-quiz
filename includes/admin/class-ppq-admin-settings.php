@@ -46,6 +46,11 @@ class PressPrimer_Quiz_Admin_Settings {
 		add_action( 'wp_ajax_ppq_validate_api_key', [ $this, 'ajax_validate_api_key' ] );
 		add_action( 'wp_ajax_ppq_clear_user_api_key', [ $this, 'ajax_clear_user_api_key' ] );
 		add_action( 'wp_ajax_ppq_get_api_models', [ $this, 'ajax_get_api_models' ] );
+		add_action( 'wp_ajax_ppq_save_site_api_key', [ $this, 'ajax_save_site_api_key' ] );
+		add_action( 'wp_ajax_ppq_clear_site_api_key', [ $this, 'ajax_clear_site_api_key' ] );
+
+		// AJAX handler for database repair
+		add_action( 'wp_ajax_ppq_repair_database_tables', [ $this, 'ajax_repair_database_tables' ] );
 	}
 
 	/**
@@ -214,11 +219,11 @@ class PressPrimer_Quiz_Admin_Settings {
 	 * @since 1.0.0
 	 */
 	private function register_api_key_fields() {
-		// OpenAI API key
+		// Site-wide OpenAI API key (for all users)
 		add_settings_field(
-			'openai_api_key',
+			'site_openai_api_key',
 			__( 'OpenAI API Key', 'pressprimer-quiz' ),
-			[ $this, 'render_openai_api_key_field' ],
+			[ $this, 'render_site_openai_api_key_field' ],
 			'ppq-settings',
 			'ppq_api_keys_section'
 		);
@@ -536,6 +541,133 @@ Good luck with your studies!',
 			<code>{max_points}</code> - <?php esc_html_e( 'Maximum points', 'pressprimer-quiz' ); ?><br>
 			<code>{results_url}</code> - <?php esc_html_e( 'Link to view full results (optional)', 'pressprimer-quiz' ); ?>
 		</p>
+		<?php
+	}
+
+	/**
+	 * Render Site-Wide OpenAI API key field
+	 *
+	 * Displays the site-wide API key configuration for administrators.
+	 * This key is used as a fallback when users don't have their own key.
+	 *
+	 * @since 1.0.0
+	 */
+	public function render_site_openai_api_key_field() {
+		$site_key      = get_option( 'ppq_site_openai_api_key', '' );
+		$is_configured = ! empty( $site_key );
+		$masked_key    = '';
+
+		if ( $is_configured ) {
+			$decrypted = PressPrimer_Quiz_Helpers::decrypt( $site_key );
+			if ( ! is_wp_error( $decrypted ) && ! empty( $decrypted ) ) {
+				$masked_key = substr( $decrypted, 0, 7 ) . '...' . substr( $decrypted, -4 );
+			}
+		}
+		?>
+		<div class="ppq-site-api-key-manager" id="ppq-site-api-key-manager">
+			<!-- Key Status Indicator -->
+			<div class="ppq-api-key-status <?php echo esc_attr( $is_configured ? 'ppq-api-key-status--configured' : 'ppq-api-key-status--not-set' ); ?>">
+				<?php if ( $is_configured && $masked_key ) : ?>
+					<span class="dashicons dashicons-yes-alt ppq-api-key-status-icon"></span>
+					<span class="ppq-api-key-status-text">
+						<?php
+						printf(
+							/* translators: %s: masked API key */
+							esc_html__( 'API Key Configured: %s', 'pressprimer-quiz' ),
+							'<code>' . esc_html( $masked_key ) . '</code>'
+						);
+						?>
+					</span>
+					<button type="button" class="button button-small button-link-delete" id="ppq-clear-site-key">
+						<?php esc_html_e( 'Clear Key', 'pressprimer-quiz' ); ?>
+					</button>
+				<?php else : ?>
+					<span class="dashicons dashicons-warning ppq-api-key-status-icon"></span>
+					<span class="ppq-api-key-status-text">
+						<?php esc_html_e( 'No API Key Configured', 'pressprimer-quiz' ); ?>
+					</span>
+				<?php endif; ?>
+			</div>
+
+			<!-- Key Input Section -->
+			<div class="ppq-api-key-input-section" style="margin-top: 10px;">
+				<label for="ppq-site-api-key-input">
+					<?php echo $is_configured ? esc_html__( 'Enter New API Key:', 'pressprimer-quiz' ) : esc_html__( 'Enter Your OpenAI API Key:', 'pressprimer-quiz' ); ?>
+				</label>
+				<div class="ppq-api-key-input-wrapper" style="margin-top: 5px;">
+					<input
+						type="password"
+						id="ppq-site-api-key-input"
+						class="regular-text"
+						placeholder="sk-..."
+						autocomplete="off"
+					/>
+					<button type="button" class="button button-primary" id="ppq-save-site-key">
+						<?php esc_html_e( 'Save Key', 'pressprimer-quiz' ); ?>
+					</button>
+				</div>
+				<p class="description">
+					<?php esc_html_e( 'This API key is used for AI question generation and is shared by all users on this site.', 'pressprimer-quiz' ); ?>
+				</p>
+			</div>
+		</div>
+
+		<script type="text/javascript">
+		jQuery(document).ready(function($) {
+			// Save site-wide API key
+			$('#ppq-save-site-key').on('click', function() {
+				var key = $('#ppq-site-api-key-input').val().trim();
+				if (!key) {
+					alert('<?php echo esc_js( __( 'Please enter an API key.', 'pressprimer-quiz' ) ); ?>');
+					return;
+				}
+
+				var $button = $(this);
+				$button.prop('disabled', true).text('<?php echo esc_js( __( 'Saving...', 'pressprimer-quiz' ) ); ?>');
+
+				$.post(ajaxurl, {
+					action: 'ppq_save_site_api_key',
+					nonce: '<?php echo esc_js( wp_create_nonce( 'ppq_site_api_key' ) ); ?>',
+					api_key: key
+				}, function(response) {
+					if (response.success) {
+						location.reload();
+					} else {
+						alert(response.data.message || '<?php echo esc_js( __( 'Failed to save API key.', 'pressprimer-quiz' ) ); ?>');
+						$button.prop('disabled', false).text('<?php echo esc_js( __( 'Save Key', 'pressprimer-quiz' ) ); ?>');
+					}
+				}).fail(function() {
+					alert('<?php echo esc_js( __( 'Request failed. Please try again.', 'pressprimer-quiz' ) ); ?>');
+					$button.prop('disabled', false).text('<?php echo esc_js( __( 'Save Key', 'pressprimer-quiz' ) ); ?>');
+				});
+			});
+
+			// Clear API key
+			$('#ppq-clear-site-key').on('click', function() {
+				if (!confirm('<?php echo esc_js( __( 'Are you sure you want to remove the API key?', 'pressprimer-quiz' ) ); ?>')) {
+					return;
+				}
+
+				var $button = $(this);
+				$button.prop('disabled', true);
+
+				$.post(ajaxurl, {
+					action: 'ppq_clear_site_api_key',
+					nonce: '<?php echo esc_js( wp_create_nonce( 'ppq_site_api_key' ) ); ?>'
+				}, function(response) {
+					if (response.success) {
+						location.reload();
+					} else {
+						alert(response.data.message || '<?php echo esc_js( __( 'Failed to clear API key.', 'pressprimer-quiz' ) ); ?>');
+						$button.prop('disabled', false);
+					}
+				}).fail(function() {
+					alert('<?php echo esc_js( __( 'Request failed. Please try again.', 'pressprimer-quiz' ) ); ?>');
+					$button.prop('disabled', false);
+				});
+			});
+		});
+		</script>
 		<?php
 	}
 
@@ -1547,6 +1679,12 @@ Good luck with your studies!',
 		// Get theme font family from WordPress theme
 		$theme_font = $this->get_theme_font_family();
 
+		// Get database table status
+		$table_status = [];
+		if ( class_exists( 'PressPrimer_Quiz_Migrator' ) ) {
+			$table_status = PressPrimer_Quiz_Migrator::get_table_status();
+		}
+
 		return [
 			'pluginUrl'    => PPQ_PLUGIN_URL,
 			'settings'     => $settings,
@@ -1569,19 +1707,41 @@ Good luck with your studies!',
 				],
 			],
 			'systemInfo'   => [
-				'pluginVersion'    => PPQ_VERSION,
-				'dbVersion'        => get_option( 'ppq_db_version', 'Not set' ),
-				'wpVersion'        => get_bloginfo( 'version' ),
-				'memoryLimit'      => WP_MEMORY_LIMIT,
-				'phpVersion'       => PHP_VERSION,
-				'postMaxSize'      => ini_get( 'post_max_size' ),
-				'maxExecutionTime' => ini_get( 'max_execution_time' ),
-				'mysqlVersion'     => $wpdb->db_version(),
-				'isMultisite'      => is_multisite(),
-				'totalQuizzes'     => $total_quizzes,
-				'totalQuestions'   => $total_questions,
-				'totalBanks'       => $total_banks,
-				'totalAttempts'    => $total_attempts,
+				'pluginVersion'          => PPQ_VERSION,
+				'dbVersion'              => get_option( 'ppq_db_version', 'Not set' ),
+				'wpVersion'              => get_bloginfo( 'version' ),
+				'memoryLimit'            => WP_MEMORY_LIMIT,
+				'phpVersion'             => PHP_VERSION,
+				'postMaxSize'            => ini_get( 'post_max_size' ),
+				'maxExecutionTime'       => ini_get( 'max_execution_time' ),
+				'mysqlVersion'           => $wpdb->db_version(),
+				'isMultisite'            => is_multisite(),
+				'totalQuizzes'           => $total_quizzes,
+				'totalQuestions'         => $total_questions,
+				'totalBanks'             => $total_banks,
+				'totalAttempts'          => $total_attempts,
+				'extractionCapabilities' => PressPrimer_Quiz_File_Processor::get_extraction_capabilities(),
+			],
+			'databaseTables' => $table_status,
+			'nonces'         => [
+				'repairTables' => wp_create_nonce( 'ppq_repair_tables_nonce' ),
+			],
+			'lmsStatus'      => [
+				'learndash'  => [
+					'installed' => defined( 'LEARNDASH_VERSION' ),
+					'active'    => defined( 'LEARNDASH_VERSION' ),
+					'version'   => defined( 'LEARNDASH_VERSION' ) ? LEARNDASH_VERSION : null,
+				],
+				'tutorlms'   => [
+					'installed' => defined( 'TUTOR_VERSION' ),
+					'active'    => defined( 'TUTOR_VERSION' ),
+					'version'   => defined( 'TUTOR_VERSION' ) ? TUTOR_VERSION : null,
+				],
+				'lifterlms'  => [
+					'installed' => defined( 'LLMS_VERSION' ),
+					'active'    => defined( 'LLMS_VERSION' ),
+					'version'   => defined( 'LLMS_VERSION' ) ? LLMS_VERSION : null,
+				],
 			],
 		];
 
@@ -1857,5 +2017,129 @@ Good luck with your studies!',
 		}
 
 		wp_send_json_success( [ 'models' => $models ] );
+	}
+
+	/**
+	 * AJAX handler: Repair database tables
+	 *
+	 * Recreates any missing database tables.
+	 *
+	 * @since 1.0.0
+	 */
+	public function ajax_repair_database_tables() {
+		// Verify nonce
+		if ( ! check_ajax_referer( 'ppq_repair_tables_nonce', 'nonce', false ) ) {
+			wp_send_json_error( [ 'message' => __( 'Security check failed.', 'pressprimer-quiz' ) ] );
+		}
+
+		// Check capability
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_send_json_error( [ 'message' => __( 'Permission denied. Administrator access required.', 'pressprimer-quiz' ) ] );
+		}
+
+		// Attempt repair
+		if ( ! class_exists( 'PressPrimer_Quiz_Migrator' ) ) {
+			wp_send_json_error( [ 'message' => __( 'Migrator class not available.', 'pressprimer-quiz' ) ] );
+		}
+
+		$result = PressPrimer_Quiz_Migrator::repair_tables();
+
+		if ( ! $result['success'] ) {
+			$message = isset( $result['error'] )
+				? $result['error']
+				: __( 'Some tables could not be repaired. Please check your database permissions.', 'pressprimer-quiz' );
+			wp_send_json_error( [ 'message' => $message ] );
+		}
+
+		// Get updated table status
+		$updated_status = PressPrimer_Quiz_Migrator::get_table_status();
+
+		wp_send_json_success(
+			[
+				'message'     => sprintf(
+					/* translators: %d: number of tables repaired */
+					_n(
+						'%d table was successfully created.',
+						'%d tables were successfully created.',
+						count( $result['repaired'] ),
+						'pressprimer-quiz'
+					),
+					count( $result['repaired'] )
+				),
+				'repaired'    => $result['repaired'],
+				'tableStatus' => $updated_status,
+			]
+		);
+	}
+
+	/**
+	 * AJAX handler: Save site-wide API key
+	 *
+	 * Saves the site-wide API key that all users can use.
+	 *
+	 * @since 1.0.0
+	 */
+	public function ajax_save_site_api_key() {
+		// Verify nonce
+		if ( ! check_ajax_referer( 'ppq_site_api_key', 'nonce', false ) ) {
+			wp_send_json_error( [ 'message' => __( 'Security check failed.', 'pressprimer-quiz' ) ] );
+		}
+
+		// Check capability - only admins can set site-wide key
+		if ( ! current_user_can( 'ppq_manage_settings' ) ) {
+			wp_send_json_error( [ 'message' => __( 'Permission denied. Administrator access required.', 'pressprimer-quiz' ) ] );
+		}
+
+		if ( ! isset( $_POST['api_key'] ) || '' === $_POST['api_key'] ) {
+			wp_send_json_error( [ 'message' => __( 'No API key provided.', 'pressprimer-quiz' ) ] );
+		}
+
+		$api_key = sanitize_text_field( wp_unslash( $_POST['api_key'] ) );
+
+		// Basic format validation
+		if ( strlen( $api_key ) < 20 || strpos( $api_key, 'sk-' ) !== 0 ) {
+			wp_send_json_error( [ 'message' => __( 'Invalid API key format. Keys should start with "sk-".', 'pressprimer-quiz' ) ] );
+		}
+
+		// Validate the key with OpenAI
+		$validation = PressPrimer_Quiz_AI_Service::validate_api_key( $api_key );
+
+		if ( is_wp_error( $validation ) ) {
+			wp_send_json_error( [ 'message' => $validation->get_error_message() ] );
+		}
+
+		// Encrypt and save the key
+		$encrypted = PressPrimer_Quiz_Helpers::encrypt( $api_key );
+
+		if ( is_wp_error( $encrypted ) ) {
+			wp_send_json_error( [ 'message' => $encrypted->get_error_message() ] );
+		}
+
+		update_option( 'ppq_site_openai_api_key', $encrypted );
+
+		wp_send_json_success( [ 'message' => __( 'Site-wide API key saved and validated successfully.', 'pressprimer-quiz' ) ] );
+	}
+
+	/**
+	 * AJAX handler: Clear site-wide API key
+	 *
+	 * Removes the site-wide API key.
+	 *
+	 * @since 1.0.0
+	 */
+	public function ajax_clear_site_api_key() {
+		// Verify nonce
+		if ( ! check_ajax_referer( 'ppq_site_api_key', 'nonce', false ) ) {
+			wp_send_json_error( [ 'message' => __( 'Security check failed.', 'pressprimer-quiz' ) ] );
+		}
+
+		// Check capability - only admins can clear site-wide key
+		if ( ! current_user_can( 'ppq_manage_settings' ) ) {
+			wp_send_json_error( [ 'message' => __( 'Permission denied. Administrator access required.', 'pressprimer-quiz' ) ] );
+		}
+
+		delete_option( 'ppq_site_openai_api_key' );
+
+		wp_send_json_success( [ 'message' => __( 'Site-wide API key removed successfully.', 'pressprimer-quiz' ) ] );
 	}
 }

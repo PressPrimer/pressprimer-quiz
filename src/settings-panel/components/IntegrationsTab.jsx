@@ -43,32 +43,47 @@ const { Title, Paragraph, Text } = Typography;
  * @param {Object} props.settings Current settings
  * @param {Function} props.updateSetting Function to update a setting
  * @param {Object} props.settingsData Full settings data including API status
+ * @param {Object} props.apiKeyStatus API key status (lifted state from parent)
+ * @param {Function} props.setApiKeyStatus Function to update API key status
+ * @param {Array} props.apiModels Available API models (lifted state from parent)
+ * @param {Function} props.setApiModels Function to update API models
  */
-const IntegrationsTab = ({ settings, updateSetting, settingsData }) => {
+const IntegrationsTab = ({ settings, updateSetting, settingsData, apiKeyStatus, setApiKeyStatus, apiModels, setApiModels }) => {
 	const [showApiKey, setShowApiKey] = useState(false);
 	const [newApiKey, setNewApiKey] = useState('');
 	const [savingKey, setSavingKey] = useState(false);
 	const [validatingKey, setValidatingKey] = useState(false);
 	const [clearingKey, setClearingKey] = useState(false);
 	const [loadingModels, setLoadingModels] = useState(false);
-	const [models, setModels] = useState(settingsData.apiModels || []);
-	const [apiStatus, setApiStatus] = useState(settingsData.apiKeyStatus || { configured: false });
 	const [validationResult, setValidationResult] = useState(null);
 	const [selectedModel, setSelectedModel] = useState(settingsData.modelPref || '');
 
-	// LMS Integration states
-	const [learndashStatus, setLearndashStatus] = useState(null);
-	const [loadingLearndash, setLoadingLearndash] = useState(true);
+	// Use lifted state from parent, with fallback to settingsData for backwards compatibility
+	const apiStatus = apiKeyStatus || settingsData.apiKeyStatus || { configured: false };
+	const setApiStatus = setApiKeyStatus || (() => {});
+	const models = apiModels || settingsData.apiModels || [];
+	const setModels = setApiModels || (() => {});
+
+	// LMS Integration states - use pre-loaded data from PHP
+	const lmsStatus = settingsData.lmsStatus || {};
+	const [learndashStatus, setLearndashStatus] = useState(
+		lmsStatus.learndash?.active ? { active: true, version: lmsStatus.learndash.version } : { active: false }
+	);
+	const [loadingLearndash, setLoadingLearndash] = useState(lmsStatus.learndash?.active || false);
 	const [learndashSettings, setLearndashSettings] = useState({
 		restriction_message: '',
 	});
 	const [savingLearndash, setSavingLearndash] = useState(false);
 
-	const [tutorlmsStatus, setTutorlmsStatus] = useState(null);
-	const [loadingTutorlms, setLoadingTutorlms] = useState(true);
+	const [tutorlmsStatus, setTutorlmsStatus] = useState(
+		lmsStatus.tutorlms?.active ? { active: true, version: lmsStatus.tutorlms.version } : { active: false }
+	);
+	const [loadingTutorlms, setLoadingTutorlms] = useState(lmsStatus.tutorlms?.active || false);
 
-	const [lifterlmsStatus, setLifterlmsStatus] = useState(null);
-	const [loadingLifterlms, setLoadingLifterlms] = useState(true);
+	const [lifterlmsStatus, setLifterlmsStatus] = useState(
+		lmsStatus.lifterlms?.active ? { active: true, version: lmsStatus.lifterlms.version } : { active: false }
+	);
+	const [loadingLifterlms, setLoadingLifterlms] = useState(lmsStatus.lifterlms?.active || false);
 
 	const usageData = settingsData.usageData || {
 		requests_this_hour: 0,
@@ -77,8 +92,13 @@ const IntegrationsTab = ({ settings, updateSetting, settingsData }) => {
 		usage_percent: 0,
 	};
 
-	// Fetch LearnDash status on mount
+	// Fetch LearnDash extended status only if LearnDash is active
 	useEffect(() => {
+		if (!lmsStatus.learndash?.active) {
+			setLoadingLearndash(false);
+			return;
+		}
+
 		const fetchLearndashStatus = async () => {
 			try {
 				const response = await apiFetch({
@@ -93,18 +113,23 @@ const IntegrationsTab = ({ settings, updateSetting, settingsData }) => {
 					}
 				}
 			} catch (error) {
-				// LearnDash endpoint might not exist if not active
-				setLearndashStatus({ active: false });
+				// Keep the basic status from PHP
+				console.error('Failed to fetch LearnDash extended status:', error);
 			} finally {
 				setLoadingLearndash(false);
 			}
 		};
 
 		fetchLearndashStatus();
-	}, []);
+	}, [lmsStatus.learndash?.active]);
 
-	// Fetch TutorLMS status on mount
+	// Fetch TutorLMS extended status only if TutorLMS is active
 	useEffect(() => {
+		if (!lmsStatus.tutorlms?.active) {
+			setLoadingTutorlms(false);
+			return;
+		}
+
 		const fetchTutorlmsStatus = async () => {
 			try {
 				const response = await apiFetch({
@@ -116,18 +141,23 @@ const IntegrationsTab = ({ settings, updateSetting, settingsData }) => {
 					setTutorlmsStatus(response.status);
 				}
 			} catch (error) {
-				// TutorLMS endpoint might not exist if not active
-				setTutorlmsStatus({ active: false });
+				// Keep the basic status from PHP
+				console.error('Failed to fetch TutorLMS extended status:', error);
 			} finally {
 				setLoadingTutorlms(false);
 			}
 		};
 
 		fetchTutorlmsStatus();
-	}, []);
+	}, [lmsStatus.tutorlms?.active]);
 
-	// Fetch LifterLMS status on mount
+	// Fetch LifterLMS extended status only if LifterLMS is active
 	useEffect(() => {
+		if (!lmsStatus.lifterlms?.active) {
+			setLoadingLifterlms(false);
+			return;
+		}
+
 		const fetchLifterlmsStatus = async () => {
 			try {
 				const response = await apiFetch({
@@ -139,15 +169,15 @@ const IntegrationsTab = ({ settings, updateSetting, settingsData }) => {
 					setLifterlmsStatus(response.status);
 				}
 			} catch (error) {
-				// LifterLMS endpoint might not exist if not active
-				setLifterlmsStatus({ active: false });
+				// Keep the basic status from PHP
+				console.error('Failed to fetch LifterLMS extended status:', error);
 			} finally {
 				setLoadingLifterlms(false);
 			}
 		};
 
 		fetchLifterlmsStatus();
-	}, []);
+	}, [lmsStatus.lifterlms?.active]);
 
 	/**
 	 * Save LearnDash settings

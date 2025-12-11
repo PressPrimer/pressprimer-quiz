@@ -1040,21 +1040,7 @@ class PressPrimer_Quiz_Results_Renderer {
 	 * @return string Feedback message.
 	 */
 	private function get_score_feedback( $quiz, $score_percent ) {
-		// Get feedback bands from quiz meta
-		$feedback_bands = get_post_meta( $quiz->id, '_ppq_feedback_bands', true );
-
-		if ( empty( $feedback_bands ) || ! is_array( $feedback_bands ) ) {
-			return '';
-		}
-
-		// Find matching band
-		foreach ( $feedback_bands as $band ) {
-			if ( $score_percent >= $band['min'] && $score_percent <= $band['max'] ) {
-				return $band['message'];
-			}
-		}
-
-		return '';
+		return $quiz->get_feedback_for_score( $score_percent );
 	}
 
 	/**
@@ -1116,7 +1102,8 @@ class PressPrimer_Quiz_Results_Renderer {
 	/**
 	 * Get display time for attempt
 	 *
-	 * Returns active elapsed time if available, otherwise falls back to wall-clock time.
+	 * Returns the wall-clock elapsed time (from start to finish).
+	 * This matches user expectations since it aligns with the timer they saw.
 	 *
 	 * @since 1.0.0
 	 *
@@ -1124,12 +1111,7 @@ class PressPrimer_Quiz_Results_Renderer {
 	 * @return int Time in milliseconds.
 	 */
 	private function get_display_time( $attempt ) {
-		// Prefer active elapsed time (tracks actual engagement)
-		if ( ! empty( $attempt->active_elapsed_ms ) ) {
-			return (int) $attempt->active_elapsed_ms;
-		}
-
-		// Fall back to wall-clock time
+		// Use wall-clock time (matches the timer shown during the quiz)
 		return (int) $attempt->elapsed_ms;
 	}
 

@@ -24,9 +24,6 @@ document.addEventListener('DOMContentLoaded', () => {
 	if (root) {
 		const questionData = window.ppqQuestionData || {};
 
-		console.log('Question Editor - Received questionData from PHP:', questionData);
-		console.log('Question Editor - Stem value:', questionData.stem);
-
 		render(
 			<QuestionEditor questionData={questionData} />,
 			root

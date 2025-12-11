@@ -51,7 +51,7 @@ const MetadataPanel = ({ form }) => {
 				<Title level={5} style={{ marginBottom: 8, marginTop: 0 }}>
 					<Space>
 						{__('Question Settings', 'pressprimer-quiz')}
-						<Tooltip title={__('Configure difficulty, time limit, and point value for this question', 'pressprimer-quiz')}>
+						<Tooltip title={__('Configure difficulty, expected time, and point value for this question', 'pressprimer-quiz')}>
 							<QuestionCircleOutlined style={{ fontSize: 14, color: '#8c8c8c' }} />
 						</Tooltip>
 					</Space>
@@ -93,14 +93,14 @@ const MetadataPanel = ({ form }) => {
 				/>
 			</Form.Item>
 
-			{/* Time Limit */}
+			{/* Expected Time */}
 			<Form.Item
 				name="timeLimit"
 				label={
 					<Space>
 						<ClockCircleOutlined />
-						<span>{__('Time Limit (seconds)', 'pressprimer-quiz')}</span>
-						<Tooltip title={__('Set to 0 for no time limit, or specify seconds. This applies when used in Test Mode quizzes.', 'pressprimer-quiz')}>
+						<span>{__('Expected Time (seconds)', 'pressprimer-quiz')}</span>
+						<Tooltip title={__('Set to 0 for no expected time, or specify seconds. This value is only used in reporting to compare expected to actual time and is not shown to the user.', 'pressprimer-quiz')}>
 							<QuestionCircleOutlined style={{ fontSize: 12, color: '#8c8c8c' }} />
 						</Tooltip>
 					</Space>
@@ -111,7 +111,7 @@ const MetadataPanel = ({ form }) => {
 					max={3600}
 					size="small"
 					style={{ width: '100%' }}
-					placeholder={__('0 = No limit', 'pressprimer-quiz')}
+					placeholder={__('0 = No expected time', 'pressprimer-quiz')}
 					addonAfter={__('sec', 'pressprimer-quiz')}
 				/>
 			</Form.Item>

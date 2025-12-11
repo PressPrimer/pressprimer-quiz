@@ -509,6 +509,12 @@ class PressPrimer_Quiz_REST_Controller {
 		$where        = [ 'q.deleted_at IS NULL' ];
 		$where_values = [];
 
+		// Filter by owner for users who can only manage their own content
+		if ( ! current_user_can( 'ppq_manage_all' ) ) {
+			$where[]        = 'q.owner_id = %d';
+			$where_values[] = get_current_user_id();
+		}
+
 		// Filter by status if provided
 		if ( ! empty( $status ) ) {
 			$where[]        = 'q.status = %s';
@@ -668,6 +674,34 @@ class PressPrimer_Quiz_REST_Controller {
 	public function create_question( $request ) {
 		$data = $request->get_json_params();
 
+		// Convert answer format from React (isCorrect) to database (is_correct) for validation
+		$answers_for_validation = array_map(
+			function ( $answer ) {
+				return [
+					'text'       => $answer['text'] ?? '',
+					'is_correct' => $answer['isCorrect'] ?? false,
+				];
+			},
+			$data['answers'] ?? []
+		);
+
+		// Validate question content before creating
+		$content_validation = PressPrimer_Quiz_Question::validate_content(
+			$data['stem'] ?? '',
+			$answers_for_validation,
+			sanitize_key( $data['type'] ?? 'mc' )
+		);
+
+		if ( is_wp_error( $content_validation ) ) {
+			return new WP_REST_Response(
+				[
+					'success' => false,
+					'message' => $content_validation->get_error_message(),
+				],
+				400
+			);
+		}
+
 		global $wpdb;
 		$wpdb->query( 'START TRANSACTION' );
 
@@ -782,6 +816,34 @@ class PressPrimer_Quiz_REST_Controller {
 		// Check ownership
 		if ( ! current_user_can( 'ppq_manage_all' ) && absint( $question->author_id ) !== get_current_user_id() ) {
 			return new WP_Error( 'forbidden', __( 'You do not have permission.', 'pressprimer-quiz' ), [ 'status' => 403 ] );
+		}
+
+		// Convert answer format from React (isCorrect) to database (is_correct) for validation
+		$answers_for_validation = array_map(
+			function ( $answer ) {
+				return [
+					'text'       => $answer['text'] ?? '',
+					'is_correct' => $answer['isCorrect'] ?? false,
+				];
+			},
+			$data['answers'] ?? []
+		);
+
+		// Validate question content before updating
+		$content_validation = PressPrimer_Quiz_Question::validate_content(
+			$data['stem'] ?? '',
+			$answers_for_validation,
+			sanitize_key( $data['type'] ?? 'mc' )
+		);
+
+		if ( is_wp_error( $content_validation ) ) {
+			return new WP_REST_Response(
+				[
+					'success' => false,
+					'message' => $content_validation->get_error_message(),
+				],
+				400
+			);
 		}
 
 		global $wpdb;
@@ -2008,23 +2070,31 @@ class PressPrimer_Quiz_REST_Controller {
 	 * @return WP_REST_Response Response object.
 	 */
 	public function get_dashboard_stats( $request ) {
-		$service = new PressPrimer_Quiz_Statistics_Service();
+		try {
+			$service = new PressPrimer_Quiz_Statistics_Service();
 
-		// Determine owner restriction based on permissions
-		$owner_id = null;
-		if ( ! current_user_can( 'ppq_manage_all' ) ) {
-			$owner_id = get_current_user_id();
+			// Determine owner restriction based on permissions
+			$owner_id = null;
+			if ( ! current_user_can( 'ppq_manage_all' ) ) {
+				$owner_id = get_current_user_id();
+			}
+
+			$stats = $service->get_dashboard_stats( $owner_id );
+
+			return new WP_REST_Response(
+				[
+					'success' => true,
+					'data'    => $stats,
+				],
+				200
+			);
+		} catch ( \Exception $e ) {
+			return new WP_Error(
+				'dashboard_error',
+				$e->getMessage(),
+				[ 'status' => 500 ]
+			);
 		}
-
-		$stats = $service->get_dashboard_stats( $owner_id );
-
-		return new WP_REST_Response(
-			[
-				'success' => true,
-				'data'    => $stats,
-			],
-			200
-		);
 	}
 
 	/**

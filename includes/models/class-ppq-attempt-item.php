@@ -57,6 +57,17 @@ class PressPrimer_Quiz_Attempt_Item extends PressPrimer_Quiz_Model {
 	public $selected_answers_json;
 
 	/**
+	 * Answer order JSON (for randomization)
+	 *
+	 * Stores the randomized order of answer indices.
+	 * e.g., [2, 0, 3, 1] means original answer 2 is shown first.
+	 *
+	 * @since 1.0.0
+	 * @var string
+	 */
+	public $answer_order_json;
+
+	/**
 	 * First view timestamp
 	 *
 	 * @since 1.0.0
@@ -144,6 +155,7 @@ class PressPrimer_Quiz_Attempt_Item extends PressPrimer_Quiz_Model {
 			'question_revision_id',
 			'order_index',
 			'selected_answers_json',
+			'answer_order_json',
 			'first_view_at',
 			'last_answer_at',
 			'time_spent_ms',
@@ -208,6 +220,39 @@ class PressPrimer_Quiz_Attempt_Item extends PressPrimer_Quiz_Model {
 		$selected = json_decode( $this->selected_answers_json, true );
 
 		return is_array( $selected ) ? $selected : [];
+	}
+
+	/**
+	 * Get answer order
+	 *
+	 * Returns the randomized order of answer indices.
+	 * If no order is stored, returns null (use default order).
+	 *
+	 * @since 1.0.0
+	 *
+	 * @return array|null Array of original answer indices in display order, or null.
+	 */
+	public function get_answer_order() {
+		if ( empty( $this->answer_order_json ) ) {
+			return null;
+		}
+
+		$order = json_decode( $this->answer_order_json, true );
+
+		return is_array( $order ) ? $order : null;
+	}
+
+	/**
+	 * Set answer order
+	 *
+	 * Stores the randomized order of answer indices.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param array $order Array of original answer indices in display order.
+	 */
+	public function set_answer_order( array $order ) {
+		$this->answer_order_json = wp_json_encode( array_values( $order ) );
 	}
 
 	/**

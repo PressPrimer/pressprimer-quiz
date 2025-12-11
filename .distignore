@@ -6,14 +6,33 @@
 .gitignore
 .gitattributes
 
+# Claude Code / AI
+.claude
+
 # Development Dependencies
 node_modules
-vendor
 composer.phar
 composer.json
 composer.lock
+package.json
+package-lock.json
 
-# Build/Source Files
+# Vendor dev-only files (keep actual library files)
+vendor/bin
+vendor/squizlabs
+vendor/wp-coding-standards
+vendor/phpcompatibility
+vendor/dealerdirect
+vendor/phpcsstandards
+
+# Build Tools / Config
+webpack.config.js
+babel.config.js
+postcss.config.js
+.babelrc
+.browserslistrc
+
+# Source Files (built versions are in /build and /assets)
 src
 assets/src
 
@@ -27,7 +46,9 @@ phpcs.xml
 phpcs.xml.dist
 .eslintrc
 .eslintrc.js
+.eslintignore
 .prettierrc
+.prettierignore
 .stylelintrc
 
 # Editor/IDE
@@ -37,7 +58,12 @@ phpcs.xml.dist
 *.sublime-project
 *.sublime-workspace
 
-# Documentation (development)
+# WordPress Development Environment
+.wp-env.json
+.wp-env.override.json
+
+# Documentation (development only)
+docs
 *.md
 !readme.md
 
@@ -51,4 +77,3 @@ Thumbs.db
 .distignore
 .npmrc
 .nvmrc
-package-lock.json

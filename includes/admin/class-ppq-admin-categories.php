@@ -364,6 +364,11 @@ class PressPrimer_Quiz_Admin_Categories {
 			];
 		}
 
+		// Filter by owner for users who can only manage their own content
+		if ( ! current_user_can( 'ppq_manage_all' ) ) {
+			$args['where']['created_by'] = get_current_user_id();
+		}
+
 		$categories = PressPrimer_Quiz_Category::find( $args );
 		$output     = '';
 

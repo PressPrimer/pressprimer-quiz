@@ -191,8 +191,8 @@
 			var count = content.length;
 			$('#ppq-ai-char-current').text(count.toLocaleString());
 
-			// Warning if over limit (100,000 characters)
-			if (count > 100000) {
+			// Warning if over limit (250,000 characters)
+			if (count > 250000) {
 				$('#ppq-ai-char-current').addClass('ppq-ai-char-warning');
 			} else {
 				$('#ppq-ai-char-current').removeClass('ppq-ai-char-warning');
@@ -336,7 +336,7 @@
 			var generateFeedback = $('#ppq-ai-generate-feedback').is(':checked');
 
 			// Clamp values to valid ranges
-			count = Math.max(1, Math.min(100, count));
+			count = Math.max(1, Math.min(50, count));
 			answerCount = Math.max(3, Math.min(6, answerCount));
 
 			// Hide previous results and errors
@@ -724,14 +724,6 @@
 
 			// Show loading
 			this.showLoading(ppqAIGeneration.strings.saving);
-
-			// Debug logging
-			console.log('Saving questions:', {
-				bankId: bankId,
-				questionsCount: questionsToSave.length,
-				questions: questionsToSave,
-				categories: categories
-			});
 
 			// Make AJAX request
 			$.ajax({

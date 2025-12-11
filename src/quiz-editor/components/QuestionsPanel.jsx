@@ -97,12 +97,19 @@ const QuestionsPanel = ({ quizId, generationMode }) => {
 	 * Load available questions for modal
 	 */
 	const loadAvailableQuestions = async (page = 1) => {
+		loadAvailableQuestionsWithPageSize(page, pagination.pageSize);
+	};
+
+	/**
+	 * Load available questions with specific page size
+	 */
+	const loadAvailableQuestionsWithPageSize = async (page = 1, pageSize = 10) => {
 		try {
 			setLoadingQuestions(true);
 
 			// Build query params
 			const params = new URLSearchParams({
-				per_page: pagination.pageSize.toString(),
+				per_page: pageSize.toString(),
 				page: page.toString(),
 			});
 
@@ -131,11 +138,12 @@ const QuestionsPanel = ({ quizId, generationMode }) => {
 			const filtered = response.questions.filter(q => !existingQuestionIds.includes(q.id));
 
 			setAvailableQuestions(filtered);
-			setPagination({
-				...pagination,
+			setPagination(prev => ({
+				...prev,
 				current: page,
+				pageSize: pageSize,
 				total: response.total,
-			});
+			}));
 		} catch (error) {
 			console.error('Failed to load questions:', error);
 			message.error(__('Failed to load questions', 'pressprimer-quiz'));
@@ -199,7 +207,18 @@ const QuestionsPanel = ({ quizId, generationMode }) => {
 	 * Handle pagination change
 	 */
 	const handleTableChange = (newPagination) => {
-		loadAvailableQuestions(newPagination.current);
+		// Update pageSize in state if it changed
+		if (newPagination.pageSize !== pagination.pageSize) {
+			setPagination(prev => ({
+				...prev,
+				pageSize: newPagination.pageSize,
+				current: 1, // Reset to page 1 when page size changes
+			}));
+			// Need to load with new page size - use a callback pattern
+			loadAvailableQuestionsWithPageSize(1, newPagination.pageSize);
+		} else {
+			loadAvailableQuestions(newPagination.current);
+		}
 	};
 
 	/**

@@ -25,16 +25,24 @@ if ( ! defined( 'ABSPATH' ) ) {
 class PressPrimer_Quiz_Quiz_Renderer {
 
 	/**
+	 * Current quiz being rendered.
+	 *
+	 * @var PressPrimer_Quiz_Quiz|null
+	 */
+	private $current_quiz = null;
+
+	/**
 	 * Render quiz landing page
 	 *
 	 * Displays quiz information, previous attempts, and start/resume buttons.
 	 *
 	 * @since 1.0.0
 	 *
-	 * @param PressPrimer_Quiz_Quiz $quiz Quiz object.
+	 * @param PressPrimer_Quiz_Quiz $quiz      Quiz object.
+	 * @param bool                  $is_retake Whether this is a retake request.
 	 * @return string Rendered HTML.
 	 */
-	public function render_landing( $quiz ) {
+	public function render_landing( $quiz, $is_retake = false ) {
 		// Enqueue assets
 		$this->enqueue_assets( $quiz );
 
@@ -48,6 +56,13 @@ class PressPrimer_Quiz_Quiz_Renderer {
 		if ( $is_logged_in ) {
 			$previous_attempts   = PressPrimer_Quiz_Attempt::get_user_attempts( $quiz->id, $user_id );
 			$in_progress_attempt = PressPrimer_Quiz_Attempt::get_user_in_progress( $quiz->id, $user_id );
+
+			// If this is a retake, abandon any in-progress attempt
+			if ( $is_retake && $in_progress_attempt ) {
+				$in_progress_attempt->status = 'abandoned';
+				$in_progress_attempt->save();
+				$in_progress_attempt = null;
+			}
 
 			// Auto-abandon stale in-progress attempts (no answers, older than 1 hour)
 			if ( $in_progress_attempt ) {
@@ -450,6 +465,9 @@ class PressPrimer_Quiz_Quiz_Renderer {
 				'</p></div>';
 		}
 
+		// Store current quiz for use in render_question
+		$this->current_quiz = $quiz;
+
 		// Get all attempt items
 		$items = $attempt->get_items();
 		if ( empty( $items ) ) {
@@ -509,9 +527,14 @@ class PressPrimer_Quiz_Quiz_Renderer {
 			data-attempt-id="<?php echo esc_attr( $attempt->id ); ?>"
 			data-quiz-id="<?php echo esc_attr( $quiz->id ); ?>"
 			data-quiz-mode="<?php echo esc_attr( $quiz->mode ); ?>"
+			data-allow-skip="<?php echo esc_attr( $quiz->allow_skip ? '1' : '0' ); ?>"
+			data-allow-backward="<?php echo esc_attr( $quiz->allow_backward ? '1' : '0' ); ?>"
+			data-page-mode="<?php echo esc_attr( $quiz->page_mode ?: 'single' ); ?>"
+			data-questions-per-page="<?php echo esc_attr( $quiz->questions_per_page ?: 1 ); ?>"
 			data-time-limit="<?php echo esc_attr( $time_limit ); ?>"
 			data-time-remaining="<?php echo esc_attr( $time_remaining ); ?>"
-			data-start-question="<?php echo esc_attr( $first_unanswered ); ?>">
+			data-start-question="<?php echo esc_attr( $first_unanswered ); ?>"
+			data-active-elapsed-ms="<?php echo esc_attr( $attempt->active_elapsed_ms ?? 0 ); ?>">
 
 			<?php
 			/**
@@ -532,12 +555,20 @@ class PressPrimer_Quiz_Quiz_Renderer {
 				<div class="ppq-quiz-interface-header-content">
 					<h1 class="ppq-quiz-interface-title"><?php echo esc_html( $quiz->title ); ?></h1>
 
+					<?php
+					$total_questions    = count( $items );
+					$is_paginated       = 'paged' === $quiz->page_mode;
+					$questions_per_page = max( 1, (int) $quiz->questions_per_page );
+					$total_pages        = $is_paginated ? (int) ceil( $total_questions / $questions_per_page ) : $total_questions;
+					$progress_label     = $is_paginated ? __( 'Page progress', 'pressprimer-quiz' ) : __( 'Question progress', 'pressprimer-quiz' );
+					$sr_label           = $is_paginated ? __( 'pages', 'pressprimer-quiz' ) : __( 'questions', 'pressprimer-quiz' );
+					?>
 					<div class="ppq-quiz-interface-meta">
-						<span class="ppq-quiz-interface-meta-item" aria-label="<?php esc_attr_e( 'Question progress', 'pressprimer-quiz' ); ?>">
+						<span class="ppq-quiz-interface-meta-item" aria-label="<?php echo esc_attr( $progress_label ); ?>">
 							<span class="ppq-meta-icon" aria-hidden="true">📝</span>
 							<span class="ppq-progress-text">
-								<span class="ppq-current-question">1</span> / <?php echo esc_html( count( $items ) ); ?>
-								<span class="ppq-sr-only"><?php esc_html_e( 'questions', 'pressprimer-quiz' ); ?></span>
+								<span class="ppq-current-question">1</span> / <?php echo esc_html( $total_pages ); ?>
+								<span class="ppq-sr-only"><?php echo esc_html( $sr_label ); ?></span>
 							</span>
 						</span>
 
@@ -627,7 +658,13 @@ class PressPrimer_Quiz_Quiz_Renderer {
 
 		$selected_answers = $item->get_selected_answers();
 		$answers          = $revision->get_answers();
+		$answer_order     = $item->get_answer_order();
 		$question_number  = $index + 1;
+
+		// If no custom order, use default order [0, 1, 2, ...]
+		if ( null === $answer_order ) {
+			$answer_order = range( 0, count( $answers ) - 1 );
+		}
 
 		// Determine input type based on question type
 		$input_type = 'radio';
@@ -675,8 +712,13 @@ class PressPrimer_Quiz_Quiz_Renderer {
 			</div>
 
 			<div class="ppq-answers">
-				<?php foreach ( $answers as $answer_index => $answer ) : ?>
+				<?php foreach ( $answer_order as $answer_index ) : ?>
 					<?php
+					// Skip if answer index is invalid
+					if ( ! isset( $answers[ $answer_index ] ) ) {
+						continue;
+					}
+					$answer     = $answers[ $answer_index ];
 					$answer_id  = 'ppq_answer_' . $item->id . '_' . $answer_index;
 					$is_checked = in_array( $answer_index, $selected_answers, true );
 					?>
@@ -701,6 +743,27 @@ class PressPrimer_Quiz_Quiz_Renderer {
 				<p class="ppq-question-hint">
 					<?php esc_html_e( 'Select all that apply', 'pressprimer-quiz' ); ?>
 				</p>
+			<?php endif; ?>
+
+			<?php if ( $this->current_quiz && $this->current_quiz->enable_confidence ) : ?>
+				<?php
+				$confidence_id      = 'ppq_confidence_' . $item->id;
+				$is_confident       = (bool) $item->confidence;
+				?>
+				<div class="ppq-confidence-container">
+					<label class="ppq-confidence-label" for="<?php echo esc_attr( $confidence_id ); ?>">
+						<input type="checkbox"
+								id="<?php echo esc_attr( $confidence_id ); ?>"
+								name="ppq_confidence_<?php echo esc_attr( $item->id ); ?>"
+								class="ppq-confidence-input"
+								data-item-id="<?php echo esc_attr( $item->id ); ?>"
+								<?php checked( $is_confident ); ?>>
+						<span class="ppq-confidence-checkbox"></span>
+						<span class="ppq-confidence-text">
+							<?php esc_html_e( 'I am confident in my answer', 'pressprimer-quiz' ); ?>
+						</span>
+					</label>
+				</div>
 			<?php endif; ?>
 
 			<!-- Check Answer button for tutorial mode (hidden in timed mode) -->
@@ -812,6 +875,10 @@ class PressPrimer_Quiz_Quiz_Renderer {
 					'unansweredMany'     => __( 'You have {count} unanswered questions.', 'pressprimer-quiz' ),
 					'goToQuestion'       => __( 'Go to Question {question}', 'pressprimer-quiz' ),
 					'submitAnyway'       => __( 'Submit Anyway', 'pressprimer-quiz' ),
+					'skipNotAllowedTooltip' => __( 'You must answer this question to proceed.', 'pressprimer-quiz' ),
+					'skipNotAllowedTooltipPage' => __( 'You must answer all questions on this page to proceed.', 'pressprimer-quiz' ),
+					'pageOf'             => __( 'Page {current} of {total}', 'pressprimer-quiz' ),
+					'backwardNotAllowed' => __( 'You cannot go back to previous questions in this quiz.', 'pressprimer-quiz' ),
 					'correct'            => __( 'Correct!', 'pressprimer-quiz' ),
 					// Accessibility strings for screen readers
 					'fiveMinuteWarning'  => __( 'Warning: Five minutes remaining!', 'pressprimer-quiz' ),

@@ -578,10 +578,10 @@ class PressPrimer_Quiz_Admin_Banks {
 			</div><!-- End Tabs Container -->
 
 			<!-- Filter Questions -->
-			<div class="ppq-form-section" style="margin-top: 20px;">
+			<div id="questions-in-bank" class="ppq-form-section" style="margin-top: 20px;">
 				<h2><?php esc_html_e( 'Questions in Bank', 'pressprimer-quiz' ); ?></h2>
 
-				<form method="get" class="ppq-filter-form">
+				<form method="get" action="<?php echo esc_url( admin_url( 'admin.php' ) ); ?>#questions-in-bank" class="ppq-filter-form">
 					<input type="hidden" name="page" value="ppq-banks">
 					<input type="hidden" name="action" value="view">
 					<input type="hidden" name="bank_id" value="<?php echo esc_attr( $bank_id ); ?>">
@@ -618,14 +618,17 @@ class PressPrimer_Quiz_Admin_Banks {
 					<?php // phpcs:enable WordPress.Security.NonceVerification.Recommended ?>
 
 					<button type="submit" class="button"><?php esc_html_e( 'Filter', 'pressprimer-quiz' ); ?></button>
-					<a href="<?php echo esc_url( admin_url( 'admin.php?page=ppq-banks&action=view&bank_id=' . $bank_id ) ); ?>" class="button">
+					<a href="<?php echo esc_url( admin_url( 'admin.php?page=ppq-banks&action=view&bank_id=' . $bank_id ) ); ?>#questions-in-bank" class="button">
 						<?php esc_html_e( 'Clear Filters', 'pressprimer-quiz' ); ?>
 					</a>
 				</form>
 
 				<!-- Questions Table -->
-				<?php if ( empty( $questions ) ) : ?>
-					<p><em><?php esc_html_e( 'No questions in this bank yet.', 'pressprimer-quiz' ); ?></em></p>
+				<?php
+				$has_filters = ( '' !== $filter_type || '' !== $filter_difficulty );
+				if ( empty( $questions ) ) :
+				?>
+					<p><em><?php echo $has_filters ? esc_html__( 'No questions match your filters.', 'pressprimer-quiz' ) : esc_html__( 'No questions in this bank yet.', 'pressprimer-quiz' ); ?></em></p>
 				<?php else : ?>
 					<table class="wp-list-table widefat fixed striped ppq-table" style="margin-top: 15px;">
 						<thead>
@@ -677,11 +680,6 @@ class PressPrimer_Quiz_Admin_Banks {
 											<span class="edit">
 												<a href="<?php echo esc_url( admin_url( 'admin.php?page=ppq-questions&action=edit&question=' . $question->id ) ); ?>">
 													<?php esc_html_e( 'Edit', 'pressprimer-quiz' ); ?>
-												</a> |
-											</span>
-											<span class="view">
-												<a href="<?php echo esc_url( admin_url( 'admin.php?page=ppq-questions&action=view&question=' . $question->id ) ); ?>">
-													<?php esc_html_e( 'View', 'pressprimer-quiz' ); ?>
 												</a>
 											</span>
 										</div>

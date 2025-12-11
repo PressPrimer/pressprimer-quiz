@@ -247,4 +247,156 @@ class PressPrimer_Quiz_Migrator {
 
 		return true;
 	}
+
+	/**
+	 * Get list of required tables
+	 *
+	 * Returns array of all table names required by the plugin.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @return array List of table names with wpdb prefix.
+	 */
+	public static function get_required_tables() {
+		global $wpdb;
+
+		return [
+			$wpdb->prefix . 'ppq_questions',
+			$wpdb->prefix . 'ppq_question_revisions',
+			$wpdb->prefix . 'ppq_categories',
+			$wpdb->prefix . 'ppq_question_tax',
+			$wpdb->prefix . 'ppq_banks',
+			$wpdb->prefix . 'ppq_bank_questions',
+			$wpdb->prefix . 'ppq_quizzes',
+			$wpdb->prefix . 'ppq_quiz_items',
+			$wpdb->prefix . 'ppq_quiz_rules',
+			$wpdb->prefix . 'ppq_groups',
+			$wpdb->prefix . 'ppq_group_members',
+			$wpdb->prefix . 'ppq_assignments',
+			$wpdb->prefix . 'ppq_attempts',
+			$wpdb->prefix . 'ppq_attempt_items',
+			$wpdb->prefix . 'ppq_events',
+		];
+	}
+
+	/**
+	 * Get table status
+	 *
+	 * Returns status information for all plugin tables.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @return array Array of table status info with keys: name, exists, row_count.
+	 */
+	public static function get_table_status() {
+		global $wpdb;
+
+		$tables  = self::get_required_tables();
+		$results = [];
+
+		foreach ( $tables as $table ) {
+			// Check if table exists
+			$table_exists = $wpdb->get_var(
+				$wpdb->prepare( 'SHOW TABLES LIKE %s', $table )
+			);
+
+			$status = [
+				'name'      => $table,
+				'exists'    => ( $table === $table_exists ),
+				'row_count' => 0,
+			];
+
+			// Get row count if table exists
+			if ( $status['exists'] ) {
+				// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Table name is from our controlled list
+				$count             = $wpdb->get_var( "SELECT COUNT(*) FROM `{$table}`" );
+				$status['row_count'] = (int) $count;
+			}
+
+			$results[] = $status;
+		}
+
+		return $results;
+	}
+
+	/**
+	 * Check if any tables are missing
+	 *
+	 * Returns true if any required tables do not exist.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @return bool True if tables are missing.
+	 */
+	public static function has_missing_tables() {
+		$table_status = self::get_table_status();
+
+		foreach ( $table_status as $table ) {
+			if ( ! $table['exists'] ) {
+				return true;
+			}
+		}
+
+		return false;
+	}
+
+	/**
+	 * Repair tables
+	 *
+	 * Recreates any missing database tables.
+	 * Does not modify existing tables or data.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @return array Array with 'success' boolean and 'repaired' array of table names.
+	 */
+	public static function repair_tables() {
+		// Verify capability
+		if ( ! current_user_can( 'manage_options' ) ) {
+			return [
+				'success'  => false,
+				'repaired' => [],
+				'error'    => __( 'Permission denied.', 'pressprimer-quiz' ),
+			];
+		}
+
+		// Load WordPress upgrade functions
+		require_once ABSPATH . 'wp-admin/includes/upgrade.php';
+
+		// Get current status to know what's missing
+		$before_status = self::get_table_status();
+		$was_missing   = [];
+
+		foreach ( $before_status as $table ) {
+			if ( ! $table['exists'] ) {
+				$was_missing[] = $table['name'];
+			}
+		}
+
+		// Run dbDelta to create missing tables
+		if ( class_exists( 'PressPrimer_Quiz_Schema' ) ) {
+			$sql = PressPrimer_Quiz_Schema::get_schema();
+			dbDelta( $sql );
+		}
+
+		// Check which tables were actually repaired
+		$after_status = self::get_table_status();
+		$repaired     = [];
+
+		foreach ( $after_status as $table ) {
+			if ( $table['exists'] && in_array( $table['name'], $was_missing, true ) ) {
+				$repaired[] = $table['name'];
+			}
+		}
+
+		// Update database version if tables were repaired
+		if ( ! empty( $repaired ) ) {
+			update_option( self::DB_VERSION_OPTION, PPQ_DB_VERSION );
+		}
+
+		return [
+			'success'  => count( $repaired ) === count( $was_missing ),
+			'repaired' => $repaired,
+		];
+	}
 }

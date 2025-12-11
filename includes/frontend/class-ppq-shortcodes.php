@@ -126,7 +126,7 @@ class PressPrimer_Quiz_Shortcodes {
 		}
 
 		$renderer = new PressPrimer_Quiz_Quiz_Renderer();
-		return $renderer->render_landing( $quiz );
+		return $renderer->render_landing( $quiz, $is_retake );
 	}
 
 	/**
@@ -148,7 +148,7 @@ class PressPrimer_Quiz_Shortcodes {
 		$can_access = false;
 
 		// Check if user owns this attempt
-		if ( is_user_logged_in() && $attempt->user_id === get_current_user_id() ) {
+		if ( is_user_logged_in() && (int) $attempt->user_id === get_current_user_id() ) {
 			$can_access = true;
 		}
 
@@ -283,11 +283,17 @@ class PressPrimer_Quiz_Shortcodes {
 		// Parse attributes
 		$atts = shortcode_atts(
 			[
-				'per_page' => 20,
+				'per_page'   => 20,
+				'show_score' => true,
+				'show_date'  => true,
 			],
 			$atts,
 			'ppq_my_attempts'
 		);
+
+		// Convert string 'false' to boolean false (for shortcode usage)
+		$show_score = filter_var( $atts['show_score'], FILTER_VALIDATE_BOOLEAN );
+		$show_date  = filter_var( $atts['show_date'], FILTER_VALIDATE_BOOLEAN );
 
 		// Require login
 		if ( ! is_user_logged_in() ) {
@@ -307,7 +313,8 @@ class PressPrimer_Quiz_Shortcodes {
 		$filter_to     = isset( $_GET['filter_to'] ) ? sanitize_text_field( wp_unslash( $_GET['filter_to'] ) ) : '';
 		$sort_by       = isset( $_GET['sort_by'] ) ? sanitize_text_field( wp_unslash( $_GET['sort_by'] ) ) : 'date';
 		$sort_order    = isset( $_GET['sort_order'] ) ? sanitize_text_field( wp_unslash( $_GET['sort_order'] ) ) : 'desc';
-		$paged         = isset( $_GET['paged'] ) ? absint( wp_unslash( $_GET['paged'] ) ) : 1;
+		// Use ppq_paged to avoid conflict with WordPress's internal 'paged' parameter
+		$paged         = isset( $_GET['ppq_paged'] ) ? absint( wp_unslash( $_GET['ppq_paged'] ) ) : 1;
 		// phpcs:enable WordPress.Security.NonceVerification.Recommended
 
 		// Build query
@@ -388,7 +395,7 @@ class PressPrimer_Quiz_Shortcodes {
 				// Preserve existing query params
 				// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Reading filter params for form preservation
 				foreach ( $_GET as $key => $value ) {
-					if ( ! in_array( $key, [ 'filter_quiz', 'filter_status', 'filter_from', 'filter_to', 'sort_by', 'sort_order', 'paged' ], true ) ) {
+					if ( ! in_array( $key, [ 'filter_quiz', 'filter_status', 'filter_from', 'filter_to', 'sort_by', 'sort_order', 'ppq_paged' ], true ) ) {
 						echo '<input type="hidden" name="' . esc_attr( sanitize_key( $key ) ) . '" value="' . esc_attr( sanitize_text_field( wp_unslash( $value ) ) ) . '">';
 					}
 				}
@@ -460,9 +467,13 @@ class PressPrimer_Quiz_Shortcodes {
 						<thead>
 							<tr>
 								<th><?php esc_html_e( 'Quiz', 'pressprimer-quiz' ); ?></th>
-								<th><?php esc_html_e( 'Score', 'pressprimer-quiz' ); ?></th>
+								<?php if ( $show_score ) : ?>
+									<th><?php esc_html_e( 'Score', 'pressprimer-quiz' ); ?></th>
+								<?php endif; ?>
 								<th><?php esc_html_e( 'Pass/Fail', 'pressprimer-quiz' ); ?></th>
-								<th><?php esc_html_e( 'Date', 'pressprimer-quiz' ); ?></th>
+								<?php if ( $show_date ) : ?>
+									<th><?php esc_html_e( 'Date', 'pressprimer-quiz' ); ?></th>
+								<?php endif; ?>
 								<th><?php esc_html_e( 'Duration', 'pressprimer-quiz' ); ?></th>
 								<th><?php esc_html_e( 'Actions', 'pressprimer-quiz' ); ?></th>
 							</tr>
@@ -477,7 +488,7 @@ class PressPrimer_Quiz_Shortcodes {
 									continue;
 								}
 
-								$this->render_attempt_row( $attempt, $quiz );
+								$this->render_attempt_row( $attempt, $quiz, $show_score, $show_date );
 							}
 							?>
 						</tbody>
@@ -488,22 +499,22 @@ class PressPrimer_Quiz_Shortcodes {
 				<?php if ( $total_pages > 1 ) : ?>
 					<div class="ppq-pagination">
 						<?php
-						$base_url = remove_query_arg( 'paged' );
+						$base_url = remove_query_arg( 'ppq_paged' );
 
 						// Previous
 						if ( $paged > 1 ) {
-							echo '<a href="' . esc_url( add_query_arg( 'paged', $paged - 1, $base_url ) ) . '" class="ppq-page-link ppq-prev">&laquo; ' . esc_html__( 'Previous', 'pressprimer-quiz' ) . '</a>';
+							echo '<a href="' . esc_url( add_query_arg( 'ppq_paged', $paged - 1, $base_url ) ) . '" class="ppq-page-link ppq-prev">&laquo; ' . esc_html__( 'Previous', 'pressprimer-quiz' ) . '</a>';
 						}
 
 						// Page numbers
 						for ( $i = 1; $i <= $total_pages; $i++ ) {
 							$class = $i === $paged ? 'ppq-page-link ppq-current' : 'ppq-page-link';
-							echo '<a href="' . esc_url( add_query_arg( 'paged', $i, $base_url ) ) . '" class="' . esc_attr( $class ) . '">' . esc_html( $i ) . '</a>';
+							echo '<a href="' . esc_url( add_query_arg( 'ppq_paged', $i, $base_url ) ) . '" class="' . esc_attr( $class ) . '">' . esc_html( $i ) . '</a>';
 						}
 
 						// Next
 						if ( $paged < $total_pages ) {
-							echo '<a href="' . esc_url( add_query_arg( 'paged', $paged + 1, $base_url ) ) . '" class="ppq-page-link ppq-next">' . esc_html__( 'Next', 'pressprimer-quiz' ) . ' &raquo;</a>';
+							echo '<a href="' . esc_url( add_query_arg( 'ppq_paged', $paged + 1, $base_url ) ) . '" class="ppq-page-link ppq-next">' . esc_html__( 'Next', 'pressprimer-quiz' ) . ' &raquo;</a>';
 						}
 						?>
 					</div>
@@ -519,22 +530,26 @@ class PressPrimer_Quiz_Shortcodes {
 	 *
 	 * @since 1.0.0
 	 *
-	 * @param PressPrimer_Quiz_Attempt $attempt Attempt object.
-	 * @param PressPrimer_Quiz_Quiz    $quiz Quiz object.
+	 * @param PressPrimer_Quiz_Attempt $attempt    Attempt object.
+	 * @param PressPrimer_Quiz_Quiz    $quiz       Quiz object.
+	 * @param bool                     $show_score Whether to show score column.
+	 * @param bool                     $show_date  Whether to show date column.
 	 */
-	private function render_attempt_row( $attempt, $quiz ) {
+	private function render_attempt_row( $attempt, $quiz, $show_score = true, $show_date = true ) {
 		?>
 		<tr class="ppq-attempt-row">
 			<td class="ppq-attempt-quiz">
 				<?php echo esc_html( $quiz->title ); ?>
 			</td>
-			<td class="ppq-attempt-score">
-				<?php if ( 'submitted' === $attempt->status && null !== $attempt->score_percent ) : ?>
-					<?php echo esc_html( number_format_i18n( $attempt->score_percent, 1 ) ); ?>%
-				<?php else : ?>
-					<span class="ppq-text-muted">—</span>
-				<?php endif; ?>
-			</td>
+			<?php if ( $show_score ) : ?>
+				<td class="ppq-attempt-score">
+					<?php if ( 'submitted' === $attempt->status && null !== $attempt->score_percent ) : ?>
+						<?php echo esc_html( number_format_i18n( $attempt->score_percent, 1 ) ); ?>%
+					<?php else : ?>
+						<span class="ppq-text-muted">—</span>
+					<?php endif; ?>
+				</td>
+			<?php endif; ?>
 			<td class="ppq-attempt-status">
 				<?php if ( 'submitted' === $attempt->status ) : ?>
 					<?php if ( $attempt->passed ) : ?>
@@ -548,9 +563,11 @@ class PressPrimer_Quiz_Shortcodes {
 					<span class="ppq-badge ppq-badge-abandoned"><?php esc_html_e( 'Abandoned', 'pressprimer-quiz' ); ?></span>
 				<?php endif; ?>
 			</td>
-			<td class="ppq-attempt-date">
-				<?php echo esc_html( wp_date( get_option( 'date_format' ) . ' ' . get_option( 'time_format' ), strtotime( $attempt->started_at ) ) ); ?>
-			</td>
+			<?php if ( $show_date ) : ?>
+				<td class="ppq-attempt-date">
+					<?php echo esc_html( wp_date( get_option( 'date_format' ) . ' ' . get_option( 'time_format' ), strtotime( $attempt->started_at ) ) ); ?>
+				</td>
+			<?php endif; ?>
 			<td class="ppq-attempt-duration">
 				<?php if ( $attempt->elapsed_ms ) : ?>
 					<?php echo esc_html( $this->format_duration_readable( $attempt->elapsed_ms ) ); ?>
@@ -559,21 +576,37 @@ class PressPrimer_Quiz_Shortcodes {
 				<?php endif; ?>
 			</td>
 			<td class="ppq-attempt-actions">
+				<?php
+				// Use the stored source URL from the attempt, fall back to searching for shortcode
+				$quiz_page_url = $attempt->source_url ?: $this->get_quiz_page_url( $quiz->id );
+				?>
 				<?php if ( 'in_progress' === $attempt->status && $attempt->can_resume() ) : ?>
-					<?php $resume_url = add_query_arg( 'attempt', $attempt->id, get_permalink() ); ?>
-					<a href="<?php echo esc_url( $resume_url ); ?>" class="ppq-button ppq-button-small">
-						<?php esc_html_e( 'Resume', 'pressprimer-quiz' ); ?>
-					</a>
-				<?php elseif ( 'submitted' === $attempt->status ) : ?>
-					<?php $results_url = add_query_arg( 'attempt', $attempt->id, get_permalink() ); ?>
-					<a href="<?php echo esc_url( $results_url ); ?>" class="ppq-button ppq-button-small ppq-button-primary">
-						<?php esc_html_e( 'View Results', 'pressprimer-quiz' ); ?>
-					</a>
-					<?php if ( $this->can_retake_quiz( $quiz, $attempt ) ) : ?>
-						<?php $retake_url = get_permalink( $quiz->id ); ?>
-						<a href="<?php echo esc_url( $retake_url ); ?>" class="ppq-button ppq-button-small ppq-button-secondary">
-							<?php esc_html_e( 'Retake', 'pressprimer-quiz' ); ?>
+					<?php if ( $quiz_page_url ) : ?>
+						<?php $resume_url = add_query_arg( 'attempt', $attempt->id, $quiz_page_url ); ?>
+						<a href="<?php echo esc_url( $resume_url ); ?>" class="ppq-button ppq-button-small">
+							<?php esc_html_e( 'Resume', 'pressprimer-quiz' ); ?>
 						</a>
+					<?php else : ?>
+						<span class="ppq-text-muted" title="<?php esc_attr_e( 'Quiz page not found', 'pressprimer-quiz' ); ?>">
+							<?php esc_html_e( 'Resume', 'pressprimer-quiz' ); ?>
+						</span>
+					<?php endif; ?>
+				<?php elseif ( 'submitted' === $attempt->status ) : ?>
+					<?php if ( $quiz_page_url ) : ?>
+						<?php $results_url = add_query_arg( 'attempt', $attempt->id, $quiz_page_url ); ?>
+						<a href="<?php echo esc_url( $results_url ); ?>" class="ppq-button ppq-button-small ppq-button-primary">
+							<?php esc_html_e( 'View Results', 'pressprimer-quiz' ); ?>
+						</a>
+						<?php if ( $this->can_retake_quiz( $quiz, $attempt ) ) : ?>
+							<?php $retake_url = add_query_arg( 'ppq_retake', '1', $quiz_page_url ); ?>
+							<a href="<?php echo esc_url( $retake_url ); ?>" class="ppq-button ppq-button-small ppq-button-secondary">
+								<?php esc_html_e( 'Retake', 'pressprimer-quiz' ); ?>
+							</a>
+						<?php endif; ?>
+					<?php else : ?>
+						<span class="ppq-text-muted" title="<?php esc_attr_e( 'Quiz page not found', 'pressprimer-quiz' ); ?>">
+							<?php esc_html_e( 'View Results', 'pressprimer-quiz' ); ?>
+						</span>
 					<?php endif; ?>
 				<?php endif; ?>
 			</td>
@@ -676,5 +709,60 @@ class PressPrimer_Quiz_Shortcodes {
 			esc_attr( $type ),
 			esc_html( $message )
 		);
+	}
+
+	/**
+	 * Get the URL of a page/post containing a specific quiz shortcode
+	 *
+	 * Searches for posts/pages containing [ppq_quiz id="X"] shortcode.
+	 * Results are cached for performance.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param int $quiz_id Quiz ID.
+	 * @return string|false Page URL or false if not found.
+	 */
+	private function get_quiz_page_url( $quiz_id ) {
+		// Check transient cache first
+		$cache_key = 'ppq_quiz_page_url_' . $quiz_id;
+		$cached    = get_transient( $cache_key );
+
+		if ( false !== $cached ) {
+			return $cached ?: false; // Empty string means "not found" in cache
+		}
+
+		global $wpdb;
+
+		// Search for shortcode in post content
+		// Look for [ppq_quiz id="X"] or [ppq_quiz id='X'] or [ppq_quiz id=X]
+		$shortcode_patterns = [
+			'%[ppq_quiz %id="' . $quiz_id . '"%',
+			"%[ppq_quiz %id='" . $quiz_id . "'%",
+			'%[ppq_quiz %id=' . $quiz_id . '%',
+		];
+
+		$where_clauses = [];
+		foreach ( $shortcode_patterns as $pattern ) {
+			$where_clauses[] = $wpdb->prepare( 'post_content LIKE %s', $pattern );
+		}
+
+		$where = implode( ' OR ', $where_clauses );
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Custom shortcode search with transient caching
+		$post_id = $wpdb->get_var(
+			"SELECT ID FROM {$wpdb->posts}
+			WHERE post_status = 'publish'
+			AND post_type IN ('post', 'page')
+			AND ({$where})
+			ORDER BY post_type = 'page' DESC, ID ASC
+			LIMIT 1" // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- $where is built with prepare() above
+		);
+
+		$url = $post_id ? get_permalink( $post_id ) : '';
+
+		// Cache for 1 hour (empty string if not found)
+		set_transient( $cache_key, $url, HOUR_IN_SECONDS );
+
+		return $url ?: false;
 	}
 }

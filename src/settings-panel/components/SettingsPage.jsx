@@ -84,6 +84,10 @@ const SettingsPage = ({ settingsData = {} }) => {
 	const [saving, setSaving] = useState(false);
 	const [hasChanges, setHasChanges] = useState(false);
 
+	// Lift API key status state to persist across tab navigation
+	const [apiKeyStatus, setApiKeyStatus] = useState(settingsData.apiKeyStatus || { configured: false });
+	const [apiModels, setApiModels] = useState(settingsData.apiModels || []);
+
 	/**
 	 * Update a setting value
 	 */
@@ -169,6 +173,10 @@ const SettingsPage = ({ settingsData = {} }) => {
 							settings={settings}
 							updateSetting={updateSetting}
 							settingsData={settingsData}
+							apiKeyStatus={apiKeyStatus}
+							setApiKeyStatus={setApiKeyStatus}
+							apiModels={apiModels}
+							setApiModels={setApiModels}
 						/>
 
 						{/* Save Button Footer */}

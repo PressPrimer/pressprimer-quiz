@@ -116,6 +116,8 @@
 		buildAttemptUrl: function(attemptId) {
 			const url = new URL(window.location.href);
 			url.searchParams.set('attempt', attemptId);
+			// Remove retake flag - we're now in an active attempt
+			url.searchParams.delete('ppq_retake');
 			return url.toString();
 		},
 
@@ -220,9 +222,22 @@
 			this.attemptId = this.$container.data('attempt-id');
 			this.quizId = this.$container.data('quiz-id');
 			this.quizMode = this.$container.data('quiz-mode') || 'timed';
+			this.allowSkip = this.$container.data('allow-skip') === 1 || this.$container.data('allow-skip') === '1';
+			this.allowBackward = this.$container.data('allow-backward') === 1 || this.$container.data('allow-backward') === '1';
+			this.pageMode = this.$container.data('page-mode') || 'single';
+			this.questionsPerPage = parseInt(this.$container.data('questions-per-page'), 10) || 1;
 			this.timeLimit = this.$container.data('time-limit');
 			this.timeRemaining = this.$container.data('time-remaining');
 			this.totalQuestions = $('.ppq-question').length;
+
+			// Calculate total pages for paginated mode
+			this.totalPages = this.pageMode === 'paged'
+				? Math.ceil(this.totalQuestions / this.questionsPerPage)
+				: this.totalQuestions;
+			this.currentPage = 0;
+
+			// Load previously accumulated active time (for resume)
+			this.activeElapsedMs = parseInt(this.$container.data('active-elapsed-ms'), 10) || 0;
 
 			// Tutorial mode tracking
 			this.feedbackShown = {}; // Track which questions have shown feedback
@@ -230,6 +245,10 @@
 
 			// Get start question (first unanswered for resume, default 0)
 			var startQuestion = parseInt(this.$container.data('start-question'), 10) || 0;
+			// Convert to page number for paginated mode
+			if (this.pageMode === 'paged') {
+				startQuestion = Math.floor(startQuestion / this.questionsPerPage);
+			}
 
 			// Initialize components
 			this.bindEvents();
@@ -335,6 +354,11 @@
 				self.handleAnswerChange($(this));
 			});
 
+			// Confidence checkbox
+			$(document).on('change', '.ppq-confidence-input', function() {
+				self.handleConfidenceChange($(this));
+			});
+
 			// Handle clicks on answer options
 			// Since the input is hidden (width/height: 0), we need to manually handle clicks
 			// on the visible parts of the label (the custom radio/checkbox and text)
@@ -363,8 +387,8 @@
 
 			// Keyboard navigation
 			$(document).on('keydown', function(e) {
-				// Left arrow - previous
-				if (e.key === 'ArrowLeft' && !$('#ppq-prev-button').prop('disabled')) {
+				// Left arrow - previous (only if button is visible and not disabled)
+				if (e.key === 'ArrowLeft' && $('#ppq-prev-button').is(':visible') && !$('#ppq-prev-button').prop('disabled')) {
 					e.preventDefault();
 					self.previousQuestion();
 				}
@@ -540,11 +564,24 @@
 		},
 
 		/**
-		 * Show specific question
+		 * Show specific question or page
+		 *
+		 * @param {number} index Question index (single mode) or page index (paginated mode)
+		 */
+		showQuestion: function(index) {
+			if (this.pageMode === 'paged') {
+				this.showPage(index);
+			} else {
+				this.showSingleQuestion(index);
+			}
+		},
+
+		/**
+		 * Show a single question (single question per page mode)
 		 *
 		 * @param {number} index Question index (0-based)
 		 */
-		showQuestion: function(index) {
+		showSingleQuestion: function(index) {
 			if (index < 0 || index >= this.totalQuestions) {
 				return;
 			}
@@ -558,6 +595,7 @@
 
 			// Update current index
 			this.currentQuestionIndex = index;
+			this.currentPage = index;
 
 			// Update UI
 			this.updateProgress();
@@ -581,20 +619,87 @@
 		},
 
 		/**
-		 * Navigate to previous question
+		 * Show a page of questions (paginated mode)
+		 *
+		 * @param {number} pageIndex Page index (0-based)
+		 */
+		showPage: function(pageIndex) {
+			if (pageIndex < 0 || pageIndex >= this.totalPages) {
+				return;
+			}
+
+			// Hide all questions
+			$('.ppq-question').hide();
+
+			// Calculate which questions to show
+			const startIndex = pageIndex * this.questionsPerPage;
+			const endIndex = Math.min(startIndex + this.questionsPerPage, this.totalQuestions);
+
+			// Show questions for this page
+			for (let i = startIndex; i < endIndex; i++) {
+				$('.ppq-question[data-question-index="' + i + '"]').fadeIn(200);
+			}
+
+			// Update current page and question index (use first question on page)
+			this.currentPage = pageIndex;
+			this.currentQuestionIndex = startIndex;
+
+			// Update UI
+			this.updateProgress();
+			this.updateNavButtons();
+
+			// In tutorial mode, update Check button visibility for all visible questions
+			if (this.quizMode === 'tutorial') {
+				this.updateCheckButtonVisibility();
+			}
+
+			// Announce page change to screen readers
+			const pageNumber = pageIndex + 1;
+			this.announceToScreenReader(
+				(ppqQuiz.strings.pageOf || 'Page {current} of {total}')
+					.replace('{current}', pageNumber)
+					.replace('{total}', this.totalPages)
+			);
+
+			// Move focus to the first question on page for keyboard users
+			$('.ppq-question[data-question-index="' + startIndex + '"]').attr('tabindex', '-1').focus();
+		},
+
+		/**
+		 * Navigate to previous question/page
 		 */
 		previousQuestion: function() {
-			if (this.currentQuestionIndex > 0) {
-				this.showQuestion(this.currentQuestionIndex - 1);
+			const canGoBack = this.pageMode === 'paged'
+				? this.currentPage > 0
+				: this.currentQuestionIndex > 0;
+
+			if (canGoBack) {
+				// Check if backward navigation is allowed
+				if (!this.allowBackward) {
+					this.showBackwardNotAllowedMessage();
+					return;
+				}
+
+				if (this.pageMode === 'paged') {
+					this.showPage(this.currentPage - 1);
+				} else {
+					this.showSingleQuestion(this.currentQuestionIndex - 1);
+				}
 			}
 		},
 
 		/**
-		 * Navigate to next question
+		 * Navigate to next question/page
 		 */
 		nextQuestion: function() {
-			if (this.currentQuestionIndex < this.totalQuestions - 1) {
-				this.showQuestion(this.currentQuestionIndex + 1);
+			if (this.pageMode === 'paged') {
+				if (this.currentPage < this.totalPages - 1) {
+					this.showPage(this.currentPage + 1);
+				}
+			} else {
+				if (this.currentQuestionIndex < this.totalQuestions - 1) {
+					this.showSingleQuestion(this.currentQuestionIndex + 1);
+				}
 			}
 		},
 
@@ -602,14 +707,25 @@
 		 * Update progress indicator
 		 */
 		updateProgress: function() {
-			const questionNumber = this.currentQuestionIndex + 1;
-			const percentComplete = (questionNumber / this.totalQuestions) * 100;
+			if (this.pageMode === 'paged') {
+				const pageNumber = this.currentPage + 1;
+				const percentComplete = (pageNumber / this.totalPages) * 100;
 
-			// Update question number
-			$('.ppq-current-question').text(questionNumber);
+				// Update page number display
+				$('.ppq-current-question').text(pageNumber);
 
-			// Update progress bar
-			$('#ppq-progress-bar').css('width', percentComplete + '%');
+				// Update progress bar
+				$('#ppq-progress-bar').css('width', percentComplete + '%');
+			} else {
+				const questionNumber = this.currentQuestionIndex + 1;
+				const percentComplete = (questionNumber / this.totalQuestions) * 100;
+
+				// Update question number
+				$('.ppq-current-question').text(questionNumber);
+
+				// Update progress bar
+				$('#ppq-progress-bar').css('width', percentComplete + '%');
+			}
 		},
 
 		/**
@@ -620,20 +736,67 @@
 			const $nextButton = $('#ppq-next-button');
 			const $submitButton = $('#ppq-submit-button');
 
-			// Previous button - disabled on first question
-			if (this.currentQuestionIndex === 0) {
-				$prevButton.prop('disabled', true);
+			const isFirstPage = this.pageMode === 'paged' ? this.currentPage === 0 : this.currentQuestionIndex === 0;
+			const isLastPage = this.pageMode === 'paged'
+				? this.currentPage === this.totalPages - 1
+				: this.currentQuestionIndex === this.totalQuestions - 1;
+
+			// Previous button - hide if backward navigation not allowed, disable on first page/question
+			if (!this.allowBackward) {
+				$prevButton.hide();
+			} else if (isFirstPage) {
+				$prevButton.show().prop('disabled', true);
 			} else {
-				$prevButton.prop('disabled', false);
+				$prevButton.show().prop('disabled', false);
 			}
 
-			// On last question - show submit, hide next
-			if (this.currentQuestionIndex === this.totalQuestions - 1) {
+			// On last page/question - show submit, hide next
+			if (isLastPage) {
 				$nextButton.hide();
 				$submitButton.show();
 			} else {
 				$nextButton.show();
 				$submitButton.hide();
+			}
+
+			// If skip not allowed, disable Next button when questions are unanswered
+			this.updateNextButtonState();
+		},
+
+		/**
+		 * Update Next button enabled/disabled state based on skip setting
+		 */
+		updateNextButtonState: function() {
+			if (this.allowSkip) {
+				return; // Skip is allowed, no restrictions
+			}
+
+			const $nextButton = $('#ppq-next-button');
+
+			// Check all visible questions on current page
+			let allAnswered = true;
+			if (this.pageMode === 'paged') {
+				const startIndex = this.currentPage * this.questionsPerPage;
+				const endIndex = Math.min(startIndex + this.questionsPerPage, this.totalQuestions);
+				for (let i = startIndex; i < endIndex; i++) {
+					const $question = $('.ppq-question[data-question-index="' + i + '"]');
+					if ($question.find('.ppq-answer-input:checked').length === 0) {
+						allAnswered = false;
+						break;
+					}
+				}
+			} else {
+				const $currentQuestion = $('.ppq-question[data-question-index="' + this.currentQuestionIndex + '"]');
+				allAnswered = $currentQuestion.find('.ppq-answer-input:checked').length > 0;
+			}
+
+			if (allAnswered) {
+				$nextButton.prop('disabled', false).removeAttr('title');
+			} else {
+				const tooltip = this.pageMode === 'paged'
+					? (ppqQuiz.strings.skipNotAllowedTooltipPage || 'You must answer all questions on this page to proceed.')
+					: (ppqQuiz.strings.skipNotAllowedTooltip || 'You must answer this question to proceed.');
+				$nextButton.prop('disabled', true).attr('title', tooltip);
 			}
 		},
 
@@ -679,6 +842,52 @@
 			if (this.quizMode === 'tutorial' && !this.feedbackShown[questionIndex]) {
 				this.updateCheckButtonVisibility();
 			}
+
+			// Update Next button state if skip is not allowed
+			if (!this.allowSkip) {
+				this.updateNextButtonState();
+			}
+		},
+
+		/**
+		 * Handle confidence checkbox change
+		 *
+		 * @param {jQuery} $input The confidence checkbox input
+		 */
+		handleConfidenceChange: function($input) {
+			const itemId = $input.data('item-id');
+			const isConfident = $input.is(':checked');
+
+			// Mark as having unsaved changes
+			this.hasUnsavedChanges = true;
+
+			// Store confidence value for this item
+			if (!this.pendingConfidence) {
+				this.pendingConfidence = {};
+			}
+			this.pendingConfidence[itemId] = isConfident;
+
+			// Trigger auto-save (will include confidence when saving)
+			this.triggerConfidenceSave(itemId);
+		},
+
+		/**
+		 * Trigger auto-save specifically for confidence changes
+		 *
+		 * @param {number} itemId The item ID
+		 */
+		triggerConfidenceSave: function(itemId) {
+			const self = this;
+
+			// Clear existing timer
+			if (this.autoSaveTimer) {
+				clearTimeout(this.autoSaveTimer);
+			}
+
+			// Set new timer
+			this.autoSaveTimer = setTimeout(function() {
+				self.performAutoSave();
+			}, this.autoSaveDelay);
 		},
 
 		/**
@@ -893,14 +1102,20 @@
 				return;
 			}
 
-			// Check if there are pending saves
-			if (Object.keys(this.pendingSaves).length === 0) {
+			// Check if there are pending saves (answers or confidence)
+			const hasAnswers = Object.keys(this.pendingSaves).length > 0;
+			const hasConfidence = this.pendingConfidence && Object.keys(this.pendingConfidence).length > 0;
+
+			if (!hasAnswers && !hasConfidence) {
 				return;
 			}
 
-			// Get pending saves and clear queue
+			// Get pending saves and clear queues
 			const saves = Object.assign({}, this.pendingSaves);
 			this.pendingSaves = {};
+
+			const confidenceSaves = this.pendingConfidence ? Object.assign({}, this.pendingConfidence) : {};
+			this.pendingConfidence = {};
 
 			// Set saving state
 			this.isSaving = true;
@@ -930,6 +1145,11 @@
 				}
 			});
 
+			// Add confidence values
+			Object.keys(confidenceSaves).forEach(function(itemId) {
+				formData['confidence[' + itemId + ']'] = confidenceSaves[itemId] ? '1' : '0';
+			});
+
 			// Make AJAX request
 			$.ajax({
 				url: ppqQuiz.ajaxUrl,
@@ -943,8 +1163,12 @@
 						self.hasUnsavedChanges = false;
 						self.showAutoSaveIndicator('saved');
 					} else {
-						// Save failed - add back to queue
+						// Save failed - add back to queues
 						Object.assign(self.pendingSaves, saves);
+						if (!self.pendingConfidence) {
+							self.pendingConfidence = {};
+						}
+						Object.assign(self.pendingConfidence, confidenceSaves);
 						// Show more descriptive error message
 						const errorMsg = response.data && response.data.message
 							? response.data.message
@@ -954,8 +1178,12 @@
 				},
 				error: function() {
 					self.isSaving = false;
-					// Save failed - add back to queue
+					// Save failed - add back to queues
 					Object.assign(self.pendingSaves, saves);
+					if (!self.pendingConfidence) {
+						self.pendingConfidence = {};
+					}
+					Object.assign(self.pendingConfidence, confidenceSaves);
 					self.showAutoSaveIndicator('failed');
 
 					// Retry after delay
@@ -1383,6 +1611,40 @@
 					$overlay.remove();
 				}
 			});
+		},
+
+		/**
+		 * Show message when user tries to go back but backward navigation is not allowed
+		 */
+		showBackwardNotAllowedMessage: function() {
+			const $currentQuestion = $('.ppq-question[data-question-index="' + this.currentQuestionIndex + '"]');
+
+			// Remove any existing message
+			$('.ppq-backward-not-allowed-message').remove();
+
+			// Create message element
+			const $message = $('<div class="ppq-backward-not-allowed-message ppq-notice ppq-notice-warning">' +
+				'<p>' + (ppqQuiz.strings.backwardNotAllowed || 'You cannot go back to previous questions in this quiz.') + '</p>' +
+				'</div>');
+
+			// Insert message before the question content
+			$currentQuestion.find('.ppq-question-content').before($message);
+
+			// Scroll to make message visible
+			$message[0].scrollIntoView({ behavior: 'smooth', block: 'center' });
+
+			// Announce to screen reader
+			this.announceToScreenReader(
+				ppqQuiz.strings.backwardNotAllowed || 'You cannot go back to previous questions in this quiz.',
+				'assertive'
+			);
+
+			// Auto-remove after 5 seconds
+			setTimeout(function() {
+				$message.slideUp(200, function() {
+					$(this).remove();
+				});
+			}, 5000);
 		},
 
 		/**

@@ -68,6 +68,10 @@ class PressPrimer_Quiz_Plugin {
 	 * @since 1.0.0
 	 */
 	public function run() {
+		// Ensure capabilities are set up (handles cases where activation hook didn't run,
+		// such as WordPress Playground or manual file installations)
+		$this->ensure_capabilities();
+
 		// Check and run migrations
 		if ( class_exists( 'PressPrimer_Quiz_Migrator' ) ) {
 			PressPrimer_Quiz_Migrator::maybe_migrate();
@@ -79,6 +83,26 @@ class PressPrimer_Quiz_Plugin {
 		$this->init_integrations();
 		$this->init_rest_api();
 		$this->init_blocks();
+	}
+
+	/**
+	 * Ensure capabilities are set up
+	 *
+	 * Checks if plugin capabilities exist and sets them up if missing.
+	 * This handles cases where the activation hook didn't run properly,
+	 * such as in WordPress Playground or manual file installations.
+	 *
+	 * @since 1.0.0
+	 */
+	private function ensure_capabilities() {
+		// Check if admin role has our capabilities
+		$admin = get_role( 'administrator' );
+		if ( $admin && ! $admin->has_cap( 'ppq_manage_own' ) ) {
+			// Capabilities missing, set them up
+			if ( class_exists( 'PressPrimer_Quiz_Capabilities' ) ) {
+				PressPrimer_Quiz_Capabilities::setup_capabilities();
+			}
+		}
 	}
 
 	/**

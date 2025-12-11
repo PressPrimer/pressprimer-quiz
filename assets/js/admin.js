@@ -52,7 +52,6 @@
 		 */
 		initComponents: function() {
 			// Component initialization will be added in future phases
-			console.log('PPQ Admin initialized');
 		},
 
 		/**

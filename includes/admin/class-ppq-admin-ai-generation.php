@@ -84,7 +84,7 @@ class PressPrimer_Quiz_Admin_AI_Generation {
 					'noApiKey'         => __( 'OpenAI API key is not configured. Please add your API key in the Settings.', 'pressprimer-quiz' ),
 					'confirmDiscard'   => __( 'Are you sure you want to discard these generated questions?', 'pressprimer-quiz' ),
 					'selectQuestions'  => __( 'Please select at least one question to save.', 'pressprimer-quiz' ),
-					'truncatedWarning' => __( 'Content was truncated to 100,000 characters. Some text may not have been processed.', 'pressprimer-quiz' ),
+					'truncatedWarning' => __( 'Content was truncated to 250,000 characters. Some text may not have been processed.', 'pressprimer-quiz' ),
 					'discardTitle'     => __( 'Discard Questions', 'pressprimer-quiz' ),
 					'discard'          => __( 'Discard', 'pressprimer-quiz' ),
 					'cancel'           => __( 'Cancel', 'pressprimer-quiz' ),
@@ -171,7 +171,7 @@ class PressPrimer_Quiz_Admin_AI_Generation {
 					placeholder="<?php esc_attr_e( 'Paste your educational content here...', 'pressprimer-quiz' ); ?>"
 				></textarea>
 				<div class="ppq-ai-char-count">
-					<span id="ppq-ai-char-current">0</span> / 100,000 <?php esc_html_e( 'characters', 'pressprimer-quiz' ); ?>
+					<span id="ppq-ai-char-current">0</span> / 250,000 <?php esc_html_e( 'characters', 'pressprimer-quiz' ); ?>
 				</div>
 			</div>
 
@@ -228,8 +228,8 @@ class PressPrimer_Quiz_Admin_AI_Generation {
 					<!-- Question Count -->
 					<div class="ppq-ai-param">
 						<label for="ppq-ai-count"><?php esc_html_e( 'Number of Questions', 'pressprimer-quiz' ); ?></label>
-						<input type="number" id="ppq-ai-count" class="ppq-ai-input" min="1" max="100" value="5" />
-						<span class="ppq-ai-hint"><?php esc_html_e( '1-100', 'pressprimer-quiz' ); ?></span>
+						<input type="number" id="ppq-ai-count" class="ppq-ai-input" min="1" max="50" value="5" />
+						<span class="ppq-ai-hint"><?php esc_html_e( '1-50', 'pressprimer-quiz' ); ?></span>
 					</div>
 
 					<!-- Answer Count for MC/MA -->

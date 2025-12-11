@@ -42,20 +42,20 @@ const { Text, Title } = Typography;
  * @param {Array} props.value Initial bands array
  */
 const FeedbackPanel = ({ onChange, value = [] }) => {
-	const [enabled, setEnabled] = useState(false);
-	const [bands, setBands] = useState([]);
+	const [enabled, setEnabled] = useState(value && value.length > 0);
+	const [bands, setBands] = useState(value && value.length > 0 ? value : []);
 	const [validationErrors, setValidationErrors] = useState([]);
 	const [validationWarnings, setValidationWarnings] = useState([]);
 
-	// Initialize
+	// Initialize from value prop when it changes (e.g., after quiz data loads)
 	useEffect(() => {
 		if (value && value.length > 0) {
 			setEnabled(true);
 			setBands(value);
 		}
-	}, []);
+	}, [value]);
 
-	// Validate and notify parent when bands or enabled state changes
+	// Validate bands whenever they change (for display purposes only)
 	useEffect(() => {
 		if (enabled && bands.length > 0) {
 			validateBands();
@@ -63,12 +63,16 @@ const FeedbackPanel = ({ onChange, value = [] }) => {
 			setValidationErrors([]);
 			setValidationWarnings([]);
 		}
-
-		if (onChange) {
-			// Send empty array if disabled, otherwise send bands
-			onChange(enabled ? bands : []);
-		}
 	}, [bands, enabled]);
+
+	/**
+	 * Notify parent of changes - call this explicitly from event handlers
+	 */
+	const notifyParent = (newEnabled, newBands) => {
+		if (onChange) {
+			onChange(newEnabled ? newBands : []);
+		}
+	};
 
 	/**
 	 * Find the largest gap in coverage
@@ -136,16 +140,20 @@ const FeedbackPanel = ({ onChange, value = [] }) => {
 			message: '',
 		};
 
-		setBands([...bands, newBand]);
+		const newBands = [...bands, newBand];
+		setBands(newBands);
+		notifyParent(enabled, newBands);
 	};
 
 	/**
 	 * Update band field
 	 */
-	const handleUpdateBand = (bandId, field, value) => {
-		setBands(bands.map(band =>
-			band.id === bandId ? { ...band, [field]: value } : band
-		));
+	const handleUpdateBand = (bandId, field, newValue) => {
+		const newBands = bands.map(band =>
+			band.id === bandId ? { ...band, [field]: newValue } : band
+		);
+		setBands(newBands);
+		notifyParent(enabled, newBands);
 	};
 
 	/**
@@ -156,7 +164,9 @@ const FeedbackPanel = ({ onChange, value = [] }) => {
 			setValidationErrors([__('Must have at least one feedback band.', 'pressprimer-quiz')]);
 			return;
 		}
-		setBands(bands.filter(band => band.id !== bandId));
+		const newBands = bands.filter(band => band.id !== bandId);
+		setBands(newBands);
+		notifyParent(enabled, newBands);
 	};
 
 	/**
@@ -381,6 +391,9 @@ const FeedbackPanel = ({ onChange, value = [] }) => {
 												},
 											];
 											setBands(defaultBands);
+											notifyParent(checked, defaultBands);
+										} else {
+											notifyParent(checked, bands);
 										}
 									}}
 								/>

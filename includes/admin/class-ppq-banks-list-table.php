@@ -326,7 +326,7 @@ class PressPrimer_Quiz_Banks_List_Table extends WP_List_Table {
 
 		// Row actions
 		$actions         = [];
-		$actions['view'] = '<a href="' . esc_url( $view_url ) . '">' . __( 'View', 'pressprimer-quiz' ) . '</a>';
+		$actions['view'] = '<a href="' . esc_url( $view_url ) . '">' . __( 'Questions', 'pressprimer-quiz' ) . '</a>';
 
 		// Check ownership for edit/delete
 		if ( current_user_can( 'ppq_manage_all' ) || absint( $item->owner_id ) === get_current_user_id() ) {

@@ -59,7 +59,7 @@ const QuizEditor = ({ quizData = {} }) => {
 				title: quizData.title || '',
 				description: quizData.description || '',
 				featured_image_id: quizData.featured_image_id || null,
-				status: quizData.status || 'draft',
+				status: quizData.status || 'published',
 				mode: quizData.mode || 'tutorial',
 				time_limit_seconds: quizData.time_limit_seconds || null,
 				pass_percent: quizData.pass_percent || 70,
@@ -103,21 +103,24 @@ const QuizEditor = ({ quizData = {} }) => {
 		try {
 			setSaving(true);
 
+			// Use currentQuizId (which may have been set by auto-save) or fall back to quizData.id
+			const quizId = currentQuizId || quizData.id;
+
 			// Prepare data for submission
 			const quizPayload = {
 				...values,
-				id: quizData.id || null,
+				id: quizId || null,
 				band_feedback_json: JSON.stringify(feedbackBands),
 			};
 
 			console.log('Submitting quiz payload:', quizPayload);
 
 			// Submit via REST API
-			const endpoint = quizData.id
-				? `/ppq/v1/quizzes/${quizData.id}`
+			const endpoint = quizId
+				? `/ppq/v1/quizzes/${quizId}`
 				: '/ppq/v1/quizzes';
 
-			const method = quizData.id ? 'PUT' : 'POST';
+			const method = quizId ? 'PUT' : 'POST';
 
 			const response = await apiFetch({
 				path: endpoint,
@@ -127,10 +130,11 @@ const QuizEditor = ({ quizData = {} }) => {
 
 			message.success(__('Quiz saved successfully!', 'pressprimer-quiz'));
 
-			// Redirect to quizzes list
-			setTimeout(() => {
-				window.location.href = `${window.ppqAdmin.adminUrl}admin.php?page=ppq-quizzes&saved=1`;
-			}, 1000);
+			// Update URL to edit page if this was a new quiz
+			if (!quizId && response.id) {
+				window.history.replaceState({}, '', `${window.ppqAdmin.adminUrl}admin.php?page=ppq-quizzes&action=edit&quiz_id=${response.id}`);
+				setCurrentQuizId(response.id);
+			}
 
 		} catch (error) {
 			console.error('Save error:', error);
@@ -254,7 +258,7 @@ const QuizEditor = ({ quizData = {} }) => {
 					initialValues={{
 						title: '',
 						description: '',
-						status: 'draft',
+						status: 'published',
 						mode: 'tutorial',
 						pass_percent: 70,
 						allow_skip: true,

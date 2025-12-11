@@ -804,7 +804,7 @@ class PressPrimer_Quiz_Questions_List_Table extends WP_List_Table {
 		// Filter by difficulty
 		$get_difficulty = isset( $_GET['difficulty'] ) ? sanitize_key( wp_unslash( $_GET['difficulty'] ) ) : '';
 		if ( '' !== $get_difficulty ) {
-			$where_clauses[] = 'difficulty = %s';
+			$where_clauses[] = 'difficulty_author = %s';
 			$where_values[]  = $get_difficulty;
 		}
 
@@ -1036,11 +1036,28 @@ class PressPrimer_Quiz_Questions_List_Table extends WP_List_Table {
 	/**
 	 * Render author filter
 	 *
+	 * Only shows users who have created at least one question.
+	 *
 	 * @since 1.0.0
 	 */
 	private function render_author_filter() {
+		global $wpdb;
+
 		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only filter state for selected()
 		$current_author = isset( $_GET['author'] ) && '' !== $_GET['author'] ? absint( wp_unslash( $_GET['author'] ) ) : 0;
+
+		// Get only users who have created questions
+		$questions_table = $wpdb->prefix . 'ppq_questions';
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+		$author_ids = $wpdb->get_col(
+			"SELECT DISTINCT author_id FROM {$questions_table} WHERE deleted_at IS NULL AND author_id IS NOT NULL"
+		);
+
+		if ( empty( $author_ids ) ) {
+			// No authors found, show empty dropdown
+			echo '<select name="author"><option value="">' . esc_html__( 'All Authors', 'pressprimer-quiz' ) . '</option></select>';
+			return;
+		}
 
 		wp_dropdown_users(
 			[
@@ -1048,6 +1065,7 @@ class PressPrimer_Quiz_Questions_List_Table extends WP_List_Table {
 				'show_option_all'  => __( 'All Authors', 'pressprimer-quiz' ),
 				'selected'         => $current_author,
 				'include_selected' => true,
+				'include'          => $author_ids,
 			]
 		);
 	}

@@ -155,16 +155,18 @@ class PressPrimer_Quiz_Admin_Quizzes {
 			$this->handle_duplicate();
 		}
 
-		// Bulk actions
-		if ( isset( $_GET['action2'] ) && 'delete' === $_GET['action2'] && isset( $_GET['quizzes'] ) ) {
+		// Bulk actions - use current_bulk_action() to properly detect which action was submitted
+		$bulk_action = $this->current_bulk_action();
+
+		if ( 'delete' === $bulk_action && isset( $_GET['quizzes'] ) ) {
 			$this->handle_bulk_delete();
 		}
 
-		if ( isset( $_GET['action2'] ) && 'publish' === $_GET['action2'] && isset( $_GET['quizzes'] ) ) {
+		if ( 'publish' === $bulk_action && isset( $_GET['quizzes'] ) ) {
 			$this->handle_bulk_publish();
 		}
 
-		if ( isset( $_GET['action2'] ) && 'draft' === $_GET['action2'] && isset( $_GET['quizzes'] ) ) {
+		if ( 'draft' === $bulk_action && isset( $_GET['quizzes'] ) ) {
 			$this->handle_bulk_draft();
 		}
 		// phpcs:enable WordPress.Security.NonceVerification.Recommended
@@ -688,6 +690,7 @@ class PressPrimer_Quiz_Admin_Quizzes {
 					'max_attempts'          => $quiz->max_attempts,
 					'attempt_delay_minutes' => $quiz->attempt_delay_minutes,
 					'generation_mode'       => $quiz->generation_mode,
+					'band_feedback_json'    => $quiz->band_feedback_json,
 				];
 			}
 		}
@@ -891,6 +894,34 @@ class PressPrimer_Quiz_Admin_Quizzes {
 
 		wp_safe_redirect( add_query_arg( 'deleted', '1', admin_url( 'admin.php?page=ppq-quizzes' ) ) );
 		exit;
+	}
+
+	/**
+	 * Get the current bulk action being performed
+	 *
+	 * Mimics WP_List_Table::current_action() logic to properly detect
+	 * which bulk action was submitted via the Apply button.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @return string|false The bulk action or false if none.
+	 */
+	private function current_bulk_action() {
+		// phpcs:disable WordPress.Security.NonceVerification.Recommended -- Nonce verified in individual handlers
+		$action = false;
+
+		// Check top bulk action dropdown (action)
+		if ( isset( $_GET['action'] ) && -1 != $_GET['action'] && '-1' !== $_GET['action'] ) {
+			$action = sanitize_key( wp_unslash( $_GET['action'] ) );
+		}
+
+		// Check bottom bulk action dropdown (action2) - takes precedence if set
+		if ( isset( $_GET['action2'] ) && -1 != $_GET['action2'] && '-1' !== $_GET['action2'] ) {
+			$action = sanitize_key( wp_unslash( $_GET['action2'] ) );
+		}
+
+		// phpcs:enable WordPress.Security.NonceVerification.Recommended
+		return $action;
 	}
 
 	/**

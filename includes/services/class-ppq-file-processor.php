@@ -251,19 +251,18 @@ class PressPrimer_Quiz_File_Processor {
 		// Method 2: Try pdftotext command line tool
 		$text = $this->extract_pdf_with_pdftotext( $file_path );
 		if ( ! is_wp_error( $text ) && ! empty( trim( $text ) ) ) {
-			return $text;
+			// Also filter pdftotext output
+			$text = $this->filter_garbage_text( $text );
+			if ( ! empty( trim( $text ) ) ) {
+				return $text;
+			}
 		}
 
-		// Method 3: Try basic PHP extraction
-		$text = $this->extract_pdf_basic( $file_path );
-		if ( ! is_wp_error( $text ) && ! empty( trim( $text ) ) ) {
-			return $text;
-		}
-
-		// All methods failed
+		// Do NOT fall back to basic extraction - it produces too much garbage
+		// If smalot and pdftotext both failed, show a helpful error
 		return new WP_Error(
 			'ppq_pdf_extraction_failed',
-			__( 'Unable to extract text from the PDF file. The file may be scanned (image-based) or corrupted. Please try a different file or copy and paste the text directly.', 'pressprimer-quiz' )
+			__( 'Unable to extract readable text from this PDF. This often happens with published books or documents that use embedded fonts. Please use the "Paste Text" tab to copy and paste the content directly from your PDF viewer.', 'pressprimer-quiz' )
 		);
 	}
 
@@ -277,9 +276,16 @@ class PressPrimer_Quiz_File_Processor {
 	 */
 	private function extract_pdf_with_smalot( $file_path ) {
 		try {
-			$parser = new \Smalot\PdfParser\Parser();
+			// Configure parser to exclude image binary data from text extraction
+			$config = new \Smalot\PdfParser\Config();
+			$config->setRetainImageContent( false );
+
+			$parser = new \Smalot\PdfParser\Parser( [], $config );
 			$pdf    = $parser->parseFile( $file_path );
 			$text   = $pdf->getText();
+
+			// Filter out garbage/binary content that can occur with custom font encodings
+			$text = $this->filter_garbage_text( $text );
 
 			return $text;
 		} catch ( \Exception $e ) {
@@ -288,6 +294,93 @@ class PressPrimer_Quiz_File_Processor {
 				$e->getMessage()
 			);
 		}
+	}
+
+	/**
+	 * Filter out garbage/binary content from extracted text
+	 *
+	 * PDFs with custom font encodings can produce unreadable characters.
+	 * This method filters out lines that appear to be garbage by checking
+	 * for actual recognizable words with vowels (real English words have vowels).
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param string $text Raw extracted text.
+	 * @return string Filtered text.
+	 */
+	private function filter_garbage_text( $text ) {
+		// Split into lines for analysis
+		$lines             = explode( "\n", $text );
+		$filtered          = [];
+		$total_real_words  = 0;
+		$total_lines       = 0;
+
+		foreach ( $lines as $line ) {
+			$line = trim( $line );
+			if ( empty( $line ) ) {
+				continue;
+			}
+
+			$line_length = mb_strlen( $line );
+
+			// Count words that look like real English (contain at least one vowel)
+			// This filters out garbage like "bbLb", "CHsss", "qY33" etc.
+			preg_match_all( '/\b[a-zA-Z]{2,}\b/', $line, $words );
+			$real_word_count = 0;
+			if ( ! empty( $words[0] ) ) {
+				foreach ( $words[0] as $word ) {
+					// Real English words contain vowels (including 'y' as vowel)
+					if ( preg_match( '/[aeiouyAEIOUY]/', $word ) ) {
+						++$real_word_count;
+					}
+				}
+			}
+
+			// Skip lines that are long but have very few real words
+			if ( $line_length > 30 && $real_word_count < 3 ) {
+				continue;
+			}
+
+			// Skip lines with high density of special characters (>25%)
+			$special_chars = preg_match_all( '/[^a-zA-Z0-9\s\.,!?\'\"-]/', $line );
+			if ( $line_length > 15 && ( $special_chars / $line_length ) > 0.25 ) {
+				continue;
+			}
+
+			// Skip lines that look like encoded data
+			if ( preg_match( '/[{}\[\]|\\\\<>~`^@#$%&*+=]{3,}/', $line ) ) {
+				continue;
+			}
+
+			// Skip lines with excessive repeated characters
+			if ( preg_match( '/(.)\1{4,}/', $line ) ) {
+				continue;
+			}
+
+			// Skip lines that are mostly uppercase consonants (common in garbage)
+			$uppercase_consonants = preg_match_all( '/[BCDFGHJKLMNPQRSTVWXZ]/', $line );
+			if ( $line_length > 20 && ( $uppercase_consonants / $line_length ) > 0.3 ) {
+				continue;
+			}
+
+			$filtered[]        = $line;
+			$total_real_words += $real_word_count;
+			++$total_lines;
+		}
+
+		$result = implode( "\n", $filtered );
+
+		// If we have very few real words overall, the extraction likely failed
+		if ( $total_lines > 5 && ( $total_real_words / $total_lines ) < 2 ) {
+			return '';
+		}
+
+		// If total real word count is too low for the amount of text, reject it
+		if ( strlen( $result ) > 300 && $total_real_words < 30 ) {
+			return '';
+		}
+
+		return $result;
 	}
 
 	/**
@@ -355,7 +448,7 @@ class PressPrimer_Quiz_File_Processor {
 	 * Basic PDF text extraction
 	 *
 	 * Attempts basic text extraction from PDF without external libraries.
-	 * This is a fallback method and may not work with all PDFs.
+	 * Uses multiple techniques to handle various PDF formats.
 	 *
 	 * @since 1.0.0
 	 *
@@ -377,32 +470,25 @@ class PressPrimer_Quiz_File_Processor {
 		$text = '';
 
 		// Try to extract text between stream and endstream
-		// This is a very basic approach that works with some PDFs
 		preg_match_all( '/stream\s*(.+?)\s*endstream/s', $content, $matches );
 
 		if ( ! empty( $matches[1] ) ) {
 			foreach ( $matches[1] as $stream ) {
-				// Try to decode if compressed
-				$decoded = @gzuncompress( $stream );
-				if ( false !== $decoded ) {
-					$stream = $decoded;
-				}
+				// Try multiple decompression methods
+				$decoded = $this->decode_pdf_stream( $stream );
 
-				// Extract text content
-				// Look for text showing operators: Tj, TJ, ', "
-				if ( preg_match_all( '/\(([^)]+)\)\s*Tj/s', $stream, $text_matches ) ) {
-					$text .= implode( ' ', $text_matches[1] ) . ' ';
-				}
-
-				// Also try BT...ET text blocks
-				if ( preg_match_all( '/BT\s*(.+?)\s*ET/s', $stream, $block_matches ) ) {
-					foreach ( $block_matches[1] as $block ) {
-						if ( preg_match_all( '/\(([^)]+)\)/s', $block, $inner_matches ) ) {
-							$text .= implode( ' ', $inner_matches[1] ) . ' ';
-						}
-					}
+				// Extract text using various methods
+				$stream_text = $this->extract_text_from_stream( $decoded );
+				if ( ! empty( $stream_text ) ) {
+					$text .= $stream_text . ' ';
 				}
 			}
+		}
+
+		// Also try to find text in content streams directly (for simpler PDFs)
+		$direct_text = $this->extract_direct_pdf_text( $content );
+		if ( ! empty( $direct_text ) ) {
+			$text .= $direct_text;
 		}
 
 		// Clean up extracted text
@@ -416,6 +502,239 @@ class PressPrimer_Quiz_File_Processor {
 		}
 
 		return $text;
+	}
+
+	/**
+	 * Decode PDF stream with multiple methods
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param string $stream Raw stream data.
+	 * @return string Decoded stream data.
+	 */
+	private function decode_pdf_stream( $stream ) {
+		// Try FlateDecode (most common)
+		$decoded = @gzuncompress( $stream );
+		if ( false !== $decoded ) {
+			return $decoded;
+		}
+
+		// Try with zlib header
+		$decoded = @gzinflate( $stream );
+		if ( false !== $decoded ) {
+			return $decoded;
+		}
+
+		// Try removing potential header bytes and decompress
+		if ( strlen( $stream ) > 2 ) {
+			$decoded = @gzinflate( substr( $stream, 2 ) );
+			if ( false !== $decoded ) {
+				return $decoded;
+			}
+		}
+
+		// Try ASCII85 decode
+		if ( preg_match( '/^[A-Za-z0-9!#$%&()*+,\-./:;<=>?@\[\]^_`{|}~\s]+~>$/s', $stream ) ) {
+			$decoded = $this->ascii85_decode( $stream );
+			if ( false !== $decoded ) {
+				return $decoded;
+			}
+		}
+
+		// Return original if no decompression worked
+		return $stream;
+	}
+
+	/**
+	 * Extract text from decoded PDF stream
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param string $stream Decoded stream content.
+	 * @return string Extracted text.
+	 */
+	private function extract_text_from_stream( $stream ) {
+		$text = '';
+
+		// Method 1: Extract from Tj operator (single string)
+		if ( preg_match_all( '/\(([^)]*)\)\s*Tj/s', $stream, $matches ) ) {
+			$text .= implode( ' ', array_map( [ $this, 'decode_pdf_string' ], $matches[1] ) ) . ' ';
+		}
+
+		// Method 2: Extract from TJ operator (array of strings)
+		if ( preg_match_all( '/\[((?:[^]]*\([^)]*\)[^]]*)+)\]\s*TJ/si', $stream, $matches ) ) {
+			foreach ( $matches[1] as $array_content ) {
+				if ( preg_match_all( '/\(([^)]*)\)/', $array_content, $strings ) ) {
+					$text .= implode( '', array_map( [ $this, 'decode_pdf_string' ], $strings[1] ) ) . ' ';
+				}
+			}
+		}
+
+		// Method 3: Extract from BT...ET text blocks
+		if ( preg_match_all( '/BT\s*(.*?)\s*ET/s', $stream, $blocks ) ) {
+			foreach ( $blocks[1] as $block ) {
+				// Look for text operators within the block
+				if ( preg_match_all( '/\(([^)]*)\)/', $block, $strings ) ) {
+					$text .= implode( '', array_map( [ $this, 'decode_pdf_string' ], $strings[1] ) ) . ' ';
+				}
+			}
+		}
+
+		// Method 4: Look for hex strings
+		if ( preg_match_all( '/<([0-9A-Fa-f\s]+)>\s*Tj/s', $stream, $matches ) ) {
+			foreach ( $matches[1] as $hex ) {
+				$hex     = preg_replace( '/\s/', '', $hex );
+				$decoded = $this->hex_to_string( $hex );
+				if ( ! empty( $decoded ) ) {
+					$text .= $decoded . ' ';
+				}
+			}
+		}
+
+		return $text;
+	}
+
+	/**
+	 * Extract text directly from PDF content (for simpler PDFs)
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param string $content Full PDF content.
+	 * @return string Extracted text.
+	 */
+	private function extract_direct_pdf_text( $content ) {
+		$text = '';
+
+		// Look for Unicode text markers
+		if ( preg_match_all( '/\(([^)]{2,})\)/s', $content, $matches ) ) {
+			foreach ( $matches[1] as $match ) {
+				// Only include if it looks like readable text
+				$cleaned = $this->decode_pdf_string( $match );
+				if ( preg_match( '/[a-zA-Z]{2,}/', $cleaned ) ) {
+					$text .= $cleaned . ' ';
+				}
+			}
+		}
+
+		return $text;
+	}
+
+	/**
+	 * Decode PDF string escapes
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param string $str PDF string.
+	 * @return string Decoded string.
+	 */
+	private function decode_pdf_string( $str ) {
+		// Handle escape sequences
+		$replacements = [
+			'\\n'  => "\n",
+			'\\r'  => "\r",
+			'\\t'  => "\t",
+			'\\b'  => "\b",
+			'\\f'  => "\f",
+			'\\('  => '(',
+			'\\)'  => ')',
+			'\\\\' => '\\',
+		];
+
+		$str = str_replace( array_keys( $replacements ), array_values( $replacements ), $str );
+
+		// Handle octal escapes
+		$str = preg_replace_callback(
+			'/\\\\([0-7]{1,3})/',
+			function ( $matches ) {
+				return chr( octdec( $matches[1] ) );
+			},
+			$str
+		);
+
+		// Remove non-printable characters except common whitespace
+		$str = preg_replace( '/[^\x20-\x7E\x0A\x0D\x09]/', '', $str );
+
+		return $str;
+	}
+
+	/**
+	 * Convert hex string to text
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param string $hex Hex string.
+	 * @return string Decoded text.
+	 */
+	private function hex_to_string( $hex ) {
+		$str = '';
+		$len = strlen( $hex );
+
+		for ( $i = 0; $i < $len; $i += 2 ) {
+			$char_code = hexdec( substr( $hex, $i, 2 ) );
+			if ( $char_code >= 32 && $char_code <= 126 ) {
+				$str .= chr( $char_code );
+			} elseif ( 10 === $char_code || 13 === $char_code ) {
+				$str .= ' ';
+			}
+		}
+
+		return $str;
+	}
+
+	/**
+	 * Decode ASCII85 encoded data
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param string $data ASCII85 encoded data.
+	 * @return string|false Decoded data or false on failure.
+	 */
+	private function ascii85_decode( $data ) {
+		// Remove whitespace and ~> terminator
+		$data = preg_replace( '/\s/', '', $data );
+		$data = rtrim( $data, '~>' );
+
+		if ( empty( $data ) ) {
+			return false;
+		}
+
+		$output = '';
+		$len    = strlen( $data );
+		$i      = 0;
+
+		while ( $i < $len ) {
+			// Handle 'z' shortcut for 4 zero bytes
+			if ( 'z' === $data[ $i ] ) {
+				$output .= "\0\0\0\0";
+				++$i;
+				continue;
+			}
+
+			// Process 5-character group
+			$group = substr( $data, $i, 5 );
+			$glen  = strlen( $group );
+
+			if ( $glen < 5 ) {
+				// Pad with 'u' (84)
+				$group = str_pad( $group, 5, 'u' );
+			}
+
+			// Convert from base 85
+			$value = 0;
+			for ( $j = 0; $j < 5; $j++ ) {
+				$value = $value * 85 + ( ord( $group[ $j ] ) - 33 );
+			}
+
+			// Convert to 4 bytes
+			$bytes = pack( 'N', $value );
+
+			// Only use the bytes we need
+			$output .= substr( $bytes, 0, $glen - 1 );
+
+			$i += $glen;
+		}
+
+		return $output;
 	}
 
 	/**
@@ -751,7 +1070,6 @@ class PressPrimer_Quiz_File_Processor {
 			'pdf'  => [
 				'smalot_parser' => class_exists( '\\Smalot\\PdfParser\\Parser' ),
 				'pdftotext'     => false,
-				'basic'         => true,
 			],
 			'docx' => [
 				'phpword' => class_exists( '\\PhpOffice\\PhpWord\\IOFactory' ),

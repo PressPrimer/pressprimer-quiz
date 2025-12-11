@@ -18,6 +18,7 @@ if ( ! defined( 'ABSPATH' ) ) {
  *
  * Contains all functionality for plugin activation.
  * Sets up database tables, default options, and capabilities.
+ * Supports both single site and multisite network activation.
  *
  * @since 1.0.0
  */
@@ -28,10 +29,51 @@ class PressPrimer_Quiz_Activator {
 	 *
 	 * Runs when the plugin is activated.
 	 * Sets up database tables, default options, and user capabilities.
+	 * Handles both single site and network-wide activation.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param bool $network_wide Whether the plugin is being activated network-wide.
+	 */
+	public static function activate( $network_wide = false ) {
+		// Handle network-wide activation in multisite
+		if ( is_multisite() && $network_wide ) {
+			self::activate_for_network();
+			return;
+		}
+
+		// Single site activation
+		self::activate_single_site();
+	}
+
+	/**
+	 * Activate for entire network
+	 *
+	 * Runs activation on all sites in a multisite network.
 	 *
 	 * @since 1.0.0
 	 */
-	public static function activate() {
+	private static function activate_for_network() {
+		global $wpdb;
+
+		// Get all site IDs
+		$site_ids = get_sites( [ 'fields' => 'ids' ] );
+
+		foreach ( $site_ids as $site_id ) {
+			switch_to_blog( $site_id );
+			self::activate_single_site();
+			restore_current_blog();
+		}
+	}
+
+	/**
+	 * Activate for a single site
+	 *
+	 * Performs all activation tasks for one site.
+	 *
+	 * @since 1.0.0
+	 */
+	private static function activate_single_site() {
 		// Check WordPress version
 		if ( version_compare( get_bloginfo( 'version' ), '6.4', '<' ) ) {
 			wp_die(
@@ -53,7 +95,11 @@ class PressPrimer_Quiz_Activator {
 		// Set default options
 		self::set_default_options();
 
-		// Run database migrations
+		// Ensure database tables exist - always check on activation
+		// This handles both fresh installs and reinstalls after data removal
+		self::ensure_database_tables();
+
+		// Run database migrations for version upgrades
 		if ( class_exists( 'PressPrimer_Quiz_Migrator' ) ) {
 			PressPrimer_Quiz_Migrator::maybe_migrate();
 		}
@@ -69,6 +115,41 @@ class PressPrimer_Quiz_Activator {
 		// Set activation flag
 		update_option( 'ppq_activation_time', current_time( 'timestamp' ) );
 		update_option( 'ppq_version', PPQ_VERSION );
+	}
+
+	/**
+	 * Ensure database tables exist
+	 *
+	 * Checks if tables are missing and creates them if needed.
+	 * This runs on every activation to handle reinstalls after data removal.
+	 *
+	 * @since 1.0.0
+	 */
+	private static function ensure_database_tables() {
+		global $wpdb;
+
+		// Check if at least one critical table exists
+		$table_exists = $wpdb->get_var(
+			$wpdb->prepare(
+				'SHOW TABLES LIKE %s',
+				$wpdb->prefix . 'ppq_questions'
+			)
+		);
+
+		// If tables don't exist, force create them
+		if ( ! $table_exists ) {
+			// Load WordPress upgrade functions
+			require_once ABSPATH . 'wp-admin/includes/upgrade.php';
+
+			// Load and run schema
+			if ( class_exists( 'PressPrimer_Quiz_Schema' ) ) {
+				$sql = PressPrimer_Quiz_Schema::get_schema();
+				dbDelta( $sql );
+
+				// Update database version
+				update_option( 'ppq_db_version', PPQ_DB_VERSION );
+			}
+		}
 	}
 
 	/**
@@ -92,5 +173,26 @@ class PressPrimer_Quiz_Activator {
 		if ( false === get_option( 'ppq_settings' ) ) {
 			add_option( 'ppq_settings', $default_settings );
 		}
+	}
+
+	/**
+	 * Activate for a new site in multisite
+	 *
+	 * Called when a new site is created in a multisite network
+	 * and the plugin is network-activated.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param WP_Site $new_site New site object.
+	 */
+	public static function activate_new_site( $new_site ) {
+		// Only run if plugin is network-activated
+		if ( ! is_plugin_active_for_network( PPQ_PLUGIN_BASENAME ) ) {
+			return;
+		}
+
+		switch_to_blog( $new_site->blog_id );
+		self::activate_single_site();
+		restore_current_blog();
 	}
 }

@@ -286,6 +286,114 @@ class PressPrimer_Quiz_Question extends PressPrimer_Quiz_Model {
 	}
 
 	/**
+	 * Validate question content (stem and answers)
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param string $stem    Question stem/text.
+	 * @param array  $answers Answer options.
+	 * @param string $type    Question type (mc, ma, tf).
+	 * @return true|WP_Error True on success, WP_Error on validation failure.
+	 */
+	public static function validate_content( $stem, $answers, $type = 'mc' ) {
+		// Validate stem - must have at least 2 characters of actual content
+		$clean_stem = wp_strip_all_tags( $stem );
+		$clean_stem = trim( $clean_stem );
+		if ( strlen( $clean_stem ) < 2 ) {
+			return new WP_Error(
+				'ppq_empty_stem',
+				__( 'Question text is required and must contain at least 2 characters.', 'pressprimer-quiz' )
+			);
+		}
+
+		// Validate answers for multiple choice and multiple answer types
+		if ( in_array( $type, [ 'mc', 'ma' ], true ) ) {
+			if ( empty( $answers ) || ! is_array( $answers ) ) {
+				return new WP_Error(
+					'ppq_no_answers',
+					__( 'Answer options are required for this question type.', 'pressprimer-quiz' )
+				);
+			}
+
+			// Check that we have at least 2 answers with actual content
+			$valid_answers   = 0;
+			$correct_answers = 0;
+
+			foreach ( $answers as $answer ) {
+				$answer_text = isset( $answer['text'] ) ? wp_strip_all_tags( $answer['text'] ) : '';
+				$answer_text = trim( $answer_text );
+
+				if ( strlen( $answer_text ) >= 2 ) {
+					++$valid_answers;
+
+					// Check if this answer is marked as correct
+					$is_correct = isset( $answer['is_correct'] ) ? $answer['is_correct'] : ( isset( $answer['isCorrect'] ) ? $answer['isCorrect'] : false );
+					if ( $is_correct ) {
+						++$correct_answers;
+					}
+				}
+			}
+
+			if ( $valid_answers < 2 ) {
+				return new WP_Error(
+					'ppq_insufficient_answers',
+					__( 'At least 2 answer options with text are required.', 'pressprimer-quiz' )
+				);
+			}
+
+			if ( $correct_answers < 1 ) {
+				return new WP_Error(
+					'ppq_no_correct_answer',
+					__( 'At least one answer must be marked as correct.', 'pressprimer-quiz' )
+				);
+			}
+		}
+
+		// Validate True/False questions
+		if ( 'tf' === $type ) {
+			if ( empty( $answers ) || ! is_array( $answers ) || count( $answers ) < 2 ) {
+				return new WP_Error(
+					'ppq_no_answers',
+					__( 'Both True and False answer options are required.', 'pressprimer-quiz' )
+				);
+			}
+
+			$valid_answers   = 0;
+			$correct_answers = 0;
+
+			foreach ( $answers as $answer ) {
+				$answer_text = isset( $answer['text'] ) ? wp_strip_all_tags( $answer['text'] ) : '';
+				$answer_text = trim( $answer_text );
+
+				if ( strlen( $answer_text ) >= 2 ) {
+					++$valid_answers;
+				}
+
+				$is_correct = isset( $answer['is_correct'] ) ? $answer['is_correct'] : ( isset( $answer['isCorrect'] ) ? $answer['isCorrect'] : false );
+				if ( $is_correct ) {
+					++$correct_answers;
+				}
+			}
+
+			if ( $valid_answers < 2 ) {
+				return new WP_Error(
+					'ppq_tf_empty_answers',
+					__( 'Both True and False answer options must have text (at least 2 characters each).', 'pressprimer-quiz' )
+				);
+			}
+
+			if ( $correct_answers !== 1 ) {
+				return new WP_Error(
+					'ppq_tf_single_correct',
+					__( 'True/False questions must have exactly one correct answer.', 'pressprimer-quiz' )
+				);
+			}
+		}
+
+		return true;
+	}
+
+	/**
 	 * Delete question (soft delete)
 	 *
 	 * Sets deleted_at timestamp instead of removing the record.
@@ -466,9 +574,9 @@ class PressPrimer_Quiz_Question extends PressPrimer_Quiz_Model {
 		// Clear cache
 		$this->_categories = null;
 
-		// Update counts
+		// Update counts for all affected categories
 		if ( class_exists( 'PressPrimer_Quiz_Category' ) ) {
-			PressPrimer_Quiz_Category::update_counts( 'category' );
+			PressPrimer_Quiz_Category::update_counts( null );
 		}
 
 		return true;
@@ -530,9 +638,9 @@ class PressPrimer_Quiz_Question extends PressPrimer_Quiz_Model {
 		// Clear cache
 		$this->_tags = null;
 
-		// Update counts
+		// Update counts for all affected tags
 		if ( class_exists( 'PressPrimer_Quiz_Category' ) ) {
-			PressPrimer_Quiz_Category::update_counts( 'tag' );
+			PressPrimer_Quiz_Category::update_counts( null );
 		}
 
 		return true;

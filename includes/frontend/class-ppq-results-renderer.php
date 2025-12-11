@@ -497,12 +497,12 @@ class PressPrimer_Quiz_Results_Renderer {
 			// LearnDash "Continue" button (only if passed and has next URL)
 			if ( $ld_nav && $attempt->passed && ! empty( $ld_nav['next_url'] ) ) :
 				?>
-				<a href="<?php echo esc_url( $ld_nav['next_url'] ); ?>" class="ppq-button ppq-button-primary ppq-continue-button">
+				<a href="<?php echo esc_url( $ld_nav['next_url'] ); ?>" class="ppq-button ppq-button-primary ppq-continue-button button">
 					<?php esc_html_e( 'Continue', 'pressprimer-quiz' ); ?> →
 				</a>
 			<?php endif; ?>
 
-			<a href="#ppq-question-review" class="ppq-button ppq-review-button">
+			<a href="#ppq-question-review" class="ppq-button ppq-review-button button">
 				<?php esc_html_e( 'Review Answers', 'pressprimer-quiz' ); ?>
 			</a>
 
@@ -510,7 +510,7 @@ class PressPrimer_Quiz_Results_Renderer {
 			// Retake button if allowed (and not using LearnDash context where they need to pass)
 			if ( $this->can_retake( $quiz, $attempt ) ) :
 				?>
-				<a href="<?php echo esc_url( $this->get_retake_url( $quiz ) ); ?>" class="ppq-button ppq-retake-button">
+				<a href="<?php echo esc_url( $this->get_retake_url( $quiz ) ); ?>" class="ppq-button ppq-retake-button button">
 					<?php esc_html_e( 'Retake Quiz', 'pressprimer-quiz' ); ?>
 				</a>
 			<?php endif; ?>
@@ -519,7 +519,7 @@ class PressPrimer_Quiz_Results_Renderer {
 			// Return to course button for LearnDash (if failed or as secondary option)
 			if ( $ld_nav && ! empty( $ld_nav['course_url'] ) && ( ! $attempt->passed || empty( $ld_nav['next_url'] ) ) ) :
 				?>
-				<a href="<?php echo esc_url( $ld_nav['course_url'] ); ?>" class="ppq-button ppq-course-button">
+				<a href="<?php echo esc_url( $ld_nav['course_url'] ); ?>" class="ppq-button ppq-course-button button">
 					<?php esc_html_e( 'Return to Course', 'pressprimer-quiz' ); ?>
 				</a>
 			<?php endif; ?>

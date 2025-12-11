@@ -813,6 +813,15 @@
 			';
 		} else {
 			// No valid lesson ID - show instructions to use WordPress editor.
+			// Check if we have a captured lesson ID we can use for a direct edit link.
+			var editLinkUrl = config.adminUrl + 'edit.php?post_type=lesson';
+			var editLinkText = 'View Lessons';
+
+			if (currentEditingLessonId && !currentEditingLessonId.toString().startsWith('temp-')) {
+				editLinkUrl = config.adminUrl + 'post.php?post=' + currentEditingLessonId + '&action=edit';
+				editLinkText = 'Edit This Lesson';
+			}
+
 			box.innerHTML = '\
 				<div class="ppq-box-header">\
 					<span class="ppq-box-title">PressPrimer Quiz</span>\
@@ -827,16 +836,13 @@
 							</svg>\
 							To attach a quiz, edit this lesson in the WordPress editor.\
 						</p>\
-						<p class="ppq-help-text" style="margin-top: 8px;">\
-							Save this lesson first, then click "Edit with WP Editor" below to add a PressPrimer Quiz.\
-						</p>\
-						<a href="' + config.adminUrl + 'edit.php?post_type=lesson" target="_blank" class="ppq-wp-editor-link">\
+						<a href="' + editLinkUrl + '" target="_blank" class="ppq-wp-editor-link">\
 							<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align: middle; margin-right: 4px;">\
 								<path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/>\
 								<polyline points="15 3 21 3 21 9"/>\
 								<line x1="10" y1="14" x2="21" y2="3"/>\
 							</svg>\
-							View Lessons\
+							' + editLinkText + '\
 						</a>\
 					</div>\
 				</div>\

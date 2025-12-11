@@ -45,6 +45,14 @@ class PressPrimer_Quiz_LifterLMS {
 	const META_KEY_REQUIRE_PASS = '_ppq_lifterlms_require_pass';
 
 	/**
+	 * Track if quiz has been rendered to prevent duplicates
+	 *
+	 * @since 1.0.0
+	 * @var bool
+	 */
+	private $quiz_rendered = false;
+
+	/**
 	 * Initialize the integration
 	 *
 	 * @since 1.0.0
@@ -62,8 +70,17 @@ class PressPrimer_Quiz_LifterLMS {
 		// Course builder hooks - Enqueue assets for sidebar indicators.
 		add_action( 'admin_enqueue_scripts', [ $this, 'enqueue_course_builder_assets' ] );
 
-		// Frontend hooks.
-		add_action( 'lifterlms_single_lesson_after_summary', [ $this, 'display_quiz_in_lesson' ] );
+		// Frontend hooks - display quiz inside the lesson button wrapper, before the Mark Complete button.
+		// This hook fires for enrolled users when the button wrapper is rendered (classic templates).
+		add_action( 'llms_before_lesson_buttons', [ $this, 'display_quiz_in_lesson' ], 10, 2 );
+
+		// Block-based lessons: hook before the navigation block renders.
+		// Hook format: {vendor}_{id}_block_render (see LLMS_Blocks_Abstract_Block::get_render_hook).
+		add_action( 'llms_lesson-navigation_block_render', [ $this, 'display_quiz_before_navigation_block' ], 5 );
+
+		// Fallback for when neither the progression block nor navigation block exist.
+		// Uses the_content filter to append quiz after lesson content.
+		add_filter( 'the_content', [ $this, 'append_quiz_to_content' ], 20 );
 
 		// Hide LifterLMS complete button when quiz is attached.
 		add_filter( 'llms_is_complete', [ $this, 'check_ppq_quiz_complete' ], 10, 4 );
@@ -110,26 +127,44 @@ class PressPrimer_Quiz_LifterLMS {
 		$quiz_id      = get_post_meta( $post->ID, self::META_KEY_QUIZ_ID, true );
 		$require_pass = get_post_meta( $post->ID, self::META_KEY_REQUIRE_PASS, true );
 
-		// Get quiz title if one is selected.
-		$quiz_title = '';
+		// Get quiz display label if one is selected.
+		$quiz_display = '';
 		if ( $quiz_id ) {
-			$quiz = class_exists( 'PressPrimer_Quiz_Quiz' ) ? PressPrimer_Quiz_Quiz::get( $quiz_id ) : null;
-			if ( $quiz ) {
-				$quiz_title = $quiz->title;
-			}
+			$quiz         = class_exists( 'PressPrimer_Quiz_Quiz' ) ? PressPrimer_Quiz_Quiz::get( $quiz_id ) : null;
+			$quiz_display = $quiz ? sprintf( '%d - %s', $quiz->id, $quiz->title ) : '';
 		}
 		?>
 		<div class="ppq-lifterlms-metabox">
 			<p>
-				<label for="ppq_lifterlms_quiz_id"><?php esc_html_e( 'Select Quiz:', 'pressprimer-quiz' ); ?></label>
-				<input type="hidden" name="ppq_lifterlms_quiz_id" id="ppq_lifterlms_quiz_id" value="<?php echo esc_attr( $quiz_id ); ?>" />
-				<span class="ppq-quiz-input-wrapper" style="display: flex; gap: 5px;">
-					<input type="text" id="ppq_lifterlms_quiz_search" class="widefat" placeholder="<?php esc_attr_e( 'Search quizzes...', 'pressprimer-quiz' ); ?>" value="<?php echo esc_attr( $quiz_title ? $quiz_id . ' - ' . $quiz_title : '' ); ?>" autocomplete="off" style="flex: 1;" />
-					<button type="button" id="ppq_lifterlms_quiz_clear" class="button" title="<?php esc_attr_e( 'Remove quiz', 'pressprimer-quiz' ); ?>" style="<?php echo $quiz_id ? '' : 'display:none;'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Safe CSS values ?>">&times;</button>
-				</span>
-				<span id="ppq_lifterlms_quiz_results" class="ppq-search-results hidden"></span>
+				<label for="ppq_lifterlms_quiz_search">
+					<?php esc_html_e( 'Select Quiz:', 'pressprimer-quiz' ); ?>
+				</label>
 			</p>
-			<p>
+			<div class="ppq-quiz-selector">
+				<input
+					type="text"
+					id="ppq_lifterlms_quiz_search"
+					class="ppq-quiz-search widefat"
+					placeholder="<?php esc_attr_e( 'Click to browse or type to search...', 'pressprimer-quiz' ); ?>"
+					value="<?php echo esc_attr( $quiz_display ); ?>"
+					autocomplete="off"
+					<?php echo esc_attr( $quiz_id ? 'readonly' : '' ); ?>
+				/>
+				<input
+					type="hidden"
+					id="ppq_lifterlms_quiz_id"
+					name="ppq_lifterlms_quiz_id"
+					value="<?php echo esc_attr( $quiz_id ); ?>"
+				/>
+				<div id="ppq_lifterlms_quiz_results" class="ppq-quiz-results" style="display: none;"></div>
+				<?php if ( $quiz_id ) : ?>
+					<button type="button" class="ppq-remove-quiz button-link" aria-label="<?php esc_attr_e( 'Remove quiz', 'pressprimer-quiz' ); ?>" title="<?php esc_attr_e( 'Remove quiz', 'pressprimer-quiz' ); ?>">
+						<span class="dashicons dashicons-no-alt"></span>
+					</button>
+				<?php endif; ?>
+			</div>
+
+			<p style="margin-top: 12px;">
 				<label>
 					<input type="checkbox" name="ppq_lifterlms_require_pass" value="1" <?php checked( $require_pass, '1' ); ?> />
 					<?php esc_html_e( 'Require passing score to complete lesson', 'pressprimer-quiz' ); ?>
@@ -139,89 +174,177 @@ class PressPrimer_Quiz_LifterLMS {
 				<?php esc_html_e( 'When enabled, students must pass this quiz to mark the lesson complete.', 'pressprimer-quiz' ); ?>
 			</p>
 		</div>
+
 		<style>
-			.ppq-lifterlms-metabox .ppq-search-results {
-				display: block;
-				max-height: 150px;
-				overflow-y: auto;
+			.ppq-lifterlms-metabox .ppq-quiz-selector {
+				position: relative;
+				display: flex;
+				align-items: center;
+				gap: 4px;
+			}
+			.ppq-lifterlms-metabox .ppq-quiz-search {
+				flex: 1;
+			}
+			.ppq-lifterlms-metabox .ppq-quiz-search[readonly] {
+				background: #f0f6fc;
+				cursor: default;
+			}
+			.ppq-lifterlms-metabox .ppq-quiz-results {
+				position: absolute;
+				top: 100%;
+				left: 0;
+				right: 30px;
+				background: #fff;
 				border: 1px solid #ddd;
 				border-top: none;
-				background: #fff;
+				max-height: 250px;
+				overflow-y: auto;
+				z-index: 1000;
+				box-shadow: 0 2px 4px rgba(0,0,0,0.1);
 			}
-			.ppq-lifterlms-metabox .ppq-search-results.hidden {
-				display: none;
-			}
-			.ppq-lifterlms-metabox .ppq-search-result {
+			.ppq-lifterlms-metabox .ppq-quiz-result-item {
 				padding: 8px 12px;
 				cursor: pointer;
 				border-bottom: 1px solid #f0f0f0;
 			}
-			.ppq-lifterlms-metabox .ppq-search-result:hover {
-				background: #f0f6fc;
+			.ppq-lifterlms-metabox .ppq-quiz-result-item:hover {
+				background: #f0f0f0;
+			}
+			.ppq-lifterlms-metabox .ppq-quiz-result-item:last-child {
+				border-bottom: none;
+			}
+			.ppq-lifterlms-metabox .ppq-remove-quiz {
+				color: #d63638;
+				text-decoration: none;
+				padding: 4px;
+				border: none;
+				background: none;
+				cursor: pointer;
+				display: flex;
+				align-items: center;
+			}
+			.ppq-lifterlms-metabox .ppq-remove-quiz:hover {
+				color: #b32d2e;
+			}
+			.ppq-lifterlms-metabox .ppq-no-results {
+				padding: 12px;
+				color: #666;
+				font-style: italic;
+			}
+			.ppq-lifterlms-metabox .ppq-quiz-result-item .ppq-quiz-id {
+				color: #666;
+				font-weight: 600;
+				margin-right: 4px;
 			}
 		</style>
+
 		<script>
 		jQuery(document).ready(function($) {
-			var $search = $('#ppq_lifterlms_quiz_search');
-			var $input = $('#ppq_lifterlms_quiz_id');
-			var $results = $('#ppq_lifterlms_quiz_results');
-			var $clearBtn = $('#ppq_lifterlms_quiz_clear');
 			var searchTimeout;
+			var $search = $('#ppq_lifterlms_quiz_search');
+			var $results = $('#ppq_lifterlms_quiz_results');
+			var $quizId = $('#ppq_lifterlms_quiz_id');
+			var $removeBtn = $('.ppq-remove-quiz');
 
+			function formatQuiz(quiz) {
+				return '<div class="ppq-quiz-result-item" data-id="' + quiz.id + '" data-title="' + $('<div/>').text(quiz.title).html() + '">' +
+					'<span class="ppq-quiz-id">' + quiz.id + '</span> - ' + $('<div/>').text(quiz.title).html() +
+					'</div>';
+			}
+
+			// Load recent quizzes on focus (only if no quiz selected)
+			$search.on('focus', function() {
+				if ($quizId.val()) {
+					return; // Already has a selection
+				}
+
+				// Load 50 most recent quizzes
+				$.ajax({
+					url: ajaxurl,
+					type: 'POST',
+					data: {
+						action: 'ppq_search_quizzes_lifterlms',
+						nonce: '<?php echo esc_js( wp_create_nonce( 'ppq_search_quizzes_lifterlms' ) ); ?>',
+						recent: 1
+					},
+					success: function(response) {
+						if (response.success && response.data.quizzes && response.data.quizzes.length > 0) {
+							var html = '';
+							response.data.quizzes.forEach(function(quiz) {
+								html += formatQuiz(quiz);
+							});
+							$results.html(html).show();
+						}
+					}
+				});
+			});
+
+			// Search quizzes on input
 			$search.on('input', function() {
-				clearTimeout(searchTimeout);
 				var query = $(this).val();
 
+				clearTimeout(searchTimeout);
+
 				if (query.length < 2) {
-					$results.addClass('hidden').empty();
+					// Show recent quizzes if input is short
+					$search.trigger('focus');
 					return;
 				}
 
 				searchTimeout = setTimeout(function() {
 					$.ajax({
 						url: ajaxurl,
+						type: 'POST',
 						data: {
 							action: 'ppq_search_quizzes_lifterlms',
-							search: query,
-							nonce: '<?php echo esc_js( wp_create_nonce( 'ppq_search_quizzes_lifterlms' ) ); ?>'
+							nonce: '<?php echo esc_js( wp_create_nonce( 'ppq_search_quizzes_lifterlms' ) ); ?>',
+							search: query
 						},
 						success: function(response) {
-							if (response.success && response.data.length) {
-								$results.removeClass('hidden').empty();
-								response.data.forEach(function(quiz) {
-									$('<div class="ppq-search-result">')
-										.text(quiz.id + ' - ' + quiz.title)
-										.data('quiz', quiz)
-										.appendTo($results);
+							if (response.success && response.data.quizzes && response.data.quizzes.length > 0) {
+								var html = '';
+								response.data.quizzes.forEach(function(quiz) {
+									html += formatQuiz(quiz);
 								});
+								$results.html(html).show();
 							} else {
-								$results.addClass('hidden').empty();
+								$results.html('<div class="ppq-no-results"><?php echo esc_js( __( 'No quizzes found', 'pressprimer-quiz' ) ); ?></div>').show();
 							}
 						}
 					});
 				}, 300);
 			});
 
-			$results.on('click', '.ppq-search-result', function() {
-				var quiz = $(this).data('quiz');
-				$input.val(quiz.id);
-				$search.val(quiz.id + ' - ' + quiz.title);
-				$results.addClass('hidden').empty();
-				$clearBtn.show();
+			// Select quiz
+			$results.on('click', '.ppq-quiz-result-item', function() {
+				var $item = $(this);
+				var id = $item.data('id');
+				var title = $item.data('title');
+				var display = id + ' - ' + title;
+
+				$quizId.val(id);
+				$search.val(display).attr('readonly', true);
+				$results.hide();
+
+				// Add remove button if not present
+				if (!$removeBtn.length) {
+					$search.after('<button type="button" class="ppq-remove-quiz button-link" aria-label="<?php echo esc_attr__( 'Remove quiz', 'pressprimer-quiz' ); ?>" title="<?php echo esc_attr__( 'Remove quiz', 'pressprimer-quiz' ); ?>"><span class="dashicons dashicons-no-alt"></span></button>');
+					$removeBtn = $('.ppq-remove-quiz');
+				}
 			});
 
-			// Clear button click handler.
-			$clearBtn.on('click', function() {
-				$input.val('');
-				$search.val('');
-				$results.addClass('hidden').empty();
-				$(this).hide();
+			// Remove quiz
+			$(document).on('click', '.ppq-remove-quiz', function() {
+				$quizId.val('');
+				$search.val('').removeAttr('readonly');
+				$(this).remove();
+				$removeBtn = $();
 			});
 
-			// Select text on focus for easy replacement.
-			$search.on('focus', function() {
-				if ($input.val()) {
-					$(this).select();
+			// Hide results on click outside
+			$(document).on('click', function(e) {
+				if (!$(e.target).closest('.ppq-quiz-selector').length) {
+					$results.hide();
 				}
 			});
 		});
@@ -362,9 +485,61 @@ class PressPrimer_Quiz_LifterLMS {
 	/**
 	 * Display quiz in lesson content
 	 *
+	 * Called from llms_before_lesson_buttons hook which fires inside the
+	 * .llms-lesson-button-wrapper div, before the Mark Complete button.
+	 * Enrollment is already verified by LifterLMS before this hook fires.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param LLMS_Lesson  $lesson  The lesson object.
+	 * @param LLMS_Student $student The student object.
+	 */
+	public function display_quiz_in_lesson( $lesson, $student ) {
+		$lesson_id = $lesson->get( 'id' );
+		$quiz_id   = get_post_meta( $lesson_id, self::META_KEY_QUIZ_ID, true );
+
+		if ( ! $quiz_id ) {
+			return;
+		}
+
+		// Mark as rendered to prevent duplicate from content filter.
+		$this->quiz_rendered = true;
+
+		$course = $lesson->get_course();
+
+		// Build context data for the quiz.
+		$context_data = array(
+			'context'      => 'lifterlms',
+			'context_id'   => $lesson_id,
+			'context_type' => 'lesson',
+			'course_id'    => $course ? $course->get( 'id' ) : 0,
+		);
+
+		// Render the quiz using shortcode.
+		$quiz_shortcode = sprintf(
+			'[ppq_quiz id="%d" context="%s"]',
+			absint( $quiz_id ),
+			esc_attr( base64_encode( wp_json_encode( $context_data ) ) )
+		);
+
+		// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Shortcode output is escaped internally
+		echo do_shortcode( $quiz_shortcode );
+	}
+
+	/**
+	 * Display quiz before the navigation block in block-based lessons
+	 *
+	 * This hooks into the navigation block render action to display the quiz
+	 * right before the navigation when the Mark Complete block is removed.
+	 *
 	 * @since 1.0.0
 	 */
-	public function display_quiz_in_lesson() {
+	public function display_quiz_before_navigation_block() {
+		// Don't render if already rendered by the primary hook.
+		if ( $this->quiz_rendered ) {
+			return;
+		}
+
 		global $post;
 
 		if ( ! $post || 'lesson' !== $post->post_type ) {
@@ -377,31 +552,123 @@ class PressPrimer_Quiz_LifterLMS {
 			return;
 		}
 
-		// Check if user is enrolled in the course.
-		$lesson  = new LLMS_Lesson( $post->ID );
-		$course  = $lesson->get_course();
+		$lesson  = llms_get_post( $post );
 		$user_id = get_current_user_id();
 
-		if ( $course && ! llms_is_user_enrolled( $user_id, $course->get( 'id' ) ) ) {
+		if ( ! $lesson || ! is_a( $lesson, 'LLMS_Lesson' ) ) {
+			return;
+		}
+
+		$parent_course = $lesson->get( 'parent_course' );
+
+		// Check enrollment.
+		if ( ! llms_is_user_enrolled( $user_id, $parent_course ) && ! current_user_can( 'edit_post', $lesson->get( 'id' ) ) ) {
 			echo '<div class="ppq-access-denied">';
 			esc_html_e( 'Enroll in this course to access the quiz.', 'pressprimer-quiz' );
 			echo '</div>';
 			return;
 		}
 
-		// Render the quiz.
-		if ( function_exists( 'ppq_render_quiz' ) ) {
-			// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
-			echo ppq_render_quiz(
-				$quiz_id,
-				[
-					'context'      => 'lifterlms',
-					'context_id'   => $post->ID,
-					'context_type' => 'lesson',
-					'course_id'    => $course ? $course->get( 'id' ) : 0,
-				]
-			);
+		// Mark as rendered.
+		$this->quiz_rendered = true;
+
+		$course = $lesson->get_course();
+
+		// Build context data for the quiz.
+		$context_data = array(
+			'context'      => 'lifterlms',
+			'context_id'   => $post->ID,
+			'context_type' => 'lesson',
+			'course_id'    => $course ? $course->get( 'id' ) : 0,
+		);
+
+		// Render the quiz using shortcode.
+		$quiz_shortcode = sprintf(
+			'[ppq_quiz id="%d" context="%s"]',
+			absint( $quiz_id ),
+			esc_attr( base64_encode( wp_json_encode( $context_data ) ) )
+		);
+
+		// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Shortcode output is escaped internally
+		echo do_shortcode( $quiz_shortcode );
+	}
+
+	/**
+	 * Append quiz to lesson content for block-based lessons
+	 *
+	 * This handles cases where neither the progression block nor navigation block exist,
+	 * as a final fallback.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param string $content The post content.
+	 * @return string Modified content with quiz appended.
+	 */
+	public function append_quiz_to_content( $content ) {
+		// Only run on single lesson pages in the main query.
+		if ( ! is_singular( 'lesson' ) || ! in_the_loop() || ! is_main_query() ) {
+			return $content;
 		}
+
+		// Don't render if already rendered by the primary hook.
+		if ( $this->quiz_rendered ) {
+			return $content;
+		}
+
+		global $post;
+
+		// If the navigation block exists, let the block hook handle rendering instead.
+		// Check raw post content for the block.
+		if ( has_block( 'llms/lesson-navigation', $post ) ) {
+			return $content;
+		}
+
+		$quiz_id = get_post_meta( $post->ID, self::META_KEY_QUIZ_ID, true );
+
+		if ( ! $quiz_id ) {
+			return $content;
+		}
+
+		$lesson  = llms_get_post( $post );
+		$user_id = get_current_user_id();
+
+		if ( ! $lesson || ! is_a( $lesson, 'LLMS_Lesson' ) ) {
+			return $content;
+		}
+
+		$parent_course = $lesson->get( 'parent_course' );
+
+		// Check enrollment.
+		if ( ! llms_is_user_enrolled( $user_id, $parent_course ) && ! current_user_can( 'edit_post', $lesson->get( 'id' ) ) ) {
+			$content .= '<div class="ppq-access-denied">';
+			$content .= esc_html__( 'Enroll in this course to access the quiz.', 'pressprimer-quiz' );
+			$content .= '</div>';
+			return $content;
+		}
+
+		// Mark as rendered.
+		$this->quiz_rendered = true;
+
+		$course = $lesson->get_course();
+
+		// Build context data for the quiz.
+		$context_data = array(
+			'context'      => 'lifterlms',
+			'context_id'   => $post->ID,
+			'context_type' => 'lesson',
+			'course_id'    => $course ? $course->get( 'id' ) : 0,
+		);
+
+		// Render the quiz using shortcode.
+		$quiz_shortcode = sprintf(
+			'[ppq_quiz id="%d" context="%s"]',
+			absint( $quiz_id ),
+			esc_attr( base64_encode( wp_json_encode( $context_data ) ) )
+		);
+
+		$content .= do_shortcode( $quiz_shortcode );
+
+		return $content;
 	}
 
 	/**
@@ -442,11 +709,14 @@ class PressPrimer_Quiz_LifterLMS {
 	 *
 	 * @since 1.0.0
 	 *
-	 * @param int $quiz_id PPQ Quiz ID.
-	 * @param int $user_id User ID.
+	 * @param PressPrimer_Quiz_Attempt $attempt The submitted attempt object.
+	 * @param PressPrimer_Quiz_Quiz    $quiz    The quiz object.
 	 */
-	public function handle_quiz_passed( $quiz_id, $user_id ) {
+	public function handle_quiz_passed( $attempt, $quiz ) {
 		global $wpdb;
+
+		$quiz_id = $quiz->id;
+		$user_id = $attempt->user_id;
 
 		// Find lessons using this quiz.
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Lesson lookup by quiz ID, not suitable for caching
@@ -731,38 +1001,46 @@ class PressPrimer_Quiz_LifterLMS {
 		check_ajax_referer( 'ppq_search_quizzes_lifterlms', 'nonce' );
 
 		if ( ! current_user_can( 'edit_posts' ) ) {
-			wp_send_json_error();
+			wp_send_json_error( [ 'message' => __( 'Permission denied.', 'pressprimer-quiz' ) ] );
 		}
 
-		$search = isset( $_GET['search'] ) ? sanitize_text_field( wp_unslash( $_GET['search'] ) ) : '';
+		global $wpdb;
+		$table = $wpdb->prefix . 'ppq_quizzes';
 
-		$quizzes = [];
+		// Check if requesting recent quizzes.
+		$recent = isset( $_POST['recent'] ) && rest_sanitize_boolean( wp_unslash( $_POST['recent'] ) );
 
-		if ( class_exists( 'PressPrimer_Quiz_Quiz' ) && strlen( $search ) >= 2 ) {
-			// Use PressPrimer_Quiz_Quiz::find() instead of get_all() which doesn't exist.
-			$results = PressPrimer_Quiz_Quiz::find(
-				[
-					'where'    => [ 'status' => 'published' ],
-					'limit'    => 10,
-					'order_by' => 'title',
-					'order'    => 'ASC',
-				]
+		if ( $recent ) {
+			// Get 50 most recent quizzes created by current user.
+			$user_id = get_current_user_id();
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- AJAX search results, not suitable for caching
+			$quizzes = $wpdb->get_results(
+				$wpdb->prepare(
+					"SELECT id, title FROM {$table} WHERE status = 'published' AND owner_id = %d ORDER BY id DESC LIMIT 50", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+					$user_id
+				)
 			);
 
-			// Filter by search term.
-			$search_lower = strtolower( $search );
-			foreach ( $results as $quiz ) {
-				if ( strpos( strtolower( $quiz->title ), $search_lower ) !== false
-					|| strpos( (string) $quiz->id, $search_lower ) !== false ) {
-					$quizzes[] = [
-						'id'    => $quiz->id,
-						'title' => $quiz->title,
-					];
-				}
-			}
+			wp_send_json_success( [ 'quizzes' => $quizzes ] );
+			return;
 		}
 
-		wp_send_json_success( $quizzes );
+		$search = isset( $_POST['search'] ) ? sanitize_text_field( wp_unslash( $_POST['search'] ) ) : '';
+
+		if ( strlen( $search ) < 2 ) {
+			wp_send_json_success( [ 'quizzes' => [] ] );
+			return;
+		}
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- AJAX search results, not suitable for caching
+		$quizzes = $wpdb->get_results(
+			$wpdb->prepare(
+				"SELECT id, title FROM {$table} WHERE title LIKE %s AND status = 'published' ORDER BY title ASC LIMIT 20", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+				'%' . $wpdb->esc_like( $search ) . '%'
+			)
+		);
+
+		wp_send_json_success( [ 'quizzes' => $quizzes ] );
 	}
 
 	/**

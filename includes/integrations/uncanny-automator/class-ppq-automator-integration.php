@@ -32,6 +32,6 @@ class PressPrimer_Quiz_Automator_Integration extends \Uncanny_Automator\Integrat
 	protected function setup() {
 		$this->set_integration( 'PPQ' );
 		$this->set_name( 'PressPrimer Quiz' );
-		$this->set_icon_url( PPQ_PLUGIN_URL . 'assets/images/ppq-icon.svg' );
+		$this->set_icon_url( PPQ_PLUGIN_URL . 'assets/images/checkbox.svg' );
 	}
 }

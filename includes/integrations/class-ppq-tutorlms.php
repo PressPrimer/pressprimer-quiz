@@ -860,23 +860,19 @@ class PressPrimer_Quiz_TutorLMS {
 	 * @param int $user_id   User ID.
 	 */
 	private function mark_lesson_complete( $lesson_id, $user_id ) {
-		// Use TutorLMS utility function if available.
-		if ( function_exists( 'tutor_utils' ) ) {
-			$utils = tutor_utils();
+		// Use TutorLMS LessonModel class (TutorLMS 2.x+).
+		if ( class_exists( '\Tutor\Models\LessonModel' ) ) {
+			\Tutor\Models\LessonModel::mark_lesson_complete( $lesson_id, $user_id );
 
-			if ( method_exists( $utils, 'mark_lesson_complete' ) ) {
-				$utils->mark_lesson_complete( $lesson_id, $user_id );
-
-				/**
-				 * Fires after PPQ marks a TutorLMS lesson complete.
-				 *
-				 * @since 1.0.0
-				 *
-				 * @param int $lesson_id Lesson post ID.
-				 * @param int $user_id   User ID.
-				 */
-				do_action( 'pressprimer_quiz_tutorlms_lesson_completed', $lesson_id, $user_id );
-			}
+			/**
+			 * Fires after PPQ marks a TutorLMS lesson complete.
+			 *
+			 * @since 1.0.0
+			 *
+			 * @param int $lesson_id Lesson post ID.
+			 * @param int $user_id   User ID.
+			 */
+			do_action( 'pressprimer_quiz_tutorlms_lesson_completed', $lesson_id, $user_id );
 		}
 	}
 
@@ -1159,8 +1155,11 @@ class PressPrimer_Quiz_TutorLMS {
 			}
 
 			update_post_meta( $lesson_id, self::META_KEY_QUIZ_ID, $quiz_id );
+			// Default to requiring pass when attaching a quiz via REST API.
+			update_post_meta( $lesson_id, self::META_KEY_REQUIRE_PASS, '1' );
 		} else {
 			delete_post_meta( $lesson_id, self::META_KEY_QUIZ_ID );
+			delete_post_meta( $lesson_id, self::META_KEY_REQUIRE_PASS );
 		}
 
 		return new WP_REST_Response(

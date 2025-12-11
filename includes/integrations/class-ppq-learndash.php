@@ -80,6 +80,9 @@ class PressPrimer_Quiz_LearnDash {
 		// Completion tracking
 		add_action( 'pressprimer_quiz_quiz_passed', [ $this, 'handle_quiz_passed' ], 10, 2 );
 
+		// Prevent lesson/topic completion when PPQ quiz is attached and not passed
+		add_filter( 'learndash-lesson-can-complete', [ $this, 'maybe_prevent_lesson_completion' ], 10, 4 );
+
 		// Prevent course auto-completion when PPQ quiz is attached
 		add_filter( 'learndash_process_mark_complete', [ $this, 'maybe_prevent_course_completion' ], 10, 3 );
 
@@ -539,6 +542,23 @@ class PressPrimer_Quiz_LearnDash {
 			}
 		}
 
+		// Check lesson restriction - quiz locked until all topics in the lesson are complete
+		if ( 'sfwd-lessons' === get_post_type( $post_id ) ) {
+			if ( ! $this->are_lesson_topics_complete( $post_id ) ) {
+				// Get the quiz for title
+				$quiz       = PressPrimer_Quiz_Quiz::get( $quiz_id );
+				$quiz_title = $quiz ? $quiz->title : __( 'Quiz', 'pressprimer-quiz' );
+
+				// Get custom message or use default for lessons
+				$restriction_message = get_option( 'ppq_learndash_lesson_restriction_message', '' );
+				if ( empty( $restriction_message ) ) {
+					$restriction_message = __( 'Complete all topics in this lesson to unlock the quiz.', 'pressprimer-quiz' );
+				}
+
+				return $content . $this->render_restriction_placeholder( $quiz_title, $restriction_message );
+			}
+		}
+
 		// Add context data for navigation
 		$context_data = [
 			'learndash_post_id'   => $post_id,
@@ -679,6 +699,41 @@ class PressPrimer_Quiz_LearnDash {
 	}
 
 	/**
+	 * Prevent lesson/topic completion when a PPQ quiz is attached and not passed
+	 *
+	 * This filter blocks LearnDash from marking a lesson or topic complete
+	 * if it has a PPQ quiz attached that the user hasn't passed yet.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param bool $can_complete Whether the user can complete.
+	 * @param int  $post_id      The lesson or topic ID.
+	 * @param int  $course_id    The course ID.
+	 * @param int  $user_id      The user ID.
+	 * @return bool Modified can_complete value.
+	 */
+	public function maybe_prevent_lesson_completion( $can_complete, $post_id, $course_id, $user_id ) {
+		if ( ! $can_complete ) {
+			return false;
+		}
+
+		// Check if this lesson/topic has a PPQ quiz attached
+		$quiz_id = get_post_meta( $post_id, self::META_KEY_QUIZ_ID, true );
+
+		if ( ! $quiz_id ) {
+			return $can_complete;
+		}
+
+		// Check if the user has passed the quiz
+		if ( $this->has_user_passed_quiz( $user_id, $quiz_id ) ) {
+			return $can_complete;
+		}
+
+		// Block completion - user hasn't passed the quiz yet
+		return false;
+	}
+
+	/**
 	 * Prevent course auto-completion when a PPQ quiz is attached
 	 *
 	 * This filter blocks LearnDash from auto-completing a course when all
@@ -693,29 +748,100 @@ class PressPrimer_Quiz_LearnDash {
 	 * @return bool Modified mark_complete value.
 	 */
 	public function maybe_prevent_course_completion( $mark_complete, $post, $current_user ) {
-		// Only intercept course completion
-		if ( ! $post || 'sfwd-courses' !== $post->post_type ) {
+		if ( ! $post ) {
 			return $mark_complete;
 		}
+
+		$user_id   = $current_user->ID;
+		$post_type = $post->post_type;
+
+		// Handle lesson and topic completion - block if PPQ quiz attached and not passed
+		if ( in_array( $post_type, [ 'sfwd-lessons', 'sfwd-topic' ], true ) ) {
+			$quiz_id = get_post_meta( $post->ID, self::META_KEY_QUIZ_ID, true );
+
+			if ( $quiz_id && ! $this->has_user_passed_quiz( $user_id, $quiz_id ) ) {
+				// Lesson/topic has a quiz that hasn't been passed - block completion
+				return false;
+			}
+
+			return $mark_complete;
+		}
+
+		// Handle course completion
+		if ( 'sfwd-courses' !== $post_type ) {
+			return $mark_complete;
+		}
+
+		$course_id = $post->ID;
 
 		// Check if this course has a PPQ quiz attached
-		$quiz_id = get_post_meta( $post->ID, self::META_KEY_QUIZ_ID, true );
+		$course_quiz_id = get_post_meta( $course_id, self::META_KEY_QUIZ_ID, true );
 
-		if ( ! $quiz_id ) {
-			// No quiz attached, allow normal completion
-			return $mark_complete;
+		if ( $course_quiz_id && ! $this->has_user_passed_quiz( $user_id, $course_quiz_id ) ) {
+			// Course has a quiz that hasn't been passed - block completion
+			return false;
 		}
 
-		// Check if the user has passed the quiz
-		$user_id = $current_user->ID;
+		// Check if any lesson in this course has a PPQ quiz that hasn't been passed
+		$lessons_with_quizzes = $this->get_course_content_with_quizzes( $course_id );
 
-		if ( $this->has_user_passed_quiz( $user_id, $quiz_id ) ) {
-			// User has passed the quiz, allow completion
-			return $mark_complete;
+		foreach ( $lessons_with_quizzes as $item ) {
+			if ( ! $this->has_user_passed_quiz( $user_id, $item['quiz_id'] ) ) {
+				// Found a lesson/topic with an unpassed quiz - block course completion
+				return false;
+			}
 		}
 
-		// Block completion - user hasn't passed the quiz yet
-		return false;
+		return $mark_complete;
+	}
+
+	/**
+	 * Get all lessons and topics in a course that have PPQ quizzes attached
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param int $course_id Course ID.
+	 * @return array Array of items with 'post_id', 'post_type', and 'quiz_id'.
+	 */
+	private function get_course_content_with_quizzes( $course_id ) {
+		$items = [];
+
+		// Get all lessons and topics in this course that have PPQ quizzes
+		$args = [
+			'post_type'      => [ 'sfwd-lessons', 'sfwd-topic' ],
+			'posts_per_page' => -1,
+			'meta_query'     => [
+				'relation' => 'AND',
+				[
+					'key'     => self::META_KEY_QUIZ_ID,
+					'compare' => 'EXISTS',
+				],
+				[
+					'key'     => self::META_KEY_QUIZ_ID,
+					'value'   => '',
+					'compare' => '!=',
+				],
+				[
+					'key'   => 'course_id',
+					'value' => $course_id,
+				],
+			],
+		];
+
+		$posts = get_posts( $args );
+
+		foreach ( $posts as $post ) {
+			$quiz_id = get_post_meta( $post->ID, self::META_KEY_QUIZ_ID, true );
+			if ( $quiz_id ) {
+				$items[] = [
+					'post_id'   => $post->ID,
+					'post_type' => $post->post_type,
+					'quiz_id'   => (int) $quiz_id,
+				];
+			}
+		}
+
+		return $items;
 	}
 
 	/**
@@ -811,6 +937,52 @@ class PressPrimer_Quiz_LearnDash {
 
 		// All lessons/topics should be complete
 		return $completed >= $total;
+	}
+
+	/**
+	 * Check if all topics in a lesson are complete
+	 *
+	 * Returns true if the lesson has no topics (quiz should be accessible).
+	 * Returns false if there are incomplete topics.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param int $lesson_id Lesson ID.
+	 * @return bool True if all topics are complete or no topics exist.
+	 */
+	private function are_lesson_topics_complete( $lesson_id ) {
+		$user_id = get_current_user_id();
+
+		if ( ! $user_id ) {
+			return false;
+		}
+
+		$course_id = $this->get_course_id_for_post( $lesson_id );
+
+		if ( ! $course_id ) {
+			return true; // Can't determine course, allow access
+		}
+
+		// Get topics for this lesson
+		$topics = $this->get_lesson_topics( $lesson_id, $course_id );
+
+		// If no topics, quiz is accessible
+		if ( empty( $topics ) ) {
+			return true;
+		}
+
+		// Check if each topic is complete
+		if ( ! function_exists( 'learndash_is_topic_complete' ) ) {
+			return true; // Can't check, allow access
+		}
+
+		foreach ( $topics as $topic_id ) {
+			if ( ! learndash_is_topic_complete( $user_id, $topic_id, $course_id ) ) {
+				return false;
+			}
+		}
+
+		return true;
 	}
 
 	/**

@@ -393,7 +393,7 @@ class PressPrimer_Quiz_LearnDash {
 		}
 
 		// Check permissions
-		if ( ! current_user_can( 'edit_post', $post_id ) ) {
+		if ( ! PressPrimer_Quiz_Helpers::current_user_can_edit_post( $post_id ) ) {
 			return;
 		}
 

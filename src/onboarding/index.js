@@ -63,7 +63,7 @@ window.ppqLaunchOnboarding = async () => {
 			credentials: 'same-origin',
 		});
 	} catch (err) {
-		console.error('Failed to reset onboarding:', err);
+		// Silently fail - reset is best-effort
 	}
 
 	const container = getContainer();

@@ -75,7 +75,7 @@ const StemEditor = ({ value, onChange }) => {
 						mediaButtons: false,
 					});
 				} catch (error) {
-					console.error('Failed to initialize editor:', error);
+					// Editor initialization failed - will retry
 				}
 			} else {
 				// Retry if wp.editor isn't ready yet
@@ -106,7 +106,6 @@ const StemEditor = ({ value, onChange }) => {
 			const currentContent = editorInstanceRef.current.getContent();
 			// Only update if the content is different to avoid cursor jumps
 			if (currentContent !== value) {
-				console.log('StemEditor: Updating content from value prop:', value);
 				editorInstanceRef.current.setContent(value || '');
 			}
 		}

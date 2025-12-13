@@ -8,6 +8,7 @@
 import { useState, useEffect } from '@wordpress/element';
 import { __ } from '@wordpress/i18n';
 import apiFetch from '@wordpress/api-fetch';
+import { debugError } from '../../utils/debug';
 import {
 	Card,
 	Button,
@@ -68,12 +69,10 @@ const RulesPanel = ({ quizId, generationMode }) => {
 	const loadRules = async () => {
 		try {
 			setLoading(true);
-			console.log('Loading rules for quiz:', quizId);
 			const response = await apiFetch({ path: `/ppq/v1/quizzes/${quizId}/rules` });
-			console.log('Rules loaded:', response);
 			setRules(response || []);
 		} catch (error) {
-			console.error('Failed to load quiz rules:', error);
+			debugError('Failed to load quiz rules:', error);
 			message.error(__('Failed to load quiz rules', 'pressprimer-quiz'));
 			setRules([]);
 		} finally {
@@ -98,7 +97,6 @@ const RulesPanel = ({ quizId, generationMode }) => {
 			const tagsResponse = await apiFetch({ path: '/ppq/v1/taxonomies?type=tag' });
 			setTags(tagsResponse || []);
 		} catch (error) {
-			console.error('Failed to load filter options:', error);
 			message.error(__('Failed to load filter options', 'pressprimer-quiz'));
 		}
 	};
@@ -150,7 +148,6 @@ const RulesPanel = ({ quizId, generationMode }) => {
 				});
 				message.success(__('Rule deleted', 'pressprimer-quiz'));
 			} catch (error) {
-				console.error('Failed to delete rule:', error);
 				message.error(__('Failed to delete rule', 'pressprimer-quiz'));
 				return;
 			}
@@ -172,19 +169,14 @@ const RulesPanel = ({ quizId, generationMode }) => {
 			...updates,
 		};
 
-		console.log('Saving rule:', ruleId, 'Data:', ruleData);
-
 		try {
 			// If it's a temp rule, create it
 			if (String(ruleId).startsWith('temp-')) {
-				console.log('Creating new rule...');
 				const response = await apiFetch({
 					path: `/ppq/v1/quizzes/${quizId}/rules`,
 					method: 'POST',
 					data: ruleData,
 				});
-
-				console.log('Rule created, response:', response);
 
 				// Replace temp ID with real ID
 				setRules(currentRules => currentRules.map(r =>
@@ -195,20 +187,17 @@ const RulesPanel = ({ quizId, generationMode }) => {
 				loadRules();
 			} else {
 				// Update existing rule
-				console.log('Updating existing rule...');
 				await apiFetch({
 					path: `/ppq/v1/quizzes/${quizId}/rules/${ruleId}`,
 					method: 'PUT',
 					data: ruleData,
 				});
 
-				console.log('Rule updated');
-
 				// Reload to get updated matching count
 				loadRules();
 			}
 		} catch (error) {
-			console.error('Failed to save rule:', error);
+			debugError('Failed to save rule:', error);
 			message.error(__('Failed to save rule', 'pressprimer-quiz'));
 		}
 	};
@@ -219,7 +208,6 @@ const RulesPanel = ({ quizId, generationMode }) => {
 	const saveRule = async (ruleId, updates = {}) => {
 		const rule = rules.find(r => r.id === ruleId);
 		if (!rule) {
-			console.log('Rule not found for saving:', ruleId);
 			return;
 		}
 
@@ -249,7 +237,6 @@ const RulesPanel = ({ quizId, generationMode }) => {
 				data: { rule_order: ruleOrder },
 			});
 		} catch (error) {
-			console.error('Failed to save rule order:', error);
 			message.error(__('Failed to save rule order', 'pressprimer-quiz'));
 		}
 	};

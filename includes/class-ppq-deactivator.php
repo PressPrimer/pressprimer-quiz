@@ -41,6 +41,11 @@ class PressPrimer_Quiz_Deactivator {
 			wp_unschedule_event( $timestamp, 'ppq_cleanup_abandoned_attempts' );
 		}
 
+		// Unschedule statistics recalculation cron
+		if ( class_exists( 'PressPrimer_Quiz_Statistics_Service' ) ) {
+			PressPrimer_Quiz_Statistics_Service::unschedule_cron();
+		}
+
 		// Clear transients
 		self::clear_plugin_transients();
 

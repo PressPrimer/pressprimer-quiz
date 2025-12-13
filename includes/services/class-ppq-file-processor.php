@@ -992,12 +992,14 @@ class PressPrimer_Quiz_File_Processor {
 			}
 		}
 
-		// Try 'which' command as fallback
-		// phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.system_calls_exec
-		$which_result = exec( 'which ' . escapeshellarg( $name ) . ' 2>/dev/null' );
+		// Try 'which' command as fallback (only if exec is available)
+		if ( function_exists( 'exec' ) && ! in_array( 'exec', array_map( 'trim', explode( ',', ini_get( 'disable_functions' ) ) ), true ) ) {
+			// phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.system_calls_exec
+			$which_result = @exec( 'which ' . escapeshellarg( $name ) . ' 2>/dev/null' );
 
-		if ( ! empty( $which_result ) && file_exists( $which_result ) ) {
-			return $which_result;
+			if ( ! empty( $which_result ) && file_exists( $which_result ) ) {
+				return $which_result;
+			}
 		}
 
 		return false;

@@ -377,7 +377,7 @@ class PressPrimer_Quiz_LifterLMS {
 		}
 
 		// Check permissions.
-		if ( ! current_user_can( 'edit_post', $post_id ) ) {
+		if ( ! PressPrimer_Quiz_Helpers::current_user_can_edit_post( $post_id ) ) {
 			return;
 		}
 
@@ -562,7 +562,7 @@ class PressPrimer_Quiz_LifterLMS {
 		$parent_course = $lesson->get( 'parent_course' );
 
 		// Check enrollment.
-		if ( ! llms_is_user_enrolled( $user_id, $parent_course ) && ! current_user_can( 'edit_post', $lesson->get( 'id' ) ) ) {
+		if ( ! llms_is_user_enrolled( $user_id, $parent_course ) && ! PressPrimer_Quiz_Helpers::current_user_can_edit_post( $lesson->get( 'id' ) ) ) {
 			echo '<div class="ppq-access-denied">';
 			esc_html_e( 'Enroll in this course to access the quiz.', 'pressprimer-quiz' );
 			echo '</div>';
@@ -639,7 +639,7 @@ class PressPrimer_Quiz_LifterLMS {
 		$parent_course = $lesson->get( 'parent_course' );
 
 		// Check enrollment.
-		if ( ! llms_is_user_enrolled( $user_id, $parent_course ) && ! current_user_can( 'edit_post', $lesson->get( 'id' ) ) ) {
+		if ( ! llms_is_user_enrolled( $user_id, $parent_course ) && ! PressPrimer_Quiz_Helpers::current_user_can_edit_post( $lesson->get( 'id' ) ) ) {
 			$content .= '<div class="ppq-access-denied">';
 			$content .= esc_html__( 'Enroll in this course to access the quiz.', 'pressprimer-quiz' );
 			$content .= '</div>';
@@ -944,7 +944,7 @@ class PressPrimer_Quiz_LifterLMS {
 		}
 
 		// Check permissions.
-		if ( ! current_user_can( 'edit_post', $lesson_id ) ) {
+		if ( ! PressPrimer_Quiz_Helpers::current_user_can_edit_post( $lesson_id ) ) {
 			return new WP_REST_Response(
 				[
 					'success' => false,

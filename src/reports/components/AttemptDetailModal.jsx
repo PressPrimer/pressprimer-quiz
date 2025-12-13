@@ -56,7 +56,7 @@ const AttemptDetailModal = ({ visible, attempt, onClose }) => {
 						setDetails(response.data);
 					}
 				} catch (err) {
-					console.error('Failed to fetch attempt details:', err);
+					// Failed to fetch - modal will show loading state
 				} finally {
 					setLoading(false);
 				}

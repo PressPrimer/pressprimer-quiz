@@ -53,7 +53,7 @@ const useOnboarding = (initialData = {}) => {
 				return result.data;
 			}
 		} catch (err) {
-			console.error('Onboarding update failed:', err);
+			// Silently fail - onboarding state update is non-critical
 		} finally {
 			setIsLoading(false);
 		}

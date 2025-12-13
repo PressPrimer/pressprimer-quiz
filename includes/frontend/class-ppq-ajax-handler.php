@@ -136,13 +136,19 @@ class PressPrimer_Quiz_AJAX_Handler {
 			);
 		}
 
+		// Build response data
+		$response_data = [
+			'attempt_id' => $attempt->id,
+			'message'    => __( 'Quiz started successfully.', 'pressprimer-quiz' ),
+		];
+
+		// Include guest token for URL building (guests need this for access)
+		if ( ! $user_id && ! empty( $attempt->guest_token ) ) {
+			$response_data['guest_token'] = $attempt->guest_token;
+		}
+
 		// Return success with attempt ID
-		wp_send_json_success(
-			[
-				'attempt_id' => $attempt->id,
-				'message'    => __( 'Quiz started successfully.', 'pressprimer-quiz' ),
-			]
-		);
+		wp_send_json_success( $response_data );
 	}
 
 	/**

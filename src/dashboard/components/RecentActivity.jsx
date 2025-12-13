@@ -109,7 +109,7 @@ const RecentActivity = ({ attempts = [], loading }) => {
 			dataIndex: 'quiz_title',
 			key: 'quiz',
 			render: (title, record) => (
-				<a href={`admin.php?page=ppq-quizzes&action=edit&id=${record.quiz_id}`}>
+				<a href={`admin.php?page=ppq-quizzes&action=edit&quiz=${record.quiz_id}`}>
 					{title}
 				</a>
 			),

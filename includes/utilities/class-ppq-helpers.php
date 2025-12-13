@@ -482,4 +482,37 @@ class PressPrimer_Quiz_Helpers {
 
 		return $random_string;
 	}
+
+	/**
+	 * Check if user can edit post safely
+	 *
+	 * Wrapper for current_user_can('edit_post', $post_id) that first checks
+	 * if the post type is registered. This prevents notices when checking
+	 * capabilities for posts from plugins that may not be active.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param int $post_id Post ID to check.
+	 * @return bool True if user can edit the post.
+	 */
+	public static function current_user_can_edit_post( $post_id ) {
+		$post_id = absint( $post_id );
+
+		if ( ! $post_id ) {
+			return false;
+		}
+
+		$post = get_post( $post_id );
+
+		if ( ! $post ) {
+			return false;
+		}
+
+		// Check if post type is registered before checking capabilities
+		if ( ! post_type_exists( $post->post_type ) ) {
+			return false;
+		}
+
+		return current_user_can( 'edit_post', $post_id );
+	}
 }

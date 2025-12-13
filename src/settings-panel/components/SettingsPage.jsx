@@ -8,6 +8,7 @@
 import { useState, useCallback } from '@wordpress/element';
 import { __ } from '@wordpress/i18n';
 import apiFetch from '@wordpress/api-fetch';
+import { debugError } from '../../utils/debug';
 import {
 	Button,
 	message,
@@ -119,7 +120,7 @@ const SettingsPage = ({ settingsData = {} }) => {
 				message.error(response.message || __('Failed to save settings.', 'pressprimer-quiz'));
 			}
 		} catch (error) {
-			console.error('Save error:', error);
+			debugError('Failed to save settings:', error);
 			message.error(error.message || __('Failed to save settings.', 'pressprimer-quiz'));
 		} finally {
 			setSaving(false);

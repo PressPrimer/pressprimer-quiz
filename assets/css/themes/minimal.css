@@ -328,6 +328,13 @@
 	padding: 0;
 	box-shadow: none;
 	margin-bottom: var(--ppq-space-xl);
+	outline: none;
+}
+
+.ppq-quiz-theme-minimal .ppq-question:focus,
+.ppq-quiz-theme-minimal .ppq-question:focus-visible {
+	outline: none;
+	box-shadow: none;
 }
 
 .ppq-quiz-theme-minimal .ppq-question-header {

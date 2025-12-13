@@ -54,7 +54,7 @@ const TaxonomySelector = ({ type, value, onChange }) => {
 				}))
 			);
 		} catch (error) {
-			console.error('Failed to load options:', error);
+			// Failed to load - options will be empty
 		} finally {
 			setLoading(false);
 		}
@@ -96,7 +96,6 @@ const TaxonomySelector = ({ type, value, onChange }) => {
 					: __('Tag created successfully!', 'pressprimer-quiz')
 			);
 		} catch (error) {
-			console.error('Failed to create:', error);
 			message.error(error.message || __('Failed to create.', 'pressprimer-quiz'));
 		} finally {
 			setCreating(false);

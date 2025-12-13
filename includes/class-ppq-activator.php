@@ -109,6 +109,11 @@ class PressPrimer_Quiz_Activator {
 			PressPrimer_Quiz_Capabilities::setup_capabilities();
 		}
 
+		// Schedule cron jobs
+		if ( class_exists( 'PressPrimer_Quiz_Statistics_Service' ) ) {
+			PressPrimer_Quiz_Statistics_Service::schedule_cron();
+		}
+
 		// Flush rewrite rules
 		flush_rewrite_rules();
 

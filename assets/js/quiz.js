@@ -76,8 +76,11 @@
 				},
 				success: (response) => {
 					if (response.success && response.data.attempt_id) {
-						// Redirect to quiz interface
-						const attemptUrl = this.buildAttemptUrl(response.data.attempt_id);
+						// Redirect to quiz interface (include guest token if provided)
+						const attemptUrl = this.buildAttemptUrl(
+							response.data.attempt_id,
+							response.data.guest_token || null
+						);
 						window.location.href = attemptUrl;
 					} else {
 						// Show error message
@@ -111,11 +114,16 @@
 		 * Build attempt URL
 		 *
 		 * @param {number} attemptId Attempt ID
+		 * @param {string|null} guestToken Optional guest token for anonymous users
 		 * @return {string} Attempt URL
 		 */
-		buildAttemptUrl: function(attemptId) {
+		buildAttemptUrl: function(attemptId, guestToken) {
 			const url = new URL(window.location.href);
 			url.searchParams.set('attempt', attemptId);
+			// Include guest token for anonymous access
+			if (guestToken) {
+				url.searchParams.set('token', guestToken);
+			}
 			// Remove retake flag - we're now in an active attempt
 			url.searchParams.delete('ppq_retake');
 			return url.toString();

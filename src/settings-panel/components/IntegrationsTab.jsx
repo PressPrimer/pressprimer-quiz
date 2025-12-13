@@ -114,7 +114,6 @@ const IntegrationsTab = ({ settings, updateSetting, settingsData, apiKeyStatus, 
 				}
 			} catch (error) {
 				// Keep the basic status from PHP
-				console.error('Failed to fetch LearnDash extended status:', error);
 			} finally {
 				setLoadingLearndash(false);
 			}
@@ -142,7 +141,6 @@ const IntegrationsTab = ({ settings, updateSetting, settingsData, apiKeyStatus, 
 				}
 			} catch (error) {
 				// Keep the basic status from PHP
-				console.error('Failed to fetch TutorLMS extended status:', error);
 			} finally {
 				setLoadingTutorlms(false);
 			}
@@ -170,7 +168,6 @@ const IntegrationsTab = ({ settings, updateSetting, settingsData, apiKeyStatus, 
 				}
 			} catch (error) {
 				// Keep the basic status from PHP
-				console.error('Failed to fetch LifterLMS extended status:', error);
 			} finally {
 				setLoadingLifterlms(false);
 			}
@@ -191,7 +188,7 @@ const IntegrationsTab = ({ settings, updateSetting, settingsData, apiKeyStatus, 
 				data: learndashSettings,
 			});
 		} catch (error) {
-			console.error('Failed to save LearnDash settings:', error);
+			// Silently fail - settings may not save but user can retry
 		} finally {
 			setSavingLearndash(false);
 		}
@@ -309,7 +306,7 @@ const IntegrationsTab = ({ settings, updateSetting, settingsData, apiKeyStatus, 
 				setModels(response.models);
 			}
 		} catch (error) {
-			console.error('Failed to fetch models:', error);
+			// Failed to fetch models - dropdown will be empty
 		} finally {
 			setLoadingModels(false);
 		}
@@ -328,7 +325,7 @@ const IntegrationsTab = ({ settings, updateSetting, settingsData, apiKeyStatus, 
 				data: { model },
 			});
 		} catch (error) {
-			console.error('Failed to save model preference:', error);
+			// Silently fail - user can retry
 		}
 	};
 

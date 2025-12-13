@@ -8,6 +8,7 @@
 import { useState, useEffect } from '@wordpress/element';
 import { __ } from '@wordpress/i18n';
 import apiFetch from '@wordpress/api-fetch';
+import { debugError } from '../../utils/debug';
 import {
 	Layout,
 	Form,
@@ -58,7 +59,6 @@ const QuestionEditor = ({ questionData = {} }) => {
 	// Initialize form with question data
 	useEffect(() => {
 		if (questionData.id) {
-			console.log('Loading question data:', questionData);
 			form.setFieldsValue({
 				stem: questionData.stem || '',
 				type: questionData.type || 'mc',
@@ -116,8 +116,6 @@ const QuestionEditor = ({ questionData = {} }) => {
 				id: questionData.id || null,
 			};
 
-			console.log('Submitting question payload:', questionPayload);
-
 			// Submit via REST API
 			const endpoint = questionData.id
 				? `/ppq/v1/questions/${questionData.id}`
@@ -139,7 +137,7 @@ const QuestionEditor = ({ questionData = {} }) => {
 			}, 1000);
 
 		} catch (error) {
-			console.error('Save error:', error);
+			debugError('Failed to save question:', error);
 			message.error(error.message || __('Failed to save question.', 'pressprimer-quiz'));
 		} finally {
 			setSaving(false);
@@ -262,7 +260,6 @@ const QuestionEditor = ({ questionData = {} }) => {
 							<StemEditor
 								value={stem}
 								onChange={(value) => {
-									console.log('StemEditor onChange received in QuestionEditor:', value);
 									setStem(value);
 									form.setFieldsValue({ stem: value });
 								}}

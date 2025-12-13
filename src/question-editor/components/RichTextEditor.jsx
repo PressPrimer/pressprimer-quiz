@@ -77,7 +77,7 @@ const RichTextEditor = ({ value, onChange, placeholder, maxChars = 2000, rows = 
 						mediaButtons: false,
 					});
 				} catch (error) {
-					console.error('Failed to initialize editor:', error);
+					// Editor initialization failed - will retry
 				}
 			} else {
 				// Retry if wp.editor isn't ready yet

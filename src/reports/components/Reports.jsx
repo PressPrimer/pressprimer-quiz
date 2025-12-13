@@ -10,6 +10,7 @@
 import { useState, useEffect } from '@wordpress/element';
 import { __ } from '@wordpress/i18n';
 import apiFetch from '@wordpress/api-fetch';
+import { debugError } from '../../utils/debug';
 import { Spin, Alert, Card, Row, Col } from 'antd';
 import {
 	TrophyOutlined,
@@ -41,7 +42,7 @@ const Reports = ({ initialData = {} }) => {
 				setOverviewStats(response.data);
 			}
 		} catch (err) {
-			console.error('Failed to fetch overview stats:', err);
+			debugError('Failed to fetch overview stats:', err);
 			setError(err.message || __('Failed to load overview statistics.', 'pressprimer-quiz'));
 		}
 	};

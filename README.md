@@ -59,4 +59,4 @@ PressPrimer - [https://pressprimer.com](https://pressprimer.com)
 
 ## Version
 
-0.1.0
+1.0

@@ -8,6 +8,7 @@
 import { useState, useEffect } from '@wordpress/element';
 import { __ } from '@wordpress/i18n';
 import apiFetch from '@wordpress/api-fetch';
+import { debugError } from '../../utils/debug';
 import {
 	Layout,
 	Form,
@@ -54,7 +55,6 @@ const QuizEditor = ({ quizData = {} }) => {
 	// Initialize form with quiz data
 	useEffect(() => {
 		if (quizData.id) {
-			console.log('Loading quiz data:', quizData);
 			form.setFieldsValue({
 				title: quizData.title || '',
 				description: quizData.description || '',
@@ -90,7 +90,7 @@ const QuizEditor = ({ quizData = {} }) => {
 						: quizData.band_feedback_json;
 					setFeedbackBands(bands);
 				} catch (error) {
-					console.error('Failed to parse feedback bands:', error);
+					// Invalid JSON - use empty bands
 				}
 			}
 		}
@@ -113,8 +113,6 @@ const QuizEditor = ({ quizData = {} }) => {
 				band_feedback_json: JSON.stringify(feedbackBands),
 			};
 
-			console.log('Submitting quiz payload:', quizPayload);
-
 			// Submit via REST API
 			const endpoint = quizId
 				? `/ppq/v1/quizzes/${quizId}`
@@ -132,12 +130,12 @@ const QuizEditor = ({ quizData = {} }) => {
 
 			// Update URL to edit page if this was a new quiz
 			if (!quizId && response.id) {
-				window.history.replaceState({}, '', `${window.ppqAdmin.adminUrl}admin.php?page=ppq-quizzes&action=edit&quiz_id=${response.id}`);
+				window.history.replaceState({}, '', `${window.ppqAdmin.adminUrl}admin.php?page=ppq-quizzes&action=edit&quiz=${response.id}`);
 				setCurrentQuizId(response.id);
 			}
 
 		} catch (error) {
-			console.error('Save error:', error);
+			debugError('Failed to save quiz:', error);
 			message.error(error.message || __('Failed to save quiz.', 'pressprimer-quiz'));
 		} finally {
 			setSaving(false);
@@ -170,8 +168,6 @@ const QuizEditor = ({ quizData = {} }) => {
 				band_feedback_json: JSON.stringify(feedbackBands),
 			};
 
-			console.log('Auto-saving quiz:', quizPayload);
-
 			// Submit via REST API
 			const endpoint = currentQuizId
 				? `/ppq/v1/quizzes/${currentQuizId}`
@@ -192,7 +188,7 @@ const QuizEditor = ({ quizData = {} }) => {
 				window.history.replaceState(
 					{},
 					'',
-					`${window.ppqAdmin.adminUrl}admin.php?page=ppq-quizzes&action=edit&id=${response.id}`
+					`${window.ppqAdmin.adminUrl}admin.php?page=ppq-quizzes&action=edit&quiz=${response.id}`
 				);
 			}
 
@@ -200,10 +196,10 @@ const QuizEditor = ({ quizData = {} }) => {
 			return true;
 
 		} catch (error) {
-			console.error('Auto-save error:', error);
 			if (error.errorFields) {
 				message.error(__('Please fill in all required fields in Settings.', 'pressprimer-quiz'));
 			} else {
+				debugError('Auto-save failed:', error);
 				message.error(error.message || __('Failed to save quiz.', 'pressprimer-quiz'));
 			}
 			return false;

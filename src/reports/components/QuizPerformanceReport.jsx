@@ -83,7 +83,6 @@ const QuizPerformanceReport = () => {
 				}));
 			}
 		} catch (err) {
-			console.error('Failed to fetch quiz performance:', err);
 			setError(err.message || __('Failed to load report data.', 'pressprimer-quiz'));
 		} finally {
 			setLoading(false);
@@ -133,7 +132,7 @@ const QuizPerformanceReport = () => {
 			sorter: true,
 			sortOrder: sortField === 'title' ? sortOrder : null,
 			render: (title, record) => (
-				<a href={`admin.php?page=ppq-quizzes&action=edit&id=${record.id}`}>
+				<a href={`admin.php?page=ppq-quizzes&action=edit&quiz=${record.id}`}>
 					{title}
 				</a>
 			),

@@ -85,7 +85,7 @@ const ActivityChart = ({ loading: parentLoading }) => {
 				setData(response.data.data);
 			}
 		} catch (err) {
-			console.error('Failed to fetch chart data:', err);
+			// Failed to fetch - chart will show empty state
 		} finally {
 			setLoading(false);
 		}

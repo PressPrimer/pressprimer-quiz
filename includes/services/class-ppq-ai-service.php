@@ -385,7 +385,7 @@ class PressPrimer_Quiz_AI_Service {
 			);
 		}
 
-		// Filter to only relevant text/chat GPT models
+		// Filter to GPT-5+ models (5, 6, 7, etc.)
 		$gpt_models = [];
 		foreach ( $body['data'] as $model ) {
 			if ( ! isset( $model['id'] ) ) {
@@ -394,13 +394,8 @@ class PressPrimer_Quiz_AI_Service {
 
 			$id = $model['id'];
 
-			// Must start with gpt-
-			if ( strpos( $id, 'gpt-' ) !== 0 ) {
-				continue;
-			}
-
-			// Skip old model generations (3.5, 4, 4o, 4.5, etc.)
-			if ( preg_match( '/^gpt-(3|4)/', $id ) ) {
+			// Only include gpt-5 and above (skip gpt-3.x, gpt-4.x)
+			if ( ! preg_match( '/^gpt-([5-9]|\d{2,})/', $id ) ) {
 				continue;
 			}
 
@@ -409,8 +404,8 @@ class PressPrimer_Quiz_AI_Service {
 				continue;
 			}
 
-			// Skip non-text models (audio, image, vision-specific, realtime, transcription, search, chat-specific)
-			if ( preg_match( '/(audio|image|vision|realtime|transcribe|tts|whisper|dall|search|chatgpt)/i', $id ) ) {
+			// Skip non-text models (audio, image, vision-specific, realtime, transcription, search)
+			if ( preg_match( '/(audio|image|vision|realtime|transcribe|tts|whisper|dall|search)/i', $id ) ) {
 				continue;
 			}
 
@@ -419,22 +414,63 @@ class PressPrimer_Quiz_AI_Service {
 				continue;
 			}
 
-			// Skip instruct-only variants (we want chat models)
-			if ( preg_match( '/-instruct$/i', $id ) ) {
-				continue;
-			}
-
 			$gpt_models[] = $id;
 		}
 
-		// Remove duplicates and sort
+		// Remove duplicates
 		$gpt_models = array_unique( $gpt_models );
-		sort( $gpt_models );
 
-		// Limit to reasonable number (max 10)
-		if ( count( $gpt_models ) > 10 ) {
-			$gpt_models = array_slice( $gpt_models, 0, 10 );
+		// Helper to extract version for sorting
+		$get_version = function ( $model ) {
+			preg_match( '/gpt-(\d+)\.?(\d*)/', $model, $matches );
+			$major = isset( $matches[1] ) ? (int) $matches[1] : 0;
+			$minor = isset( $matches[2] ) && $matches[2] !== '' ? (int) $matches[2] : 0;
+			return [ $major, $minor ];
+		};
+
+		// Find the latest mini model (excluding codex) to put at top
+		$latest_mini    = null;
+		$latest_version = [ 0, 0 ];
+		foreach ( $gpt_models as $model ) {
+			if ( strpos( $model, 'mini' ) !== false && stripos( $model, 'codex' ) === false ) {
+				$version = $get_version( $model );
+				if ( $version[0] > $latest_version[0] ||
+					( $version[0] === $latest_version[0] && $version[1] > $latest_version[1] ) ) {
+					$latest_mini    = $model;
+					$latest_version = $version;
+				}
+			}
 		}
+
+		// Sort models
+		usort(
+			$gpt_models,
+			function ( $a, $b ) use ( $latest_mini, $get_version ) {
+				// Latest mini model always first
+				if ( $a === $latest_mini ) {
+					return -1;
+				}
+				if ( $b === $latest_mini ) {
+					return 1;
+				}
+
+				// Extract versions
+				$version_a = $get_version( $a );
+				$version_b = $get_version( $b );
+
+				// Higher major version first (gpt-6 > gpt-5)
+				if ( $version_a[0] !== $version_b[0] ) {
+					return $version_b[0] - $version_a[0];
+				}
+
+				// Higher minor version first (5.2 > 5.1 > 5)
+				if ( $version_a[1] !== $version_b[1] ) {
+					return $version_b[1] - $version_a[1];
+				}
+
+				return strcmp( $a, $b );
+			}
+		);
 
 		return $gpt_models;
 	}

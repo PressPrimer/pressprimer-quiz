@@ -387,7 +387,7 @@ class PressPrimer_Quiz_TutorLMS {
 		}
 
 		// Check permissions.
-		if ( ! current_user_can( 'edit_post', $post_id ) ) {
+		if ( ! PressPrimer_Quiz_Helpers::current_user_can_edit_post( $post_id ) ) {
 			return;
 		}
 
@@ -1130,7 +1130,7 @@ class PressPrimer_Quiz_TutorLMS {
 		}
 
 		// Check user can edit this lesson.
-		if ( ! current_user_can( 'edit_post', $lesson_id ) ) {
+		if ( ! PressPrimer_Quiz_Helpers::current_user_can_edit_post( $lesson_id ) ) {
 			return new WP_REST_Response(
 				[
 					'success' => false,

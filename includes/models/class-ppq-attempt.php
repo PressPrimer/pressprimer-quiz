@@ -446,9 +446,9 @@ class PressPrimer_Quiz_Attempt extends PressPrimer_Quiz_Model {
 	 * @return int|WP_Error Attempt ID on success, WP_Error on failure.
 	 */
 	public static function create_for_guest( int $quiz_id, string $email, string $source_url = '' ) {
-		// Validate email
+		// Validate email only if provided (email is optional for guests)
 		$email = sanitize_email( $email );
-		if ( ! is_email( $email ) ) {
+		if ( ! empty( $email ) && ! is_email( $email ) ) {
 			return new WP_Error(
 				'ppq_invalid_email',
 				__( 'Please provide a valid email address.', 'pressprimer-quiz' )
@@ -472,17 +472,19 @@ class PressPrimer_Quiz_Attempt extends PressPrimer_Quiz_Model {
 			);
 		}
 
-		// Check for existing in-progress attempt for this email
-		$existing_in_progress = static::get_guest_in_progress( $quiz_id, $email );
-		if ( $existing_in_progress ) {
-			// If the attempt can be resumed, return it so the user can continue
-			if ( $existing_in_progress->can_resume() ) {
-				return $existing_in_progress;
-			}
+		// Check for existing in-progress attempt for this email (only if email provided)
+		if ( ! empty( $email ) ) {
+			$existing_in_progress = static::get_guest_in_progress( $quiz_id, $email );
+			if ( $existing_in_progress ) {
+				// If the attempt can be resumed, return it so the user can continue
+				if ( $existing_in_progress->can_resume() ) {
+					return $existing_in_progress;
+				}
 
-			// If it can't be resumed (timed out or quiz doesn't allow resume), abandon it
-			$existing_in_progress->status = 'abandoned';
-			$existing_in_progress->save();
+				// If it can't be resumed (timed out or quiz doesn't allow resume), abandon it
+				$existing_in_progress->status = 'abandoned';
+				$existing_in_progress->save();
+			}
 		}
 
 		// Generate questions for this attempt

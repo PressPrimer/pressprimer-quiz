@@ -41,6 +41,22 @@ class PressPrimer_Quiz_Statistics_Service {
 	const CACHE_EXPIRATION = 300;
 
 	/**
+	 * Option name for cached overview stats
+	 *
+	 * @since 1.0.0
+	 * @var string
+	 */
+	const OVERVIEW_STATS_OPTION = 'ppq_cached_overview_stats';
+
+	/**
+	 * Cron hook name for stats recalculation
+	 *
+	 * @since 1.0.0
+	 * @var string
+	 */
+	const CRON_HOOK = 'ppq_recalculate_overview_stats';
+
+	/**
 	 * Get dashboard statistics
 	 *
 	 * Returns summary statistics for the plugin's Dashboard page.
@@ -227,62 +243,44 @@ class PressPrimer_Quiz_Statistics_Service {
 	/**
 	 * Get overview statistics for reports page
 	 *
-	 * Returns aggregate statistics for a given date range.
+	 * Returns aggregate statistics for all time. Uses cached data that is
+	 * recalculated hourly via cron to avoid slow queries on large datasets.
 	 *
 	 * @since 1.0.0
 	 *
-	 * @param array $args Query arguments.
+	 * @param array $args Query arguments (owner_id supported for filtering).
 	 * @return array Overview statistics.
 	 */
 	public function get_overview_stats( $args = [] ) {
-		global $wpdb;
-
 		$defaults = [
-			'date_from' => null,
-			'date_to'   => null,
+			'date_from' => null, // Kept for backwards compatibility but not used.
+			'date_to'   => null, // Kept for backwards compatibility but not used.
 			'owner_id'  => null,
 		];
 
 		$args = wp_parse_args( $args, $defaults );
 
-		$attempts_table = $wpdb->prefix . 'ppq_attempts';
-		$quizzes_table  = $wpdb->prefix . 'ppq_quizzes';
-
-		$where = [ "a.status = 'submitted'" ];
-
-		if ( $args['date_from'] ) {
-			$where[] = $wpdb->prepare( 'a.finished_at >= %s', $args['date_from'] );
-		}
-
-		if ( $args['date_to'] ) {
-			// Append end of day time to include the entire end date
-			$where[] = $wpdb->prepare( 'a.finished_at <= %s', $args['date_to'] . ' 23:59:59' );
-		}
-
+		// For owner-specific stats, calculate fresh (these are less common)
 		if ( $args['owner_id'] ) {
-			$where[] = $wpdb->prepare( 'q.owner_id = %d', $args['owner_id'] );
+			return $this->calculate_overview_stats( $args['owner_id'] );
 		}
 
-		$where_sql = implode( ' AND ', $where );
+		// For global stats, use cached data
+		$cached = get_option( self::OVERVIEW_STATS_OPTION );
 
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Dynamic date range queries not suitable for caching
-		$stats = $wpdb->get_row(
-			"SELECT
-				COUNT(*) as total_attempts,
-				ROUND(AVG(a.score_percent), 1) as avg_score,
-				ROUND((SUM(CASE WHEN a.passed = 1 THEN 1 ELSE 0 END) / NULLIF(COUNT(*), 0)) * 100, 1) as pass_rate,
-				ROUND(AVG(a.elapsed_ms) / 1000) as avg_time_seconds
-			 FROM {$attempts_table} a
-			 INNER JOIN {$quizzes_table} q ON a.quiz_id = q.id
-			 WHERE {$where_sql}" // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-		);
+		if ( $cached && isset( $cached['data'] ) ) {
+			$result                    = $cached['data'];
+			$result['cached']          = true;
+			$result['last_updated']    = $cached['timestamp'] ?? null;
+			$result['last_updated_at'] = $cached['timestamp'] ? gmdate( 'Y-m-d H:i:s', $cached['timestamp'] ) : null;
 
-		$result = [
-			'total_attempts'   => (int) ( $stats->total_attempts ?? 0 ),
-			'avg_score'        => (float) ( $stats->avg_score ?? 0 ),
-			'pass_rate'        => (float) ( $stats->pass_rate ?? 0 ),
-			'avg_time_seconds' => (int) ( $stats->avg_time_seconds ?? 0 ),
-		];
+			/** This filter is documented below */
+			return apply_filters( 'pressprimer_quiz_overview_stats', $result, $args );
+		}
+
+		// No cache exists yet - calculate now and cache it
+		// This only happens once on first load
+		$result = $this->calculate_and_cache_overview_stats();
 
 		/**
 		 * Filter the overview statistics for reports page.
@@ -296,6 +294,117 @@ class PressPrimer_Quiz_Statistics_Service {
 		 * @param array $args   Query arguments including date_from, date_to, owner_id.
 		 */
 		return apply_filters( 'pressprimer_quiz_overview_stats', $result, $args );
+	}
+
+	/**
+	 * Calculate overview statistics from database
+	 *
+	 * Performs the actual database query to calculate stats.
+	 * This is called by the cron job and for owner-specific queries.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param int|null $owner_id Optional. Limit to specific owner.
+	 * @return array Overview statistics.
+	 */
+	public function calculate_overview_stats( $owner_id = null ) {
+		global $wpdb;
+
+		$attempts_table = $wpdb->prefix . 'ppq_attempts';
+		$quizzes_table  = $wpdb->prefix . 'ppq_quizzes';
+
+		$where = [ "a.status = 'submitted'" ];
+
+		if ( $owner_id ) {
+			$where[] = $wpdb->prepare( 'q.owner_id = %d', $owner_id );
+		}
+
+		$where_sql = implode( ' AND ', $where );
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Aggregate stats query, cached at application level
+		$stats = $wpdb->get_row(
+			"SELECT
+				COUNT(*) as total_attempts,
+				ROUND(AVG(a.score_percent), 1) as avg_score,
+				ROUND((SUM(CASE WHEN a.passed = 1 THEN 1 ELSE 0 END) / NULLIF(COUNT(*), 0)) * 100, 1) as pass_rate,
+				ROUND(AVG(a.elapsed_ms) / 1000) as avg_time_seconds
+			 FROM {$attempts_table} a
+			 INNER JOIN {$quizzes_table} q ON a.quiz_id = q.id
+			 WHERE {$where_sql}" // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		);
+
+		return [
+			'total_attempts'   => (int) ( $stats->total_attempts ?? 0 ),
+			'avg_score'        => (float) ( $stats->avg_score ?? 0 ),
+			'pass_rate'        => (float) ( $stats->pass_rate ?? 0 ),
+			'avg_time_seconds' => (int) ( $stats->avg_time_seconds ?? 0 ),
+		];
+	}
+
+	/**
+	 * Calculate and cache overview statistics
+	 *
+	 * Calculates global overview stats and stores them in options table.
+	 * Called by the hourly cron job.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @return array The calculated statistics.
+	 */
+	public function calculate_and_cache_overview_stats() {
+		$stats = $this->calculate_overview_stats();
+
+		$cached_data = [
+			'data'      => $stats,
+			'timestamp' => time(),
+		];
+
+		update_option( self::OVERVIEW_STATS_OPTION, $cached_data, false );
+
+		$stats['cached']          = true;
+		$stats['last_updated']    = $cached_data['timestamp'];
+		$stats['last_updated_at'] = gmdate( 'Y-m-d H:i:s', $cached_data['timestamp'] );
+
+		return $stats;
+	}
+
+	/**
+	 * Schedule the hourly stats recalculation cron job
+	 *
+	 * Should be called on plugin activation.
+	 *
+	 * @since 1.0.0
+	 */
+	public static function schedule_cron() {
+		if ( ! wp_next_scheduled( self::CRON_HOOK ) ) {
+			wp_schedule_event( time(), 'hourly', self::CRON_HOOK );
+		}
+	}
+
+	/**
+	 * Unschedule the stats recalculation cron job
+	 *
+	 * Should be called on plugin deactivation.
+	 *
+	 * @since 1.0.0
+	 */
+	public static function unschedule_cron() {
+		$timestamp = wp_next_scheduled( self::CRON_HOOK );
+		if ( $timestamp ) {
+			wp_unschedule_event( $timestamp, self::CRON_HOOK );
+		}
+	}
+
+	/**
+	 * Cron callback to recalculate overview stats
+	 *
+	 * Called hourly by WP-Cron.
+	 *
+	 * @since 1.0.0
+	 */
+	public static function cron_recalculate_stats() {
+		$service = new self();
+		$service->calculate_and_cache_overview_stats();
 	}
 
 	/**

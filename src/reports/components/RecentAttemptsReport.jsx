@@ -68,7 +68,7 @@ const RecentAttemptsReport = () => {
 				setQuizOptions(response.data || []);
 			}
 		} catch (err) {
-			console.error('Failed to fetch quiz options:', err);
+			// Failed to fetch - quiz filter will show no options
 		}
 	}, []);
 
@@ -113,7 +113,6 @@ const RecentAttemptsReport = () => {
 				}));
 			}
 		} catch (err) {
-			console.error('Failed to fetch recent attempts:', err);
 			setError(err.message || __('Failed to load report data.', 'pressprimer-quiz'));
 		} finally {
 			setLoading(false);

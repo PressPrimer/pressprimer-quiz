@@ -499,6 +499,7 @@ class PressPrimer_Quiz_REST_Controller {
 		$difficulty  = sanitize_key( $request->get_param( 'difficulty' ) ?: '' );
 		$category_id = absint( $request->get_param( 'category_id' ) ?: 0 );
 		$bank_id     = absint( $request->get_param( 'bank_id' ) ?: 0 );
+		$exclude     = $request->get_param( 'exclude' ) ?: '';
 
 		$questions_table      = $wpdb->prefix . 'ppq_questions';
 		$revisions_table      = $wpdb->prefix . 'ppq_question_revisions';
@@ -541,6 +542,16 @@ class PressPrimer_Quiz_REST_Controller {
 		if ( $bank_id > 0 ) {
 			$where[]        = "q.id IN (SELECT question_id FROM {$bank_questions_table} WHERE bank_id = %d)";
 			$where_values[] = $bank_id;
+		}
+
+		// Exclude specific question IDs
+		if ( ! empty( $exclude ) ) {
+			$exclude_ids = array_filter( array_map( 'absint', explode( ',', $exclude ) ) );
+			if ( ! empty( $exclude_ids ) ) {
+				$placeholders = implode( ',', array_fill( 0, count( $exclude_ids ), '%d' ) );
+				$where[]      = "q.id NOT IN ({$placeholders})";
+				$where_values = array_merge( $where_values, $exclude_ids );
+			}
 		}
 
 		// Search in stem
@@ -851,10 +862,10 @@ class PressPrimer_Quiz_REST_Controller {
 
 		try {
 			// Update question metadata
-			$question->type              = sanitize_key( $data['type'] );
-			$question->difficulty_author = sanitize_key( $data['difficulty'] );
-			$question->expected_seconds  = absint( $data['timeLimit'] );
-			$question->max_points        = floatval( $data['points'] );
+			$question->type              = sanitize_key( $data['type'] ?? '' );
+			$question->difficulty_author = sanitize_key( $data['difficulty'] ?? '' );
+			$question->expected_seconds  = absint( $data['timeLimit'] ?? 0 );
+			$question->max_points        = floatval( $data['points'] ?? 1 );
 
 			$result = $question->save();
 
@@ -1886,6 +1897,45 @@ class PressPrimer_Quiz_REST_Controller {
 		// Advanced settings
 		if ( isset( $data['remove_data_on_uninstall'] ) ) {
 			$sanitized['remove_data_on_uninstall'] = (bool) $data['remove_data_on_uninstall'];
+		}
+
+		// Appearance settings
+		if ( isset( $data['appearance_font_family'] ) ) {
+			$sanitized['appearance_font_family'] = sanitize_text_field( $data['appearance_font_family'] );
+		}
+
+		if ( isset( $data['appearance_font_size'] ) ) {
+			$sanitized['appearance_font_size'] = sanitize_text_field( $data['appearance_font_size'] );
+		}
+
+		if ( isset( $data['appearance_primary_color'] ) ) {
+			$color                                 = $data['appearance_primary_color'];
+			$sanitized['appearance_primary_color'] = ! empty( $color ) ? sanitize_hex_color( $color ) : '';
+		}
+
+		if ( isset( $data['appearance_text_color'] ) ) {
+			$color                              = $data['appearance_text_color'];
+			$sanitized['appearance_text_color'] = ! empty( $color ) ? sanitize_hex_color( $color ) : '';
+		}
+
+		if ( isset( $data['appearance_background_color'] ) ) {
+			$color                                    = $data['appearance_background_color'];
+			$sanitized['appearance_background_color'] = ! empty( $color ) ? sanitize_hex_color( $color ) : '';
+		}
+
+		if ( isset( $data['appearance_success_color'] ) ) {
+			$color                                 = $data['appearance_success_color'];
+			$sanitized['appearance_success_color'] = ! empty( $color ) ? sanitize_hex_color( $color ) : '';
+		}
+
+		if ( isset( $data['appearance_error_color'] ) ) {
+			$color                               = $data['appearance_error_color'];
+			$sanitized['appearance_error_color'] = ! empty( $color ) ? sanitize_hex_color( $color ) : '';
+		}
+
+		if ( isset( $data['appearance_border_radius'] ) ) {
+			$radius                                = $data['appearance_border_radius'];
+			$sanitized['appearance_border_radius'] = ( '' !== $radius && null !== $radius ) ? absint( $radius ) : '';
 		}
 
 		// Merge with existing settings

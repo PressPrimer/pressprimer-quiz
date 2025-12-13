@@ -39,7 +39,7 @@ const BankSelector = ({ value, onChange }) => {
 				}))
 			);
 		} catch (error) {
-			console.error('Failed to load banks:', error);
+			// Failed to load - options will be empty
 		} finally {
 			setLoading(false);
 		}

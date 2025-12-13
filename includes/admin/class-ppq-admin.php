@@ -242,6 +242,7 @@ class PressPrimer_Quiz_Admin {
 			[
 				'ajaxUrl' => admin_url( 'admin-ajax.php' ),
 				'nonce'   => wp_create_nonce( 'ppq_admin_nonce' ),
+				'debug'   => defined( 'WP_DEBUG' ) && WP_DEBUG,
 				'strings' => [
 					'confirmDelete'         => __( 'Are you sure you want to delete this item?', 'pressprimer-quiz' ),
 					'confirmDeleteTitle'    => __( 'Delete Item', 'pressprimer-quiz' ),

@@ -53,7 +53,6 @@ const Dashboard = ({ initialData = {} }) => {
 
 				setError(null);
 			} catch (err) {
-				console.error('Failed to fetch dashboard data:', err);
 				setError(err.message || __('Failed to load dashboard data.', 'pressprimer-quiz'));
 			} finally {
 				setLoading(false);
@@ -83,7 +82,7 @@ const Dashboard = ({ initialData = {} }) => {
 				credentials: 'same-origin',
 			});
 		} catch (err) {
-			console.error('Failed to reset onboarding:', err);
+			// Silently fail - reset is best-effort
 		}
 
 		// Launch the onboarding wizard

@@ -83,6 +83,7 @@ class PressPrimer_Quiz_Plugin {
 		$this->init_integrations();
 		$this->init_rest_api();
 		$this->init_blocks();
+		$this->init_cron();
 	}
 
 	/**
@@ -216,6 +217,26 @@ class PressPrimer_Quiz_Plugin {
 		if ( class_exists( 'PressPrimer_Quiz_Blocks' ) ) {
 			$blocks = new PressPrimer_Quiz_Blocks();
 			$blocks->init();
+		}
+	}
+
+	/**
+	 * Initialize cron jobs
+	 *
+	 * Registers cron hook callbacks and ensures cron is scheduled.
+	 *
+	 * @since 1.0.0
+	 */
+	private function init_cron() {
+		// Register the cron hook for statistics recalculation
+		if ( class_exists( 'PressPrimer_Quiz_Statistics_Service' ) ) {
+			add_action(
+				PressPrimer_Quiz_Statistics_Service::CRON_HOOK,
+				[ 'PressPrimer_Quiz_Statistics_Service', 'cron_recalculate_stats' ]
+			);
+
+			// Ensure cron is scheduled (handles upgrades where activation hook didn't run)
+			PressPrimer_Quiz_Statistics_Service::schedule_cron();
 		}
 	}
 }

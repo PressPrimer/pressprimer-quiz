@@ -6,8 +6,9 @@
  */
 
 import { useState, useEffect } from '@wordpress/element';
-import { __ } from '@wordpress/i18n';
+import { __, sprintf } from '@wordpress/i18n';
 import apiFetch from '@wordpress/api-fetch';
+import { debugError } from '../../utils/debug';
 import {
 	Table,
 	Button,
@@ -24,6 +25,7 @@ import {
 	Row,
 	Col,
 	Tooltip,
+	Alert,
 } from 'antd';
 import {
 	PlusOutlined,
@@ -87,7 +89,7 @@ const QuestionsPanel = ({ quizId, generationMode }) => {
 			});
 			setItems(response || []);
 		} catch (error) {
-			console.error('Failed to load quiz items:', error);
+			// Failed to load - items will be empty
 		} finally {
 			setLoading(false);
 		}
@@ -129,15 +131,17 @@ const QuestionsPanel = ({ quizId, generationMode }) => {
 				params.append('bank_id', filterBank);
 			}
 
+			// Exclude questions already in the quiz
+			const existingQuestionIds = items.map(item => item.question_id).filter(Boolean);
+			if (existingQuestionIds.length > 0) {
+				params.append('exclude', existingQuestionIds.join(','));
+			}
+
 			const response = await apiFetch({
 				path: `/ppq/v1/questions?${params.toString()}`,
 			});
 
-			// Filter out questions already in quiz
-			const existingQuestionIds = items.map(item => item.question_id);
-			const filtered = response.questions.filter(q => !existingQuestionIds.includes(q.id));
-
-			setAvailableQuestions(filtered);
+			setAvailableQuestions(response.questions || []);
 			setPagination(prev => ({
 				...prev,
 				current: page,
@@ -145,7 +149,6 @@ const QuestionsPanel = ({ quizId, generationMode }) => {
 				total: response.total,
 			}));
 		} catch (error) {
-			console.error('Failed to load questions:', error);
 			message.error(__('Failed to load questions', 'pressprimer-quiz'));
 		} finally {
 			setLoadingQuestions(false);
@@ -165,7 +168,7 @@ const QuestionsPanel = ({ quizId, generationMode }) => {
 			const banksResponse = await apiFetch({ path: '/ppq/v1/banks' });
 			setBanks(banksResponse || []);
 		} catch (error) {
-			console.error('Failed to load filter options:', error);
+			// Failed to load filters - will show empty options
 		}
 	};
 
@@ -243,7 +246,7 @@ const QuestionsPanel = ({ quizId, generationMode }) => {
 			setModalVisible(false);
 			loadQuizItems();
 		} catch (error) {
-			console.error('Failed to add questions:', error);
+			debugError('Failed to add questions:', error);
 			message.error(__('Failed to add questions', 'pressprimer-quiz'));
 		}
 	};
@@ -261,7 +264,6 @@ const QuestionsPanel = ({ quizId, generationMode }) => {
 			message.success(__('Question removed', 'pressprimer-quiz'));
 			loadQuizItems();
 		} catch (error) {
-			console.error('Failed to remove question:', error);
 			message.error(__('Failed to remove question', 'pressprimer-quiz'));
 		}
 	};
@@ -284,7 +286,6 @@ const QuestionsPanel = ({ quizId, generationMode }) => {
 				item.id === itemId ? { ...item, weight: newWeight } : item
 			));
 		} catch (error) {
-			console.error('Failed to update weight:', error);
 			message.error(__('Failed to update weight', 'pressprimer-quiz'));
 		}
 	};
@@ -310,7 +311,6 @@ const QuestionsPanel = ({ quizId, generationMode }) => {
 		}
 
 		if (result.source.index >= items.length || result.destination.index >= items.length) {
-			console.error('Invalid drag indices');
 			return;
 		}
 
@@ -319,7 +319,6 @@ const QuestionsPanel = ({ quizId, generationMode }) => {
 
 		// Validate removed item
 		if (!removed || !removed.id) {
-			console.error('Invalid item removed during drag');
 			return;
 		}
 
@@ -335,8 +334,7 @@ const QuestionsPanel = ({ quizId, generationMode }) => {
 			data: {
 				item_ids: reorderedItems.map(item => item.id),
 			},
-		}).catch((error) => {
-			console.error('Failed to reorder items:', error);
+		}).catch(() => {
 			message.error(__('Failed to save order', 'pressprimer-quiz'));
 			// Reload to reset
 			loadQuizItems();
@@ -480,8 +478,18 @@ const QuestionsPanel = ({ quizId, generationMode }) => {
 	const rowSelection = {
 		selectedRowKeys: selectedQuestionIds,
 		onChange: (selectedKeys) => {
-			setSelectedQuestionIds(selectedKeys);
+			// Get IDs of questions currently visible on this page
+			const currentPageIds = availableQuestions.map(q => q.id);
+
+			// Keep selections from other pages (not on current page)
+			const otherPageSelections = selectedQuestionIds.filter(
+				id => !currentPageIds.includes(id)
+			);
+
+			// Combine other page selections with current page selections
+			setSelectedQuestionIds([...otherPageSelections, ...selectedKeys]);
 		},
+		preserveSelectedRowKeys: true,
 	};
 
 	return (
@@ -679,6 +687,18 @@ const QuestionsPanel = ({ quizId, generationMode }) => {
 						</Col>
 					</Row>
 				</Space>
+
+				{selectedQuestionIds.length > 0 && (
+					<Alert
+						type="info"
+						showIcon
+						message={
+							/* translators: %d: number of selected questions */
+							sprintf(__('%d question(s) selected', 'pressprimer-quiz'), selectedQuestionIds.length)
+						}
+						style={{ marginBottom: 16 }}
+					/>
+				)}
 
 				<Table
 					loading={loadingQuestions}

@@ -8,6 +8,7 @@
 import { useState, useEffect } from '@wordpress/element';
 import { __ } from '@wordpress/i18n';
 import apiFetch from '@wordpress/api-fetch';
+import { debugError } from '../../utils/debug';
 import {
 	Layout,
 	Form,
@@ -47,7 +48,6 @@ const BankEditor = ({ bankData = {} }) => {
 	// Initialize form with bank data
 	useEffect(() => {
 		if (bankData.id) {
-			console.log('Loading bank data:', bankData);
 			form.setFieldsValue({
 				name: bankData.name || '',
 				description: bankData.description || '',
@@ -88,7 +88,7 @@ const BankEditor = ({ bankData = {} }) => {
 				setCurrentBankId(response.id);
 			}
 		} catch (error) {
-			console.error('Save error:', error);
+			debugError('Failed to save bank:', error);
 			message.error(
 				error.message || __('Failed to save bank. Please try again.', 'pressprimer-quiz')
 			);
@@ -129,7 +129,7 @@ const BankEditor = ({ bankData = {} }) => {
 				window.location.href = 'admin.php?page=ppq-banks';
 			}, 500);
 		} catch (error) {
-			console.error('Delete error:', error);
+			debugError('Failed to delete bank:', error);
 			message.error(
 				error.message || __('Failed to delete bank. Please try again.', 'pressprimer-quiz')
 			);

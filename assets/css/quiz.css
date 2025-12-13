@@ -379,6 +379,7 @@
 
 .ppq-input {
 	width: 100%;
+	max-width: 100%;
 	padding: var(--ppq-space-md) var(--ppq-space-lg);
 	font-size: 1rem;
 	border: 2px solid var(--ppq-border);
@@ -387,6 +388,7 @@
 	color: var(--ppq-text);
 	transition: var(--ppq-transition);
 	font-family: var(--ppq-font-sans);
+	box-sizing: border-box;
 }
 
 .ppq-input:focus {
@@ -822,6 +824,12 @@
 	padding: var(--ppq-space-2xl);
 	box-shadow: var(--ppq-shadow-md);
 	transition: var(--ppq-transition);
+	outline: none;
+}
+
+.ppq-question:focus,
+.ppq-question:focus-visible {
+	outline: none;
 }
 
 .ppq-question-header {

@@ -747,8 +747,8 @@ class PressPrimer_Quiz_Quiz_Renderer {
 
 			<?php if ( $this->current_quiz && $this->current_quiz->enable_confidence ) : ?>
 				<?php
-				$confidence_id      = 'ppq_confidence_' . $item->id;
-				$is_confident       = (bool) $item->confidence;
+				$confidence_id = 'ppq_confidence_' . $item->id;
+				$is_confident  = (bool) $item->confidence;
 				?>
 				<div class="ppq-confidence-container">
 					<label class="ppq-confidence-label" for="<?php echo esc_attr( $confidence_id ); ?>">
@@ -860,34 +860,38 @@ class PressPrimer_Quiz_Quiz_Renderer {
 				'ajaxUrl' => admin_url( 'admin-ajax.php' ),
 				'nonce'   => wp_create_nonce( 'ppq_quiz_nonce' ),
 				'strings' => [
-					'startingQuiz'       => __( 'Starting quiz...', 'pressprimer-quiz' ),
-					'error'              => __( 'An error occurred. Please try again.', 'pressprimer-quiz' ),
-					'emailRequired'      => __( 'Please enter a valid email address.', 'pressprimer-quiz' ),
-					'submittingQuiz'     => __( 'Submitting quiz...', 'pressprimer-quiz' ),
-					'confirmSubmit'      => __( 'Are you sure you want to submit your quiz? You cannot change your answers after submitting.', 'pressprimer-quiz' ),
-					'timeExpired'        => __( 'Time has expired. Your quiz is being submitted automatically.', 'pressprimer-quiz' ),
-					'saved'              => __( 'Saved', 'pressprimer-quiz' ),
-					'saving'             => __( 'Saving...', 'pressprimer-quiz' ),
-					'saveFailed'         => __( 'Save failed', 'pressprimer-quiz' ),
-					'unansweredTitle'    => __( 'Unanswered Questions', 'pressprimer-quiz' ),
-					'unansweredSingle'   => __( 'Question {question} has not been answered.', 'pressprimer-quiz' ),
-					'unansweredMultiple' => __( 'Questions {questions} have not been answered.', 'pressprimer-quiz' ),
-					'unansweredMany'     => __( 'You have {count} unanswered questions.', 'pressprimer-quiz' ),
-					'goToQuestion'       => __( 'Go to Question {question}', 'pressprimer-quiz' ),
-					'submitAnyway'       => __( 'Submit Anyway', 'pressprimer-quiz' ),
-					'skipNotAllowedTooltip' => __( 'You must answer this question to proceed.', 'pressprimer-quiz' ),
+					'startingQuiz'              => __( 'Starting quiz...', 'pressprimer-quiz' ),
+					'error'                     => __( 'An error occurred. Please try again.', 'pressprimer-quiz' ),
+					'emailRequired'             => __( 'Please enter a valid email address.', 'pressprimer-quiz' ),
+					'submittingQuiz'            => __( 'Submitting quiz...', 'pressprimer-quiz' ),
+					'confirmSubmit'             => __( 'Are you sure you want to submit your quiz? You cannot change your answers after submitting.', 'pressprimer-quiz' ),
+					'timeExpired'               => __( 'Time has expired. Your quiz is being submitted automatically.', 'pressprimer-quiz' ),
+					'saved'                     => __( 'Saved', 'pressprimer-quiz' ),
+					'saving'                    => __( 'Saving...', 'pressprimer-quiz' ),
+					'saveFailed'                => __( 'Save failed', 'pressprimer-quiz' ),
+					'unansweredTitle'           => __( 'Unanswered Questions', 'pressprimer-quiz' ),
+					'unansweredSingle'          => __( 'Question {question} has not been answered.', 'pressprimer-quiz' ),
+					'unansweredMultiple'        => __( 'Questions {questions} have not been answered.', 'pressprimer-quiz' ),
+					'unansweredMany'            => __( 'You have {count} unanswered questions.', 'pressprimer-quiz' ),
+					'goToQuestion'              => __( 'Go to Question {question}', 'pressprimer-quiz' ),
+					'submitAnyway'              => __( 'Submit Anyway', 'pressprimer-quiz' ),
+					'skipNotAllowedTooltip'     => __( 'You must answer this question to proceed.', 'pressprimer-quiz' ),
 					'skipNotAllowedTooltipPage' => __( 'You must answer all questions on this page to proceed.', 'pressprimer-quiz' ),
-					'pageOf'             => __( 'Page {current} of {total}', 'pressprimer-quiz' ),
-					'backwardNotAllowed' => __( 'You cannot go back to previous questions in this quiz.', 'pressprimer-quiz' ),
-					'correct'            => __( 'Correct!', 'pressprimer-quiz' ),
+					'pageOf'                    => __( 'Page {current} of {total}', 'pressprimer-quiz' ),
+					'backwardNotAllowed'        => __( 'You cannot go back to previous questions in this quiz.', 'pressprimer-quiz' ),
+					'correct'                   => __( 'Correct!', 'pressprimer-quiz' ),
 					// Accessibility strings for screen readers
-					'fiveMinuteWarning'  => __( 'Warning: Five minutes remaining!', 'pressprimer-quiz' ),
-					'oneMinuteWarning'   => __( 'Warning: One minute remaining!', 'pressprimer-quiz' ),
+					'fiveMinuteWarning'         => __( 'Warning: Five minutes remaining!', 'pressprimer-quiz' ),
+					'oneMinuteWarning'          => __( 'Warning: One minute remaining!', 'pressprimer-quiz' ),
 					/* translators: %1$s: current question number, %2$s: total questions */
-					'questionOf'         => __( 'Question {current} of {total}', 'pressprimer-quiz' ),
-					'incorrect'          => __( 'Incorrect', 'pressprimer-quiz' ),
-					'checkAnswer'        => __( 'Check Answer', 'pressprimer-quiz' ),
-					'checking'           => __( 'Checking...', 'pressprimer-quiz' ),
+					'questionOf'                => __( 'Question {current} of {total}', 'pressprimer-quiz' ),
+					'incorrect'                 => __( 'Incorrect', 'pressprimer-quiz' ),
+					'checkAnswer'               => __( 'Check Answer', 'pressprimer-quiz' ),
+					'checking'                  => __( 'Checking...', 'pressprimer-quiz' ),
+					// Browser confirmation dialogs
+					'unsavedChanges'            => __( 'You have unsaved answers. Are you sure you want to leave?', 'pressprimer-quiz' ),
+					'confirmLeave'              => __( 'Are you sure you want to leave this quiz? Your progress is saved, but you can only resume if the time limit allows.', 'pressprimer-quiz' ),
+					'offlineMessage'            => __( 'You are offline. Answers will be saved when connection is restored.', 'pressprimer-quiz' ),
 				],
 			]
 		);

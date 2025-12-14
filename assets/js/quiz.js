@@ -465,7 +465,7 @@
 				}
 
 				// Show warning
-				const message = 'You have unsaved answers. Are you sure you want to leave?';
+				const message = ppqQuiz.strings.unsavedChanges || 'You have unsaved answers. Are you sure you want to leave?';
 				e.returnValue = message;
 				return message;
 			});
@@ -500,7 +500,7 @@
 						window.history.pushState('quiz-active', null, window.location.href);
 
 						// Confirm if user wants to abandon quiz
-						if (confirm('Are you sure you want to leave this quiz? Your progress is saved, but you can only resume if the time limit allows.')) {
+						if (confirm(ppqQuiz.strings.confirmLeave || 'Are you sure you want to leave this quiz? Your progress is saved, but you can only resume if the time limit allows.')) {
 							// Allow navigation
 							window.history.back();
 						}
@@ -565,7 +565,8 @@
 			// Show offline indicator
 			let $indicator = $('.ppq-offline-indicator');
 			if (!$indicator.length) {
-				$indicator = $('<div class="ppq-offline-indicator">You are offline. Answers will be saved when connection is restored.</div>')
+				const offlineMsg = ppqQuiz.strings.offlineMessage || 'You are offline. Answers will be saved when connection is restored.';
+				$indicator = $('<div class="ppq-offline-indicator">' + offlineMsg + '</div>')
 					.appendTo('body');
 			}
 			$indicator.fadeIn();

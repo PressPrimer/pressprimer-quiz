@@ -211,7 +211,12 @@ class PressPrimer_Quiz_AI_Service {
 
 		// Backwards compatibility: check legacy user_meta storage
 		// This supports existing installations where the key was stored per-user
-		$admin_users = get_users( [ 'role' => 'administrator', 'number' => 1 ] );
+		$admin_users = get_users(
+			[
+				'role'   => 'administrator',
+				'number' => 1,
+			]
+		);
 		if ( ! empty( $admin_users ) ) {
 			$admin_id  = $admin_users[0]->ID;
 			$encrypted = get_user_meta( $admin_id, 'ppq_openai_api_key', true );

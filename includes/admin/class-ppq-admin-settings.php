@@ -1686,17 +1686,17 @@ Good luck with your studies!',
 		}
 
 		return [
-			'pluginUrl'    => PPQ_PLUGIN_URL,
-			'settings'     => $settings,
-			'apiKeyStatus' => $key_status,
-			'apiModels'    => $available_models,
-			'modelPref'    => $model_pref,
-			'usageData'    => $usage_data,
-			'defaults'     => [
+			'pluginUrl'      => PPQ_PLUGIN_URL,
+			'settings'       => $settings,
+			'apiKeyStatus'   => $key_status,
+			'apiModels'      => $available_models,
+			'modelPref'      => $model_pref,
+			'usageData'      => $usage_data,
+			'defaults'       => [
 				'siteName'   => get_bloginfo( 'name' ),
 				'adminEmail' => get_bloginfo( 'admin_email' ),
 			],
-			'appearance'   => [
+			'appearance'     => [
 				'themeFont'     => $theme_font,
 				'defaultColors' => [
 					'primary'    => '#0073aa',
@@ -1706,7 +1706,7 @@ Good luck with your studies!',
 					'error'      => '#d63638',
 				],
 			],
-			'systemInfo'   => [
+			'systemInfo'     => [
 				'pluginVersion'          => PPQ_VERSION,
 				'dbVersion'              => get_option( 'ppq_db_version', 'Not set' ),
 				'wpVersion'              => get_bloginfo( 'version' ),
@@ -1727,17 +1727,17 @@ Good luck with your studies!',
 				'repairTables' => wp_create_nonce( 'ppq_repair_tables_nonce' ),
 			],
 			'lmsStatus'      => [
-				'learndash'  => [
+				'learndash' => [
 					'installed' => defined( 'LEARNDASH_VERSION' ),
 					'active'    => defined( 'LEARNDASH_VERSION' ),
 					'version'   => defined( 'LEARNDASH_VERSION' ) ? LEARNDASH_VERSION : null,
 				],
-				'tutorlms'   => [
+				'tutorlms'  => [
 					'installed' => defined( 'TUTOR_VERSION' ),
 					'active'    => defined( 'TUTOR_VERSION' ),
 					'version'   => defined( 'TUTOR_VERSION' ) ? TUTOR_VERSION : null,
 				],
-				'lifterlms'  => [
+				'lifterlms' => [
 					'installed' => defined( 'LLMS_VERSION' ),
 					'active'    => defined( 'LLMS_VERSION' ),
 					'version'   => defined( 'LLMS_VERSION' ) ? LLMS_VERSION : null,

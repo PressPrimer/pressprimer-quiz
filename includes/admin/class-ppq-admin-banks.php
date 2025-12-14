@@ -627,7 +627,7 @@ class PressPrimer_Quiz_Admin_Banks {
 				<?php
 				$has_filters = ( '' !== $filter_type || '' !== $filter_difficulty );
 				if ( empty( $questions ) ) :
-				?>
+					?>
 					<p><em><?php echo $has_filters ? esc_html__( 'No questions match your filters.', 'pressprimer-quiz' ) : esc_html__( 'No questions in this bank yet.', 'pressprimer-quiz' ); ?></em></p>
 				<?php else : ?>
 					<table class="wp-list-table widefat fixed striped ppq-table" style="margin-top: 15px;">

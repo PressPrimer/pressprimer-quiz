@@ -359,9 +359,9 @@ class PressPrimer_Quiz_Attempt extends PressPrimer_Quiz_Model {
 
 		// Build meta data including any integration context
 		$meta = [];
-		if ( ! empty( $GLOBALS['ppq_quiz_context'] ) && is_array( $GLOBALS['ppq_quiz_context'] ) ) {
-			$meta = $GLOBALS['ppq_quiz_context'];
-			unset( $GLOBALS['ppq_quiz_context'] );
+		if ( ! empty( $GLOBALS['pressprimer_quiz_context'] ) && is_array( $GLOBALS['pressprimer_quiz_context'] ) ) {
+			$meta = $GLOBALS['pressprimer_quiz_context'];
+			unset( $GLOBALS['pressprimer_quiz_context'] );
 		}
 
 		// Create attempt
@@ -396,7 +396,7 @@ class PressPrimer_Quiz_Attempt extends PressPrimer_Quiz_Model {
 				'order_index'           => $question_data['order'],
 				'selected_answers_json' => '[]',
 			];
-			$formats = [ '%d', '%d', '%d', '%s' ];
+			$formats   = [ '%d', '%d', '%d', '%s' ];
 
 			// Generate randomized answer order if quiz setting enabled
 			if ( $quiz->randomize_answers ) {
@@ -556,7 +556,7 @@ class PressPrimer_Quiz_Attempt extends PressPrimer_Quiz_Model {
 				'order_index'           => $question_data['order'],
 				'selected_answers_json' => '[]',
 			];
-			$formats = [ '%d', '%d', '%d', '%s' ];
+			$formats   = [ '%d', '%d', '%d', '%s' ];
 
 			// Generate randomized answer order if quiz setting enabled
 			if ( $quiz->randomize_answers ) {

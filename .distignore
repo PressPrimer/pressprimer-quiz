@@ -17,13 +17,20 @@ composer.lock
 package.json
 package-lock.json
 
-# Vendor dev-only files (keep actual library files)
+# Vendor dev-only files (keep only production libraries like smalot/pdfparser)
 vendor/bin
 vendor/squizlabs
 vendor/wp-coding-standards
 vendor/phpcompatibility
 vendor/dealerdirect
 vendor/phpcsstandards
+vendor/phpunit
+vendor/sebastian
+vendor/doctrine
+vendor/myclabs
+vendor/nikic
+vendor/phar-io
+vendor/theseer
 
 # Build Tools / Config
 webpack.config.js

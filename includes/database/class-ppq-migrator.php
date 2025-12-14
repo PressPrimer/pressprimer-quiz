@@ -309,7 +309,7 @@ class PressPrimer_Quiz_Migrator {
 			// Get row count if table exists
 			if ( $status['exists'] ) {
 				// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Table name is from our controlled list
-				$count             = $wpdb->get_var( "SELECT COUNT(*) FROM `{$table}`" );
+				$count               = $wpdb->get_var( "SELECT COUNT(*) FROM `{$table}`" );
 				$status['row_count'] = (int) $count;
 			}
 

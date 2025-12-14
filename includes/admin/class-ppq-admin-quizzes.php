@@ -911,12 +911,12 @@ class PressPrimer_Quiz_Admin_Quizzes {
 		$action = false;
 
 		// Check top bulk action dropdown (action)
-		if ( isset( $_GET['action'] ) && -1 != $_GET['action'] && '-1' !== $_GET['action'] ) {
+		if ( isset( $_GET['action'] ) && -1 !== (int) $_GET['action'] && '-1' !== $_GET['action'] ) {
 			$action = sanitize_key( wp_unslash( $_GET['action'] ) );
 		}
 
 		// Check bottom bulk action dropdown (action2) - takes precedence if set
-		if ( isset( $_GET['action2'] ) && -1 != $_GET['action2'] && '-1' !== $_GET['action2'] ) {
+		if ( isset( $_GET['action2'] ) && -1 !== (int) $_GET['action2'] && '-1' !== $_GET['action2'] ) {
 			$action = sanitize_key( wp_unslash( $_GET['action2'] ) );
 		}
 

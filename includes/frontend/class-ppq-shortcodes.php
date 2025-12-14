@@ -83,7 +83,7 @@ class PressPrimer_Quiz_Shortcodes {
 
 		// Store context in a global for the attempt creation to pick up
 		if ( ! empty( $context ) ) {
-			$GLOBALS['ppq_quiz_context'] = $context;
+			$GLOBALS['pressprimer_quiz_context'] = $context;
 		}
 
 		$quiz_id = absint( $atts['id'] );
@@ -314,7 +314,7 @@ class PressPrimer_Quiz_Shortcodes {
 		$sort_by       = isset( $_GET['sort_by'] ) ? sanitize_text_field( wp_unslash( $_GET['sort_by'] ) ) : 'date';
 		$sort_order    = isset( $_GET['sort_order'] ) ? sanitize_text_field( wp_unslash( $_GET['sort_order'] ) ) : 'desc';
 		// Use ppq_paged to avoid conflict with WordPress's internal 'paged' parameter
-		$paged         = isset( $_GET['ppq_paged'] ) ? absint( wp_unslash( $_GET['ppq_paged'] ) ) : 1;
+		$paged = isset( $_GET['ppq_paged'] ) ? absint( wp_unslash( $_GET['ppq_paged'] ) ) : 1;
 		// phpcs:enable WordPress.Security.NonceVerification.Recommended
 
 		// Build query

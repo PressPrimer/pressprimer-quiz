@@ -310,10 +310,10 @@ class PressPrimer_Quiz_File_Processor {
 	 */
 	private function filter_garbage_text( $text ) {
 		// Split into lines for analysis
-		$lines             = explode( "\n", $text );
-		$filtered          = [];
-		$total_real_words  = 0;
-		$total_lines       = 0;
+		$lines            = explode( "\n", $text );
+		$filtered         = [];
+		$total_real_words = 0;
+		$total_lines      = 0;
 
 		foreach ( $lines as $line ) {
 			$line = trim( $line );

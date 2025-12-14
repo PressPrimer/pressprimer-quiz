@@ -203,8 +203,8 @@ class PressPrimer_Quiz_Results_Renderer {
 					<strong><?php esc_html_e( 'Save this link:', 'pressprimer-quiz' ); ?></strong>
 					<?php
 					printf(
-						/* translators: %d: number of days */
 						esc_html(
+							/* translators: %d: number of days */
 							_n(
 								'You can access your results for %d more day using this unique link.',
 								'You can access your results for %d more days using this unique link.',

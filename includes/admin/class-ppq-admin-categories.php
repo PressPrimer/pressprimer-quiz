@@ -113,6 +113,7 @@ class PressPrimer_Quiz_Admin_Categories {
 				<div id="col-left">
 					<div class="col-wrap">
 						<div class="form-wrap">
+							<?php /* translators: %s: taxonomy singular name (e.g., "Category" or "Tag") */ ?>
 							<h2><?php printf( esc_html__( 'Add New %s', 'pressprimer-quiz' ), esc_html( $singular ) ); ?></h2>
 
 							<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" id="ppq-category-form">
@@ -181,6 +182,7 @@ class PressPrimer_Quiz_Admin_Categories {
 
 								<p class="submit">
 									<button type="submit" class="button button-primary">
+										<?php /* translators: %s: taxonomy singular name (e.g., "Category" or "Tag") */ ?>
 										<?php printf( esc_html__( 'Add New %s', 'pressprimer-quiz' ), esc_html( $singular ) ); ?>
 									</button>
 								</p>
@@ -231,6 +233,7 @@ class PressPrimer_Quiz_Admin_Categories {
 
 		?>
 		<div class="wrap">
+			<?php /* translators: %s: taxonomy singular name (e.g., "Category" or "Tag") */ ?>
 			<h1><?php printf( esc_html__( 'Edit %s', 'pressprimer-quiz' ), esc_html( $singular ) ); ?></h1>
 
 			<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" id="ppq-category-edit-form">

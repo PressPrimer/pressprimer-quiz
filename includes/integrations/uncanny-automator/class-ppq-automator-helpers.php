@@ -197,8 +197,8 @@ class PressPrimer_Quiz_Automator_Helpers {
 
 		if ( $minutes < 60 ) {
 			if ( $remaining_seconds > 0 ) {
-				/* translators: 1: number of minutes, 2: number of seconds */
 				return sprintf(
+					/* translators: 1: number of minutes, 2: number of seconds */
 					__( '%1$d min %2$d sec', 'pressprimer-quiz' ),
 					intval( $minutes ),
 					intval( $remaining_seconds )
@@ -211,8 +211,8 @@ class PressPrimer_Quiz_Automator_Helpers {
 		$hours             = floor( $minutes / 60 );
 		$remaining_minutes = $minutes % 60;
 
-		/* translators: 1: number of hours, 2: number of minutes */
 		return sprintf(
+			/* translators: 1: number of hours, 2: number of minutes */
 			__( '%1$d hr %2$d min', 'pressprimer-quiz' ),
 			intval( $hours ),
 			intval( $remaining_minutes )

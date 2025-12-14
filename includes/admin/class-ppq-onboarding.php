@@ -407,6 +407,7 @@ class PressPrimer_Quiz_Onboarding {
 				'next'             => __( 'Next', 'pressprimer-quiz' ),
 				'skip'             => __( 'Skip', 'pressprimer-quiz' ),
 				'finish'           => __( 'Finish', 'pressprimer-quiz' ),
+				/* translators: 1: current step number, 2: total number of steps */
 				'stepOf'           => __( 'Step %1$d of %2$d', 'pressprimer-quiz' ),
 				'overviewTitle'    => __( 'How PressPrimer Quiz Works', 'pressprimer-quiz' ),
 				'overviewDesc'     => __( 'PressPrimer Quiz follows a simple workflow: create questions, organize them into banks, build quizzes, and track results.', 'pressprimer-quiz' ),

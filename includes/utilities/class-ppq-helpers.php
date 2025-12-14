@@ -230,8 +230,8 @@ class PressPrimer_Quiz_Helpers {
 		// Long form with commas
 		if ( count( $parts ) > 1 ) {
 			$last = array_pop( $parts );
-			/* translators: %1$s: formatted time parts, %2$s: last time part */
 			return sprintf(
+				/* translators: 1: comma-separated time parts, 2: last time part (e.g., "2 hours, 30 minutes" and "15 seconds") */
 				__( '%1$s and %2$s', 'pressprimer-quiz' ),
 				implode( ', ', $parts ),
 				$last

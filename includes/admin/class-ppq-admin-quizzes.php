@@ -892,6 +892,11 @@ class PressPrimer_Quiz_Admin_Quizzes {
 			wp_die( esc_html( $result->get_error_message() ) );
 		}
 
+		// Clear dashboard stats cache
+		if ( class_exists( 'PressPrimer_Quiz_Statistics_Service' ) ) {
+			PressPrimer_Quiz_Statistics_Service::clear_dashboard_cache();
+		}
+
 		wp_safe_redirect( add_query_arg( 'deleted', '1', admin_url( 'admin.php?page=ppq-quizzes' ) ) );
 		exit;
 	}
@@ -957,6 +962,11 @@ class PressPrimer_Quiz_Admin_Quizzes {
 			if ( ! is_wp_error( $result ) ) {
 				++$deleted;
 			}
+		}
+
+		// Clear dashboard stats cache if any quizzes were deleted
+		if ( $deleted > 0 && class_exists( 'PressPrimer_Quiz_Statistics_Service' ) ) {
+			PressPrimer_Quiz_Statistics_Service::clear_dashboard_cache();
 		}
 
 		wp_safe_redirect( add_query_arg( 'deleted', $deleted, admin_url( 'admin.php?page=ppq-quizzes' ) ) );

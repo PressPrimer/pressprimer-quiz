@@ -1176,6 +1176,11 @@ class PressPrimer_Quiz_Admin_Banks {
 			wp_die( esc_html( $result->get_error_message() ) );
 		}
 
+		// Clear dashboard stats cache
+		if ( class_exists( 'PressPrimer_Quiz_Statistics_Service' ) ) {
+			PressPrimer_Quiz_Statistics_Service::clear_dashboard_cache();
+		}
+
 		// Redirect with success message
 		wp_safe_redirect(
 			add_query_arg(

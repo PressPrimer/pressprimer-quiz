@@ -38,12 +38,18 @@ if ( ! defined( 'PPQ_PLUGIN_PATH' ) ) {
 function pressprimer_quiz_uninstall() {
 	global $wpdb;
 
-	// Get settings
+	// Get settings - use empty array as default
 	$settings = get_option( 'ppq_settings', [] );
 
 	// Check if user has EXPLICITLY opted to remove data on uninstall
 	// Default behavior is to KEEP all data for safety
-	if ( ! isset( $settings['remove_data_on_uninstall'] ) || ! $settings['remove_data_on_uninstall'] ) {
+	// CRITICAL: Only delete data if the setting is EXPLICITLY set to boolean true
+	$remove_data = false;
+	if ( is_array( $settings ) && isset( $settings['remove_data_on_uninstall'] ) ) {
+		$remove_data = ( true === $settings['remove_data_on_uninstall'] || '1' === $settings['remove_data_on_uninstall'] || 1 === $settings['remove_data_on_uninstall'] );
+	}
+
+	if ( ! $remove_data ) {
 		// Keep all data - exit without removing anything
 		return;
 	}

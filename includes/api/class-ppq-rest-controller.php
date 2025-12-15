@@ -798,6 +798,11 @@ class PressPrimer_Quiz_REST_Controller {
 
 			$wpdb->query( 'COMMIT' );
 
+			// Clear dashboard stats cache for fresh counts
+			if ( class_exists( 'PressPrimer_Quiz_Statistics_Service' ) ) {
+				PressPrimer_Quiz_Statistics_Service::clear_dashboard_cache();
+			}
+
 			return new WP_REST_Response( [ 'id' => $question->id ], 201 );
 
 		} catch ( Exception $e ) {
@@ -1129,6 +1134,11 @@ class PressPrimer_Quiz_REST_Controller {
 			return new WP_Error( 'creation_failed', __( 'Failed to create bank.', 'pressprimer-quiz' ), [ 'status' => 500 ] );
 		}
 
+		// Clear dashboard stats cache
+		if ( class_exists( 'PressPrimer_Quiz_Statistics_Service' ) ) {
+			PressPrimer_Quiz_Statistics_Service::clear_dashboard_cache();
+		}
+
 		return new WP_REST_Response(
 			[
 				'id'             => $bank->id,
@@ -1235,6 +1245,11 @@ class PressPrimer_Quiz_REST_Controller {
 
 		if ( is_wp_error( $result ) ) {
 			return $result;
+		}
+
+		// Clear dashboard stats cache
+		if ( class_exists( 'PressPrimer_Quiz_Statistics_Service' ) ) {
+			PressPrimer_Quiz_Statistics_Service::clear_dashboard_cache();
 		}
 
 		return new WP_REST_Response(
@@ -1413,6 +1428,11 @@ class PressPrimer_Quiz_REST_Controller {
 			}
 
 			$wpdb->query( 'COMMIT' );
+
+			// Clear dashboard stats cache
+			if ( class_exists( 'PressPrimer_Quiz_Statistics_Service' ) ) {
+				PressPrimer_Quiz_Statistics_Service::clear_dashboard_cache();
+			}
 
 			return new WP_REST_Response( [ 'id' => $quiz_id ], 201 );
 
@@ -1894,9 +1914,16 @@ class PressPrimer_Quiz_REST_Controller {
 			$sanitized['social_sharing_message'] = sanitize_text_field( $data['social_sharing_message'] );
 		}
 
-		// Advanced settings
+		// Advanced settings - CRITICAL: This setting controls data deletion on uninstall
+		// Always include this in sanitized to ensure it gets saved
+		$sanitized['remove_data_on_uninstall'] = false; // Default to false
 		if ( isset( $data['remove_data_on_uninstall'] ) ) {
-			$sanitized['remove_data_on_uninstall'] = (bool) $data['remove_data_on_uninstall'];
+			$value = $data['remove_data_on_uninstall'];
+			// Only true if explicitly true, '1', 1, or 'true' - everything else is false
+			if ( true === $value || 'true' === $value || '1' === $value || 1 === $value ) {
+				$sanitized['remove_data_on_uninstall'] = true;
+			}
+			// If value is false/falsy, keep the default false we set above
 		}
 
 		// Appearance settings
@@ -1943,6 +1970,11 @@ class PressPrimer_Quiz_REST_Controller {
 
 		// Save settings
 		update_option( PressPrimer_Quiz_Admin_Settings::OPTION_NAME, $merged );
+
+		// Clear object cache to ensure fresh data on next request
+		// This prevents issues with persistent object caching plugins (Redis, Memcached, etc.)
+		wp_cache_delete( PressPrimer_Quiz_Admin_Settings::OPTION_NAME, 'options' );
+		wp_cache_delete( 'alloptions', 'options' );
 
 		return new WP_REST_Response(
 			[

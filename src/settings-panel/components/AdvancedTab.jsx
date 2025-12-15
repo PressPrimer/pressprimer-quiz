@@ -26,6 +26,13 @@ const { Title, Paragraph, Text } = Typography;
  * @param {Function} props.updateSetting Function to update a setting
  */
 const AdvancedTab = ({ settings, updateSetting }) => {
+	// wp_localize_script converts booleans to strings ("1" for true, "" for false)
+	// PHP now sends 1 or 0 as integers, but they may be converted to strings "1" or "0"
+	// CRITICAL: Only enable if explicitly set to truthy value - default is ALWAYS off
+	const isRemoveDataEnabled = settings.remove_data_on_uninstall === true ||
+		settings.remove_data_on_uninstall === '1' ||
+		settings.remove_data_on_uninstall === 1;
+
 	return (
 		<div>
 			{/* Data Management Section */}
@@ -41,7 +48,7 @@ const AdvancedTab = ({ settings, updateSetting }) => {
 				<div className="ppq-settings-field">
 					<Form.Item label={__('Remove Data on Uninstall', 'pressprimer-quiz')}>
 						<Switch
-							checked={settings.remove_data_on_uninstall || false}
+							checked={isRemoveDataEnabled}
 							onChange={(checked) => updateSetting('remove_data_on_uninstall', checked)}
 						/>
 						<Text type="secondary" style={{ marginLeft: 12 }}>

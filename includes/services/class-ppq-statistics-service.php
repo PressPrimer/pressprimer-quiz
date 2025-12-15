@@ -241,6 +241,30 @@ class PressPrimer_Quiz_Statistics_Service {
 	}
 
 	/**
+	 * Clear dashboard statistics cache
+	 *
+	 * Call this method when questions, quizzes, banks, or attempts change
+	 * to ensure dashboard displays fresh data.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param int|null $owner_id Optional. Clear cache for specific owner only.
+	 */
+	public static function clear_dashboard_cache( $owner_id = null ) {
+		if ( $owner_id ) {
+			wp_cache_delete( 'dashboard_stats_' . $owner_id, self::CACHE_GROUP );
+		} else {
+			// Clear both the 'all' cache and try to flush the entire group
+			wp_cache_delete( 'dashboard_stats_all', self::CACHE_GROUP );
+
+			// If using a persistent cache that supports group flushing
+			if ( function_exists( 'wp_cache_flush_group' ) ) {
+				wp_cache_flush_group( self::CACHE_GROUP );
+			}
+		}
+	}
+
+	/**
 	 * Get overview statistics for reports page
 	 *
 	 * Returns aggregate statistics for all time. Uses cached data that is

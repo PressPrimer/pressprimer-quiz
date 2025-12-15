@@ -17,20 +17,8 @@ composer.lock
 package.json
 package-lock.json
 
-# Vendor dev-only files (keep only production libraries like smalot/pdfparser)
+# Vendor dev-only files (composer install --no-dev handles this during build)
 vendor/bin
-vendor/squizlabs
-vendor/wp-coding-standards
-vendor/phpcompatibility
-vendor/dealerdirect
-vendor/phpcsstandards
-vendor/phpunit
-vendor/sebastian
-vendor/doctrine
-vendor/myclabs
-vendor/nikic
-vendor/phar-io
-vendor/theseer
 
 # Build Tools / Config
 webpack.config.js
@@ -40,11 +28,11 @@ postcss.config.js
 .browserslistrc
 
 # Source Files (built versions are in /build and /assets)
-src
-assets/src
+/src
+/assets/src
 
 # Testing
-tests
+/tests
 phpunit.xml
 phpunit.xml.dist
 
@@ -70,9 +58,9 @@ phpcs.xml.dist
 .wp-env.override.json
 
 # Documentation (development only)
-docs
-*.md
-!readme.md
+/docs
+/*.md
+!/readme.md
 
 # OS Files
 .DS_Store
@@ -84,3 +72,4 @@ Thumbs.db
 .distignore
 .npmrc
 .nvmrc
+dist

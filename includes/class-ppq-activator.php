@@ -174,9 +174,16 @@ class PressPrimer_Quiz_Activator {
 			'remove_data_on_uninstall' => false, // Keep data by default for safety
 		];
 
-		// Only set if not already exists
-		if ( false === get_option( 'ppq_settings' ) ) {
+		$existing_settings = get_option( 'ppq_settings' );
+
+		if ( false === $existing_settings ) {
+			// Fresh install - set all defaults
 			add_option( 'ppq_settings', $default_settings );
+		} else {
+			// Existing install - ALWAYS reset remove_data_on_uninstall to false on activation
+			// This is a critical safety measure to prevent accidental data loss
+			$existing_settings['remove_data_on_uninstall'] = false;
+			update_option( 'ppq_settings', $existing_settings );
 		}
 	}
 

@@ -1507,7 +1507,13 @@ Good luck with your studies!',
 		}
 
 		// Sanitize remove data on uninstall
-		$sanitized['remove_data_on_uninstall'] = isset( $input['remove_data_on_uninstall'] ) && '1' === $input['remove_data_on_uninstall'];
+		// Handle both form input ('1' string from checkbox) and programmatic updates (boolean)
+		if ( isset( $input['remove_data_on_uninstall'] ) ) {
+			$value                                 = $input['remove_data_on_uninstall'];
+			$sanitized['remove_data_on_uninstall'] = ( true === $value || '1' === $value || 1 === $value );
+		} else {
+			$sanitized['remove_data_on_uninstall'] = false;
+		}
 
 		// Sanitize appearance settings
 		if ( isset( $input['appearance_font_family'] ) ) {
@@ -1684,6 +1690,16 @@ Good luck with your studies!',
 		if ( class_exists( 'PressPrimer_Quiz_Migrator' ) ) {
 			$table_status = PressPrimer_Quiz_Migrator::get_table_status();
 		}
+
+		// Ensure remove_data_on_uninstall is ALWAYS explicitly set and defaults to false
+		// This is a critical safety setting - it should NEVER default to true
+		// wp_localize_script converts booleans, so we use integers: 0 = false, 1 = true
+		$remove_data_value = false;
+		if ( isset( $settings['remove_data_on_uninstall'] ) ) {
+			$remove_data_value = ( true === $settings['remove_data_on_uninstall'] || '1' === $settings['remove_data_on_uninstall'] || 1 === $settings['remove_data_on_uninstall'] );
+		}
+		// Use integer for wp_localize_script compatibility (0 or 1)
+		$settings['remove_data_on_uninstall'] = $remove_data_value ? 1 : 0;
 
 		return [
 			'pluginUrl'      => PPQ_PLUGIN_URL,

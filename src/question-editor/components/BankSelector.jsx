@@ -34,7 +34,8 @@ const BankSelector = ({ value, onChange }) => {
 			setOptions(
 				banks.map((bank) => ({
 					value: bank.id,
-					label: bank.name,
+					label: `${bank.id} - ${bank.name}`,
+					name: bank.name,
 					description: bank.description,
 				}))
 			);
@@ -66,11 +67,11 @@ const BankSelector = ({ value, onChange }) => {
 					onChange={onChange}
 					loading={loading}
 					filterOption={(input, option) =>
-						(option?.label ?? '').toLowerCase().includes(input.toLowerCase())
+						(option?.name ?? '').toLowerCase().includes(input.toLowerCase())
 					}
 					optionRender={(option) => (
 						<Space direction="vertical" size={0}>
-							<Text strong style={{ fontSize: 13 }}>{option.data.label}</Text>
+							<Text strong style={{ fontSize: 13 }}>{option.data.name}</Text>
 							{option.data.description && (
 								<Text type="secondary" style={{ fontSize: 11 }}>
 									{option.data.description}
@@ -84,7 +85,7 @@ const BankSelector = ({ value, onChange }) => {
 				>
 					{options.map((option) => (
 						<Select.Option key={option.value} value={option.value} {...option}>
-							{option.label}
+							{option.name}
 						</Select.Option>
 					))}
 				</Select>

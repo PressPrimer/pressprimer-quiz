@@ -418,19 +418,6 @@ const RulesPanel = ({ quizId, generationMode }) => {
 									{__('Random questions will be selected from matching pool', 'pressprimer-quiz')}
 								</Text>
 							</div>
-
-							{/* Preview button - TODO: implement matching count */}
-							<Button
-								size="small"
-								block
-								style={{ marginTop: 8 }}
-								disabled
-							>
-								{__('Preview Matching Questions', 'pressprimer-quiz')}
-							</Button>
-							<Text type="secondary" style={{ fontSize: 10, textAlign: 'center', display: 'block' }}>
-								{__('(Available after quiz is saved)', 'pressprimer-quiz')}
-							</Text>
 						</Space>
 					</Col>
 				</Row>

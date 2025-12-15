@@ -6,6 +6,9 @@
 .gitignore
 .gitattributes
 
+# Hidden placeholder files (rsync pattern)
+.gitkeep
+
 # Claude Code / AI
 .claude
 

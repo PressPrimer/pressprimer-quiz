@@ -525,8 +525,9 @@ class PressPrimer_Quiz_Admin_AI_Generation {
 		$categories = isset( $_POST['categories'] ) ? array_map( 'absint', (array) wp_unslash( $_POST['categories'] ) ) : [];
 
 		// Decode questions if sent as JSON string
+		// Note: wp_unslash() already removed slashes, so don't use stripslashes() again
 		if ( is_string( $questions ) ) {
-			$questions = json_decode( stripslashes( $questions ), true );
+			$questions = json_decode( $questions, true );
 		}
 
 		if ( ! $bank_id ) {

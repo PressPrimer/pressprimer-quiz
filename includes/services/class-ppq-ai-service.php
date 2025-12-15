@@ -35,7 +35,7 @@ class PressPrimer_Quiz_AI_Service {
 	 *
 	 * @var string
 	 */
-	const DEFAULT_MODEL = 'gpt-4';
+	const DEFAULT_MODEL = 'gpt-5-mini';
 
 	/**
 	 * Maximum content length for generation (250,000 characters)
@@ -390,7 +390,7 @@ class PressPrimer_Quiz_AI_Service {
 			);
 		}
 
-		// Filter to GPT-5+ models (5, 6, 7, etc.)
+		// Filter to GPT-5+ models only (5, 6, 7, etc.)
 		$gpt_models = [];
 		foreach ( $body['data'] as $model ) {
 			if ( ! isset( $model['id'] ) ) {
@@ -715,12 +715,12 @@ class PressPrimer_Quiz_AI_Service {
 		// Build type instructions with answer count
 		$type_instructions = [];
 		if ( in_array( 'mc', $params['types'], true ) ) {
-			$type_instructions[] = '- MC (Multiple Choice): exactly ONE correct answer, exactly ' . $answer_count . ' options total';
+			$type_instructions[] = '- MC (Multiple Choice): exactly ONE correct answer, exactly ' . $answer_count . ' options total. VARY which position contains the correct answer across questions.';
 		}
 		if ( in_array( 'ma', $params['types'], true ) ) {
-			$min_correct         = min( 2, $answer_count - 1 );
+			$min_correct         = 1;
 			$max_correct         = $answer_count - 1;
-			$type_instructions[] = '- MA (Multiple Answer): ' . $min_correct . '-' . $max_correct . ' correct answers, exactly ' . $answer_count . ' options total';
+			$type_instructions[] = '- MA (Multiple Answer): VARY the number of correct answers between ' . $min_correct . ' and ' . $max_correct . ' across questions (do NOT always use the same count), exactly ' . $answer_count . ' options total. Randomize positions of correct answers.';
 		}
 		if ( in_array( 'tf', $params['types'], true ) ) {
 			$type_instructions[] = '- TF (True/False): exactly 2 options with text "True" and "False"';
@@ -790,7 +790,10 @@ class PressPrimer_Quiz_AI_Service {
 			'   - Make distractors plausible but clearly incorrect' . "\n" .
 			'   - Avoid "all of the above" or "none of the above"' . "\n" .
 			'   - Keep options similar in length and structure' . "\n" .
-			'   - Avoid grammatical clues that give away the answer' . "\n\n" .
+			'   - Avoid grammatical clues that give away the answer' . "\n" .
+			'   - CRITICAL: Randomize correct answer positions - do NOT always put correct answers first' . "\n" .
+			'   - For MC: vary which position (1st, 2nd, 3rd, 4th, etc.) contains the correct answer across questions' . "\n" .
+			'   - For MA: vary both the NUMBER of correct answers (from 1 to n-1) AND their positions' . "\n\n" .
 			$feedback_guidelines . "\n\n" .
 			'4. **Difficulty Levels** (IMPORTANT - distractors must match difficulty):' . "\n" .
 			'   - **Easy**: Tests direct recall or basic understanding' . "\n" .
@@ -870,30 +873,32 @@ class PressPrimer_Quiz_AI_Service {
 
 		if ( in_array( 'mc', $types, true ) ) {
 			if ( $generate_feedback ) {
-				$examples[] = 'Multiple Choice (MC) example:' . "\n" .
+				// Example shows correct answer in 3rd position to demonstrate randomization
+				$examples[] = 'Multiple Choice (MC) example (note: correct answer is NOT first):' . "\n" .
 					'{' . "\n" .
 					'  "type": "mc",' . "\n" .
 					'  "difficulty": "medium",' . "\n" .
 					'  "stem": "What is the primary function of mitochondria in a cell?",' . "\n" .
 					'  "answers": [' . "\n" .
-					'    {"text": "Energy production through ATP synthesis", "is_correct": true, "feedback": "Correct! Mitochondria are often called the \'powerhouse of the cell\' because they produce ATP through cellular respiration."},' . "\n" .
 					'    {"text": "Protein synthesis", "is_correct": false, "feedback": "Incorrect. Protein synthesis occurs in ribosomes, not mitochondria."},' . "\n" .
 					'    {"text": "Cell division", "is_correct": false, "feedback": "Incorrect. Cell division is controlled by the nucleus and involves structures like the centrosome."},' . "\n" .
+					'    {"text": "Energy production through ATP synthesis", "is_correct": true, "feedback": "Correct! Mitochondria are often called the \'powerhouse of the cell\' because they produce ATP through cellular respiration."},' . "\n" .
 					'    {"text": "Waste storage", "is_correct": false, "feedback": "Incorrect. Waste storage is primarily handled by vacuoles, especially in plant cells."}' . "\n" .
 					'  ],' . "\n" .
 					'  "feedback_correct": "Excellent! You understand the crucial role mitochondria play in cellular energy production.",' . "\n" .
 					'  "feedback_incorrect": "Mitochondria are responsible for producing ATP through cellular respiration. They convert nutrients into usable energy for the cell."' . "\n" .
 					'}';
 			} else {
-				$examples[] = 'Multiple Choice (MC) example:' . "\n" .
+				// Example shows correct answer in 3rd position to demonstrate randomization
+				$examples[] = 'Multiple Choice (MC) example (note: correct answer is NOT first):' . "\n" .
 					'{' . "\n" .
 					'  "type": "mc",' . "\n" .
 					'  "difficulty": "medium",' . "\n" .
 					'  "stem": "What is the primary function of mitochondria in a cell?",' . "\n" .
 					'  "answers": [' . "\n" .
-					'    {"text": "Energy production through ATP synthesis", "is_correct": true},' . "\n" .
 					'    {"text": "Protein synthesis", "is_correct": false},' . "\n" .
 					'    {"text": "Cell division", "is_correct": false},' . "\n" .
+					'    {"text": "Energy production through ATP synthesis", "is_correct": true},' . "\n" .
 					'    {"text": "Waste storage", "is_correct": false}' . "\n" .
 					'  ]' . "\n" .
 					'}';
@@ -902,33 +907,35 @@ class PressPrimer_Quiz_AI_Service {
 
 		if ( in_array( 'ma', $types, true ) ) {
 			if ( $generate_feedback ) {
-				$examples[] = 'Multiple Answer (MA) example:' . "\n" .
+				// Example shows only 2 correct answers in positions 2 and 5 to demonstrate variation
+				$examples[] = 'Multiple Answer (MA) example (note: only 2 correct answers, not in first positions):' . "\n" .
 					'{' . "\n" .
 					'  "type": "ma",' . "\n" .
 					'  "difficulty": "hard",' . "\n" .
 					'  "stem": "Which of the following are characteristics of effective feedback in education? Select all that apply.",' . "\n" .
 					'  "answers": [' . "\n" .
-					'    {"text": "Timely delivery after the performance", "is_correct": true, "feedback": "Correct! Timely feedback allows students to connect it with their actions."},' . "\n" .
-					'    {"text": "Focused on specific behaviors or outcomes", "is_correct": true, "feedback": "Correct! Specific feedback is more actionable than general comments."},' . "\n" .
 					'    {"text": "Always positive to maintain motivation", "is_correct": false, "feedback": "Incorrect. Effective feedback should be honest and constructive, not just positive."},' . "\n" .
-					'    {"text": "Includes guidance for improvement", "is_correct": true, "feedback": "Correct! Actionable guidance helps students know how to improve."},' . "\n" .
-					'    {"text": "Delivered publicly to increase accountability", "is_correct": false, "feedback": "Incorrect. Feedback is often more effective when delivered privately to avoid embarrassment."}' . "\n" .
+					'    {"text": "Timely delivery after the performance", "is_correct": true, "feedback": "Correct! Timely feedback allows students to connect it with their actions."},' . "\n" .
+					'    {"text": "Delivered publicly to increase accountability", "is_correct": false, "feedback": "Incorrect. Feedback is often more effective when delivered privately to avoid embarrassment."},' . "\n" .
+					'    {"text": "Should be lengthy and comprehensive", "is_correct": false, "feedback": "Incorrect. Feedback should be concise and focused, not overwhelming."},' . "\n" .
+					'    {"text": "Focused on specific behaviors or outcomes", "is_correct": true, "feedback": "Correct! Specific feedback is more actionable than general comments."}' . "\n" .
 					'  ],' . "\n" .
 					'  "feedback_correct": "Great job! You correctly identified the key characteristics of effective educational feedback.",' . "\n" .
-					'  "feedback_incorrect": "Effective feedback should be timely, specific, and include guidance for improvement. It doesn\'t need to be always positive or delivered publicly."' . "\n" .
+					'  "feedback_incorrect": "Effective feedback should be timely and specific. It doesn\'t need to be always positive, public, or lengthy."' . "\n" .
 					'}';
 			} else {
-				$examples[] = 'Multiple Answer (MA) example:' . "\n" .
+				// Example shows only 2 correct answers in positions 2 and 5 to demonstrate variation
+				$examples[] = 'Multiple Answer (MA) example (note: only 2 correct answers, not in first positions):' . "\n" .
 					'{' . "\n" .
 					'  "type": "ma",' . "\n" .
 					'  "difficulty": "hard",' . "\n" .
 					'  "stem": "Which of the following are characteristics of effective feedback in education? Select all that apply.",' . "\n" .
 					'  "answers": [' . "\n" .
-					'    {"text": "Timely delivery after the performance", "is_correct": true},' . "\n" .
-					'    {"text": "Focused on specific behaviors or outcomes", "is_correct": true},' . "\n" .
 					'    {"text": "Always positive to maintain motivation", "is_correct": false},' . "\n" .
-					'    {"text": "Includes guidance for improvement", "is_correct": true},' . "\n" .
-					'    {"text": "Delivered publicly to increase accountability", "is_correct": false}' . "\n" .
+					'    {"text": "Timely delivery after the performance", "is_correct": true},' . "\n" .
+					'    {"text": "Delivered publicly to increase accountability", "is_correct": false},' . "\n" .
+					'    {"text": "Should be lengthy and comprehensive", "is_correct": false},' . "\n" .
+					'    {"text": "Focused on specific behaviors or outcomes", "is_correct": true}' . "\n" .
 					'  ]' . "\n" .
 					'}';
 			}

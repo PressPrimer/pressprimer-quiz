@@ -13,11 +13,11 @@ Enterprise-grade quiz builder plugin with AI question generation, LMS integratio
 
 == Description ==
 
-https://www.youtube.com/watch?v=YOUR_VIDEO_ID
-
 **PressPrimer Quiz** is a professional assessment plugin that bridges the gap between basic quiz plugins and expensive enterprise platforms. Create beautiful, engaging quizzes with AI-powered question generation, deep LMS integration, and the reporting features serious educators need—all without monthly fees or per-student pricing.
 
 **This isn't a crippled trial.** The free version is genuinely useful forever with unlimited quizzes, unlimited questions, AI generation, LMS integration, and three professional themes. We earn upgrades by delivering specialized features, not by hobbling what you get for free.
+
+https://www.youtube.com/watch?v=YHyooYXKLo0
 
 = Why Choose PressPrimer Quiz? =
 
@@ -100,9 +100,7 @@ Built for serious deployment:
 
 = Documentation & Support =
 
-* [Knowledge Base](https://pressprimer.com/docs/)
-* [FAQ](https://pressprimer.com/faq/)
-* [Support Forum](https://wordpress.org/support/plugin/pressprimer-quiz/)
+* [Knowledge Base](https://pressprimer.com/knowledge-base/)
 
 == Installation ==
 

@@ -6,7 +6,7 @@
  */
 
 import { useState, useEffect } from '@wordpress/element';
-import { __, sprintf } from '@wordpress/i18n';
+import { __, _n, sprintf } from '@wordpress/i18n';
 import apiFetch from '@wordpress/api-fetch';
 import { debugError } from '../../utils/debug';
 import {
@@ -141,7 +141,12 @@ const QuestionsPanel = ({ quizId, generationMode }) => {
 				path: `/ppq/v1/questions?${params.toString()}`,
 			});
 
-			setAvailableQuestions(response.questions || []);
+			// Ensure IDs are consistently typed (numbers) for reliable row selection
+			const questions = (response.questions || []).map(q => ({
+				...q,
+				id: Number(q.id),
+			}));
+			setAvailableQuestions(questions);
 			setPagination(prev => ({
 				...prev,
 				current: page,
@@ -478,7 +483,8 @@ const QuestionsPanel = ({ quizId, generationMode }) => {
 	const rowSelection = {
 		selectedRowKeys: selectedQuestionIds,
 		onChange: (selectedKeys) => {
-			// Get IDs of questions currently visible on this page
+			// Convert all keys to numbers for consistent comparison
+			const numericKeys = selectedKeys.map(k => Number(k));
 			const currentPageIds = availableQuestions.map(q => q.id);
 
 			// Keep selections from other pages (not on current page)
@@ -486,8 +492,9 @@ const QuestionsPanel = ({ quizId, generationMode }) => {
 				id => !currentPageIds.includes(id)
 			);
 
-			// Combine other page selections with current page selections
-			setSelectedQuestionIds([...otherPageSelections, ...selectedKeys]);
+			// Combine other page selections with current page selections (deduplicated)
+			const combined = [...new Set([...otherPageSelections, ...numericKeys])];
+			setSelectedQuestionIds(combined);
 		},
 		preserveSelectedRowKeys: true,
 	};
@@ -694,7 +701,10 @@ const QuestionsPanel = ({ quizId, generationMode }) => {
 						showIcon
 						message={
 							/* translators: %d: number of selected questions */
-							sprintf(__('%d question(s) selected', 'pressprimer-quiz'), selectedQuestionIds.length)
+							sprintf(
+								_n('%d question selected', '%d questions selected', selectedQuestionIds.length, 'pressprimer-quiz'),
+								selectedQuestionIds.length
+							)
 						}
 						style={{ marginBottom: 16 }}
 					/>

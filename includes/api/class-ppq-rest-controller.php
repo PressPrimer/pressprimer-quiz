@@ -1988,6 +1988,9 @@ class PressPrimer_Quiz_REST_Controller {
 	/**
 	 * Save API key
 	 *
+	 * Saves the site-wide OpenAI API key. This is stored as an encrypted option
+	 * and is used by all users with AI generation permissions.
+	 *
 	 * @since 1.0.0
 	 *
 	 * @param WP_REST_Request $request Request object.
@@ -2005,22 +2008,29 @@ class PressPrimer_Quiz_REST_Controller {
 			return new WP_Error( 'invalid_key', __( 'Invalid API key format.', 'pressprimer-quiz' ), [ 'status' => 400 ] );
 		}
 
-		$user_id = get_current_user_id();
+		// Validate the key with OpenAI before saving
+		$validation = PressPrimer_Quiz_AI_Service::validate_api_key( $api_key );
 
-		// Save the API key
-		$result = PressPrimer_Quiz_AI_Service::save_api_key( $user_id, $api_key );
-
-		if ( is_wp_error( $result ) ) {
-			return new WP_Error( 'save_failed', $result->get_error_message(), [ 'status' => 500 ] );
+		if ( is_wp_error( $validation ) ) {
+			return new WP_Error( 'invalid_key', $validation->get_error_message(), [ 'status' => 400 ] );
 		}
 
+		// Encrypt and save the site-wide key
+		$encrypted = PressPrimer_Quiz_Helpers::encrypt( $api_key );
+
+		if ( is_wp_error( $encrypted ) ) {
+			return new WP_Error( 'encryption_failed', $encrypted->get_error_message(), [ 'status' => 500 ] );
+		}
+
+		update_option( 'ppq_site_openai_api_key', $encrypted );
+
 		// Get status for response
-		$status = PressPrimer_Quiz_AI_Service::get_api_key_status( $user_id );
+		$status = PressPrimer_Quiz_AI_Service::get_api_key_status();
 
 		return new WP_REST_Response(
 			[
 				'success'    => true,
-				'message'    => __( 'API key saved successfully.', 'pressprimer-quiz' ),
+				'message'    => __( 'API key saved and validated successfully.', 'pressprimer-quiz' ),
 				'masked_key' => $status['masked_key'] ?? 'sk-****',
 			],
 			200
@@ -2030,16 +2040,16 @@ class PressPrimer_Quiz_REST_Controller {
 	/**
 	 * Delete API key
 	 *
+	 * Removes the site-wide OpenAI API key.
+	 *
 	 * @since 1.0.0
 	 *
 	 * @param WP_REST_Request $request Request object.
 	 * @return WP_REST_Response Response object.
 	 */
 	public function delete_api_key( $request ) {
-		$user_id = get_current_user_id();
-
-		// Delete the API key
-		PressPrimer_Quiz_AI_Service::delete_api_key( $user_id );
+		// Delete the site-wide API key
+		delete_option( 'ppq_site_openai_api_key' );
 
 		return new WP_REST_Response(
 			[
@@ -2053,16 +2063,16 @@ class PressPrimer_Quiz_REST_Controller {
 	/**
 	 * Validate API key
 	 *
+	 * Validates the currently configured site-wide API key.
+	 *
 	 * @since 1.0.0
 	 *
 	 * @param WP_REST_Request $request Request object.
 	 * @return WP_REST_Response|WP_Error Response object or error.
 	 */
 	public function validate_api_key( $request ) {
-		$user_id = get_current_user_id();
-
-		// Get the API key
-		$api_key = PressPrimer_Quiz_AI_Service::get_api_key( $user_id );
+		// Get the site-wide API key (get_api_key checks site option first)
+		$api_key = PressPrimer_Quiz_AI_Service::get_api_key();
 
 		if ( is_wp_error( $api_key ) || empty( $api_key ) ) {
 			return new WP_Error( 'no_key', __( 'No API key configured.', 'pressprimer-quiz' ), [ 'status' => 400 ] );
@@ -2087,16 +2097,16 @@ class PressPrimer_Quiz_REST_Controller {
 	/**
 	 * Get API models
 	 *
+	 * Returns available OpenAI models for the configured site-wide API key.
+	 *
 	 * @since 1.0.0
 	 *
 	 * @param WP_REST_Request $request Request object.
 	 * @return WP_REST_Response|WP_Error Response object or error.
 	 */
 	public function get_api_models( $request ) {
-		$user_id = get_current_user_id();
-
-		// Get the API key
-		$api_key = PressPrimer_Quiz_AI_Service::get_api_key( $user_id );
+		// Get the site-wide API key
+		$api_key = PressPrimer_Quiz_AI_Service::get_api_key();
 
 		if ( is_wp_error( $api_key ) || empty( $api_key ) ) {
 			return new WP_Error( 'no_key', __( 'No API key configured.', 'pressprimer-quiz' ), [ 'status' => 400 ] );

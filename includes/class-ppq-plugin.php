@@ -187,7 +187,7 @@ class PressPrimer_Quiz_Plugin {
 		// Uncanny Automator integration
 		if ( class_exists( 'Uncanny_Automator\Automator_Functions' ) ) {
 			require_once PPQ_PLUGIN_PATH . 'includes/integrations/uncanny-automator/class-ppq-automator-loader.php';
-			$automator = new \Jeero\PressPrimerQuiz\Integrations\UncannyAutomator\PressPrimer_Quiz_Automator_Loader();
+			$automator = new PressPrimer_Quiz_Automator_Loader();
 			$automator->init();
 		}
 	}

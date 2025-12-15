@@ -478,6 +478,21 @@ class PressPrimer_Quiz_Attempt extends PressPrimer_Quiz_Model {
 			if ( $existing_in_progress ) {
 				// If the attempt can be resumed, return it so the user can continue
 				if ( $existing_in_progress->can_resume() ) {
+					// Set cookie for returning guest so they can access their attempt
+					if ( $existing_in_progress->guest_token ) {
+						setcookie(
+							'ppq_guest_token',
+							$existing_in_progress->guest_token,
+							[
+								'expires'  => time() + WEEK_IN_SECONDS,
+								'path'     => COOKIEPATH,
+								'domain'   => COOKIE_DOMAIN,
+								'secure'   => is_ssl(),
+								'httponly' => true,
+								'samesite' => 'Strict',
+							]
+						);
+					}
 					return $existing_in_progress;
 				}
 
@@ -590,7 +605,18 @@ class PressPrimer_Quiz_Attempt extends PressPrimer_Quiz_Model {
 		}
 
 		// Set guest token cookie (7 days)
-		setcookie( 'ppq_guest_token', $token, time() + ( 7 * 24 * 60 * 60 ), COOKIEPATH, COOKIE_DOMAIN, is_ssl(), true );
+		setcookie(
+			'ppq_guest_token',
+			$token,
+			[
+				'expires'  => time() + WEEK_IN_SECONDS,
+				'path'     => COOKIEPATH,
+				'domain'   => COOKIE_DOMAIN,
+				'secure'   => is_ssl(),
+				'httponly' => true,
+				'samesite' => 'Strict',
+			]
+		);
 
 		// Load and return the attempt object
 		return static::get( $attempt_id );

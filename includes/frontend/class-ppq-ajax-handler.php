@@ -20,12 +20,36 @@ if ( ! defined( 'ABSPATH' ) ) {
  * Processes AJAX requests for starting quizzes, saving answers,
  * and submitting attempts.
  *
+ * Nonce Strategy:
+ * ---------------
+ * This plugin uses grouped nonces by functional area for security:
+ *
+ * Frontend (quiz-taking):
+ * - 'ppq_quiz_nonce'    : Quiz flow operations (start, save, sync, submit, check_answer)
+ *                         Shared because these are sequential operations in a single session.
+ * - 'ppq_email_results' : Email results only (separate as it's a post-completion action)
+ *
+ * Admin operations use separate nonces per sensitive action:
+ * - 'ppq_admin_nonce'   : General admin operations
+ * - 'ppq_ai_generation' : AI question generation
+ * - 'ppq_save_quiz'     : Quiz creation/editing
+ * - 'ppq_save_bank'     : Bank creation/editing
+ * - etc.
+ *
+ * This grouped approach balances security with usability - quiz flow operations
+ * share a nonce because they occur within the same user session, while distinct
+ * admin actions have separate nonces to prevent CSRF across different operations.
+ *
  * @since 1.0.0
  */
 class PressPrimer_Quiz_AJAX_Handler {
 
 	/**
 	 * Initialize AJAX handlers
+	 *
+	 * Registers AJAX actions for both logged-in users and guests.
+	 * All handlers verify the 'ppq_quiz_nonce' except email_results
+	 * which uses 'ppq_email_results'.
 	 *
 	 * @since 1.0.0
 	 */
@@ -106,12 +130,22 @@ class PressPrimer_Quiz_AJAX_Handler {
 		// Get guest email if provided
 		$guest_email = isset( $_POST['guest_email'] ) ? sanitize_email( wp_unslash( $_POST['guest_email'] ) ) : '';
 
-		// Capture source URL from referer (the page where the quiz shortcode is embedded)
-		// Strip query parameters to get clean base URL for linking back
+		// Capture source URL from POST (nonce-protected) or referer as fallback
+		// This stores where the quiz was taken for analytics and redirect purposes
 		$source_url = isset( $_POST['source_url'] ) ? esc_url_raw( wp_unslash( $_POST['source_url'] ) ) : '';
+
+		// Only use HTTP_REFERER as fallback, and validate it's from the same domain
 		if ( empty( $source_url ) && isset( $_SERVER['HTTP_REFERER'] ) ) {
-			$source_url = esc_url_raw( wp_unslash( $_SERVER['HTTP_REFERER'] ) );
+			$referer      = esc_url_raw( wp_unslash( $_SERVER['HTTP_REFERER'] ) );
+			$referer_host = wp_parse_url( $referer, PHP_URL_HOST );
+			$site_host    = wp_parse_url( home_url(), PHP_URL_HOST );
+
+			// Only accept referer from same domain to prevent spoofing
+			if ( $referer_host === $site_host ) {
+				$source_url = $referer;
+			}
 		}
+
 		// Remove query string to avoid issues with ppq_retake, attempt, etc.
 		if ( ! empty( $source_url ) ) {
 			$source_url = strtok( $source_url, '?' );
@@ -217,16 +251,18 @@ class PressPrimer_Quiz_AJAX_Handler {
 			);
 		}
 
-		// Get answers
-		// phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- Complex data structure sanitized in foreach loop below
-		$answers = isset( $_POST['answers'] ) ? wp_unslash( $_POST['answers'] ) : [];
+		// Get and sanitize answers
+		$answers = $this->sanitize_answers_array(
+			isset( $_POST['answers'] ) ? wp_unslash( $_POST['answers'] ) : []
+		);
 
-		// Get confidence values
-		// phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- Values sanitized with absint below
-		$confidence_values = isset( $_POST['confidence'] ) ? wp_unslash( $_POST['confidence'] ) : [];
+		// Get and sanitize confidence values
+		$confidence_values = $this->sanitize_confidence_array(
+			isset( $_POST['confidence'] ) ? wp_unslash( $_POST['confidence'] ) : []
+		);
 
 		// If no answers and no confidence values, return error
-		if ( ( empty( $answers ) || ! is_array( $answers ) ) && ( empty( $confidence_values ) || ! is_array( $confidence_values ) ) ) {
+		if ( empty( $answers ) && empty( $confidence_values ) ) {
 			wp_send_json_error(
 				[
 					'message' => __( 'No answers provided.', 'pressprimer-quiz' ),
@@ -236,38 +272,24 @@ class PressPrimer_Quiz_AJAX_Handler {
 
 		// Save each answer
 		$saved_count = 0;
-		if ( ! empty( $answers ) && is_array( $answers ) ) {
-			foreach ( $answers as $item_id => $selected_answers ) {
-				$item_id = absint( $item_id );
+		foreach ( $answers as $item_id => $selected_answers ) {
+			// Get confidence for this item if set
+			$confidence = $confidence_values[ $item_id ] ?? false;
 
-				// Ensure selected_answers is an array
-				if ( ! is_array( $selected_answers ) ) {
-					$selected_answers = [ $selected_answers ];
-				}
+			// Save answer with confidence
+			$result = $attempt->save_answer( $item_id, $selected_answers, $confidence );
 
-				// Convert to integers
-				$selected_answers = array_map( 'intval', $selected_answers );
-
-				// Get confidence for this item if set
-				$confidence = isset( $confidence_values[ $item_id ] ) ? (bool) absint( $confidence_values[ $item_id ] ) : false;
-
-				// Save answer with confidence
-				$result = $attempt->save_answer( $item_id, $selected_answers, $confidence );
-
-				if ( ! is_wp_error( $result ) ) {
-					++$saved_count;
-				}
+			if ( ! is_wp_error( $result ) ) {
+				++$saved_count;
 			}
 		}
 
 		// Save confidence-only updates (when confidence changes without answer change)
-		if ( ! empty( $confidence_values ) && is_array( $confidence_values ) ) {
+		if ( ! empty( $confidence_values ) ) {
 			global $wpdb;
 			$items_table = $wpdb->prefix . 'ppq_attempt_items';
 
 			foreach ( $confidence_values as $item_id => $confidence_value ) {
-				$item_id = absint( $item_id );
-
 				// Skip if we already saved this item with its answer above
 				if ( isset( $answers[ $item_id ] ) ) {
 					continue;
@@ -287,10 +309,9 @@ class PressPrimer_Quiz_AJAX_Handler {
 				}
 
 				// Update confidence only for this item
-				$confidence = absint( $confidence_value ) ? 1 : 0;
 				$wpdb->update(
 					$items_table,
-					[ 'confidence' => $confidence ],
+					[ 'confidence' => $confidence_value ? 1 : 0 ],
 					[ 'id' => $item_id ],
 					[ '%d' ],
 					[ '%d' ]
@@ -480,8 +501,18 @@ class PressPrimer_Quiz_AJAX_Handler {
 		if ( $current_url ) {
 			$base_url = remove_query_arg( [ 'attempt', 'token' ], $current_url );
 		} else {
-			// Fallback: try to use HTTP referer
-			$base_url = remove_query_arg( [ 'attempt', 'token' ], wp_get_referer() );
+			// Fallback: try to use HTTP referer, but validate same domain
+			$referer  = wp_get_referer();
+			$base_url = '';
+
+			if ( $referer ) {
+				$referer_host = wp_parse_url( $referer, PHP_URL_HOST );
+				$site_host    = wp_parse_url( home_url(), PHP_URL_HOST );
+
+				if ( $referer_host === $site_host ) {
+					$base_url = remove_query_arg( [ 'attempt', 'token' ], $referer );
+				}
+			}
 		}
 
 		// Use attempt's get_results_url which handles tokens for guests
@@ -776,5 +807,67 @@ class PressPrimer_Quiz_AJAX_Handler {
 				'feedback_text'    => $feedback_text,
 			]
 		);
+	}
+
+	/**
+	 * Sanitize answers array from POST data
+	 *
+	 * Validates and sanitizes the complex nested answers array structure.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param mixed $raw_answers Raw POST data for answers.
+	 * @return array Sanitized answers array with integer keys and values.
+	 */
+	private function sanitize_answers_array( $raw_answers ) {
+		if ( ! is_array( $raw_answers ) ) {
+			return [];
+		}
+
+		$sanitized = [];
+		foreach ( $raw_answers as $item_id => $selected_answers ) {
+			$item_id = absint( $item_id );
+
+			if ( 0 === $item_id ) {
+				continue;
+			}
+
+			if ( ! is_array( $selected_answers ) ) {
+				$selected_answers = [ $selected_answers ];
+			}
+
+			$sanitized[ $item_id ] = array_map( 'intval', $selected_answers );
+		}
+
+		return $sanitized;
+	}
+
+	/**
+	 * Sanitize confidence values array from POST data
+	 *
+	 * Validates and sanitizes the confidence values array structure.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param mixed $raw_confidence Raw POST data for confidence values.
+	 * @return array Sanitized confidence array with integer keys and boolean values.
+	 */
+	private function sanitize_confidence_array( $raw_confidence ) {
+		if ( ! is_array( $raw_confidence ) ) {
+			return [];
+		}
+
+		$sanitized = [];
+		foreach ( $raw_confidence as $item_id => $confidence_value ) {
+			$item_id = absint( $item_id );
+
+			if ( 0 === $item_id ) {
+				continue;
+			}
+
+			$sanitized[ $item_id ] = (bool) absint( $confidence_value );
+		}
+
+		return $sanitized;
 	}
 }

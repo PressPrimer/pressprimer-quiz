@@ -57,6 +57,24 @@ abstract class PressPrimer_Quiz_Model {
 	abstract protected static function get_fillable_fields();
 
 	/**
+	 * Get queryable fields
+	 *
+	 * Returns array of field names that can be used in WHERE clauses.
+	 * Includes fillable fields plus standard columns.
+	 * Child classes may override to add additional queryable fields.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @return array Field names safe for use in queries.
+	 */
+	protected static function get_queryable_fields() {
+		// Standard columns present in all tables
+		$standard_fields = [ 'id', 'created_at', 'updated_at' ];
+
+		return array_merge( $standard_fields, static::get_fillable_fields() );
+	}
+
+	/**
 	 * Get full table name with prefix
 	 *
 	 * Returns the complete table name including WordPress prefix.
@@ -150,10 +168,12 @@ abstract class PressPrimer_Quiz_Model {
 		$result = $wpdb->insert( $table, $data );
 
 		if ( false === $result ) {
+			if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
+				error_log( 'PPQ Database Error (create): ' . $wpdb->last_error );
+			}
 			return new WP_Error(
 				'ppq_db_error',
-				__( 'Database error: Failed to create record.', 'pressprimer-quiz' ),
-				[ 'db_error' => $wpdb->last_error ]
+				__( 'Database error: Failed to create record.', 'pressprimer-quiz' )
 			);
 		}
 
@@ -209,10 +229,12 @@ abstract class PressPrimer_Quiz_Model {
 		);
 
 		if ( false === $result ) {
+			if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
+				error_log( 'PPQ Database Error (save): ' . $wpdb->last_error );
+			}
 			return new WP_Error(
 				'ppq_db_error',
-				__( 'Database error: Failed to save record.', 'pressprimer-quiz' ),
-				[ 'db_error' => $wpdb->last_error ]
+				__( 'Database error: Failed to save record.', 'pressprimer-quiz' )
 			);
 		}
 
@@ -248,10 +270,12 @@ abstract class PressPrimer_Quiz_Model {
 		);
 
 		if ( false === $result ) {
+			if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
+				error_log( 'PPQ Database Error (delete): ' . $wpdb->last_error );
+			}
 			return new WP_Error(
 				'ppq_db_error',
-				__( 'Database error: Failed to delete record.', 'pressprimer-quiz' ),
-				[ 'db_error' => $wpdb->last_error ]
+				__( 'Database error: Failed to delete record.', 'pressprimer-quiz' )
 			);
 		}
 
@@ -287,12 +311,18 @@ abstract class PressPrimer_Quiz_Model {
 		$args  = wp_parse_args( $args, $defaults );
 		$table = static::get_full_table_name();
 
-		// Build WHERE clause
-		$where_clauses = [];
-		$where_values  = [];
+		// Build WHERE clause with field validation
+		$where_clauses    = [];
+		$where_values     = [];
+		$queryable_fields = static::get_queryable_fields();
 
 		if ( ! empty( $args['where'] ) ) {
 			foreach ( $args['where'] as $field => $value ) {
+				// Validate field name against whitelist to prevent SQL injection
+				if ( ! in_array( $field, $queryable_fields, true ) ) {
+					continue;
+				}
+
 				if ( null === $value ) {
 					// Use IS NULL for null values
 					$where_clauses[] = "`{$field}` IS NULL";
@@ -307,8 +337,12 @@ abstract class PressPrimer_Quiz_Model {
 			? 'WHERE ' . implode( ' AND ', $where_clauses )
 			: '';
 
-		// Build ORDER BY clause
-		$order_by  = sanitize_sql_orderby( "{$args['order_by']} {$args['order']}" );
+		// Build ORDER BY clause with field validation
+		$order_by_field = $args['order_by'];
+		if ( ! in_array( $order_by_field, $queryable_fields, true ) ) {
+			$order_by_field = 'id'; // Default to safe field
+		}
+		$order_by  = sanitize_sql_orderby( "{$order_by_field} {$args['order']}" );
 		$order_sql = $order_by ? "ORDER BY {$order_by}" : '';
 
 		// Build LIMIT clause
@@ -357,12 +391,18 @@ abstract class PressPrimer_Quiz_Model {
 
 		$table = static::get_full_table_name();
 
-		// Build WHERE clause
-		$where_clauses = [];
-		$where_values  = [];
+		// Build WHERE clause with field validation
+		$where_clauses    = [];
+		$where_values     = [];
+		$queryable_fields = static::get_queryable_fields();
 
 		if ( ! empty( $where ) ) {
 			foreach ( $where as $field => $value ) {
+				// Validate field name against whitelist to prevent SQL injection
+				if ( ! in_array( $field, $queryable_fields, true ) ) {
+					continue;
+				}
+
 				$where_clauses[] = "`{$field}` = %s";
 				$where_values[]  = $value;
 			}

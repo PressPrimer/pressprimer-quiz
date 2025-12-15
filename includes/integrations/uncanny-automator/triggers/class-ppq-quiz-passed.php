@@ -9,8 +9,6 @@
  * @since 1.0.0
  */
 
-namespace Jeero\PressPrimerQuiz\Integrations\UncannyAutomator\Triggers;
-
 // Prevent direct access.
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
@@ -26,7 +24,7 @@ class PressPrimer_Quiz_Quiz_Passed extends \Uncanny_Automator\Recipe\Trigger {
 	/**
 	 * Helpers instance
 	 *
-	 * @var \Jeero\PressPrimerQuiz\Integrations\UncannyAutomator\PressPrimer_Quiz_Automator_Helpers
+	 * @var PressPrimer_Quiz_Automator_Helpers
 	 */
 	protected $helpers;
 

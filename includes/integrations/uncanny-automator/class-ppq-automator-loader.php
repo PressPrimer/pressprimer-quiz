@@ -9,8 +9,6 @@
  * @since 1.0.0
  */
 
-namespace Jeero\PressPrimerQuiz\Integrations\UncannyAutomator;
-
 // Prevent direct access.
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
@@ -51,9 +49,9 @@ class PressPrimer_Quiz_Automator_Loader {
 		new PressPrimer_Quiz_Automator_Integration();
 
 		// Register triggers with helpers dependency.
-		new Triggers\PressPrimer_Quiz_Quiz_Completed( $helpers );
-		new Triggers\PressPrimer_Quiz_Quiz_Passed( $helpers );
-		new Triggers\PressPrimer_Quiz_Quiz_Failed( $helpers );
+		new PressPrimer_Quiz_Quiz_Completed( $helpers );
+		new PressPrimer_Quiz_Quiz_Passed( $helpers );
+		new PressPrimer_Quiz_Quiz_Failed( $helpers );
 	}
 
 	/**

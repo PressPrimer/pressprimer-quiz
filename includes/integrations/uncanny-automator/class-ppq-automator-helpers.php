@@ -9,8 +9,6 @@
  * @since 1.0.0
  */
 
-namespace Jeero\PressPrimerQuiz\Integrations\UncannyAutomator;
-
 // Prevent direct access.
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;

@@ -118,7 +118,7 @@ class PressPrimer_Quiz_File_Processor {
 	/**
 	 * Validate file upload
 	 *
-	 * Checks upload for errors, size, and type.
+	 * Checks upload for errors, size, type, and security concerns.
 	 *
 	 * @since 1.0.0
 	 *
@@ -175,6 +175,61 @@ class PressPrimer_Quiz_File_Processor {
 			return new WP_Error(
 				'ppq_invalid_file',
 				__( 'Invalid file upload.', 'pressprimer-quiz' )
+			);
+		}
+
+		// Check for dangerous extensions (double extension attacks like file.pdf.php)
+		$filename = isset( $file['name'] ) ? basename( $file['name'] ) : '';
+		if ( preg_match( '/\.(php|phtml|php3|php4|php5|php7|php8|phar|exe|sh|bat|cmd|com|scr|msi|vbs|js|jar|cgi|pl|py|rb)[.\s]*$/i', $filename ) ) {
+			return new WP_Error(
+				'ppq_dangerous_extension',
+				__( 'File contains a potentially dangerous extension.', 'pressprimer-quiz' )
+			);
+		}
+
+		// Verify file content matches expected type using magic bytes
+		$content_validation = $this->validate_file_content( $file['tmp_name'] );
+		if ( is_wp_error( $content_validation ) ) {
+			return $content_validation;
+		}
+
+		return true;
+	}
+
+	/**
+	 * Validate file content using magic bytes
+	 *
+	 * Verifies that file content matches an allowed type by checking
+	 * the file signature (magic bytes), not just the extension.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param string $file_path Path to uploaded file.
+	 * @return true|WP_Error True if valid, WP_Error otherwise.
+	 */
+	private function validate_file_content( $file_path ) {
+		// Use finfo to detect actual content type from magic bytes
+		if ( ! function_exists( 'finfo_open' ) ) {
+			// If finfo is not available, we'll rely on get_mime_type() later
+			return true;
+		}
+
+		$finfo         = finfo_open( FILEINFO_MIME_TYPE );
+		$detected_type = finfo_file( $finfo, $file_path );
+		finfo_close( $finfo );
+
+		if ( false === $detected_type ) {
+			return new WP_Error(
+				'ppq_content_detection_failed',
+				__( 'Unable to verify file content.', 'pressprimer-quiz' )
+			);
+		}
+
+		// Check if detected type is in our allowed list
+		if ( ! isset( self::ALLOWED_MIME_TYPES[ $detected_type ] ) ) {
+			return new WP_Error(
+				'ppq_content_type_mismatch',
+				__( 'File content does not match an allowed document type.', 'pressprimer-quiz' )
 			);
 		}
 

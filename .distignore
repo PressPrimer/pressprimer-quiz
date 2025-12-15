@@ -20,8 +20,31 @@ composer.lock
 package.json
 package-lock.json
 
-# Vendor dev-only files (composer install --no-dev handles this during build)
+# Vendor dev-only files (composer install --no-dev handles packages)
+# These patterns clean up development artifacts from production dependencies
 vendor/bin
+vendor/*/.github
+vendor/*/*/.github
+vendor/*/Makefile
+vendor/*/*/Makefile
+vendor/*/.php-cs-fixer.php
+vendor/*/*/.php-cs-fixer.php
+vendor/*/phpunit*.xml
+vendor/*/*/phpunit*.xml
+vendor/*/phpunit*.xml.dist
+vendor/*/*/phpunit*.xml.dist
+vendor/*/.phpcs.xml.dist
+vendor/*/*/.phpcs.xml.dist
+vendor/*/CONTRIBUTING.md
+vendor/*/*/CONTRIBUTING.md
+vendor/*/CHANGELOG.md
+vendor/*/*/CHANGELOG.md
+vendor/*/README.md
+vendor/*/*/README.md
+vendor/*/tests
+vendor/*/*/tests
+vendor/*/.editorconfig
+vendor/*/*/.editorconfig
 
 # Build Tools / Config
 webpack.config.js

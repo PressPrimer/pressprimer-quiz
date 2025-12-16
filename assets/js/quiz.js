@@ -251,6 +251,9 @@
 			this.feedbackShown = {}; // Track which questions have shown feedback
 			this.isCheckingAnswer = false; // Prevent double-clicks on Check button
 
+			// Get guest token from URL (for environments where cookies may not work)
+			this.guestToken = new URLSearchParams(window.location.search).get('token') || '';
+
 			// Get start question (first unanswered for resume, default 0)
 			var startQuestion = parseInt(this.$container.data('start-question'), 10) || 0;
 			// Convert to page number for paginated mode
@@ -978,7 +981,8 @@
 					nonce: ppqQuiz.nonce,
 					attempt_id: this.attemptId,
 					item_id: itemId,
-					answers: selectedAnswers
+					answers: selectedAnswers,
+					guest_token: this.guestToken
 				},
 				success: function(response) {
 					self.isCheckingAnswer = false;
@@ -1138,7 +1142,8 @@
 				action: 'ppq_save_answers',
 				nonce: ppqQuiz.nonce,
 				attempt_id: this.attemptId,
-				active_elapsed_ms: activeElapsedMs
+				active_elapsed_ms: activeElapsedMs,
+				guest_token: this.guestToken
 			};
 
 			// Add answers with proper array notation for PHP
@@ -1381,7 +1386,8 @@
 					attempt_id: this.attemptId,
 					timed_out: this.isAutoSubmit,
 					current_url: window.location.href,
-					active_elapsed_ms: finalActiveElapsedMs
+					active_elapsed_ms: finalActiveElapsedMs,
+					guest_token: this.guestToken
 				},
 				success: (response) => {
 					if (response.success && response.data.redirect_url) {
@@ -1678,7 +1684,8 @@
 					action: 'ppq_sync_time',
 					nonce: ppqQuiz.nonce,
 					attempt_id: this.attemptId,
-					active_elapsed_ms: activeElapsedMs
+					active_elapsed_ms: activeElapsedMs,
+					guest_token: this.guestToken
 				},
 				// Silent - no UI feedback for heartbeat
 				success: function() {

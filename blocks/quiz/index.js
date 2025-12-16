@@ -82,6 +82,8 @@ registerBlockType('pressprimer-quiz/quiz', {
 							<p><Spinner /> {__('Loading quizzes...', 'pressprimer-quiz')}</p>
 						) : (
 							<SelectControl
+								__next40pxDefaultSize
+								__nextHasNoMarginBottom
 								label={__('Select Quiz', 'pressprimer-quiz')}
 								value={quizId}
 								options={quizOptions}
@@ -106,6 +108,8 @@ registerBlockType('pressprimer-quiz/quiz', {
 						instructions={__('Select a quiz to display from the dropdown below or in the sidebar settings.', 'pressprimer-quiz')}
 					>
 						<SelectControl
+							__next40pxDefaultSize
+							__nextHasNoMarginBottom
 							value={quizId}
 							options={quizOptions}
 							onChange={(value) => setAttributes({ quizId: parseInt(value, 10) })}

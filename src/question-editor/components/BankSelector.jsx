@@ -16,6 +16,7 @@ const { Title, Text } = Typography;
 const BankSelector = ({ value, onChange }) => {
 	const [options, setOptions] = useState([]);
 	const [loading, setLoading] = useState(false);
+	const [banksMap, setBanksMap] = useState({});
 
 	/**
 	 * Load available banks
@@ -31,10 +32,17 @@ const BankSelector = ({ value, onChange }) => {
 				path: '/ppq/v1/banks',
 			});
 
+			// Create a map for quick lookup of bank names by ID
+			const map = {};
+			banks.forEach((bank) => {
+				map[bank.id] = bank.name;
+			});
+			setBanksMap(map);
+
 			setOptions(
 				banks.map((bank) => ({
 					value: bank.id,
-					label: `${bank.id} - ${bank.name}`,
+					label: bank.name,
 					name: bank.name,
 					description: bank.description,
 				}))
@@ -44,6 +52,41 @@ const BankSelector = ({ value, onChange }) => {
 		} finally {
 			setLoading(false);
 		}
+	};
+
+	/**
+	 * Custom tag render to show bank name instead of just ID
+	 */
+	const tagRender = (props) => {
+		const { label, value: tagValue, closable, onClose } = props;
+		// Use the bank name from map if available, otherwise show the label or ID
+		const displayName = banksMap[tagValue] || label || `Bank ${tagValue}`;
+		return (
+			<span
+				style={{
+					display: 'inline-flex',
+					alignItems: 'center',
+					padding: '0 7px',
+					marginRight: 4,
+					marginBottom: 2,
+					background: '#f5f5f5',
+					border: '1px solid #d9d9d9',
+					borderRadius: 4,
+					fontSize: 12,
+					lineHeight: '20px',
+				}}
+			>
+				{displayName}
+				{closable && (
+					<span
+						onClick={onClose}
+						style={{ marginLeft: 4, cursor: 'pointer', color: '#999' }}
+					>
+						×
+					</span>
+				)}
+			</span>
+		);
 	};
 
 	return (
@@ -66,6 +109,7 @@ const BankSelector = ({ value, onChange }) => {
 					value={value}
 					onChange={onChange}
 					loading={loading}
+					tagRender={tagRender}
 					filterOption={(input, option) =>
 						(option?.name ?? '').toLowerCase().includes(input.toLowerCase())
 					}

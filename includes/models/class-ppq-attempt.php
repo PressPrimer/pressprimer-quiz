@@ -227,7 +227,9 @@ class PressPrimer_Quiz_Attempt extends PressPrimer_Quiz_Model {
 			'quiz_id',
 			'user_id',
 			'guest_email',
+			'guest_name',
 			'guest_token',
+			'token_expires_at',
 			'source_url',
 			'started_at',
 			'finished_at',
@@ -472,30 +474,77 @@ class PressPrimer_Quiz_Attempt extends PressPrimer_Quiz_Model {
 			);
 		}
 
-		// Check for existing in-progress attempt for this email (only if email provided)
-		if ( ! empty( $email ) ) {
-			$existing_in_progress = static::get_guest_in_progress( $quiz_id, $email );
-			if ( $existing_in_progress ) {
-				// If the attempt can be resumed, return it so the user can continue
-				if ( $existing_in_progress->can_resume() ) {
-					// Set cookie for returning guest so they can access their attempt
-					if ( $existing_in_progress->guest_token ) {
-						setcookie(
-							'ppq_guest_token',
-							$existing_in_progress->guest_token,
-							[
-								'expires'  => time() + WEEK_IN_SECONDS,
-								'path'     => COOKIEPATH,
-								'domain'   => COOKIE_DOMAIN,
-								'secure'   => is_ssl(),
-								'httponly' => true,
-								'samesite' => 'Strict',
-							]
-						);
-					}
-					return $existing_in_progress;
-				}
+		// Check for existing in-progress attempt
+		// First check by token from cookie (in case user started without email)
+		// Then check by email if provided
+		$existing_in_progress = null;
 
+		// Check cookie for existing token
+		$cookie_token = isset( $_COOKIE['ppq_guest_token'] ) ? sanitize_text_field( wp_unslash( $_COOKIE['ppq_guest_token'] ) ) : '';
+
+		if ( $cookie_token ) {
+			$token_attempt = static::get_by_token( $cookie_token );
+			if ( $token_attempt && (int) $token_attempt->quiz_id === $quiz_id && 'in_progress' === $token_attempt->status ) {
+				$existing_in_progress = $token_attempt;
+
+				// If user is now providing email and old attempt didn't have one, update it
+				if ( ! empty( $email ) && empty( $existing_in_progress->guest_email ) ) {
+					$existing_in_progress->guest_email = $email;
+					$existing_in_progress->save();
+				}
+			}
+		}
+
+		// If no attempt found by token, check by email
+		if ( ! $existing_in_progress && ! empty( $email ) ) {
+			$existing_in_progress = static::get_guest_in_progress( $quiz_id, $email );
+		}
+
+		// Process existing attempt if found
+		if ( $existing_in_progress ) {
+			// Auto-abandon stale attempts (no answers and older than 1 hour)
+			$should_abandon_stale = false;
+			$items                = $existing_in_progress->get_items();
+			$has_any_answer       = false;
+
+			foreach ( $items as $item ) {
+				if ( ! empty( $item->get_selected_answers() ) ) {
+					$has_any_answer = true;
+					break;
+				}
+			}
+
+			if ( ! $has_any_answer ) {
+				$started_timestamp = strtotime( $existing_in_progress->started_at );
+				$one_hour_ago      = time() - 3600;
+				if ( $started_timestamp < $one_hour_ago ) {
+					$should_abandon_stale = true;
+				}
+			}
+
+			if ( $should_abandon_stale ) {
+				// Abandon stale attempt with no answers
+				$existing_in_progress->status = 'abandoned';
+				$existing_in_progress->save();
+			} elseif ( $existing_in_progress->can_resume() ) {
+				// If the attempt can be resumed, return it so the user can continue
+				// Set cookie for returning guest so they can access their attempt
+				if ( $existing_in_progress->guest_token ) {
+					setcookie(
+						'ppq_guest_token',
+						$existing_in_progress->guest_token,
+						[
+							'expires'  => time() + WEEK_IN_SECONDS,
+							'path'     => COOKIEPATH,
+							'domain'   => COOKIE_DOMAIN,
+							'secure'   => is_ssl(),
+							'httponly' => true,
+							'samesite' => 'Strict',
+						]
+					);
+				}
+				return $existing_in_progress;
+			} else {
 				// If it can't be resumed (timed out or quiz doesn't allow resume), abandon it
 				$existing_in_progress->status = 'abandoned';
 				$existing_in_progress->save();
@@ -639,11 +688,11 @@ class PressPrimer_Quiz_Attempt extends PressPrimer_Quiz_Model {
 		}
 
 		global $wpdb;
-		$items_table = $wpdb->prefix . 'ppq_attempt_items';
 
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Custom table query for attempt items
 		$rows = $wpdb->get_results(
 			$wpdb->prepare(
-				"SELECT * FROM {$items_table} WHERE attempt_id = %d ORDER BY order_index ASC", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+				"SELECT * FROM {$wpdb->prefix}ppq_attempt_items WHERE attempt_id = %d ORDER BY order_index ASC",
 				$this->id
 			)
 		);

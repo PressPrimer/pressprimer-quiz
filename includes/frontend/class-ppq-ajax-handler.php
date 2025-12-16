@@ -251,13 +251,15 @@ class PressPrimer_Quiz_AJAX_Handler {
 			);
 		}
 
-		// Get and sanitize answers
+		// Get and sanitize answers - sanitized by sanitize_answers_array()
 		$answers = $this->sanitize_answers_array(
+			// phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- Sanitized by helper method
 			isset( $_POST['answers'] ) ? wp_unslash( $_POST['answers'] ) : []
 		);
 
-		// Get and sanitize confidence values
+		// Get and sanitize confidence values - sanitized by sanitize_confidence_array()
 		$confidence_values = $this->sanitize_confidence_array(
+			// phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- Sanitized by helper method
 			isset( $_POST['confidence'] ) ? wp_unslash( $_POST['confidence'] ) : []
 		);
 
@@ -550,10 +552,21 @@ class PressPrimer_Quiz_AJAX_Handler {
 			return true;
 		}
 
-		// Check if guest with valid token
+		// Check if guest with valid token (from cookie or POST data)
+		// POST data is checked as fallback for environments where cookies may not work
+		// (e.g., SSL termination proxies, strict cookie policies)
 		if ( ! is_user_logged_in() && $attempt->guest_token ) {
+			// First check cookie
 			$token = isset( $_COOKIE['ppq_guest_token'] ) ? sanitize_text_field( wp_unslash( $_COOKIE['ppq_guest_token'] ) ) : '';
-			if ( $token === $attempt->guest_token ) {
+
+			// Fallback to POST data if cookie not available
+			// phpcs:ignore WordPress.Security.NonceVerification.Missing -- Nonce verified in calling AJAX handler methods
+			if ( empty( $token ) && isset( $_POST['guest_token'] ) ) {
+				// phpcs:ignore WordPress.Security.NonceVerification.Missing -- Nonce verified in calling AJAX handler methods
+				$token = sanitize_text_field( wp_unslash( $_POST['guest_token'] ) );
+			}
+
+			if ( ! empty( $token ) && $token === $attempt->guest_token ) {
 				return true;
 			}
 		}

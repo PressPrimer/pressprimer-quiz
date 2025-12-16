@@ -138,6 +138,14 @@ class PressPrimer_Quiz_Shortcodes {
 	 * @return string Rendered HTML.
 	 */
 	private function render_quiz_attempt( $attempt_id ) {
+		// Send no-cache headers for attempt pages to prevent Varnish/CDN caching
+		// This ensures users always see their current attempt state
+		if ( ! headers_sent() ) {
+			header( 'Cache-Control: no-cache, no-store, must-revalidate, private' );
+			header( 'Pragma: no-cache' );
+			header( 'Expires: 0' );
+		}
+
 		$attempt = PressPrimer_Quiz_Attempt::get( $attempt_id );
 
 		if ( ! $attempt ) {

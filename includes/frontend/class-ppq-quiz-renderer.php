@@ -470,6 +470,7 @@ class PressPrimer_Quiz_Quiz_Renderer {
 
 		// Get all attempt items
 		$items = $attempt->get_items();
+
 		if ( empty( $items ) ) {
 			return '<div class="ppq-error ppq-notice ppq-notice-error"><p>' .
 				esc_html__( 'No questions found for this attempt.', 'pressprimer-quiz' ) .

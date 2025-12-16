@@ -88,8 +88,16 @@ class PressPrimer_Quiz_Automator_Helpers {
 		if ( $quiz ) {
 			$data['QUIZ_ID']       = $quiz->id ?? '';
 			$data['QUIZ_TITLE']    = $quiz->title ?? '';
-			$data['QUIZ_URL']      = $this->get_quiz_url( $quiz->id ?? 0 );
-			$data['PASSING_SCORE'] = $quiz->passing_score ?? '';
+			$data['PASSING_SCORE'] = $quiz->pass_percent ?? '';
+
+			// Get quiz URL - prefer attempt's source_url, fallback to searching content.
+			$quiz_url = '';
+			if ( $attempt && ! empty( $attempt->source_url ) ) {
+				$quiz_url = $attempt->source_url;
+			} else {
+				$quiz_url = $this->get_quiz_url( $quiz->id ?? 0 );
+			}
+			$data['QUIZ_URL'] = $quiz_url;
 		}
 
 		// Get attempt data.
@@ -139,33 +147,52 @@ class PressPrimer_Quiz_Automator_Helpers {
 	 * @return string Quiz URL or empty string.
 	 */
 	private function get_quiz_url( $quiz_id ) {
-		// Try to find a page with the quiz shortcode.
+		if ( ! $quiz_id ) {
+			return '';
+		}
+
 		global $wpdb;
+
+		// Search for shortcode in post content with various quote styles.
+		// Look for [ppq_quiz id="X"] or [ppq_quiz id='X'] or [ppq_quiz id=X].
+		$shortcode_patterns = array(
+			'%[ppq_quiz %id="' . intval( $quiz_id ) . '"%',
+			"%[ppq_quiz %id='" . intval( $quiz_id ) . "'%",
+			'%[ppq_quiz %id=' . intval( $quiz_id ) . '%',
+		);
+
+		$where_clauses = array();
+		foreach ( $shortcode_patterns as $pattern ) {
+			$where_clauses[] = $wpdb->prepare( 'post_content LIKE %s', $pattern );
+		}
+
+		$where = implode( ' OR ', $where_clauses );
 
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Quiz URL lookup from post content
 		$post_id = $wpdb->get_var(
-			$wpdb->prepare(
-				"SELECT ID FROM {$wpdb->posts}
-				WHERE post_status = 'publish'
-				AND post_content LIKE %s
-				LIMIT 1", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- WordPress core table name
-				'%[ppq_quiz id="' . $quiz_id . '"%'
-			)
+			"SELECT ID FROM {$wpdb->posts}
+			WHERE post_status = 'publish'
+			AND post_type IN ('post', 'page')
+			AND ({$where})
+			ORDER BY post_type = 'page' DESC, ID ASC
+			LIMIT 1" // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- $where is built with prepare() above
 		);
 
 		if ( $post_id ) {
 			return get_permalink( $post_id );
 		}
 
-		// Fallback: check for block.
+		// Fallback: check for Gutenberg block.
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Quiz URL lookup from post content
 		$post_id = $wpdb->get_var(
 			$wpdb->prepare(
 				"SELECT ID FROM {$wpdb->posts}
 				WHERE post_status = 'publish'
+				AND post_type IN ('post', 'page')
 				AND post_content LIKE %s
-				LIMIT 1", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- WordPress core table name
-				'%<!-- wp:ppq/quiz {"quizId":' . $quiz_id . '%'
+				ORDER BY post_type = 'page' DESC, ID ASC
+				LIMIT 1",
+				'%<!-- wp:pressprimer-quiz/quiz {"quizId":' . intval( $quiz_id ) . '%'
 			)
 		);
 

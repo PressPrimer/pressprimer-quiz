@@ -15,10 +15,11 @@
 # Development Dependencies
 node_modules
 composer.phar
-composer.json
 composer.lock
-package.json
 package-lock.json
+
+# Note: composer.json and package.json are intentionally included per WordPress.org guidelines
+# to allow others to review, understand, and modify dependencies
 
 # Vendor dev-only files (composer install --no-dev handles packages)
 # These patterns clean up development artifacts from production dependencies

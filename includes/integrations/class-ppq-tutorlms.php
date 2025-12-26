@@ -192,6 +192,7 @@ class PressPrimer_Quiz_TutorLMS {
 			</p>
 		</div>
 
+		<?php // Inline styles/scripts required: Meta box output with dynamic nonces that cannot be enqueued. ?>
 		<style>
 			.ppq-tutorlms-meta-box .ppq-quiz-selector {
 				position: relative;

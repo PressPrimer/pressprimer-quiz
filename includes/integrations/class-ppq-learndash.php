@@ -195,6 +195,7 @@ class PressPrimer_Quiz_LearnDash {
 			<?php endif; ?>
 		</div>
 
+		<?php // Inline styles/scripts required: Meta box output with dynamic nonces that cannot be enqueued. ?>
 		<style>
 			.ppq-learndash-meta-box .ppq-quiz-selector {
 				position: relative;
@@ -1114,6 +1115,9 @@ class PressPrimer_Quiz_LearnDash {
 			]
 		);
 
+		// Intentionally public: Navigation URLs are public permalinks, and this
+		// endpoint is used by the frontend quiz completion flow which may include
+		// guest users. No sensitive data is exposed.
 		register_rest_route(
 			'ppq/v1',
 			'/learndash/navigation',
@@ -1584,6 +1588,7 @@ class PressPrimer_Quiz_LearnDash {
 				color: #6c757d;
 				margin-bottom: 16px;
 			}
+			/* Inline styles required: Content filter output for restricted quiz placeholder. */
 			.ppq-restriction-placeholder__message {
 				font-size: 16px;
 				font-weight: 500;

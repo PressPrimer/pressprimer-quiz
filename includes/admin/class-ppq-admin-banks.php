@@ -705,6 +705,7 @@ class PressPrimer_Quiz_Admin_Banks {
 			</div>
 		</div>
 
+		<?php // Inline script required: Contains dynamic nonces and localized strings for AJAX-driven question browser. ?>
 		<script type="text/javascript">
 		jQuery(document).ready(function($) {
 			var searchTimeout;

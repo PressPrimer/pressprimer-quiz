@@ -175,6 +175,7 @@ class PressPrimer_Quiz_LifterLMS {
 			</p>
 		</div>
 
+		<?php // Inline styles/scripts required: Meta box output with dynamic nonces that cannot be enqueued. ?>
 		<style>
 			.ppq-lifterlms-metabox .ppq-quiz-selector {
 				position: relative;

@@ -145,6 +145,35 @@ Absolutely. PressPrimer Quiz works as a standalone quiz plugin. Use Gutenberg bl
 
 No. PressPrimer Quiz operates independently from native LMS quiz features. You can use both simultaneously—our quizzes appear via meta boxes and don't modify or interfere with built-in quiz functionality.
 
+== External Services ==
+
+This plugin connects to external third-party services. Use of these services is optional and requires explicit user configuration.
+
+= OpenAI API =
+
+This plugin offers optional AI-powered question generation using the OpenAI API. This feature is **disabled by default** and only activates when an administrator or authorized user enters their own OpenAI API key in the plugin settings.
+
+**What data is sent:**
+* Text content pasted by the user for question generation
+* Content extracted from PDF or Word documents uploaded by the user
+* Configuration parameters (number of questions, difficulty level, question types)
+
+**When data is sent:**
+* Only when a user explicitly clicks "Generate Questions" in the AI generation interface
+* Data is never sent automatically or in the background
+
+**What data is NOT sent:**
+* Student quiz answers or attempt data
+* User personal information
+* Site configuration or other plugin data
+
+**Service provider:** OpenAI, L.L.C.
+* [Terms of Use](https://openai.com/policies/terms-of-use/)
+* [Privacy Policy](https://openai.com/policies/privacy-policy/)
+* [API Data Usage Policy](https://openai.com/policies/api-data-usage-policy/)
+
+**Note:** You are responsible for your own use of the OpenAI API and must agree to OpenAI's terms when obtaining an API key. API usage costs are billed directly by OpenAI to the API key holder.
+
 == Screenshots ==
 
 1. PressPrimer Dashboard with key stats and quick actions

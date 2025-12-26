@@ -26,6 +26,9 @@ class PressPrimer_Quiz_AI_Service {
 	/**
 	 * OpenAI API base URL
 	 *
+	 * External service usage is documented in readme.txt under "External Services".
+	 * Data is only sent when users explicitly trigger AI generation.
+	 *
 	 * @var string
 	 */
 	const API_BASE_URL = 'https://api.openai.com/v1';

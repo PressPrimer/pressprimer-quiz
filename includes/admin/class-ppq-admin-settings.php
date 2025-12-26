@@ -612,6 +612,7 @@ Good luck with your studies!',
 			</div>
 		</div>
 
+		<?php // Inline script required: Contains dynamic nonces and localized strings for AJAX operations. ?>
 		<script type="text/javascript">
 		jQuery(document).ready(function($) {
 			// Save site-wide API key
@@ -837,6 +838,7 @@ Good luck with your studies!',
 	 * @since 1.0.0
 	 */
 	private function enqueue_api_key_styles() {
+		// Inline styles required: Rendered within settings page callback, paired with inline script containing dynamic nonces.
 		?>
 		<style>
 			.ppq-api-key-manager {
@@ -997,6 +999,7 @@ Good luck with your studies!',
 	 * @since 1.0.0
 	 */
 	private function enqueue_api_key_script() {
+		// Inline script required: Contains dynamic nonces and localized strings for AJAX operations.
 		?>
 		<script>
 		jQuery(document).ready(function($) {

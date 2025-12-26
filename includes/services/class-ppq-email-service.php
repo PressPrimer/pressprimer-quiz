@@ -266,6 +266,7 @@ class PressPrimer_Quiz_Email_Service {
 		// Build footer HTML
 		$footer_html = self::build_email_footer( $attempt, $quiz );
 
+		// Inline styles required: Email clients do not support external stylesheets.
 		ob_start();
 		?>
 <!DOCTYPE html>
@@ -680,6 +681,7 @@ Good luck with your studies!
 		<?php
 		$footer_html = ob_get_clean();
 
+		// Inline styles required: Email clients do not support external stylesheets.
 		ob_start();
 		?>
 <!DOCTYPE html>

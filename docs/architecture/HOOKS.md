@@ -1,6 +1,210 @@
 # Hooks Reference
 
-PressPrimer Quiz provides actions and filters for extensibility. All hooks are prefixed with `ppq_`.
+PressPrimer Quiz provides actions and filters for extensibility. All hooks use the `pressprimer_quiz_` prefix to meet WordPress.org requirements.
+
+## Addon Compatibility Hooks (v2.0+)
+
+These hooks enable premium addons (Educator, School, Enterprise) to extend the free plugin.
+
+### Addon Registration System
+
+#### `pressprimer_quiz_register_addon`
+
+Fired by addons to register themselves with the free plugin.
+
+```php
+do_action( 'pressprimer_quiz_register_addon', string $addon_id, string $version, array $features );
+```
+
+**Parameters:**
+- `$addon_id` (string) - Addon identifier ('educator', 'school', 'enterprise')
+- `$version` (string) - Addon version number
+- `$features` (array) - Array of feature slugs this addon provides
+
+**Example:**
+```php
+// In Educator addon bootstrap
+add_action( 'pressprimer_quiz_loaded', function() {
+    do_action( 'pressprimer_quiz_register_addon', 'educator', '2.0.0', array(
+        'groups',
+        'assignments',
+        'import_export',
+    ) );
+} );
+```
+
+---
+
+#### `pressprimer_quiz_loaded`
+
+Fires when the free plugin is fully loaded. Addons should hook in here.
+
+```php
+do_action( 'pressprimer_quiz_loaded' );
+```
+
+**Example:**
+```php
+add_action( 'pressprimer_quiz_loaded', function() {
+    // Initialize addon components
+    $my_addon = new My_Addon_Class();
+    $my_addon->init();
+} );
+```
+
+---
+
+#### `pressprimer_quiz_addons_loaded`
+
+Fires after all addons have registered. Use for addon interdependencies.
+
+```php
+do_action( 'pressprimer_quiz_addons_loaded' );
+```
+
+---
+
+### Addon Detection Functions
+
+These functions check addon/feature status:
+
+```php
+// Check if a specific addon tier is active
+pressprimer_quiz_has_addon( 'educator' );     // bool
+pressprimer_quiz_has_addon( 'school' );       // bool
+pressprimer_quiz_has_addon( 'enterprise' );   // bool
+
+// Check if a specific feature is available
+pressprimer_quiz_feature_enabled( 'groups' );        // bool
+pressprimer_quiz_feature_enabled( 'shared_banks' );  // bool
+pressprimer_quiz_feature_enabled( 'audit_log' );     // bool
+```
+
+---
+
+### Admin Extension Points
+
+#### `pressprimer_quiz_builder_settings_after`
+
+Add settings sections to the Quiz Builder settings panel.
+
+```php
+do_action( 'pressprimer_quiz_builder_settings_after', int $quiz_id );
+```
+
+**Example:**
+```php
+add_action( 'pressprimer_quiz_builder_settings_after', function( $quiz_id ) {
+    // Add availability window settings (School tier)
+    include PPQ_SCHOOL_PATH . 'views/quiz-availability-settings.php';
+} );
+```
+
+---
+
+#### `pressprimer_quiz_builder_question_tools`
+
+Add action buttons to question rows in the Quiz Builder.
+
+```php
+do_action( 'pressprimer_quiz_builder_question_tools', int $question_id, int $quiz_id );
+```
+
+---
+
+#### `pressprimer_quiz_question_editor_after_answers`
+
+Add fields below the answers section in question editor.
+
+```php
+do_action( 'pressprimer_quiz_question_editor_after_answers', int $question_id );
+```
+
+---
+
+#### `pressprimer_quiz_settings_tabs`
+
+Add tabs to the main plugin settings page.
+
+```php
+$tabs = apply_filters( 'pressprimer_quiz_settings_tabs', array $tabs );
+```
+
+**Default Tabs:**
+```php
+[
+    'general' => 'General',
+    'appearance' => 'Appearance',
+    'ai' => 'AI Generation',
+    'integrations' => 'Integrations',
+]
+```
+
+---
+
+#### `pressprimer_quiz_admin_menu`
+
+Add submenus to the PressPrimer Quiz admin menu.
+
+```php
+do_action( 'pressprimer_quiz_admin_menu' );
+```
+
+**Example:**
+```php
+add_action( 'pressprimer_quiz_admin_menu', function() {
+    add_submenu_page(
+        'ppq-quizzes',
+        __( 'Audit Log', 'pressprimer-quiz-enterprise' ),
+        __( 'Audit Log', 'pressprimer-quiz-enterprise' ),
+        'ppq_view_audit_log',
+        'ppq-audit-log',
+        array( $this, 'render_audit_log' )
+    );
+} );
+```
+
+---
+
+### Frontend Extension Points
+
+#### `pressprimer_quiz_results_after_score`
+
+Add content after the score display on results page.
+
+```php
+do_action( 'pressprimer_quiz_results_after_score', int $attempt_id, array $results );
+```
+
+**Example:**
+```php
+add_action( 'pressprimer_quiz_results_after_score', function( $attempt_id, $results ) {
+    // Show pre/post test comparison (Educator tier)
+    include PPQ_EDUCATOR_PATH . 'views/prepost-comparison.php';
+} );
+```
+
+---
+
+#### `pressprimer_quiz_landing_before_start`
+
+Add content before the Start Quiz button on landing page.
+
+```php
+do_action( 'pressprimer_quiz_landing_before_start', int $quiz_id, WP_User|null $user );
+```
+
+---
+
+#### `pressprimer_quiz_after_question`
+
+Add content after each question during quiz taking.
+
+```php
+do_action( 'pressprimer_quiz_after_question', int $question_id, int $attempt_id );
+```
+
+---
 
 ## Actions
 
@@ -8,7 +212,8 @@ Actions allow external code to execute at specific points in the plugin's lifecy
 
 ### Quiz Lifecycle
 
-#### `ppq_quiz_created`
+#### `pressprimer_quiz_quiz_created`
+
 Fires when a new quiz is created.
 
 ```php
@@ -21,7 +226,8 @@ do_action( 'pressprimer_quiz_quiz_created', int $quiz_id, array $data );
 
 ---
 
-#### `ppq_quiz_updated`
+#### `pressprimer_quiz_quiz_updated`
+
 Fires when a quiz is updated.
 
 ```php
@@ -34,7 +240,8 @@ do_action( 'pressprimer_quiz_quiz_updated', int $quiz_id, array $changes );
 
 ---
 
-#### `ppq_quiz_published`
+#### `pressprimer_quiz_quiz_published`
+
 Fires when a quiz status changes to published.
 
 ```php
@@ -43,7 +250,8 @@ do_action( 'pressprimer_quiz_quiz_published', int $quiz_id );
 
 ---
 
-#### `ppq_quiz_deleted`
+#### `pressprimer_quiz_quiz_deleted`
+
 Fires when a quiz is deleted (soft delete).
 
 ```php
@@ -54,7 +262,8 @@ do_action( 'pressprimer_quiz_quiz_deleted', int $quiz_id );
 
 ### Attempt Lifecycle
 
-#### `ppq_attempt_started`
+#### `pressprimer_quiz_attempt_started`
+
 Fires when a user starts a quiz attempt.
 
 ```php
@@ -76,7 +285,8 @@ add_action( 'pressprimer_quiz_attempt_started', function( $attempt_id, $quiz_id,
 
 ---
 
-#### `ppq_answer_saved`
+#### `pressprimer_quiz_answer_saved`
+
 Fires when an answer is saved (not submitted).
 
 ```php
@@ -90,7 +300,8 @@ do_action( 'pressprimer_quiz_answer_saved', int $attempt_id, int $question_id, a
 
 ---
 
-#### `ppq_attempt_submitted`
+#### `pressprimer_quiz_attempt_submitted`
+
 Fires when a quiz attempt is submitted.
 
 ```php
@@ -114,7 +325,8 @@ add_action( 'pressprimer_quiz_attempt_submitted', function( $attempt_id, $passed
 
 ---
 
-#### `ppq_quiz_passed`
+#### `pressprimer_quiz_quiz_passed`
+
 Fires specifically when a user passes a quiz.
 
 ```php
@@ -129,7 +341,8 @@ do_action( 'pressprimer_quiz_quiz_passed', int $quiz_id, int $user_id, float $sc
 
 ---
 
-#### `ppq_quiz_failed`
+#### `pressprimer_quiz_quiz_failed`
+
 Fires specifically when a user fails a quiz.
 
 ```php
@@ -138,7 +351,8 @@ do_action( 'pressprimer_quiz_quiz_failed', int $quiz_id, int $user_id, float $sc
 
 ---
 
-#### `ppq_attempt_abandoned`
+#### `pressprimer_quiz_attempt_abandoned`
+
 Fires when an attempt is marked as abandoned (timed out without submission).
 
 ```php
@@ -149,7 +363,8 @@ do_action( 'pressprimer_quiz_attempt_abandoned', int $attempt_id );
 
 ### Question Lifecycle
 
-#### `ppq_question_created`
+#### `pressprimer_quiz_question_created`
+
 Fires when a new question is created.
 
 ```php
@@ -158,7 +373,8 @@ do_action( 'pressprimer_quiz_question_created', int $question_id, array $data );
 
 ---
 
-#### `ppq_question_revised`
+#### `pressprimer_quiz_question_revised`
+
 Fires when a question revision is created (question content updated).
 
 ```php
@@ -167,7 +383,8 @@ do_action( 'pressprimer_quiz_question_revised', int $question_id, int $revision_
 
 ---
 
-#### `ppq_question_deleted`
+#### `pressprimer_quiz_question_deleted`
+
 Fires when a question is deleted.
 
 ```php
@@ -176,9 +393,10 @@ do_action( 'pressprimer_quiz_question_deleted', int $question_id );
 
 ---
 
-### Group & Assignment
+### Group & Assignment (Educator Addon)
 
-#### `ppq_group_created`
+#### `pressprimer_quiz_group_created`
+
 Fires when a group is created.
 
 ```php
@@ -187,7 +405,8 @@ do_action( 'pressprimer_quiz_group_created', int $group_id );
 
 ---
 
-#### `ppq_member_added_to_group`
+#### `pressprimer_quiz_member_added_to_group`
+
 Fires when a user is added to a group.
 
 ```php
@@ -201,7 +420,8 @@ do_action( 'pressprimer_quiz_member_added_to_group', int $group_id, int $user_id
 
 ---
 
-#### `ppq_quiz_assigned`
+#### `pressprimer_quiz_quiz_assigned`
+
 Fires when a quiz is assigned to a group or user.
 
 ```php
@@ -218,7 +438,8 @@ do_action( 'pressprimer_quiz_quiz_assigned', int $quiz_id, string $assignee_type
 
 ### AI Generation
 
-#### `ppq_ai_generation_started`
+#### `pressprimer_quiz_ai_generation_started`
+
 Fires when AI question generation begins.
 
 ```php
@@ -227,7 +448,8 @@ do_action( 'pressprimer_quiz_ai_generation_started', int $user_id, array $params
 
 ---
 
-#### `ppq_ai_generation_completed`
+#### `pressprimer_quiz_ai_generation_completed`
+
 Fires when AI question generation completes.
 
 ```php
@@ -238,7 +460,8 @@ do_action( 'pressprimer_quiz_ai_generation_completed', int $user_id, int $questi
 
 ### Admin
 
-#### `ppq_settings_saved`
+#### `pressprimer_quiz_settings_saved`
+
 Fires when plugin settings are saved.
 
 ```php
@@ -253,11 +476,12 @@ Filters allow modification of data at specific points.
 
 ### Scoring
 
-#### `ppq_scoring_mc`
+#### `pressprimer_quiz_scoring_mc`
+
 Filter the score for a multiple choice question.
 
 ```php
-$score = apply_filters( 'pressprimer_quiz_scoring_mc', float $score, PPQ_Question $question, array $selected_answers );
+$score = apply_filters( 'pressprimer_quiz_scoring_mc', float $score, PressPrimer_Quiz_Question $question, array $selected_answers );
 ```
 
 **Example:**
@@ -270,31 +494,34 @@ add_filter( 'pressprimer_quiz_scoring_mc', function( $score, $question, $selecte
 
 ---
 
-#### `ppq_scoring_ma`
+#### `pressprimer_quiz_scoring_ma`
+
 Filter the score for a multiple answer question.
 
 ```php
-$score = apply_filters( 'pressprimer_quiz_scoring_ma', float $score, PPQ_Question $question, array $selected_answers, array $scoring_details );
+$score = apply_filters( 'pressprimer_quiz_scoring_ma', float $score, PressPrimer_Quiz_Question $question, array $selected_answers, array $scoring_details );
 ```
 
 **Parameters:**
 - `$score` (float) - Calculated score
-- `$question` (PPQ_Question) - The question object
+- `$question` (PressPrimer_Quiz_Question) - The question object
 - `$selected_answers` (array) - Selected answer IDs
 - `$scoring_details` (array) - Details about partial credit calculation
 
 ---
 
-#### `ppq_scoring_tf`
+#### `pressprimer_quiz_scoring_tf`
+
 Filter the score for a true/false question.
 
 ```php
-$score = apply_filters( 'pressprimer_quiz_scoring_tf', float $score, PPQ_Question $question, array $selected_answers );
+$score = apply_filters( 'pressprimer_quiz_scoring_tf', float $score, PressPrimer_Quiz_Question $question, array $selected_answers );
 ```
 
 ---
 
-#### `ppq_attempt_score`
+#### `pressprimer_quiz_attempt_score`
+
 Filter the final attempt score before saving.
 
 ```php
@@ -316,7 +543,8 @@ $score_data = apply_filters( 'pressprimer_quiz_attempt_score', array $score_data
 
 ### Quiz Generation
 
-#### `ppq_quiz_questions`
+#### `pressprimer_quiz_quiz_questions`
+
 Filter the questions selected for a quiz attempt.
 
 ```php
@@ -334,7 +562,8 @@ add_filter( 'pressprimer_quiz_quiz_questions', function( $question_ids, $quiz_id
 
 ---
 
-#### `ppq_dynamic_quiz_rules`
+#### `pressprimer_quiz_dynamic_quiz_rules`
+
 Filter the rules used for dynamic quiz generation.
 
 ```php
@@ -343,9 +572,62 @@ $rules = apply_filters( 'pressprimer_quiz_dynamic_quiz_rules', array $rules, int
 
 ---
 
+#### `pressprimer_quiz_pool_max_questions` (v2.2)
+
+Filter the maximum questions from pool for a quiz.
+
+```php
+$max = apply_filters( 'pressprimer_quiz_pool_max_questions', int $max, int $quiz_id, int $user_id );
+```
+
+---
+
+### Access Control (v2.0)
+
+#### `pressprimer_quiz_access_mode`
+
+Filter the effective access mode for a quiz.
+
+```php
+$mode = apply_filters( 'pressprimer_quiz_access_mode', string $mode, int $quiz_id );
+```
+
+**Possible Values:**
+- `guest_optional` - Allow guests, email optional
+- `guest_required` - Allow guests, email required
+- `login_required` - Require WordPress login
+
+---
+
+#### `pressprimer_quiz_login_url`
+
+Filter the login URL when login is required.
+
+```php
+$url = apply_filters( 'pressprimer_quiz_login_url', string $url, int $quiz_id );
+```
+
+**Example:**
+```php
+// Use WooCommerce My Account page
+add_filter( 'pressprimer_quiz_login_url', function( $url, $quiz_id ) {
+    if ( function_exists( 'wc_get_page_id' ) ) {
+        $myaccount_id = wc_get_page_id( 'myaccount' );
+        if ( $myaccount_id > 0 ) {
+            $redirect = urlencode( remove_query_arg( 'redirect_to', $url ) );
+            return add_query_arg( 'redirect_to', $redirect, get_permalink( $myaccount_id ) );
+        }
+    }
+    return $url;
+}, 10, 2 );
+```
+
+---
+
 ### Results & Display
 
-#### `ppq_result_payload`
+#### `pressprimer_quiz_result_payload`
+
 Filter the results data sent to the frontend.
 
 ```php
@@ -354,7 +636,8 @@ $results = apply_filters( 'pressprimer_quiz_result_payload', array $results, int
 
 ---
 
-#### `ppq_result_message`
+#### `pressprimer_quiz_result_message`
+
 Filter the result message shown to the user.
 
 ```php
@@ -363,7 +646,8 @@ $message = apply_filters( 'pressprimer_quiz_result_message', string $message, in
 
 ---
 
-#### `ppq_quiz_landing_data`
+#### `pressprimer_quiz_quiz_landing_data`
+
 Filter the data shown on the quiz landing page.
 
 ```php
@@ -374,7 +658,8 @@ $data = apply_filters( 'pressprimer_quiz_quiz_landing_data', array $data, int $q
 
 ### Theme & Styling
 
-#### `ppq_theme_tokens`
+#### `pressprimer_quiz_theme_tokens`
+
 Filter CSS custom properties for a theme.
 
 ```php
@@ -392,7 +677,8 @@ add_filter( 'pressprimer_quiz_theme_tokens', function( $tokens, $theme ) {
 
 ---
 
-#### `ppq_available_themes`
+#### `pressprimer_quiz_available_themes`
+
 Filter the list of available themes.
 
 ```php
@@ -410,29 +696,46 @@ $themes = apply_filters( 'pressprimer_quiz_available_themes', array $themes );
 
 ---
 
+#### `pressprimer_quiz_display_density` (v2.0)
+
+Filter the display density setting for a quiz.
+
+```php
+$density = apply_filters( 'pressprimer_quiz_display_density', string $density, int $quiz_id );
+```
+
+**Possible Values:**
+- `standard` - Full spacing (default)
+- `condensed` - Compact layout
+
+---
+
 ### Question Rendering
 
-#### `ppq_question_stem`
+#### `pressprimer_quiz_question_stem`
+
 Filter the question stem before display.
 
 ```php
-$stem = apply_filters( 'pressprimer_quiz_question_stem', string $stem, PPQ_Question $question );
+$stem = apply_filters( 'pressprimer_quiz_question_stem', string $stem, PressPrimer_Quiz_Question $question );
 ```
 
 ---
 
-#### `ppq_answer_option`
+#### `pressprimer_quiz_answer_option`
+
 Filter an answer option before display.
 
 ```php
-$option = apply_filters( 'pressprimer_quiz_answer_option', array $option, PPQ_Question $question );
+$option = apply_filters( 'pressprimer_quiz_answer_option', array $option, PressPrimer_Quiz_Question $question );
 ```
 
 ---
 
 ### AI Generation
 
-#### `ppq_ai_prompt`
+#### `pressprimer_quiz_ai_prompt`
+
 Filter the prompt sent to the AI API.
 
 ```php
@@ -441,7 +744,8 @@ $prompt = apply_filters( 'pressprimer_quiz_ai_prompt', string $prompt, array $pa
 
 ---
 
-#### `ppq_ai_response`
+#### `pressprimer_quiz_ai_response`
+
 Filter the parsed AI response before creating questions.
 
 ```php
@@ -452,7 +756,8 @@ $questions = apply_filters( 'pressprimer_quiz_ai_response', array $questions, st
 
 ### Permissions
 
-#### `ppq_user_can_take_quiz`
+#### `pressprimer_quiz_user_can_take_quiz`
+
 Filter whether a user can take a specific quiz.
 
 ```php
@@ -472,7 +777,8 @@ add_filter( 'pressprimer_quiz_user_can_take_quiz', function( $can_take, $quiz_id
 
 ---
 
-#### `ppq_user_can_view_results`
+#### `pressprimer_quiz_user_can_view_results`
+
 Filter whether a user can view attempt results.
 
 ```php
@@ -483,7 +789,8 @@ $can_view = apply_filters( 'pressprimer_quiz_user_can_view_results', bool $can_v
 
 ### Rate Limiting
 
-#### `ppq_rate_limit_attempts`
+#### `pressprimer_quiz_rate_limit_attempts`
+
 Filter the rate limit for quiz attempts.
 
 ```php
@@ -494,7 +801,8 @@ Default: 10 attempts per 10 minutes
 
 ---
 
-#### `ppq_rate_limit_ai`
+#### `pressprimer_quiz_rate_limit_ai`
+
 Filter the rate limit for AI generation requests.
 
 ```php
@@ -507,7 +815,8 @@ Default: 20 requests per hour
 
 ### Email
 
-#### `ppq_email_headers`
+#### `pressprimer_quiz_email_headers`
+
 Filter email headers.
 
 ```php
@@ -516,7 +825,8 @@ $headers = apply_filters( 'pressprimer_quiz_email_headers', array $headers, stri
 
 ---
 
-#### `ppq_email_content`
+#### `pressprimer_quiz_email_content`
+
 Filter email content before sending.
 
 ```php
@@ -529,7 +839,8 @@ $content = apply_filters( 'pressprimer_quiz_email_content', string $content, str
 
 ### LearnDash
 
-#### `ppq_learndash_quiz_passed`
+#### `pressprimer_quiz_learndash_quiz_passed`
+
 Fires when a PressPrimer quiz linked to LearnDash is passed.
 
 ```php
@@ -538,7 +849,8 @@ do_action( 'pressprimer_quiz_learndash_quiz_passed', int $lesson_id, int $quiz_i
 
 ---
 
-#### `ppq_learndash_should_complete_lesson`
+#### `pressprimer_quiz_learndash_should_complete_lesson`
+
 Filter whether completing the quiz should mark the lesson complete.
 
 ```php
@@ -549,7 +861,8 @@ $should_complete = apply_filters( 'pressprimer_quiz_learndash_should_complete_le
 
 ### TutorLMS
 
-#### `ppq_tutor_quiz_completed`
+#### `pressprimer_quiz_tutor_quiz_completed`
+
 Fires when a PressPrimer quiz linked to TutorLMS is completed.
 
 ```php
@@ -560,11 +873,34 @@ do_action( 'pressprimer_quiz_tutor_quiz_completed', int $lesson_id, int $quiz_id
 
 ### LifterLMS
 
-#### `ppq_lifter_quiz_completed`
+#### `pressprimer_quiz_lifter_quiz_completed`
+
 Fires when a PressPrimer quiz linked to LifterLMS is completed.
 
 ```php
 do_action( 'pressprimer_quiz_lifter_quiz_completed', int $lesson_id, int $quiz_id, int $user_id, bool $passed );
+```
+
+---
+
+### LearnPress (v2.0)
+
+#### `pressprimer_quiz_learnpress_quiz_completed`
+
+Fires when a PressPrimer quiz linked to LearnPress is completed.
+
+```php
+do_action( 'pressprimer_quiz_learnpress_quiz_completed', int $lesson_id, int $quiz_id, int $user_id, bool $passed );
+```
+
+---
+
+#### `pressprimer_quiz_learnpress_should_complete_lesson`
+
+Filter whether completing the quiz should mark the lesson complete.
+
+```php
+$should_complete = apply_filters( 'pressprimer_quiz_learnpress_should_complete_lesson', bool $should_complete, int $lesson_id, int $attempt_id );
 ```
 
 ---
@@ -657,3 +993,46 @@ add_filter( 'pressprimer_quiz_user_can_take_quiz', function( $can_take, $quiz_id
 }, 10, 3 );
 ```
 
+### Creating an Addon
+
+```php
+/**
+ * Example addon bootstrap
+ */
+class My_PPQ_Addon {
+    
+    public function __construct() {
+        // Wait for PPQ to load
+        add_action( 'pressprimer_quiz_loaded', array( $this, 'init' ) );
+    }
+    
+    public function init() {
+        // Register this addon
+        do_action( 'pressprimer_quiz_register_addon', 'my-addon', '1.0.0', array(
+            'custom_feature',
+            'another_feature',
+        ) );
+        
+        // Add admin extensions
+        add_action( 'pressprimer_quiz_builder_settings_after', array( $this, 'add_settings' ) );
+        add_action( 'pressprimer_quiz_admin_menu', array( $this, 'add_menu' ) );
+        
+        // Add frontend extensions
+        add_action( 'pressprimer_quiz_results_after_score', array( $this, 'add_results_section' ) );
+    }
+    
+    public function add_settings( $quiz_id ) {
+        // Render additional quiz settings
+    }
+    
+    public function add_menu() {
+        // Add admin submenu pages
+    }
+    
+    public function add_results_section( $attempt_id, $results ) {
+        // Add content to results page
+    }
+}
+
+new My_PPQ_Addon();
+```

@@ -27,18 +27,22 @@ registerBlockType('pressprimer-quiz/my-attempts', {
 				<InspectorControls>
 					<PanelBody title={__('Display Settings', 'pressprimer-quiz')} initialOpen={true}>
 						<ToggleControl
+							__nextHasNoMarginBottom
 							label={__('Show Score', 'pressprimer-quiz')}
 							help={__('Display the score percentage for each attempt', 'pressprimer-quiz')}
 							checked={showScore}
 							onChange={(value) => setAttributes({ showScore: value })}
 						/>
 						<ToggleControl
+							__nextHasNoMarginBottom
 							label={__('Show Date', 'pressprimer-quiz')}
 							help={__('Display the date when each quiz was completed', 'pressprimer-quiz')}
 							checked={showDate}
 							onChange={(value) => setAttributes({ showDate: value })}
 						/>
 						<RangeControl
+							__nextHasNoMarginBottom
+							__next40pxDefaultSize
 							label={__('Attempts Per Page', 'pressprimer-quiz')}
 							help={__('Number of attempts to show per page', 'pressprimer-quiz')}
 							value={perPage}

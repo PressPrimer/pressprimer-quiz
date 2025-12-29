@@ -13,6 +13,7 @@ pressprimer-quiz/
 │   ├── class-ppq-plugin.php      # Main plugin class
 │   ├── class-ppq-activator.php   # Activation hooks
 │   ├── class-ppq-deactivator.php # Deactivation hooks
+│   ├── class-ppq-addon-manager.php # v2.0 - Addon registration (NEW)
 │   │
 │   ├── models/                   # Data models
 │   ├── admin/                    # Admin-only classes
@@ -36,6 +37,36 @@ pressprimer-quiz/
 └── tests/                        # Test files
 ```
 
+## v2.0 New Files
+
+The following files are added in v2.0:
+
+### Addon System
+```
+includes/
+├── class-ppq-addon-manager.php   # Addon registration and feature detection
+```
+
+### LearnPress Integration
+```
+includes/integrations/
+├── class-ppq-learnpress.php      # LearnPress LMS integration
+```
+
+### Access Control
+```
+includes/services/
+├── class-ppq-access-controller.php # Login requirement handling
+```
+
+### Condensed Mode
+```
+assets/css/
+├── frontend-condensed.css        # Condensed display density styles
+```
+
+---
+
 ## Main Plugin File
 
 `pressprimer-quiz.php` is the entry point:
@@ -46,7 +77,7 @@ pressprimer-quiz/
  * Plugin Name:       PressPrimer Quiz
  * Plugin URI:        https://pressprimer.com/quiz
  * Description:       Enterprise-grade quiz and assessment platform for WordPress educators.
- * Version:           1.0.0
+ * Version:           2.0.0
  * Requires at least: 6.0
  * Requires PHP:      7.4
  * Author:            PressPrimer
@@ -63,20 +94,20 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 // Plugin constants
-define( 'PPQ_VERSION', '1.0.0' );
+define( 'PPQ_VERSION', '2.0.0' );
 define( 'PPQ_PLUGIN_FILE', __FILE__ );
 define( 'PPQ_PLUGIN_PATH', plugin_dir_path( __FILE__ ) );
 define( 'PPQ_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
 define( 'PPQ_PLUGIN_BASENAME', plugin_basename( __FILE__ ) );
-define( 'PPQ_DB_VERSION', '1.0.0' );
+define( 'PPQ_DB_VERSION', '2.0.0' );
 
 // Autoloader
 require_once PPQ_PLUGIN_PATH . 'includes/class-ppq-autoloader.php';
 PressPrimer_Quiz_Autoloader::register();
 
 // Activation/Deactivation hooks
-register_activation_hook( __FILE__, [ 'PPQ_Activator', 'activate' ] );
-register_deactivation_hook( __FILE__, [ 'PPQ_Deactivator', 'deactivate' ] );
+register_activation_hook( __FILE__, [ 'PressPrimer_Quiz_Activator', 'activate' ] );
+register_deactivation_hook( __FILE__, [ 'PressPrimer_Quiz_Deactivator', 'deactivate' ] );
 
 // Initialize plugin
 function pressprimer_quiz_init() {
@@ -130,14 +161,17 @@ class PressPrimer_Quiz_Autoloader {
      * Autoload a class
      */
     public static function autoload( string $class ): void {
-        // Only handle our classes
-        if ( strpos( $class, 'PPQ_' ) !== 0 ) {
+        // Handle both old PPQ_ prefix and new PressPrimer_Quiz_ prefix
+        if ( strpos( $class, 'PressPrimer_Quiz_' ) === 0 ) {
+            // New prefix: PressPrimer_Quiz_Question -> class-ppq-question.php
+            $suffix = substr( $class, strlen( 'PressPrimer_Quiz_' ) );
+            $file = 'class-ppq-' . strtolower( str_replace( '_', '-', $suffix ) ) . '.php';
+        } elseif ( strpos( $class, 'PPQ_' ) === 0 ) {
+            // Legacy: PPQ_Question -> class-ppq-question.php
+            $file = 'class-' . strtolower( str_replace( '_', '-', $class ) ) . '.php';
+        } else {
             return;
         }
-        
-        // Convert class name to file name
-        // PPQ_Question -> class-ppq-question.php
-        $file = 'class-' . strtolower( str_replace( '_', '-', $class ) ) . '.php';
         
         // Check in includes root
         $path = PPQ_PLUGIN_PATH . 'includes/' . $file;
@@ -173,12 +207,12 @@ class PressPrimer_Quiz_Plugin {
     /**
      * Singleton instance
      */
-    private static ?PPQ_Plugin $instance = null;
+    private static ?PressPrimer_Quiz_Plugin $instance = null;
     
     /**
      * Get singleton instance
      */
-    public static function get_instance(): PPQ_Plugin {
+    public static function get_instance(): PressPrimer_Quiz_Plugin {
         if ( null === self::$instance ) {
             self::$instance = new self();
         }
@@ -199,12 +233,29 @@ class PressPrimer_Quiz_Plugin {
         // Check and run migrations
         PressPrimer_Quiz_Migrator::maybe_migrate();
         
+        // Initialize addon manager (v2.0)
+        $this->init_addon_manager();
+        
         // Initialize components
         $this->init_admin();
         $this->init_frontend();
         $this->init_integrations();
         $this->init_rest_api();
         $this->init_blocks();
+        
+        // Signal that PPQ is fully loaded (v2.0 - for addons)
+        do_action( 'pressprimer_quiz_loaded' );
+        
+        // After addons register, signal completion (v2.0)
+        do_action( 'pressprimer_quiz_addons_loaded' );
+    }
+    
+    /**
+     * Initialize addon manager (v2.0)
+     */
+    private function init_addon_manager(): void {
+        $addon_manager = new PressPrimer_Quiz_Addon_Manager();
+        $addon_manager->init();
     }
     
     /**
@@ -252,6 +303,12 @@ class PressPrimer_Quiz_Plugin {
             $lifter->init();
         }
         
+        // LearnPress (v2.0)
+        if ( defined( 'LEARNPRESS_VERSION' ) && version_compare( LEARNPRESS_VERSION, '4.0.0', '>=' ) ) {
+            $learnpress = new PressPrimer_Quiz_LearnPress();
+            $learnpress->init();
+        }
+        
         // Uncanny Automator
         if ( class_exists( 'Uncanny_Automator\\Automator_Functions' ) ) {
             $automator = new PressPrimer_Quiz_Automator();
@@ -280,581 +337,525 @@ class PressPrimer_Quiz_Plugin {
             // My Attempts block
             register_block_type( PPQ_PLUGIN_PATH . 'blocks/my-attempts' );
             
-            // Assigned Quizzes block
+            // Assigned Quizzes block (premium feature but block registered in free)
             register_block_type( PPQ_PLUGIN_PATH . 'blocks/assigned-quizzes' );
         } );
     }
 }
 ```
 
-## Model Classes
-
-Models represent database entities with CRUD operations:
+## Addon Manager (v2.0)
 
 ```php
 <?php
 /**
- * Question model
+ * Addon Manager
+ *
+ * Handles registration and detection of premium addons.
  *
  * @package PressPrimer_Quiz
- * @subpackage Models
+ * @since 2.0.0
  */
 
-class PressPrimer_Quiz_Question {
-    
-    public int $id = 0;
-    public string $uuid = '';
-    public int $author_id = 0;
-    public string $type = 'mc';
-    public ?int $expected_seconds = null;
-    public ?string $difficulty_author = null;
-    public float $max_points = 1.0;
-    public string $status = 'published';
-    public ?int $current_revision_id = null;
-    public string $created_at = '';
-    public string $updated_at = '';
-    public ?string $deleted_at = null;
-    
-    // Related data (lazy loaded)
-    private ?PPQ_Question_Revision $current_revision = null;
-    private ?array $categories = null;
-    private ?array $tags = null;
+class PressPrimer_Quiz_Addon_Manager {
     
     /**
-     * Create from database row
-     */
-    public static function from_row( object $row ): self {
-        $question = new self();
-        
-        foreach ( get_object_vars( $row ) as $key => $value ) {
-            if ( property_exists( $question, $key ) ) {
-                $question->$key = $value;
-            }
-        }
-        
-        return $question;
-    }
-    
-    /**
-     * Get question by ID
-     */
-    public static function get( int $id ): ?self {
-        global $wpdb;
-        
-        $row = $wpdb->get_row( $wpdb->prepare(
-            "SELECT * FROM {$wpdb->prefix}ppq_questions WHERE id = %d AND deleted_at IS NULL",
-            $id
-        ) );
-        
-        return $row ? self::from_row( $row ) : null;
-    }
-    
-    /**
-     * Get question by UUID
-     */
-    public static function get_by_uuid( string $uuid ): ?self {
-        global $wpdb;
-        
-        $row = $wpdb->get_row( $wpdb->prepare(
-            "SELECT * FROM {$wpdb->prefix}ppq_questions WHERE uuid = %s AND deleted_at IS NULL",
-            $uuid
-        ) );
-        
-        return $row ? self::from_row( $row ) : null;
-    }
-    
-    /**
-     * Create new question
+     * Registered addons
      *
-     * @param array $data Question data.
-     * @return int|WP_Error Question ID on success, WP_Error on failure.
+     * @var array
      */
-    public static function create( array $data ) {
-        global $wpdb;
-        
-        // Validate
-        if ( empty( $data['stem'] ) ) {
-            return new WP_Error( 'ppq_missing_stem', __( 'Question text is required.', 'pressprimer-quiz' ) );
-        }
-        
-        if ( empty( $data['answers'] ) || count( $data['answers'] ) < 2 ) {
-            return new WP_Error( 'ppq_missing_answers', __( 'At least two answer options required.', 'pressprimer-quiz' ) );
-        }
-        
-        // Create question record
-        $result = $wpdb->insert(
-            $wpdb->prefix . 'ppq_questions',
-            [
-                'uuid' => wp_generate_uuid4(),
-                'author_id' => $data['author_id'] ?? get_current_user_id(),
-                'type' => $data['type'] ?? 'mc',
-                'expected_seconds' => $data['expected_seconds'] ?? null,
-                'difficulty_author' => $data['difficulty_author'] ?? null,
-                'max_points' => $data['max_points'] ?? 1.0,
-                'status' => $data['status'] ?? 'published',
-            ],
-            [ '%s', '%d', '%s', '%d', '%s', '%f', '%s' ]
-        );
-        
-        if ( ! $result ) {
-            return new WP_Error( 'ppq_db_error', __( 'Failed to create question.', 'pressprimer-quiz' ) );
-        }
-        
-        $question_id = $wpdb->insert_id;
-        
-        // Create initial revision
-        $revision_id = PressPrimer_Quiz_Question_Revision::create( $question_id, [
-            'stem' => $data['stem'],
-            'answers' => $data['answers'],
-            'feedback_correct' => $data['feedback_correct'] ?? null,
-            'feedback_incorrect' => $data['feedback_incorrect'] ?? null,
-        ] );
-        
-        if ( is_wp_error( $revision_id ) ) {
-            // Rollback question
-            $wpdb->delete( $wpdb->prefix . 'ppq_questions', [ 'id' => $question_id ] );
-            return $revision_id;
-        }
-        
-        // Update current revision
-        $wpdb->update(
-            $wpdb->prefix . 'ppq_questions',
-            [ 'current_revision_id' => $revision_id ],
-            [ 'id' => $question_id ]
-        );
-        
-        return $question_id;
-    }
+    private static array $addons = [];
     
     /**
-     * Save changes to question
+     * Registered features
      *
-     * @return bool|WP_Error True on success, WP_Error on failure.
+     * @var array
      */
-    public function save() {
-        global $wpdb;
-        
-        $result = $wpdb->update(
-            $wpdb->prefix . 'ppq_questions',
-            [
-                'type' => $this->type,
-                'expected_seconds' => $this->expected_seconds,
-                'difficulty_author' => $this->difficulty_author,
-                'max_points' => $this->max_points,
-                'status' => $this->status,
-            ],
-            [ 'id' => $this->id ],
-            [ '%s', '%d', '%s', '%f', '%s' ],
-            [ '%d' ]
-        );
-        
-        if ( false === $result ) {
-            return new WP_Error( 'ppq_db_error', __( 'Failed to save question.', 'pressprimer-quiz' ) );
-        }
-        
-        return true;
+    private static array $features = [];
+    
+    /**
+     * Initialize the addon manager
+     */
+    public function init(): void {
+        // Listen for addon registrations
+        add_action( 'pressprimer_quiz_register_addon', array( $this, 'register_addon' ), 10, 3 );
     }
     
     /**
-     * Soft delete
+     * Register an addon
+     *
+     * @param string $addon_id   Addon identifier.
+     * @param string $version    Addon version.
+     * @param array  $features   Features provided by this addon.
      */
-    public function delete(): bool {
-        global $wpdb;
+    public function register_addon( string $addon_id, string $version, array $features ): void {
+        self::$addons[ $addon_id ] = [
+            'version' => $version,
+            'features' => $features,
+        ];
         
-        return (bool) $wpdb->update(
-            $wpdb->prefix . 'ppq_questions',
-            [ 'deleted_at' => current_time( 'mysql' ) ],
-            [ 'id' => $this->id ]
-        );
+        foreach ( $features as $feature ) {
+            self::$features[ $feature ] = $addon_id;
+        }
     }
     
     /**
-     * Get current revision (lazy loaded)
+     * Check if an addon is active
+     *
+     * @param string $addon_id Addon identifier.
+     * @return bool
      */
-    public function get_current_revision(): ?PPQ_Question_Revision {
-        if ( null === $this->current_revision && $this->current_revision_id ) {
-            $this->current_revision = PressPrimer_Quiz_Question_Revision::get( $this->current_revision_id );
-        }
-        return $this->current_revision;
+    public static function has_addon( string $addon_id ): bool {
+        return isset( self::$addons[ $addon_id ] );
     }
     
     /**
-     * Get categories (lazy loaded)
+     * Check if a feature is enabled
+     *
+     * @param string $feature Feature slug.
+     * @return bool
      */
-    public function get_categories(): array {
-        if ( null === $this->categories ) {
-            $this->categories = PressPrimer_Quiz_Category::get_for_question( $this->id, 'category' );
-        }
-        return $this->categories;
+    public static function feature_enabled( string $feature ): bool {
+        return isset( self::$features[ $feature ] );
     }
     
     /**
-     * Get tags (lazy loaded)
+     * Get addon providing a feature
+     *
+     * @param string $feature Feature slug.
+     * @return string|null
      */
-    public function get_tags(): array {
-        if ( null === $this->tags ) {
-            $this->tags = PressPrimer_Quiz_Category::get_for_question( $this->id, 'tag' );
-        }
-        return $this->tags;
+    public static function get_feature_addon( string $feature ): ?string {
+        return self::$features[ $feature ] ?? null;
     }
+    
+    /**
+     * Get all registered addons
+     *
+     * @return array
+     */
+    public static function get_addons(): array {
+        return self::$addons;
+    }
+}
+
+/**
+ * Check if an addon is active (global function)
+ *
+ * @param string $addon_id Addon identifier.
+ * @return bool
+ */
+function pressprimer_quiz_has_addon( string $addon_id ): bool {
+    return PressPrimer_Quiz_Addon_Manager::has_addon( $addon_id );
+}
+
+/**
+ * Check if a feature is enabled (global function)
+ *
+ * @param string $feature Feature slug.
+ * @return bool
+ */
+function pressprimer_quiz_feature_enabled( string $feature ): bool {
+    return PressPrimer_Quiz_Addon_Manager::feature_enabled( $feature );
 }
 ```
 
-## Service Classes
-
-Services contain business logic:
+## Access Controller (v2.0)
 
 ```php
 <?php
 /**
- * Scoring service
+ * Access Controller
+ *
+ * Handles quiz access control and login requirements.
  *
  * @package PressPrimer_Quiz
  * @subpackage Services
+ * @since 2.0.0
  */
 
-class PressPrimer_Quiz_Scoring_Service {
+class PressPrimer_Quiz_Access_Controller {
     
     /**
-     * Score a single question response
+     * Get effective access mode for a quiz
+     *
+     * @param int $quiz_id Quiz ID.
+     * @return string Access mode (guest_optional, guest_required, login_required).
      */
-    public function score_response( PPQ_Question $question, array $selected_answers ): array {
-        $revision = $question->get_current_revision();
-        $answers = json_decode( $revision->answers_json, true );
-        $correct_ids = array_column(
-            array_filter( $answers, fn( $a ) => $a['is_correct'] ),
-            'id'
+    public static function get_access_mode( int $quiz_id ): string {
+        $quiz = PressPrimer_Quiz_Quiz::get( $quiz_id );
+        
+        if ( ! $quiz ) {
+            return 'guest_optional';
+        }
+        
+        // Per-quiz override
+        if ( $quiz->access_mode && 'default' !== $quiz->access_mode ) {
+            return apply_filters( 'pressprimer_quiz_access_mode', $quiz->access_mode, $quiz_id );
+        }
+        
+        // Global default
+        $settings = get_option( 'ppq_settings', [] );
+        $default = $settings['default_access_mode'] ?? 'guest_optional';
+        
+        return apply_filters( 'pressprimer_quiz_access_mode', $default, $quiz_id );
+    }
+    
+    /**
+     * Check if user can access a quiz
+     *
+     * @param int      $quiz_id Quiz ID.
+     * @param int|null $user_id User ID (null for current user).
+     * @return bool
+     */
+    public static function can_access( int $quiz_id, ?int $user_id = null ): bool {
+        if ( null === $user_id ) {
+            $user_id = get_current_user_id();
+        }
+        
+        $mode = self::get_access_mode( $quiz_id );
+        
+        if ( 'login_required' === $mode && ! $user_id ) {
+            return false;
+        }
+        
+        return apply_filters( 'pressprimer_quiz_user_can_take_quiz', true, $quiz_id, $user_id );
+    }
+    
+    /**
+     * Get login URL for quiz
+     *
+     * @param int $quiz_id Quiz ID.
+     * @return string
+     */
+    public static function get_login_url( int $quiz_id ): string {
+        $quiz_url = pressprimer_quiz_get_quiz_url( $quiz_id );
+        $login_url = wp_login_url( $quiz_url );
+        
+        return apply_filters( 'pressprimer_quiz_login_url', $login_url, $quiz_id );
+    }
+    
+    /**
+     * Get login message for quiz
+     *
+     * @param int $quiz_id Quiz ID.
+     * @return string
+     */
+    public static function get_login_message( int $quiz_id ): string {
+        $quiz = PressPrimer_Quiz_Quiz::get( $quiz_id );
+        
+        // Per-quiz message
+        if ( $quiz && ! empty( $quiz->login_message ) ) {
+            return $quiz->login_message;
+        }
+        
+        // Global default
+        $settings = get_option( 'ppq_settings', [] );
+        return $settings['login_message_default'] ?? __( 'Please log in to take this quiz.', 'pressprimer-quiz' );
+    }
+}
+```
+
+## LearnPress Integration (v2.0)
+
+```php
+<?php
+/**
+ * LearnPress Integration
+ *
+ * @package PressPrimer_Quiz
+ * @subpackage Integrations
+ * @since 2.0.0
+ */
+
+class PressPrimer_Quiz_LearnPress {
+    
+    /**
+     * Initialize the integration
+     */
+    public function init(): void {
+        // Add meta box to lesson edit screen
+        add_action( 'add_meta_boxes', array( $this, 'add_lesson_meta_box' ) );
+        add_action( 'save_post_lp_lesson', array( $this, 'save_lesson_meta' ) );
+        
+        // Render quiz in lesson content
+        add_filter( 'learn-press/lesson/content', array( $this, 'render_quiz_in_lesson' ), 20, 2 );
+        
+        // Handle quiz completion
+        add_action( 'pressprimer_quiz_quiz_passed', array( $this, 'handle_quiz_passed' ), 10, 4 );
+    }
+    
+    /**
+     * Add meta box to lesson edit screen
+     */
+    public function add_lesson_meta_box(): void {
+        add_meta_box(
+            'ppq-learnpress-quiz',
+            __( 'PressPrimer Quiz', 'pressprimer-quiz' ),
+            array( $this, 'render_meta_box' ),
+            'lp_lesson',
+            'side',
+            'default'
         );
-        
-        switch ( $question->type ) {
-            case 'mc':
-            case 'tf':
-                return $this->score_single_answer( $correct_ids, $selected_answers, $question->max_points );
-                
-            case 'ma':
-                return $this->score_multiple_answer( $correct_ids, $selected_answers, $question->max_points );
-                
-            default:
-                return [
-                    'is_correct' => false,
-                    'score' => 0,
-                    'max_points' => $question->max_points,
-                ];
-        }
     }
     
     /**
-     * Score single-answer question (MC, TF)
+     * Render the meta box
+     *
+     * @param WP_Post $post Post object.
      */
-    private function score_single_answer( array $correct_ids, array $selected_answers, float $max_points ): array {
-        $is_correct = count( $selected_answers ) === 1 
-            && in_array( $selected_answers[0], $correct_ids, true );
+    public function render_meta_box( WP_Post $post ): void {
+        wp_nonce_field( 'ppq_learnpress_lesson', 'ppq_learnpress_nonce' );
         
-        return [
-            'is_correct' => $is_correct,
-            'score' => $is_correct ? $max_points : 0,
-            'max_points' => $max_points,
-        ];
+        $quiz_id = get_post_meta( $post->ID, '_ppq_quiz_id', true );
+        $require_pass = get_post_meta( $post->ID, '_ppq_require_pass', true );
+        
+        // Get all published quizzes
+        $quizzes = PressPrimer_Quiz_Quiz::get_all( [ 'status' => 'published' ] );
+        
+        ?>
+        <p>
+            <label for="ppq_quiz_id"><?php esc_html_e( 'Select Quiz:', 'pressprimer-quiz' ); ?></label>
+            <select name="ppq_quiz_id" id="ppq_quiz_id" class="widefat">
+                <option value=""><?php esc_html_e( '— None —', 'pressprimer-quiz' ); ?></option>
+                <?php foreach ( $quizzes as $quiz ) : ?>
+                    <option value="<?php echo esc_attr( $quiz->id ); ?>" <?php selected( $quiz_id, $quiz->id ); ?>>
+                        <?php echo esc_html( $quiz->title ); ?>
+                    </option>
+                <?php endforeach; ?>
+            </select>
+        </p>
+        <p>
+            <label>
+                <input type="checkbox" name="ppq_require_pass" value="1" <?php checked( $require_pass, '1' ); ?>>
+                <?php esc_html_e( 'Require quiz pass to complete lesson', 'pressprimer-quiz' ); ?>
+            </label>
+        </p>
+        <?php
     }
     
     /**
-     * Score multiple-answer question with partial credit
-     * 
-     * Formula: (correct_selected - incorrect_selected) / total_correct * max_points
-     * Floored at 0 (no negative scores unless enabled)
+     * Save lesson meta
+     *
+     * @param int $post_id Post ID.
      */
-    private function score_multiple_answer( array $correct_ids, array $selected_answers, float $max_points ): array {
-        $total_correct = count( $correct_ids );
-        
-        if ( 0 === $total_correct ) {
-            return [
-                'is_correct' => empty( $selected_answers ),
-                'score' => empty( $selected_answers ) ? $max_points : 0,
-                'max_points' => $max_points,
-            ];
+    public function save_lesson_meta( int $post_id ): void {
+        if ( ! isset( $_POST['ppq_learnpress_nonce'] ) ) {
+            return;
         }
         
-        $correct_selected = count( array_intersect( $selected_answers, $correct_ids ) );
-        $incorrect_selected = count( array_diff( $selected_answers, $correct_ids ) );
+        if ( ! wp_verify_nonce( $_POST['ppq_learnpress_nonce'], 'ppq_learnpress_lesson' ) ) {
+            return;
+        }
         
-        $is_correct = $correct_selected === $total_correct && 0 === $incorrect_selected;
+        if ( defined( 'DOING_AUTOSAVE' ) && DOING_AUTOSAVE ) {
+            return;
+        }
         
-        // Proportional scoring with penalty for incorrect
-        $raw_score = ( $correct_selected - $incorrect_selected ) / $total_correct;
-        $score = max( 0, $raw_score ) * $max_points;
+        if ( ! current_user_can( 'edit_post', $post_id ) ) {
+            return;
+        }
         
-        return [
-            'is_correct' => $is_correct,
-            'score' => round( $score, 2 ),
-            'max_points' => $max_points,
-            'partial_credit' => ! $is_correct && $score > 0,
-        ];
+        $quiz_id = isset( $_POST['ppq_quiz_id'] ) ? absint( $_POST['ppq_quiz_id'] ) : 0;
+        $require_pass = isset( $_POST['ppq_require_pass'] ) ? '1' : '0';
+        
+        update_post_meta( $post_id, '_ppq_quiz_id', $quiz_id );
+        update_post_meta( $post_id, '_ppq_require_pass', $require_pass );
     }
     
     /**
-     * Calculate total score for an attempt
+     * Render quiz in lesson content
+     *
+     * @param string $content Lesson content.
+     * @param object $lesson  Lesson object.
+     * @return string
      */
-    public function calculate_attempt_score( int $attempt_id ): array {
+    public function render_quiz_in_lesson( string $content, $lesson ): string {
+        $quiz_id = get_post_meta( $lesson->get_id(), '_ppq_quiz_id', true );
+        
+        if ( ! $quiz_id ) {
+            return $content;
+        }
+        
+        // Check if user is enrolled in course
+        $course_id = $lesson->get_course_id();
+        $user_id = get_current_user_id();
+        
+        if ( $course_id && $user_id ) {
+            $user = learn_press_get_user( $user_id );
+            if ( ! $user->has_enrolled_course( $course_id ) ) {
+                $content .= '<div class="ppq-learnpress-enrollment-required">';
+                $content .= esc_html__( 'You must be enrolled in this course to take the quiz.', 'pressprimer-quiz' );
+                $content .= '</div>';
+                return $content;
+            }
+        }
+        
+        // Render the quiz
+        $content .= PressPrimer_Quiz_Shortcodes::quiz_shortcode( [ 'id' => $quiz_id ] );
+        
+        return $content;
+    }
+    
+    /**
+     * Handle quiz passed
+     *
+     * @param int   $quiz_id       Quiz ID.
+     * @param int   $user_id       User ID.
+     * @param float $score_percent Score percentage.
+     * @param int   $attempt_id    Attempt ID.
+     */
+    public function handle_quiz_passed( int $quiz_id, int $user_id, float $score_percent, int $attempt_id ): void {
         global $wpdb;
         
-        $items = $wpdb->get_results( $wpdb->prepare(
-            "SELECT ai.*, qr.answers_json, q.type, q.max_points
-             FROM {$wpdb->prefix}ppq_attempt_items ai
-             JOIN {$wpdb->prefix}ppq_question_revisions qr ON ai.question_revision_id = qr.id
-             JOIN {$wpdb->prefix}ppq_questions q ON qr.question_id = q.id
-             WHERE ai.attempt_id = %d",
-            $attempt_id
+        // Find lessons that use this quiz
+        $lessons = $wpdb->get_results( $wpdb->prepare(
+            "SELECT post_id FROM {$wpdb->postmeta} 
+             WHERE meta_key = '_ppq_quiz_id' AND meta_value = %d",
+            $quiz_id
         ) );
         
-        $total_score = 0;
-        $total_max = 0;
-        $correct_count = 0;
-        
-        foreach ( $items as $item ) {
-            $selected = json_decode( $item->selected_answers_json ?: '[]', true );
+        foreach ( $lessons as $lesson_row ) {
+            $lesson_id = $lesson_row->post_id;
+            $require_pass = get_post_meta( $lesson_id, '_ppq_require_pass', true );
             
-            $question = new PressPrimer_Quiz_Question();
-            $question->type = $item->type;
-            $question->max_points = (float) $item->max_points;
-            $question->current_revision_id = $item->question_revision_id;
-            
-            // Create mock revision for scoring
-            $revision = new stdClass();
-            $revision->answers_json = $item->answers_json;
-            
-            // This is a simplified approach - in production, use proper model
-            $result = $this->score_response( $question, $selected );
-            
-            $total_score += $result['score'];
-            $total_max += $result['max_points'];
-            
-            if ( $result['is_correct'] ) {
-                $correct_count++;
+            if ( '1' === $require_pass ) {
+                /**
+                 * Filter whether to complete the LearnPress lesson
+                 *
+                 * @since 2.0.0
+                 *
+                 * @param bool $should_complete Whether to mark lesson complete.
+                 * @param int  $lesson_id       Lesson ID.
+                 * @param int  $attempt_id      Quiz attempt ID.
+                 */
+                $should_complete = apply_filters( 'pressprimer_quiz_learnpress_should_complete_lesson', true, $lesson_id, $attempt_id );
+                
+                if ( $should_complete ) {
+                    $this->complete_lesson( $lesson_id, $user_id );
+                }
+                
+                /**
+                 * Fires when a PressPrimer quiz linked to LearnPress is completed
+                 *
+                 * @since 2.0.0
+                 *
+                 * @param int  $lesson_id  Lesson ID.
+                 * @param int  $quiz_id    Quiz ID.
+                 * @param int  $user_id    User ID.
+                 * @param bool $passed     Whether user passed.
+                 */
+                do_action( 'pressprimer_quiz_learnpress_quiz_completed', $lesson_id, $quiz_id, $user_id, true );
             }
-            
-            // Update attempt item with score
-            $wpdb->update(
-                $wpdb->prefix . 'ppq_attempt_items',
-                [
-                    'is_correct' => $result['is_correct'] ? 1 : 0,
-                    'score_points' => $result['score'],
-                ],
-                [ 'id' => $item->id ]
-            );
+        }
+    }
+    
+    /**
+     * Mark LearnPress lesson as complete
+     *
+     * @param int $lesson_id Lesson ID.
+     * @param int $user_id   User ID.
+     */
+    private function complete_lesson( int $lesson_id, int $user_id ): void {
+        if ( ! function_exists( 'learn_press_get_user' ) ) {
+            return;
         }
         
-        $percentage = $total_max > 0 ? ( $total_score / $total_max ) * 100 : 0;
+        $user = learn_press_get_user( $user_id );
+        $lesson = learn_press_get_lesson( $lesson_id );
         
-        return [
-            'score_points' => round( $total_score, 2 ),
-            'max_points' => round( $total_max, 2 ),
-            'score_percent' => round( $percentage, 2 ),
-            'correct_count' => $correct_count,
-            'total_count' => count( $items ),
-        ];
+        if ( $user && $lesson ) {
+            // Use LearnPress API to complete lesson
+            $user->complete_lesson( $lesson_id );
+        }
     }
 }
 ```
 
-## Admin Classes
+---
 
-Admin classes handle wp-admin functionality:
+## Directory Structure by Component
 
-```php
-<?php
-/**
- * Admin class
- *
- * @package PressPrimer_Quiz
- * @subpackage Admin
- */
+### Models (`includes/models/`)
 
-class PressPrimer_Quiz_Admin {
-    
-    /**
-     * Initialize admin hooks
-     */
-    public function init(): void {
-        add_action( 'admin_menu', [ $this, 'register_menus' ] );
-        add_action( 'admin_enqueue_scripts', [ $this, 'enqueue_assets' ] );
-        add_action( 'wp_ajax_ppq_save_question', [ $this, 'ajax_save_question' ] );
-        // ... more hooks
-    }
-    
-    /**
-     * Register admin menus
-     */
-    public function register_menus(): void {
-        // Main menu
-        add_menu_page(
-            __( 'PressPrimer Quiz', 'pressprimer-quiz' ),
-            __( 'PPQ', 'pressprimer-quiz' ),
-            'ppq_manage_own',
-            'ppq-quizzes',
-            [ $this, 'render_quizzes_page' ],
-            'dashicons-welcome-learn-more',
-            30
-        );
-        
-        // Submenus
-        add_submenu_page(
-            'ppq-quizzes',
-            __( 'Quizzes', 'pressprimer-quiz' ),
-            __( 'Quizzes', 'pressprimer-quiz' ),
-            'ppq_manage_own',
-            'ppq-quizzes',
-            [ $this, 'render_quizzes_page' ]
-        );
-        
-        add_submenu_page(
-            'ppq-quizzes',
-            __( 'Questions', 'pressprimer-quiz' ),
-            __( 'Questions', 'pressprimer-quiz' ),
-            'ppq_manage_own',
-            'ppq-questions',
-            [ $this, 'render_questions_page' ]
-        );
-        
-        add_submenu_page(
-            'ppq-quizzes',
-            __( 'Question Banks', 'pressprimer-quiz' ),
-            __( 'Question Banks', 'pressprimer-quiz' ),
-            'ppq_manage_own',
-            'ppq-banks',
-            [ $this, 'render_banks_page' ]
-        );
-        
-        add_submenu_page(
-            'ppq-quizzes',
-            __( 'Groups', 'pressprimer-quiz' ),
-            __( 'Groups', 'pressprimer-quiz' ),
-            'ppq_manage_own',
-            'ppq-groups',
-            [ $this, 'render_groups_page' ]
-        );
-        
-        add_submenu_page(
-            'ppq-quizzes',
-            __( 'Reports', 'pressprimer-quiz' ),
-            __( 'Reports', 'pressprimer-quiz' ),
-            'ppq_view_results_own',
-            'ppq-reports',
-            [ $this, 'render_reports_page' ]
-        );
-        
-        add_submenu_page(
-            'ppq-quizzes',
-            __( 'Settings', 'pressprimer-quiz' ),
-            __( 'Settings', 'pressprimer-quiz' ),
-            'ppq_manage_settings',
-            'ppq-settings',
-            [ $this, 'render_settings_page' ]
-        );
-    }
-    
-    /**
-     * Enqueue admin assets
-     */
-    public function enqueue_assets( string $hook ): void {
-        // Only on our pages
-        if ( strpos( $hook, 'ppq-' ) === false ) {
-            return;
-        }
-        
-        wp_enqueue_style(
-            'ppq-admin',
-            PPQ_PLUGIN_URL . 'assets/css/admin.css',
-            [],
-            PPQ_VERSION
-        );
-        
-        wp_enqueue_script(
-            'ppq-admin',
-            PPQ_PLUGIN_URL . 'assets/js/admin.js',
-            [ 'jquery', 'wp-util' ],
-            PPQ_VERSION,
-            true
-        );
-        
-        wp_localize_script( 'ppq-admin', 'ppqAdmin', [
-            'ajaxUrl' => admin_url( 'admin-ajax.php' ),
-            'nonce' => wp_create_nonce( 'ppq_admin_nonce' ),
-            'strings' => [
-                'confirm_delete' => __( 'Are you sure you want to delete this?', 'pressprimer-quiz' ),
-                'saving' => __( 'Saving...', 'pressprimer-quiz' ),
-                'saved' => __( 'Saved!', 'pressprimer-quiz' ),
-            ]
-        ] );
-    }
-    
-    // ... render methods and AJAX handlers
-}
+```
+models/
+├── class-ppq-question.php           # Question model
+├── class-ppq-question-revision.php  # Question revision model
+├── class-ppq-quiz.php               # Quiz model
+├── class-ppq-attempt.php            # Attempt model
+├── class-ppq-attempt-item.php       # Attempt item model
+├── class-ppq-bank.php               # Question bank model
+├── class-ppq-category.php           # Category model
+├── class-ppq-group.php              # Group model (schema in Free, features in Educator)
+├── class-ppq-assignment.php         # Assignment model (schema in Free, features in Educator)
+└── class-ppq-event.php              # Event model
 ```
 
-## Frontend Classes
+### Admin (`includes/admin/`)
 
-Frontend classes handle public-facing functionality:
-
-```php
-<?php
-/**
- * Frontend class
- *
- * @package PressPrimer_Quiz
- * @subpackage Frontend
- */
-
-class PressPrimer_Quiz_Frontend {
-    
-    /**
-     * Initialize frontend hooks
-     */
-    public function init(): void {
-        add_action( 'wp_enqueue_scripts', [ $this, 'enqueue_assets' ] );
-        add_action( 'wp_ajax_ppq_start_quiz', [ $this, 'ajax_start_quiz' ] );
-        add_action( 'wp_ajax_nopriv_ppq_start_quiz', [ $this, 'ajax_start_quiz' ] );
-        add_action( 'wp_ajax_ppq_save_answer', [ $this, 'ajax_save_answer' ] );
-        add_action( 'wp_ajax_nopriv_ppq_save_answer', [ $this, 'ajax_save_answer' ] );
-        add_action( 'wp_ajax_ppq_submit_quiz', [ $this, 'ajax_submit_quiz' ] );
-        add_action( 'wp_ajax_nopriv_ppq_submit_quiz', [ $this, 'ajax_submit_quiz' ] );
-    }
-    
-    /**
-     * Conditionally enqueue assets
-     */
-    public function enqueue_assets(): void {
-        // Only enqueue when quiz is on page
-        global $post;
-        
-        if ( ! $post ) {
-            return;
-        }
-        
-        // Check for shortcode or block
-        $has_quiz = has_shortcode( $post->post_content, 'ppq_quiz' )
-            || has_block( 'pressprimer-quiz/quiz', $post );
-        
-        if ( ! $has_quiz ) {
-            return;
-        }
-        
-        wp_enqueue_style(
-            'ppq-quiz',
-            PPQ_PLUGIN_URL . 'assets/css/frontend.css',
-            [],
-            PPQ_VERSION
-        );
-        
-        wp_enqueue_script(
-            'ppq-quiz',
-            PPQ_PLUGIN_URL . 'assets/js/quiz.js',
-            [ 'jquery' ],
-            PPQ_VERSION,
-            true
-        );
-    }
-    
-    // ... AJAX handlers
-}
+```
+admin/
+├── class-ppq-admin.php              # Main admin class
+├── class-ppq-admin-settings.php     # Settings page
+├── class-ppq-admin-quiz-builder.php # Quiz builder
+├── class-ppq-admin-questions.php    # Questions page
+├── class-ppq-admin-banks.php        # Question banks page
+├── class-ppq-admin-reports.php      # Reports page
+├── class-ppq-admin-onboarding.php   # Onboarding wizard
+└── class-ppq-admin-upsells.php      # v2.0 - Premium upsell UI (NEW)
 ```
 
+### Frontend (`includes/frontend/`)
+
+```
+frontend/
+├── class-ppq-frontend.php           # Main frontend class
+├── class-ppq-shortcodes.php         # Shortcode handlers
+├── class-ppq-quiz-renderer.php      # Quiz display logic
+├── class-ppq-results-renderer.php   # Results display logic
+├── class-ppq-guest-handler.php      # Guest email handling
+└── class-ppq-access-controller.php  # v2.0 - Login requirement handling (NEW)
+```
+
+### Services (`includes/services/`)
+
+```
+services/
+├── class-ppq-grader.php             # Grading/scoring logic
+├── class-ppq-ai-generator.php       # AI question generation
+├── class-ppq-quiz-generator.php     # Dynamic quiz assembly
+├── class-ppq-email-service.php      # Email sending
+├── class-ppq-export-service.php     # Data export (Educator addon)
+├── class-ppq-import-service.php     # Data import (Educator addon)
+└── class-ppq-cache-service.php      # v2.2 - Cache management (NEW)
+```
+
+### Integrations (`includes/integrations/`)
+
+```
+integrations/
+├── class-ppq-learndash.php          # LearnDash integration
+├── class-ppq-tutor.php              # TutorLMS integration
+├── class-ppq-lifter.php             # LifterLMS integration
+├── class-ppq-learnpress.php         # v2.0 - LearnPress integration (NEW)
+└── class-ppq-automator.php          # Uncanny Automator integration
+```
+
+### Database (`includes/database/`)
+
+```
+database/
+├── class-ppq-schema.php             # Table definitions
+└── class-ppq-migrator.php           # Migration runner
+```
+
+### Utilities (`includes/utilities/`)
+
+```
+utilities/
+├── class-ppq-helpers.php            # General helpers
+├── class-ppq-rate-limiter.php       # Rate limiting
+├── class-ppq-sanitizer.php          # Input sanitization
+└── class-ppq-capabilities.php       # Role/capability management
+```

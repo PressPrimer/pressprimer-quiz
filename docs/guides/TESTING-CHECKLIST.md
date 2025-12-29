@@ -25,6 +25,7 @@
 - [ ] LearnDash site configured
 - [ ] LifterLMS site configured
 - [ ] TutorLMS site configured
+- [ ] LearnPress site configured (v2.0+)
 - [ ] Standalone WordPress (no LMS)
 
 ### Test User Accounts
@@ -133,57 +134,12 @@
 - [ ] Displays correctly on frontend
 - [ ] Grading works correctly
 
-### Short Answer
-- [ ] Create short answer question
-- [ ] Text input appears on frontend
-- [ ] Can set correct answer(s)
-- [ ] Case sensitivity option works
-- [ ] Multiple acceptable answers work
-- [ ] Grading works correctly
-- [ ] Partial credit works (if implemented)
-
-### Essay/Long Answer
-- [ ] Create essay question
-- [ ] Textarea appears on frontend
-- [ ] Character/word limit works (if set)
-- [ ] Requires manual grading
-- [ ] Teacher can grade essay
-- [ ] Teacher can add feedback
-- [ ] Student can view feedback
-
-### Fill in the Blank
-- [ ] Create fill-in-blank question
-- [ ] Blank indicators work
-- [ ] Multiple blanks per question work
-- [ ] Can set correct answer per blank
-- [ ] Case sensitivity option works
-- [ ] Grading works correctly
-
-### Matching
-- [ ] Create matching question
-- [ ] Add pairs of items
-- [ ] Can reorder pairs
-- [ ] Frontend displays correctly
-- [ ] Drag-and-drop works (if implemented)
-- [ ] Dropdown matching works
-- [ ] Grading works correctly
-- [ ] All pairs must be matched
-
-### Ordering/Sequencing
-- [ ] Create ordering question
-- [ ] Add items to order
-- [ ] Can set correct sequence
-- [ ] Frontend randomizes order
-- [ ] Drag-and-drop works
-- [ ] Grading works correctly
-
-### Hotspot/Image Click
-- [ ] Create hotspot question
-- [ ] Upload image
-- [ ] Define clickable regions
-- [ ] Frontend displays image
-- [ ] Click detection works
-- [ ] Multiple hotspots work
+### Multiple Answer
+- [ ] Create multiple answer question
+- [ ] Add multiple answer options
+- [ ] Mark multiple correct answers
+- [ ] Checkboxes display
+- [ ] Partial credit works correctly
 - [ ] Grading works correctly
 
 ---
@@ -246,14 +202,123 @@
 - [ ] Custom fail message displays
 - [ ] Question-level feedback works
 
-### Access Control
-- [ ] Require login option works
-- [ ] Public quiz access works
-- [ ] Scheduled start date works
-- [ ] Scheduled end date works
-- [ ] Password protection works
-- [ ] Role restrictions work
-- [ ] Group restrictions work (if implemented)
+---
+
+## v2.0 Feature Testing
+
+### Premium Upsell Touchpoints
+- [ ] Locked features show padlock icon
+- [ ] Tooltip appears on hover
+- [ ] Tooltip text is correct for each tier
+- [ ] "Learn More" link works
+- [ ] Styling doesn't disrupt admin layout
+- [ ] Accessible via keyboard (focus shows tooltip)
+
+### Addon Compatibility Hooks
+- [ ] `pressprimer_quiz_loaded` action fires
+- [ ] `pressprimer_quiz_register_addon` action fires
+- [ ] `pressprimer_quiz_has_addon()` returns correct values
+- [ ] `pressprimer_quiz_feature_enabled()` filter works
+- [ ] Extension point actions fire at correct times
+- [ ] No PHP errors when no addons installed
+
+### LearnPress Integration
+- [ ] Meta box appears on lesson edit screen
+- [ ] Quiz selector shows all published quizzes
+- [ ] "Require pass" checkbox saves correctly
+- [ ] Quiz renders at bottom of lesson content
+- [ ] Enrolled users can take quiz
+- [ ] Non-enrolled users see enrollment message
+- [ ] Quiz pass triggers lesson completion (when enabled)
+- [ ] Course progress updates after lesson completion
+- [ ] Works with LearnPress 4.0+
+- [ ] No errors with older LearnPress versions
+
+### Require Login Setting
+- [ ] Global setting appears in Settings → General
+- [ ] Global setting saves correctly
+- [ ] Per-quiz override appears in Quiz Builder
+- [ ] Per-quiz override saves correctly
+- [ ] "Use global default" option works
+- [ ] Login message displays correctly for logged-out users
+- [ ] Custom login message displays when set
+- [ ] Login button redirects to WordPress login
+- [ ] After login, user returns to quiz page
+- [ ] Guest access still works when set to allow
+- [ ] Integration with WooCommerce My Account (if active)
+
+### Condensed Mode
+- [ ] Global setting appears in Settings → Appearance
+- [ ] Global setting saves correctly
+- [ ] Per-quiz override appears in Quiz Builder
+- [ ] Per-quiz override saves correctly
+- [ ] Default theme displays correctly in condensed mode
+- [ ] Modern theme displays correctly in condensed mode
+- [ ] Minimal theme displays correctly in condensed mode
+- [ ] Mobile layout works with condensed mode
+- [ ] Touch targets meet 44px minimum
+- [ ] Accessibility requirements maintained
+- [ ] Previous attempts collapsible works
+- [ ] Results accordions work
+- [ ] No horizontal scrolling on mobile
+- [ ] Navigation buttons visible without scrolling
+
+---
+
+## v2.1 Feature Testing (When Released)
+
+### 100 Attempts Celebration Notice
+- [ ] Notice appears after 100 total attempts
+- [ ] Notice only shows on PPQ admin pages
+- [ ] "Yes, I love it!" links to WordPress.org
+- [ ] "It could be better" links to PressPrimer help desk
+- [ ] "Remind me later" dismisses for 30 days
+- [ ] "Don't show again" permanently dismisses
+- [ ] Dismissal state persists across sessions
+- [ ] Count query is accurate
+
+### Visual Appearance Controls
+- [ ] Spacing controls appear in Settings
+- [ ] Line height controls appear
+- [ ] Changes apply to all themes
+- [ ] Changes apply to condensed mode
+- [ ] Settings save correctly
+- [ ] Preview updates in real-time (if implemented)
+
+### Block/Shortcode Attributes
+- [ ] `show_start` attribute works
+- [ ] `show_results` attribute works
+- [ ] `show_timer` attribute works
+- [ ] `show_progress` attribute works
+- [ ] Attributes work in shortcode
+- [ ] Attributes work in block
+
+---
+
+## v2.2 Feature Testing (When Released)
+
+### Question Pool Maximum
+- [ ] Pool enabled checkbox appears
+- [ ] Max questions field appears when enabled
+- [ ] Setting saves correctly
+- [ ] Quiz respects max question limit
+- [ ] Questions are randomized from pool
+- [ ] Works with dynamic quiz rules
+- [ ] Works with fixed quiz items
+- [ ] Edge case: max greater than available questions
+
+### Cache Clearing Button
+- [ ] Button appears on Settings page
+- [ ] Button clears transients
+- [ ] Success message displays
+- [ ] No PHP errors
+
+### Attempt Pagination
+- [ ] Pagination appears when >10 attempts
+- [ ] Previous/Next links work
+- [ ] Page numbers display correctly
+- [ ] Works in admin attempts list
+- [ ] Works in frontend My Attempts
 
 ---
 
@@ -316,178 +381,42 @@
 - [ ] Touch interactions work
 - [ ] No horizontal scrolling
 - [ ] Buttons are tappable
-- [ ] Text is readable
-- [ ] Images scale correctly
+- [ ] Condensed mode works on mobile (v2.0+)
 
 ---
 
-## Teacher/Instructor Features
-
-### Quiz Management
-- [ ] Can create quizzes
-- [ ] Can edit own quizzes
-- [ ] Cannot edit others' quizzes (if restricted)
-- [ ] Can delete own quizzes
-- [ ] Can duplicate quizzes
-- [ ] Can preview quizzes
-
-### Student Management
-- [ ] Can view student list
-- [ ] Can view student attempts
-- [ ] Can view individual student results
-- [ ] Can reset student attempts
-- [ ] Can manually grade essays
-- [ ] Can add feedback to attempts
-- [ ] Can export student data
-
-### Grading Interface
-- [ ] Pending grades list displays
-- [ ] Can filter by quiz
-- [ ] Can filter by student
-- [ ] Essay grading interface works
-- [ ] Can assign points/grades
-- [ ] Can add written feedback
-- [ ] Save and continue works
-- [ ] Batch grading works (if implemented)
-
-### Reports & Analytics
-- [ ] Quiz statistics display
-- [ ] Average score calculated correctly
-- [ ] Pass rate calculated correctly
-- [ ] Question difficulty analysis works
-- [ ] Time to complete statistics accurate
-- [ ] Can export reports (CSV/PDF)
-- [ ] Date range filtering works
-
----
-
-## Group Management
-
-### Group Creation
-- [ ] Can create groups
-- [ ] Group name saves
-- [ ] Group description saves
-- [ ] Can edit groups
-- [ ] Can delete groups
-
-### Group Membership
-- [ ] Can add students to groups
-- [ ] Can remove students from groups
-- [ ] Students can be in multiple groups
-- [ ] Group member list displays
-- [ ] Can search/filter members
-
-### Quiz Assignment to Groups
-- [ ] Can assign quiz to group
-- [ ] Only group members see quiz
-- [ ] Non-members cannot access
-- [ ] Can assign to multiple groups
-- [ ] Can make quiz available to all
-
----
-
-## AI Question Generation
-
-### OpenAI Integration
-- [ ] Settings page for API key
-- [ ] Can save API key
-- [ ] API key validation works
-- [ ] Error message if invalid key
-- [ ] API key encrypted in database
-
-### Generate Questions
-- [ ] "Generate with AI" button appears
-- [ ] Topic input field works
-- [ ] Question count selector works
-- [ ] Difficulty selector works
-- [ ] Generate button triggers API call
-- [ ] Loading indicator shows
-- [ ] Questions generated successfully
-- [ ] Questions added to quiz
-- [ ] Can edit generated questions
-- [ ] Can delete generated questions
-
-### Error Handling
-- [ ] API rate limit error handled
-- [ ] Invalid API key error shown
-- [ ] Network error handled gracefully
-- [ ] Timeout error handled
-- [ ] Malformed response handled
-
----
-
-## WordPress Integration
-
-### Custom Post Type
-- [ ] Quiz post type registered
-- [ ] Appears in admin menu
-- [ ] Custom icon displays
-- [ ] Supports required features
-- [ ] Permalink structure works
-- [ ] Archive page works (if enabled)
-- [ ] Single quiz page works
-
-### REST API
-- [ ] Endpoints registered
-- [ ] Authentication required
-- [ ] Permissions checked
-- [ ] Data validation works
-- [ ] Error responses correct
-- [ ] Rate limiting works (if implemented)
-
-### Shortcodes
-- [ ] [pressprimer_quiz id="X"] works
-- [ ] [pressprimer_quiz_list] works
-- [ ] [pressprimer_my_results] works
-- [ ] Shortcodes work in posts
-- [ ] Shortcodes work in pages
-- [ ] Shortcodes work in widgets
-- [ ] Invalid parameters handled
-
-### Gutenberg Blocks
-- [ ] Quiz block available in editor
-- [ ] Block settings panel works
-- [ ] Block preview displays
-- [ ] Block saves correctly
-- [ ] Block renders on frontend
-- [ ] Multiple blocks per page work
-
-### Widgets
-- [ ] Quiz widget available
-- [ ] Widget settings save
-- [ ] Widget displays in sidebar
-- [ ] Widget displays in footer
-- [ ] Multiple widgets work
-
----
-
-## LMS Integration Testing
+## LMS Integrations
 
 ### LearnDash Integration
-- [ ] Quizzes appear in LearnDash courses
-- [ ] Quiz completion tracked
-- [ ] Course progress updated
-- [ ] Certificates triggered (if set)
-- [ ] LearnDash groups integration works
-- [ ] Reporting integrates with LearnDash
-
-### LifterLMS Integration
-- [ ] Quizzes appear in LifterLMS courses
-- [ ] Quiz completion tracked
-- [ ] Course progress updated
-- [ ] Achievements triggered (if set)
-- [ ] LifterLMS groups integration works
-- [ ] Reporting integrates with LifterLMS
+- [ ] Meta box appears on LearnDash lessons
+- [ ] Quiz selector works
+- [ ] Quiz embeds in lesson
+- [ ] Passing quiz completes lesson (if set)
+- [ ] Course progress updates
+- [ ] Works with LearnDash 3.x+
 
 ### TutorLMS Integration
-- [ ] Quizzes appear in TutorLMS courses
-- [ ] Quiz completion tracked
-- [ ] Course progress updated
-- [ ] Certificates triggered (if set)
-- [ ] TutorLMS groups integration works
-- [ ] Reporting integrates with TutorLMS
+- [ ] Quiz block available in TutorLMS lessons
+- [ ] Quiz embeds correctly
+- [ ] Passing quiz completes lesson (if set)
+- [ ] Works with TutorLMS 2.x+
 
-### Standalone Mode (No LMS)
+### LifterLMS Integration
+- [ ] Quiz block available in LifterLMS lessons
+- [ ] Quiz embeds correctly
+- [ ] Passing quiz completes lesson (if set)
+- [ ] Works with LifterLMS 6.x+
+
+### LearnPress Integration (v2.0+)
+- [ ] Meta box appears on LearnPress lessons
+- [ ] Quiz selector works
+- [ ] Quiz embeds at end of lesson content
+- [ ] Enrolled users can take quiz
+- [ ] Non-enrolled users see message
+- [ ] Passing quiz completes lesson (if set)
+- [ ] Works with LearnPress 4.0+
+
+### Standalone Operation
 - [ ] All features work without LMS
 - [ ] Native group management works
 - [ ] Native teacher roles work
@@ -546,6 +475,7 @@
 - [ ] Other students' grades not visible
 - [ ] API endpoints require authentication
 - [ ] Direct file access blocked
+- [ ] Correct answers never in page source
 
 ### File Upload Security
 - [ ] File type validation works
@@ -777,7 +707,7 @@ When issues are found during testing, document using this format:
 
 ## Testing Sign-Off
 
-### v1.0.0 Release Testing
+### v2.0.0 Release Testing
 
 **Tested By**: ___________________
 **Date**: ___________________

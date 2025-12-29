@@ -28,9 +28,9 @@ wp_ppq_bank_questions     # Bank-to-question relationships
 wp_ppq_quizzes            # Quiz configurations
 wp_ppq_quiz_items         # Quiz-to-question relationships (fixed quizzes)
 wp_ppq_quiz_rules         # Dynamic quiz generation rules
-wp_ppq_groups             # User groups
-wp_ppq_group_members      # Group membership
-wp_ppq_assignments        # Quiz assignments to groups/users
+wp_ppq_groups             # User groups (Educator addon)
+wp_ppq_group_members      # Group membership (Educator addon)
+wp_ppq_assignments        # Quiz assignments to groups/users (Educator addon)
 wp_ppq_attempts           # Quiz attempt records
 wp_ppq_attempt_items      # Individual question responses
 wp_ppq_events             # Event log for proctoring/xAPI
@@ -204,7 +204,7 @@ CREATE TABLE wp_ppq_banks (
 
 **Field Notes:**
 - `visibility` - 'private' = owner only, 'shared' = visible to other teachers
-- In v1.0 Free, all banks are 'private'. Shared banks are a premium feature.
+- In Free, all banks are 'private'. Shared banks are a School tier premium feature.
 
 ---
 
@@ -266,6 +266,14 @@ CREATE TABLE wp_ppq_quizzes (
     theme VARCHAR(50) NOT NULL DEFAULT 'default',
     theme_settings_json TEXT DEFAULT NULL,
     
+    -- Access Control (v2.0)
+    access_mode VARCHAR(20) DEFAULT 'default',
+    login_message TEXT DEFAULT NULL,
+    
+    -- Question Pool (v2.2)
+    pool_enabled TINYINT(1) NOT NULL DEFAULT 0,
+    max_questions INT UNSIGNED DEFAULT NULL,
+    
     -- Feedback
     band_feedback_json TEXT DEFAULT NULL,
     
@@ -287,6 +295,10 @@ CREATE TABLE wp_ppq_quizzes (
 **Field Notes:**
 - `mode` - 'tutorial' shows feedback immediately, 'timed' shows at end
 - `generation_mode` - 'fixed' uses quiz_items, 'dynamic' uses quiz_rules
+- `access_mode` - (v2.0) 'default', 'guest_optional', 'guest_required', 'login_required'
+- `login_message` - (v2.0) Custom message when login required
+- `pool_enabled` - (v2.2) Whether to limit questions from total pool
+- `max_questions` - (v2.2) Maximum questions to include when pool_enabled is true
 - `band_feedback_json` - Score-banded feedback messages
 
 **band_feedback_json Structure:**
@@ -298,11 +310,17 @@ CREATE TABLE wp_ppq_quizzes (
 ]
 ```
 
+**access_mode Values (v2.0):**
+- `default` - Use global setting from PPQ Settings
+- `guest_optional` - Allow guests, email is optional
+- `guest_required` - Allow guests, email is required
+- `login_required` - Require WordPress login
+
 ---
 
 ### wp_ppq_quiz_items
 
-Fixed questions for quizzes (when generation_mode = 'fixed').
+Fixed question assignments to quizzes.
 
 ```sql
 CREATE TABLE wp_ppq_quiz_items (
@@ -310,11 +328,12 @@ CREATE TABLE wp_ppq_quiz_items (
     quiz_id BIGINT UNSIGNED NOT NULL,
     question_id BIGINT UNSIGNED NOT NULL,
     order_index SMALLINT UNSIGNED NOT NULL DEFAULT 0,
-    weight DECIMAL(5,2) NOT NULL DEFAULT 1.00,
+    points_override DECIMAL(5,2) DEFAULT NULL,
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     PRIMARY KEY (id),
     UNIQUE KEY quiz_question (quiz_id, question_id),
     KEY question_id (question_id),
-    KEY order_index (quiz_id, order_index)
+    KEY order_index (order_index)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 ```
 
@@ -322,37 +341,36 @@ CREATE TABLE wp_ppq_quiz_items (
 
 ### wp_ppq_quiz_rules
 
-Dynamic question selection rules (when generation_mode = 'dynamic').
+Dynamic quiz generation rules.
 
 ```sql
 CREATE TABLE wp_ppq_quiz_rules (
     id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
     quiz_id BIGINT UNSIGNED NOT NULL,
-    rule_order SMALLINT UNSIGNED NOT NULL DEFAULT 0,
+    rule_type ENUM('bank', 'category', 'difficulty') NOT NULL,
+    order_index SMALLINT UNSIGNED NOT NULL DEFAULT 0,
     bank_id BIGINT UNSIGNED DEFAULT NULL,
-    category_ids_json TEXT DEFAULT NULL,
-    tag_ids_json TEXT DEFAULT NULL,
+    category_id BIGINT UNSIGNED DEFAULT NULL,
     difficulties_json TEXT DEFAULT NULL,
-    question_count SMALLINT UNSIGNED NOT NULL DEFAULT 10,
+    question_count SMALLINT UNSIGNED NOT NULL,
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     PRIMARY KEY (id),
     KEY quiz_id (quiz_id),
-    KEY bank_id (bank_id)
+    KEY bank_id (bank_id),
+    KEY category_id (category_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 ```
 
 **Field Notes:**
-- Each rule pulls N questions matching criteria
-- Rules are processed in `rule_order` sequence
-- NULL values mean "any" (e.g., NULL category_ids = all categories)
-
-**Example Rule:**
-"Pull 20 medium-difficulty questions from Bank 5, categories 1 and 2"
+- `rule_type` - How questions are selected
+- `difficulties_json` - Array like `["easy", "medium"]`
+- Multiple rules can exist per quiz; they're combined
 
 ---
 
 ### wp_ppq_groups
 
-User groups for organizing students and teachers.
+User groups for organizing students (created in Free, used by Educator addon).
 
 ```sql
 CREATE TABLE wp_ppq_groups (
@@ -361,6 +379,7 @@ CREATE TABLE wp_ppq_groups (
     name VARCHAR(200) NOT NULL,
     description TEXT DEFAULT NULL,
     owner_id BIGINT UNSIGNED NOT NULL,
+    settings_json TEXT DEFAULT NULL,
     member_count INT UNSIGNED NOT NULL DEFAULT 0,
     created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -371,19 +390,20 @@ CREATE TABLE wp_ppq_groups (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 ```
 
+**Note:** Table created in Free but functionality requires Educator addon.
+
 ---
 
 ### wp_ppq_group_members
 
-Group membership.
+Group membership (created in Free, used by Educator addon).
 
 ```sql
 CREATE TABLE wp_ppq_group_members (
     group_id BIGINT UNSIGNED NOT NULL,
     user_id BIGINT UNSIGNED NOT NULL,
-    role ENUM('teacher', 'student') NOT NULL DEFAULT 'student',
-    added_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    added_by BIGINT UNSIGNED NOT NULL,
+    role ENUM('student', 'teacher') NOT NULL DEFAULT 'student',
+    joined_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     PRIMARY KEY (group_id, user_id),
     KEY user_id (user_id),
     KEY role (role)
@@ -394,19 +414,22 @@ CREATE TABLE wp_ppq_group_members (
 
 ### wp_ppq_assignments
 
-Quiz assignments to groups or individual users.
+Quiz assignments to groups/users (created in Free, used by Educator addon).
 
 ```sql
 CREATE TABLE wp_ppq_assignments (
     id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+    uuid CHAR(36) NOT NULL,
     quiz_id BIGINT UNSIGNED NOT NULL,
     assignee_type ENUM('group', 'user') NOT NULL,
     assignee_id BIGINT UNSIGNED NOT NULL,
     assigned_by BIGINT UNSIGNED NOT NULL,
     due_at DATETIME DEFAULT NULL,
+    settings_json TEXT DEFAULT NULL,
     created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     PRIMARY KEY (id),
-    UNIQUE KEY quiz_assignee (quiz_id, assignee_type, assignee_id),
+    UNIQUE KEY uuid (uuid),
+    KEY quiz_id (quiz_id),
     KEY assignee (assignee_type, assignee_id),
     KEY due_at (due_at),
     KEY assigned_by (assigned_by)
@@ -586,8 +609,57 @@ function ppq_run_migrations( $from, $to ) {
     dbDelta( $sql );
     
     // Run any data migrations
-    if ( version_compare( $from, '1.1.0', '<' ) ) {
-        ppq_migrate_1_1_0();
+    if ( version_compare( $from, '2.0.0', '<' ) ) {
+        ppq_migrate_2_0_0(); // Add access_mode, login_message columns
+    }
+    if ( version_compare( $from, '2.2.0', '<' ) ) {
+        ppq_migrate_2_2_0(); // Add pool_enabled, max_questions columns
+    }
+}
+```
+
+### v2.0.0 Migration
+
+```php
+/**
+ * v2.0.0 migration: Add access control columns
+ */
+function ppq_migrate_2_0_0() {
+    global $wpdb;
+    $table = $wpdb->prefix . 'ppq_quizzes';
+    
+    // Check if columns exist
+    $columns = $wpdb->get_col( "DESCRIBE {$table}" );
+    
+    if ( ! in_array( 'access_mode', $columns, true ) ) {
+        $wpdb->query(
+            "ALTER TABLE {$table} 
+             ADD COLUMN access_mode VARCHAR(20) DEFAULT 'default' AFTER theme_settings_json,
+             ADD COLUMN login_message TEXT DEFAULT NULL AFTER access_mode"
+        );
+    }
+}
+```
+
+### v2.2.0 Migration
+
+```php
+/**
+ * v2.2.0 migration: Add question pool columns
+ */
+function ppq_migrate_2_2_0() {
+    global $wpdb;
+    $table = $wpdb->prefix . 'ppq_quizzes';
+    
+    // Check if columns exist
+    $columns = $wpdb->get_col( "DESCRIBE {$table}" );
+    
+    if ( ! in_array( 'pool_enabled', $columns, true ) ) {
+        $wpdb->query(
+            "ALTER TABLE {$table} 
+             ADD COLUMN pool_enabled TINYINT(1) NOT NULL DEFAULT 0 AFTER login_message,
+             ADD COLUMN max_questions INT UNSIGNED DEFAULT NULL AFTER pool_enabled"
+        );
     }
 }
 ```
@@ -631,6 +703,33 @@ function ppq_get_questions_for_rule( $rule ) {
 }
 ```
 
+### Get Questions with Pool Limit (v2.2)
+
+```php
+/**
+ * Get questions for quiz with pool limit applied
+ *
+ * @since 2.2.0
+ *
+ * @param int $quiz_id Quiz ID.
+ * @return array Array of question IDs.
+ */
+function ppq_get_pooled_questions( $quiz_id ) {
+    $quiz = PressPrimer_Quiz_Quiz::get( $quiz_id );
+    
+    // Get all matching questions from rules/items
+    $all_questions = ppq_get_all_quiz_questions( $quiz_id );
+    
+    // If pool is enabled and max_questions is set, limit
+    if ( $quiz->pool_enabled && $quiz->max_questions > 0 ) {
+        shuffle( $all_questions );
+        $all_questions = array_slice( $all_questions, 0, $quiz->max_questions );
+    }
+    
+    return $all_questions;
+}
+```
+
 ### Get Attempt with Items
 
 ```php
@@ -668,4 +767,3 @@ function ppq_get_attempt_with_items( $attempt_id ) {
 3. **Attempt snapshots** - `questions_json` captures exact questions at attempt time
 4. **Foreign keys** - Not enforced by MySQL in WordPress, but documented in schema
 5. **Counts** - `question_count`, `member_count` maintained via code, not triggers
-

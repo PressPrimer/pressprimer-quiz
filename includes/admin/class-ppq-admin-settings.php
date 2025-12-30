@@ -1817,20 +1817,26 @@ Good luck with your studies!',
 				'repairTables' => wp_create_nonce( 'pressprimer_quiz_repair_tables_nonce' ),
 			],
 			'lmsStatus'      => [
-				'learndash' => [
+				// Alphabetical order
+				'learndash'  => [
 					'installed' => defined( 'LEARNDASH_VERSION' ),
 					'active'    => defined( 'LEARNDASH_VERSION' ),
 					'version'   => defined( 'LEARNDASH_VERSION' ) ? LEARNDASH_VERSION : null,
 				],
-				'tutorlms'  => [
-					'installed' => defined( 'TUTOR_VERSION' ),
-					'active'    => defined( 'TUTOR_VERSION' ),
-					'version'   => defined( 'TUTOR_VERSION' ) ? TUTOR_VERSION : null,
+				'learnpress' => [
+					'installed' => defined( 'LEARNPRESS_VERSION' ),
+					'active'    => defined( 'LEARNPRESS_VERSION' ),
+					'version'   => defined( 'LEARNPRESS_VERSION' ) ? LEARNPRESS_VERSION : null,
 				],
-				'lifterlms' => [
+				'lifterlms'  => [
 					'installed' => defined( 'LLMS_VERSION' ),
 					'active'    => defined( 'LLMS_VERSION' ),
 					'version'   => defined( 'LLMS_VERSION' ) ? LLMS_VERSION : null,
+				],
+				'tutorlms'   => [
+					'installed' => defined( 'TUTOR_VERSION' ),
+					'active'    => defined( 'TUTOR_VERSION' ),
+					'version'   => defined( 'TUTOR_VERSION' ) ? TUTOR_VERSION : null,
 				],
 			],
 		];

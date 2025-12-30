@@ -30,7 +30,6 @@ import {
 	ReloadOutlined,
 	DeleteOutlined,
 	LockOutlined,
-	BookOutlined,
 	SettingOutlined,
 } from '@ant-design/icons';
 
@@ -75,15 +74,20 @@ const IntegrationsTab = ({ settings, updateSetting, settingsData, apiKeyStatus, 
 	});
 	const [savingLearndash, setSavingLearndash] = useState(false);
 
-	const [tutorlmsStatus, setTutorlmsStatus] = useState(
-		lmsStatus.tutorlms?.active ? { active: true, version: lmsStatus.tutorlms.version } : { active: false }
+	const [learnpressStatus, setLearnpressStatus] = useState(
+		lmsStatus.learnpress?.active ? { active: true, version: lmsStatus.learnpress.version } : { active: false }
 	);
-	const [loadingTutorlms, setLoadingTutorlms] = useState(lmsStatus.tutorlms?.active || false);
+	const [loadingLearnpress, setLoadingLearnpress] = useState(lmsStatus.learnpress?.active || false);
 
 	const [lifterlmsStatus, setLifterlmsStatus] = useState(
 		lmsStatus.lifterlms?.active ? { active: true, version: lmsStatus.lifterlms.version } : { active: false }
 	);
 	const [loadingLifterlms, setLoadingLifterlms] = useState(lmsStatus.lifterlms?.active || false);
+
+	const [tutorlmsStatus, setTutorlmsStatus] = useState(
+		lmsStatus.tutorlms?.active ? { active: true, version: lmsStatus.tutorlms.version } : { active: false }
+	);
+	const [loadingTutorlms, setLoadingTutorlms] = useState(lmsStatus.tutorlms?.active || false);
 
 	const usageData = settingsData.usageData || {
 		requests_this_hour: 0,
@@ -122,32 +126,32 @@ const IntegrationsTab = ({ settings, updateSetting, settingsData, apiKeyStatus, 
 		fetchLearndashStatus();
 	}, [lmsStatus.learndash?.active]);
 
-	// Fetch TutorLMS extended status only if TutorLMS is active
+	// Fetch LearnPress extended status only if LearnPress is active
 	useEffect(() => {
-		if (!lmsStatus.tutorlms?.active) {
-			setLoadingTutorlms(false);
+		if (!lmsStatus.learnpress?.active) {
+			setLoadingLearnpress(false);
 			return;
 		}
 
-		const fetchTutorlmsStatus = async () => {
+		const fetchLearnpressStatus = async () => {
 			try {
 				const response = await apiFetch({
-					path: '/ppq/v1/tutorlms/status',
+					path: '/ppq/v1/learnpress/status',
 					method: 'GET',
 				});
 
 				if (response.success) {
-					setTutorlmsStatus(response.status);
+					setLearnpressStatus(response.status);
 				}
 			} catch (error) {
 				// Keep the basic status from PHP
 			} finally {
-				setLoadingTutorlms(false);
+				setLoadingLearnpress(false);
 			}
 		};
 
-		fetchTutorlmsStatus();
-	}, [lmsStatus.tutorlms?.active]);
+		fetchLearnpressStatus();
+	}, [lmsStatus.learnpress?.active]);
 
 	// Fetch LifterLMS extended status only if LifterLMS is active
 	useEffect(() => {
@@ -175,6 +179,33 @@ const IntegrationsTab = ({ settings, updateSetting, settingsData, apiKeyStatus, 
 
 		fetchLifterlmsStatus();
 	}, [lmsStatus.lifterlms?.active]);
+
+	// Fetch TutorLMS extended status only if TutorLMS is active
+	useEffect(() => {
+		if (!lmsStatus.tutorlms?.active) {
+			setLoadingTutorlms(false);
+			return;
+		}
+
+		const fetchTutorlmsStatus = async () => {
+			try {
+				const response = await apiFetch({
+					path: '/ppq/v1/tutorlms/status',
+					method: 'GET',
+				});
+
+				if (response.success) {
+					setTutorlmsStatus(response.status);
+				}
+			} catch (error) {
+				// Keep the basic status from PHP
+			} finally {
+				setLoadingTutorlms(false);
+			}
+		};
+
+		fetchTutorlmsStatus();
+	}, [lmsStatus.tutorlms?.active]);
 
 	/**
 	 * Save LearnDash settings
@@ -503,7 +534,6 @@ const IntegrationsTab = ({ settings, updateSetting, settingsData, apiKeyStatus, 
 				{/* LearnDash */}
 				<div className="ppq-lms-integration">
 					<div className="ppq-lms-integration-header">
-						<BookOutlined style={{ fontSize: 20, marginRight: 8 }} />
 						<Text strong>LearnDash</Text>
 					</div>
 
@@ -588,18 +618,17 @@ const IntegrationsTab = ({ settings, updateSetting, settingsData, apiKeyStatus, 
 					)}
 				</div>
 
-				{/* TutorLMS */}
+				{/* LearnPress */}
 				<div className="ppq-lms-integration">
 					<div className="ppq-lms-integration-header">
-						<BookOutlined style={{ fontSize: 20, marginRight: 8 }} />
-						<Text strong>Tutor LMS</Text>
+						<Text strong>LearnPress</Text>
 					</div>
 
-					{loadingTutorlms ? (
+					{loadingLearnpress ? (
 						<div style={{ padding: '16px', textAlign: 'center' }}>
 							<Spin size="small" />
 						</div>
-					) : tutorlmsStatus?.active ? (
+					) : learnpressStatus?.active ? (
 						<Descriptions column={1} size="small" style={{ marginTop: 12 }}>
 							<Descriptions.Item label={__('Status', 'pressprimer-quiz')}>
 								<Tag color="success" icon={<CheckCircleOutlined />}>
@@ -607,23 +636,23 @@ const IntegrationsTab = ({ settings, updateSetting, settingsData, apiKeyStatus, 
 								</Tag>
 							</Descriptions.Item>
 							<Descriptions.Item label={__('Version', 'pressprimer-quiz')}>
-								{tutorlmsStatus.version}
+								{learnpressStatus.version}
 							</Descriptions.Item>
 							<Descriptions.Item label={__('Integration', 'pressprimer-quiz')}>
 								<Tag color="blue">
 									{__('Working', 'pressprimer-quiz')}
 								</Tag>
 							</Descriptions.Item>
-							{tutorlmsStatus.attached_quizzes > 0 && (
+							{learnpressStatus.attached_quizzes > 0 && (
 								<Descriptions.Item label={__('Attached Quizzes', 'pressprimer-quiz')}>
-									{tutorlmsStatus.attached_quizzes}
+									{learnpressStatus.attached_quizzes}
 								</Descriptions.Item>
 							)}
 						</Descriptions>
 					) : (
 						<Alert
-							message={__('Tutor LMS Not Detected', 'pressprimer-quiz')}
-							description={__('Install and activate Tutor LMS to enable this integration. Once active, you can attach PressPrimer quizzes to lessons.', 'pressprimer-quiz')}
+							message={__('LearnPress Not Detected', 'pressprimer-quiz')}
+							description={__('Install and activate LearnPress to enable this integration. Once active, you can attach PressPrimer quizzes to lessons.', 'pressprimer-quiz')}
 							type="info"
 							showIcon
 							style={{ marginTop: 12 }}
@@ -634,7 +663,6 @@ const IntegrationsTab = ({ settings, updateSetting, settingsData, apiKeyStatus, 
 				{/* LifterLMS */}
 				<div className="ppq-lms-integration">
 					<div className="ppq-lms-integration-header">
-						<BookOutlined style={{ fontSize: 20, marginRight: 8 }} />
 						<Text strong>LifterLMS</Text>
 					</div>
 
@@ -667,6 +695,48 @@ const IntegrationsTab = ({ settings, updateSetting, settingsData, apiKeyStatus, 
 						<Alert
 							message={__('LifterLMS Not Detected', 'pressprimer-quiz')}
 							description={__('Install and activate LifterLMS to enable this integration. Once active, you can attach PressPrimer quizzes to lessons.', 'pressprimer-quiz')}
+							type="info"
+							showIcon
+							style={{ marginTop: 12 }}
+						/>
+					)}
+				</div>
+
+				{/* Tutor LMS */}
+				<div className="ppq-lms-integration">
+					<div className="ppq-lms-integration-header">
+						<Text strong>Tutor LMS</Text>
+					</div>
+
+					{loadingTutorlms ? (
+						<div style={{ padding: '16px', textAlign: 'center' }}>
+							<Spin size="small" />
+						</div>
+					) : tutorlmsStatus?.active ? (
+						<Descriptions column={1} size="small" style={{ marginTop: 12 }}>
+							<Descriptions.Item label={__('Status', 'pressprimer-quiz')}>
+								<Tag color="success" icon={<CheckCircleOutlined />}>
+									{__('Active', 'pressprimer-quiz')}
+								</Tag>
+							</Descriptions.Item>
+							<Descriptions.Item label={__('Version', 'pressprimer-quiz')}>
+								{tutorlmsStatus.version}
+							</Descriptions.Item>
+							<Descriptions.Item label={__('Integration', 'pressprimer-quiz')}>
+								<Tag color="blue">
+									{__('Working', 'pressprimer-quiz')}
+								</Tag>
+							</Descriptions.Item>
+							{tutorlmsStatus.attached_quizzes > 0 && (
+								<Descriptions.Item label={__('Attached Quizzes', 'pressprimer-quiz')}>
+									{tutorlmsStatus.attached_quizzes}
+								</Descriptions.Item>
+							)}
+						</Descriptions>
+					) : (
+						<Alert
+							message={__('Tutor LMS Not Detected', 'pressprimer-quiz')}
+							description={__('Install and activate Tutor LMS to enable this integration. Once active, you can attach PressPrimer quizzes to lessons.', 'pressprimer-quiz')}
 							type="info"
 							showIcon
 							style={{ marginTop: 12 }}

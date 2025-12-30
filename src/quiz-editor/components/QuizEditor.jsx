@@ -73,6 +73,7 @@ const QuizEditor = ({ quizData = {} }) => {
 				show_answers: quizData.show_answers || 'after_submit',
 				enable_confidence: quizData.enable_confidence ?? false,
 				theme: quizData.theme || 'default',
+				display_density: quizData.display_density || 'default',
 				max_attempts: quizData.max_attempts || null,
 				attempt_delay_minutes: quizData.attempt_delay_minutes || 0,
 				generation_mode: quizData.generation_mode || 'fixed',
@@ -267,6 +268,7 @@ const QuizEditor = ({ quizData = {} }) => {
 						show_answers: 'after_submit',
 						enable_confidence: false,
 						theme: 'default',
+						display_density: 'default',
 						generation_mode: 'fixed',
 						attempt_delay_minutes: 0,
 					}}

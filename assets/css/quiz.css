@@ -1083,9 +1083,8 @@
 }
 
 .ppq-nav-center {
-	flex: 1;
 	display: flex;
-	justify-content: center;
+	margin-left: auto;
 }
 
 .ppq-button-secondary {

@@ -523,6 +523,26 @@ const SettingsPanel = ({ form, generationMode, setGenerationMode }) => {
 									style={{ width: '100%' }}
 								/>
 							</Form.Item>
+							<Form.Item
+								label={
+									<Space>
+										<span>{__('Display Density', 'pressprimer-quiz')}</span>
+										<Tooltip title={__('Control spacing and visual density of the quiz interface', 'pressprimer-quiz')}>
+											<QuestionCircleOutlined style={{ fontSize: 12, color: '#8c8c8c' }} />
+										</Tooltip>
+									</Space>
+								}
+								name="display_density"
+							>
+								<Select
+									size="small"
+									options={[
+										{ value: 'default', label: __('Use Global Default', 'pressprimer-quiz') },
+										{ value: 'standard', label: __('Standard', 'pressprimer-quiz') },
+										{ value: 'condensed', label: __('Condensed', 'pressprimer-quiz') },
+									]}
+								/>
+							</Form.Item>
 						</Space>
 					</Col>
 				</Row>

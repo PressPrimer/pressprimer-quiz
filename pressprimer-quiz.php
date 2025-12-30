@@ -60,3 +60,59 @@ function pressprimer_quiz_init() {
 	$plugin->run();
 }
 add_action( 'init', 'pressprimer_quiz_init', 0 );
+
+/**
+ * Get the addon manager instance
+ *
+ * Returns the singleton instance of the addon manager for addon registration
+ * and compatibility checking.
+ *
+ * @since 2.0.0
+ *
+ * @return PressPrimer_Quiz_Addon_Manager The addon manager instance.
+ */
+function pressprimer_quiz_addon_manager() {
+	return PressPrimer_Quiz_Addon_Manager::get_instance();
+}
+
+/**
+ * Register a premium addon
+ *
+ * Helper function for addons to register themselves with the addon manager.
+ *
+ * Example usage:
+ * ```php
+ * add_action( 'pressprimer_quiz_register_addons', function() {
+ *     pressprimer_quiz_register_addon( 'ppq-educator', [
+ *         'name'     => 'PressPrimer Quiz Educator',
+ *         'version'  => '1.0.0',
+ *         'file'     => __FILE__,
+ *         'requires' => '2.0.0',
+ *         'tier'     => 'educator',
+ *     ] );
+ * } );
+ * ```
+ *
+ * @since 2.0.0
+ *
+ * @param string $slug   Unique addon identifier.
+ * @param array  $config Addon configuration array.
+ * @return bool True on success, false if already registered.
+ */
+function pressprimer_quiz_register_addon( $slug, $config ) {
+	return pressprimer_quiz_addon_manager()->register( $slug, $config );
+}
+
+/**
+ * Check if a premium addon is active
+ *
+ * Use this to conditionally enable features that depend on premium addons.
+ *
+ * @since 2.0.0
+ *
+ * @param string $slug Addon slug to check.
+ * @return bool True if addon is registered and compatible.
+ */
+function pressprimer_quiz_addon_active( $slug ) {
+	return pressprimer_quiz_addon_manager()->is_active( $slug );
+}

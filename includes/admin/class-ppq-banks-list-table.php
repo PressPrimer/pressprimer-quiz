@@ -49,7 +49,7 @@ class PressPrimer_Quiz_Banks_List_Table extends WP_List_Table {
 	 * @return array Column headers.
 	 */
 	public function get_columns() {
-		return [
+		$columns = [
 			'cb'          => '<input type="checkbox" />',
 			'name'        => __( 'Name', 'pressprimer-quiz' ),
 			'description' => __( 'Description', 'pressprimer-quiz' ),
@@ -57,6 +57,29 @@ class PressPrimer_Quiz_Banks_List_Table extends WP_List_Table {
 			'author'      => __( 'Author', 'pressprimer-quiz' ),
 			'date'        => __( 'Date', 'pressprimer-quiz' ),
 		];
+
+		/**
+		 * Filter the columns displayed in the banks list table.
+		 *
+		 * Premium addons can add custom columns to display additional data.
+		 *
+		 * Example usage:
+		 * ```php
+		 * add_filter( 'pressprimer_quiz_bank_list_columns', function( $columns ) {
+		 *     // Add "Shared With" column before date
+		 *     $date = $columns['date'];
+		 *     unset( $columns['date'] );
+		 *     $columns['shared_with'] = __( 'Shared With', 'pressprimer-quiz-groups' );
+		 *     $columns['date'] = $date;
+		 *     return $columns;
+		 * } );
+		 * ```
+		 *
+		 * @since 2.0.0
+		 *
+		 * @param array $columns Column headers array.
+		 */
+		return apply_filters( 'pressprimer_quiz_bank_list_columns', $columns );
 	}
 
 	/**
@@ -271,6 +294,26 @@ class PressPrimer_Quiz_Banks_List_Table extends WP_List_Table {
 			case 'questions':
 				return absint( $item->question_count );
 			default:
+				/**
+				 * Fires for custom columns in the banks list table.
+				 *
+				 * Premium addons should hook here to output content for their custom columns.
+				 *
+				 * Example usage:
+				 * ```php
+				 * add_action( 'pressprimer_quiz_bank_list_column', function( $column_name, $bank ) {
+				 *     if ( 'shared_with' === $column_name ) {
+				 *         echo esc_html( $this->get_shared_groups( $bank->id ) );
+				 *     }
+				 * }, 10, 2 );
+				 * ```
+				 *
+				 * @since 2.0.0
+				 *
+				 * @param string $column_name The column name/key.
+				 * @param object $item        The bank object.
+				 */
+				do_action( 'pressprimer_quiz_bank_list_column', $column_name, $item );
 				return '';
 		}
 	}

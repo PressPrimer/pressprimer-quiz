@@ -694,6 +694,8 @@ class PressPrimer_Quiz_Admin_Quizzes {
 					'attempt_delay_minutes' => $quiz->attempt_delay_minutes,
 					'generation_mode'       => $quiz->generation_mode,
 					'band_feedback_json'    => $quiz->band_feedback_json,
+					'access_mode'           => $quiz->access_mode,
+					'login_message'         => $quiz->login_message,
 				];
 			}
 		} else {

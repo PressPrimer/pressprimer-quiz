@@ -1537,6 +1537,20 @@ Good luck with your studies!',
 			$sanitized['remove_data_on_uninstall'] = false;
 		}
 
+		// Sanitize default access mode
+		if ( isset( $input['default_access_mode'] ) ) {
+			$access_mode = sanitize_key( $input['default_access_mode'] );
+			if ( ! in_array( $access_mode, [ 'guest_optional', 'guest_required', 'login_required' ], true ) ) {
+				$access_mode = 'guest_optional';
+			}
+			$sanitized['default_access_mode'] = $access_mode;
+		}
+
+		// Sanitize default login message
+		if ( isset( $input['login_message_default'] ) ) {
+			$sanitized['login_message_default'] = wp_kses_post( $input['login_message_default'] );
+		}
+
 		// Sanitize appearance settings
 		if ( isset( $input['appearance_font_family'] ) ) {
 			$sanitized['appearance_font_family'] = sanitize_text_field( $input['appearance_font_family'] );

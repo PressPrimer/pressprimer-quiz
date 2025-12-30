@@ -1373,6 +1373,8 @@ class PressPrimer_Quiz_REST_Controller {
 			'theme_settings_json'   => $quiz->theme_settings_json,
 			'band_feedback_json'    => $quiz->band_feedback_json,
 			'generation_mode'       => $quiz->generation_mode,
+			'access_mode'           => $quiz->access_mode,
+			'login_message'         => $quiz->login_message,
 		];
 
 		return new WP_REST_Response( $data, 200 );
@@ -1420,6 +1422,8 @@ class PressPrimer_Quiz_REST_Controller {
 					'theme_settings_json'   => $data['theme_settings_json'] ?? null,
 					'band_feedback_json'    => $data['band_feedback_json'] ?? null,
 					'generation_mode'       => sanitize_key( $data['generation_mode'] ?? 'fixed' ),
+					'access_mode'           => sanitize_key( $data['access_mode'] ?? 'default' ),
+					'login_message'         => wp_kses_post( $data['login_message'] ?? '' ),
 				]
 			);
 
@@ -1492,6 +1496,8 @@ class PressPrimer_Quiz_REST_Controller {
 			$quiz->theme_settings_json   = $data['theme_settings_json'] ?? null;
 			$quiz->band_feedback_json    = $data['band_feedback_json'] ?? null;
 			$quiz->generation_mode       = sanitize_key( $data['generation_mode'] ?? 'fixed' );
+			$quiz->access_mode           = sanitize_key( $data['access_mode'] ?? 'default' );
+			$quiz->login_message         = wp_kses_post( $data['login_message'] ?? '' );
 
 			$result = $quiz->save();
 
@@ -1862,6 +1868,16 @@ class PressPrimer_Quiz_REST_Controller {
 			$sanitized['default_quiz_mode'] = in_array( $data['default_quiz_mode'], [ 'tutorial', 'timed' ], true )
 				? $data['default_quiz_mode']
 				: 'tutorial';
+		}
+
+		if ( isset( $data['default_access_mode'] ) ) {
+			$sanitized['default_access_mode'] = in_array( $data['default_access_mode'], [ 'guest_optional', 'guest_required', 'login_required' ], true )
+				? $data['default_access_mode']
+				: 'guest_optional';
+		}
+
+		if ( isset( $data['login_message_default'] ) ) {
+			$sanitized['login_message_default'] = wp_kses_post( $data['login_message_default'] );
 		}
 
 		// Email settings

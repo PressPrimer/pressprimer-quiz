@@ -121,6 +121,11 @@ class PressPrimer_Quiz_Quiz_Renderer {
 		$user_id      = get_current_user_id();
 		$is_logged_in = $user_id > 0;
 
+		// Check access mode
+		$access_mode          = $quiz->get_effective_access_mode();
+		$login_required       = 'login_required' === $access_mode && ! $is_logged_in;
+		$guest_email_required = $quiz->is_guest_email_required() && ! $is_logged_in;
+
 		// Get user's attempts
 		$previous_attempts   = [];
 		$in_progress_attempt = null;
@@ -425,7 +430,58 @@ class PressPrimer_Quiz_Quiz_Renderer {
 						</div>
 					<?php endif; ?>
 
-					<?php if ( $in_progress_attempt && $in_progress_attempt->can_resume() ) : ?>
+					<?php if ( $login_required ) : ?>
+						<div class="ppq-login-required">
+							<div class="ppq-login-required-icon" aria-hidden="true">🔒</div>
+							<div class="ppq-login-required-message">
+								<?php echo wp_kses_post( wpautop( $quiz->get_login_message() ) ); ?>
+							</div>
+							<?php
+							$login_url = wp_login_url( get_permalink() );
+							/**
+							 * Filter the login URL shown when login is required for a quiz.
+							 *
+							 * Use this to customize the login URL, for example to redirect to
+							 * WooCommerce, MemberPress, or another membership plugin login page.
+							 *
+							 * @since 2.0.0
+							 *
+							 * @param string                $login_url The login URL.
+							 * @param PressPrimer_Quiz_Quiz $quiz      The quiz object.
+							 */
+							$login_url = apply_filters( 'pressprimer_quiz_login_url', $login_url, $quiz );
+							?>
+							<a href="<?php echo esc_url( $login_url ); ?>"
+								class="ppq-button ppq-button-primary ppq-button-large ppq-login-button">
+								<span class="ppq-button-icon" aria-hidden="true">🔐</span>
+								<?php esc_html_e( 'Log In to Take Quiz', 'pressprimer-quiz' ); ?>
+							</a>
+							<?php if ( get_option( 'users_can_register' ) ) : ?>
+								<?php
+								$register_url = wp_registration_url();
+								/**
+								 * Filter the registration URL shown when login is required for a quiz.
+								 *
+								 * @since 2.0.0
+								 *
+								 * @param string                $register_url The registration URL.
+								 * @param PressPrimer_Quiz_Quiz $quiz         The quiz object.
+								 */
+								$register_url = apply_filters( 'pressprimer_quiz_register_url', $register_url, $quiz );
+								?>
+								<p class="ppq-register-prompt">
+									<?php
+									printf(
+										/* translators: %s: registration link */
+										esc_html__( "Don't have an account? %s", 'pressprimer-quiz' ),
+										'<a href="' . esc_url( $register_url ) . '">' . esc_html__( 'Register here', 'pressprimer-quiz' ) . '</a>'
+									);
+									?>
+								</p>
+							<?php endif; ?>
+						</div>
+
+					<?php elseif ( $in_progress_attempt && $in_progress_attempt->can_resume() ) : ?>
 						<div class="ppq-notice ppq-notice-info ppq-resume-notice">
 							<p>
 								<?php esc_html_e( 'You have an in-progress attempt. You can resume where you left off.', 'pressprimer-quiz' ); ?>
@@ -439,18 +495,31 @@ class PressPrimer_Quiz_Quiz_Renderer {
 					<?php elseif ( $can_start ) : ?>
 
 						<?php if ( ! $is_logged_in ) : ?>
-							<div class="ppq-guest-email-form">
+							<div class="ppq-guest-email-form" data-email-required="<?php echo esc_attr( $guest_email_required ? '1' : '0' ); ?>">
 								<label for="ppq-guest-email" class="ppq-form-label">
-									<?php esc_html_e( 'Email Address (Optional)', 'pressprimer-quiz' ); ?>
+									<?php
+									if ( $guest_email_required ) {
+										esc_html_e( 'Email Address (Required)', 'pressprimer-quiz' );
+									} else {
+										esc_html_e( 'Email Address (Optional)', 'pressprimer-quiz' );
+									}
+									?>
 								</label>
 								<p class="ppq-form-help">
-									<?php esc_html_e( 'Enter your email to save your progress and receive your results.', 'pressprimer-quiz' ); ?>
+									<?php
+									if ( $guest_email_required ) {
+										esc_html_e( 'Please enter your email address to take this quiz.', 'pressprimer-quiz' );
+									} else {
+										esc_html_e( 'Enter your email to save your progress and receive your results.', 'pressprimer-quiz' );
+									}
+									?>
 								</p>
 								<input type="email"
 										id="ppq-guest-email"
 										class="ppq-input ppq-email-input"
 										placeholder="<?php esc_attr_e( 'your@email.com', 'pressprimer-quiz' ); ?>"
-										autocomplete="email">
+										autocomplete="email"
+										<?php echo $guest_email_required ? 'required' : ''; ?>>
 							</div>
 						<?php endif; ?>
 

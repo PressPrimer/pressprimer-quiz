@@ -1723,9 +1723,61 @@ Good luck with your studies!',
 		// Use integer for wp_localize_script compatibility (0 or 1)
 		$settings['remove_data_on_uninstall'] = $remove_data_value ? 1 : 0;
 
-		return [
+		/**
+		 * Filter the settings tabs displayed on the settings page.
+		 *
+		 * Premium addons can add their own tabs to the settings interface.
+		 * Each tab should have a unique key and specify its label.
+		 *
+		 * Example usage:
+		 * ```php
+		 * add_filter( 'pressprimer_quiz_settings_tabs', function( $tabs ) {
+		 *     $tabs['groups'] = [
+		 *         'label' => __( 'Groups', 'pressprimer-quiz-groups' ),
+		 *         'order' => 60,
+		 *     ];
+		 *     return $tabs;
+		 * } );
+		 * ```
+		 *
+		 * @since 2.0.0
+		 *
+		 * @param array $tabs Default settings tabs.
+		 */
+		$settings_tabs = apply_filters(
+			'pressprimer_quiz_settings_tabs',
+			[
+				'general'     => [
+					'label' => __( 'General', 'pressprimer-quiz' ),
+					'order' => 10,
+				],
+				'appearance'  => [
+					'label' => __( 'Appearance', 'pressprimer-quiz' ),
+					'order' => 20,
+				],
+				'email'       => [
+					'label' => __( 'Email', 'pressprimer-quiz' ),
+					'order' => 30,
+				],
+				'ai'          => [
+					'label' => __( 'AI', 'pressprimer-quiz' ),
+					'order' => 40,
+				],
+				'integration' => [
+					'label' => __( 'Integrations', 'pressprimer-quiz' ),
+					'order' => 50,
+				],
+				'advanced'    => [
+					'label' => __( 'Advanced', 'pressprimer-quiz' ),
+					'order' => 100,
+				],
+			]
+		);
+
+		$data = [
 			'pluginUrl'      => PRESSPRIMER_QUIZ_PLUGIN_URL,
 			'settings'       => $settings,
+			'settingsTabs'   => $settings_tabs,
 			'apiKeyStatus'   => $key_status,
 			'apiModels'      => $available_models,
 			'modelPref'      => $model_pref,

@@ -172,6 +172,30 @@ class PressPrimer_Quiz_Admin {
 			'pressprimer-quiz-settings',
 			[ $this, 'render_settings' ]
 		);
+
+		/**
+		 * Fires after the core admin menu items are registered.
+		 *
+		 * Premium addons should use this hook to add their own submenu pages.
+		 * Menu items added here appear below Settings in the admin menu.
+		 *
+		 * Example usage:
+		 * ```php
+		 * add_action( 'pressprimer_quiz_admin_menu', function() {
+		 *     add_submenu_page(
+		 *         'pressprimer-quiz',
+		 *         __( 'Groups', 'pressprimer-quiz-groups' ),
+		 *         __( 'Groups', 'pressprimer-quiz-groups' ),
+		 *         'pressprimer_quiz_manage_groups',
+		 *         'pressprimer-quiz-groups',
+		 *         [ $this, 'render_groups' ]
+		 *     );
+		 * } );
+		 * ```
+		 *
+		 * @since 2.0.0
+		 */
+		do_action( 'pressprimer_quiz_admin_menu' );
 	}
 
 	/**

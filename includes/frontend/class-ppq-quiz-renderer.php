@@ -933,6 +933,14 @@ class PressPrimer_Quiz_Quiz_Renderer {
 			PRESSPRIMER_QUIZ_VERSION
 		);
 
+		// Enqueue condensed mode CSS (loaded but only applied via .ppq-quiz--condensed class)
+		wp_enqueue_style(
+			'ppq-condensed',
+			PPQ_PLUGIN_URL . 'assets/css/condensed.css',
+			[ 'ppq-quiz' ],
+			PPQ_VERSION
+		);
+
 		// Enqueue theme CSS
 		if ( $quiz ) {
 			PressPrimer_Quiz_Theme_Loader::enqueue_quiz_theme( $quiz );

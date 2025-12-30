@@ -401,6 +401,95 @@
 	color: var(--ppq-text-light);
 }
 
+/* Email required state */
+.ppq-guest-email-form[data-email-required="1"] .ppq-email-input {
+	border-color: var(--ppq-warning);
+}
+
+.ppq-guest-email-form[data-email-required="1"] .ppq-email-input:focus {
+	border-color: var(--ppq-primary);
+	box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+}
+
+.ppq-guest-email-form[data-email-required="1"] .ppq-form-label {
+	color: var(--ppq-text);
+}
+
+/* Email input error state */
+.ppq-input.ppq-input-error {
+	border-color: var(--ppq-error);
+	animation: ppq-shake 0.5s ease-in-out;
+}
+
+.ppq-input.ppq-input-error:focus {
+	border-color: var(--ppq-error);
+	box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1);
+}
+
+/* ==========================================================================
+   Login Required State
+   ========================================================================== */
+
+.ppq-login-required {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: var(--ppq-space-lg);
+	padding: var(--ppq-space-2xl);
+	background: var(--ppq-background-gray);
+	border: 2px solid var(--ppq-border);
+	border-radius: var(--ppq-radius-xl);
+	text-align: center;
+	width: 100%;
+	max-width: 500px;
+}
+
+.ppq-login-required-icon {
+	font-size: 3rem;
+	line-height: 1;
+	opacity: 0.8;
+}
+
+.ppq-login-required-message {
+	font-size: 1.125rem;
+	color: var(--ppq-text);
+	line-height: 1.7;
+}
+
+.ppq-login-required-message p {
+	margin: 0 0 var(--ppq-space-md);
+}
+
+.ppq-login-required-message p:last-child {
+	margin-bottom: 0;
+}
+
+.ppq-login-button {
+	box-shadow: var(--ppq-shadow-lg);
+}
+
+.ppq-login-button:hover:not(:disabled) {
+	box-shadow: var(--ppq-shadow-xl);
+}
+
+.ppq-register-prompt {
+	font-size: 0.875rem;
+	color: var(--ppq-text-secondary);
+	margin: 0;
+}
+
+.ppq-register-prompt a {
+	color: var(--ppq-primary);
+	text-decoration: none;
+	font-weight: 600;
+	transition: var(--ppq-transition-fast);
+}
+
+.ppq-register-prompt a:hover {
+	color: var(--ppq-primary-dark);
+	text-decoration: underline;
+}
+
 /* ==========================================================================
    Buttons
    ========================================================================== */

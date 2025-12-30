@@ -217,6 +217,22 @@ class PressPrimer_Quiz_Quiz extends PressPrimer_Quiz_Model {
 	public $generation_mode = 'fixed';
 
 	/**
+	 * Access mode for the quiz
+	 *
+	 * @since 2.0.0
+	 * @var string default|guest_optional|guest_required|login_required
+	 */
+	public $access_mode = 'default';
+
+	/**
+	 * Custom login message for this quiz
+	 *
+	 * @since 2.0.0
+	 * @var string
+	 */
+	public $login_message;
+
+	/**
 	 * Created timestamp
 	 *
 	 * @since 1.0.0
@@ -292,6 +308,8 @@ class PressPrimer_Quiz_Quiz extends PressPrimer_Quiz_Model {
 			'theme_settings_json',
 			'band_feedback_json',
 			'generation_mode',
+			'access_mode',
+			'login_message',
 		];
 	}
 
@@ -449,6 +467,18 @@ class PressPrimer_Quiz_Quiz extends PressPrimer_Quiz_Model {
 			if ( ! in_array( $data['generation_mode'], $valid_generation_modes, true ) ) {
 				$data['generation_mode'] = 'fixed';
 			}
+		}
+
+		if ( isset( $data['access_mode'] ) ) {
+			$valid_access_modes = [ 'default', 'guest_optional', 'guest_required', 'login_required' ];
+			if ( ! in_array( $data['access_mode'], $valid_access_modes, true ) ) {
+				$data['access_mode'] = 'default';
+			}
+		}
+
+		// Sanitize login message
+		if ( isset( $data['login_message'] ) && ! empty( $data['login_message'] ) ) {
+			$data['login_message'] = wp_kses_post( $data['login_message'] );
 		}
 
 		// Validate boolean fields (ensure they're 0 or 1)
@@ -669,6 +699,8 @@ class PressPrimer_Quiz_Quiz extends PressPrimer_Quiz_Model {
 				'theme_settings_json'   => $this->theme_settings_json,
 				'band_feedback_json'    => $this->band_feedback_json,
 				'generation_mode'       => $this->generation_mode,
+				'access_mode'           => $this->access_mode,
+				'login_message'         => $this->login_message,
 			];
 
 			$new_quiz_id = self::create( $new_quiz_data );
@@ -769,5 +801,84 @@ class PressPrimer_Quiz_Quiz extends PressPrimer_Quiz_Model {
 		}
 
 		return '';
+	}
+
+	/**
+	 * Get effective access mode for this quiz
+	 *
+	 * Returns the access mode to use, falling back to global setting
+	 * if quiz is set to 'default'.
+	 *
+	 * @since 2.0.0
+	 *
+	 * @return string Access mode (guest_optional, guest_required, login_required).
+	 */
+	public function get_effective_access_mode() {
+		if ( $this->access_mode && 'default' !== $this->access_mode ) {
+			return $this->access_mode;
+		}
+
+		$settings = get_option( 'ppq_settings', array() );
+
+		return isset( $settings['default_access_mode'] )
+			? $settings['default_access_mode']
+			: 'guest_optional';
+	}
+
+	/**
+	 * Get login message for this quiz
+	 *
+	 * Returns the custom login message if set, otherwise falls back
+	 * to global default.
+	 *
+	 * @since 2.0.0
+	 *
+	 * @return string Login message.
+	 */
+	public function get_login_message() {
+		if ( ! empty( $this->login_message ) ) {
+			return $this->login_message;
+		}
+
+		$settings = get_option( 'ppq_settings', array() );
+
+		return isset( $settings['login_message_default'] )
+			? $settings['login_message_default']
+			: __( 'Please log in to take this quiz.', 'pressprimer-quiz' );
+	}
+
+	/**
+	 * Check if current user can access this quiz
+	 *
+	 * Returns true if the user has permission to take this quiz
+	 * based on access mode settings.
+	 *
+	 * @since 2.0.0
+	 *
+	 * @return bool True if user can access, false otherwise.
+	 */
+	public function can_user_access() {
+		$access_mode = $this->get_effective_access_mode();
+
+		if ( 'login_required' === $access_mode ) {
+			return is_user_logged_in();
+		}
+
+		return true;
+	}
+
+	/**
+	 * Check if email is required for guests
+	 *
+	 * Returns true if guests must provide an email to take the quiz.
+	 *
+	 * @since 2.0.0
+	 *
+	 * @return bool True if email is required, false otherwise.
+	 */
+	public function is_guest_email_required() {
+		$access_mode = $this->get_effective_access_mode();
+
+		return 'guest_required' === $access_mode;
 	}
 }

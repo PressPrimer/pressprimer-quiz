@@ -44,6 +44,8 @@ const { Title, Text } = Typography;
  * @param {Function} props.setGenerationMode Function to update generation mode
  */
 const SettingsPanel = ({ form, generationMode, setGenerationMode }) => {
+	// Watch access_mode to show/hide login message field
+	const accessMode = Form.useWatch('access_mode', form);
 	return (
 		<Space direction="vertical" size="large" style={{ width: '100%' }}>
 			{/* Basic Information */}
@@ -576,6 +578,68 @@ const SettingsPanel = ({ form, generationMode, setGenerationMode }) => {
 						</Text>
 					</Col>
 				</Row>
+			</Card>
+
+			{/* Access Control */}
+			<Card
+				title={
+					<Space>
+						<Title level={4} style={{ margin: 0 }}>
+							{__('Access Control', 'pressprimer-quiz')}
+						</Title>
+						<Tooltip title={__('Control who can access this quiz', 'pressprimer-quiz')}>
+							<QuestionCircleOutlined style={{ color: '#8c8c8c' }} />
+						</Tooltip>
+					</Space>
+				}
+				style={{ marginBottom: 24 }}
+			>
+				<Form.Item
+					label={
+						<Space>
+							<span>{__('Access Mode', 'pressprimer-quiz')}</span>
+							<Tooltip title={__('Control whether guests can take this quiz or if login is required', 'pressprimer-quiz')}>
+								<QuestionCircleOutlined style={{ fontSize: 12, color: '#8c8c8c' }} />
+							</Tooltip>
+						</Space>
+					}
+					name="access_mode"
+				>
+					<Select
+						size="small"
+						style={{ width: 300 }}
+						options={[
+							{ value: 'default', label: __('Use global default', 'pressprimer-quiz') },
+							{ value: 'guest_optional', label: __('Allow guests (email optional)', 'pressprimer-quiz') },
+							{ value: 'guest_required', label: __('Allow guests (email required)', 'pressprimer-quiz') },
+							{ value: 'login_required', label: __('Require login', 'pressprimer-quiz') },
+						]}
+					/>
+				</Form.Item>
+				<Text type="secondary" style={{ fontSize: 10, display: 'block', marginTop: -8, marginBottom: 16 }}>
+					{__('Override the global access setting for this specific quiz', 'pressprimer-quiz')}
+				</Text>
+
+				{accessMode === 'login_required' && (
+					<Form.Item
+						label={
+							<Space>
+								<span>{__('Custom Login Message', 'pressprimer-quiz')}</span>
+								<Tooltip title={__('Message shown when login is required. Leave empty to use the global default.', 'pressprimer-quiz')}>
+									<QuestionCircleOutlined style={{ fontSize: 12, color: '#8c8c8c' }} />
+								</Tooltip>
+							</Space>
+						}
+						name="login_message"
+					>
+						<TextArea
+							rows={2}
+							placeholder={__('Leave empty to use global default message', 'pressprimer-quiz')}
+							style={{ maxWidth: 500 }}
+							size="small"
+						/>
+					</Form.Item>
+				)}
 			</Card>
 		</Space>
 	);

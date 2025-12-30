@@ -28,7 +28,7 @@ define( 'PRESSPRIMER_QUIZ_PLUGIN_FILE', __FILE__ );
 define( 'PRESSPRIMER_QUIZ_PLUGIN_PATH', plugin_dir_path( __FILE__ ) );
 define( 'PRESSPRIMER_QUIZ_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
 define( 'PRESSPRIMER_QUIZ_PLUGIN_BASENAME', plugin_basename( __FILE__ ) );
-define( 'PRESSPRIMER_QUIZ_DB_VERSION', '1.0.6' );
+define( 'PRESSPRIMER_QUIZ_DB_VERSION', '2.0.1' );
 
 // Composer autoloader (for smalot/pdfparser and other vendor dependencies)
 if ( file_exists( PRESSPRIMER_QUIZ_PLUGIN_PATH . 'vendor/autoload.php' ) ) {

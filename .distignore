@@ -46,6 +46,11 @@ vendor/*/tests
 vendor/*/*/tests
 vendor/*/.editorconfig
 vendor/*/*/.editorconfig
+vendor/*/*.php-dist
+vendor/*/*/*.php-dist
+
+# WordPress.org assets (handled via SVN separately)
+.wordpress-org
 
 # Build Tools / Config
 webpack.config.js

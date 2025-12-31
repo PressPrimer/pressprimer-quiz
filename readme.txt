@@ -102,6 +102,18 @@ Built for serious deployment:
 
 * [Knowledge Base](https://pressprimer.com/knowledge-base/)
 
+= Source Code & Development =
+
+The full uncompressed source code for all JavaScript and CSS files is available in our public GitHub repository:
+
+* [GitHub Repository](https://github.com/PressPrimer/pressprimer-quiz)
+
+The `/src` directory contains all unminified source files. The plugin uses webpack for building production assets. To rebuild from source:
+
+1. Clone the repository
+2. Run `npm install` to install dependencies
+3. Run `npm run build` to compile assets
+
 == Installation ==
 
 = Automatic Installation =

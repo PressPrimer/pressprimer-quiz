@@ -41,3 +41,6 @@ composer.lock
 
 # OS
 Thumbs.db
+
+# Internal documentation (kept locally, not pushed to public repo)
+/docs/

@@ -12,6 +12,9 @@
 # Claude Code / AI
 .claude
 
+# WordPress.org Assets (banners, icons, screenshots - stored in repo but not in plugin zip)
+.wordpress-org
+
 # Development Dependencies
 node_modules
 composer.phar
@@ -26,6 +29,8 @@ package-lock.json
 vendor/bin
 vendor/*/.github
 vendor/*/*/.github
+vendor/*/*.php-dist
+vendor/*/*/*.php-dist
 vendor/*/Makefile
 vendor/*/*/Makefile
 vendor/*/.php-cs-fixer.php

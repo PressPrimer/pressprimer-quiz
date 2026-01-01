@@ -555,8 +555,9 @@
 				}
 				this.performAutoSave();
 			} else {
-				// No pending answers, but sync the active time
-				this.syncActiveTime();
+				// No pending answers, but sync the active time using beacon API
+				// (more reliable when tab is hidden, especially in Safari)
+				this.syncActiveTimeBeacon();
 			}
 		},
 
@@ -1729,8 +1730,6 @@
 		 * Lightweight endpoint that only updates active_elapsed_ms.
 		 */
 		syncActiveTime: function() {
-			const self = this;
-
 			// Don't sync if offline
 			if (!this.isOnline) {
 				return;
@@ -1756,6 +1755,41 @@
 					// Ignore errors for heartbeat - will retry next interval
 				}
 			});
+		},
+
+		/**
+		 * Sync active time using Beacon API (for tab hidden/page unload)
+		 *
+		 * Uses navigator.sendBeacon which is more reliable when the page
+		 * is being hidden or unloaded, especially in Safari.
+		 */
+		syncActiveTimeBeacon: function() {
+			// Don't sync if offline
+			if (!this.isOnline) {
+				return;
+			}
+
+			// Check if sendBeacon is supported
+			if (!navigator.sendBeacon) {
+				// Fall back to regular AJAX
+				this.syncActiveTime();
+				return;
+			}
+
+			const activeElapsedMs = this.getCurrentActiveElapsedMs();
+
+			// Build form data for beacon
+			const formData = new FormData();
+			formData.append('action', 'pressprimer_quiz_sync_time');
+			formData.append('nonce', pressprimerQuiz.nonce);
+			formData.append('attempt_id', this.attemptId);
+			formData.append('active_elapsed_ms', activeElapsedMs);
+			if (this.guestToken) {
+				formData.append('guest_token', this.guestToken);
+			}
+
+			// Send using beacon API - fire and forget, works reliably when tab is hidden
+			navigator.sendBeacon(pressprimerQuiz.ajaxUrl, formData);
 		}
 	};
 

@@ -22,24 +22,10 @@
 	// Track processed modals.
 	var processedModals = new WeakSet();
 
-	// Debug mode - set to false for production.
-	var DEBUG = false;
-
-	function log() {
-		if (DEBUG) {
-			console.log.apply(console, ['[PPQ TutorLMS]'].concat(Array.prototype.slice.call(arguments)));
-		}
-	}
-
 	/**
 	 * Initialize the integration
 	 */
 	function init() {
-		log('Initializing lesson editor integration...');
-		log('Config:', config);
-		log('Course ID:', courseId);
-		log('Existing lesson quizzes:', lessonQuizzes);
-
 		// Inject styles.
 		injectStyles();
 
@@ -69,8 +55,6 @@
 			childList: true,
 			subtree: true
 		});
-
-		log('DOM observer started');
 	}
 
 	/**
@@ -97,7 +81,6 @@
 
 			// Check for input fields typical of lesson editors.
 			var hasInputs = el.querySelector('input[type="text"], textarea');
-			var hasVideoSection = html.indexOf('video') !== -1 || html.indexOf('youtube') !== -1 || html.indexOf('vimeo') !== -1;
 
 			if (hasLessonFields && hasInputs) {
 				// Check if this is a floating/overlay element (not part of main page flow).
@@ -116,12 +99,6 @@
 
 				if (isFloating) {
 					processedModals.add(el);
-					log('=== FOUND LESSON EDITOR ===');
-					log('Element:', el.tagName, el.className);
-					log('Dimensions:', el.offsetWidth, 'x', el.offsetHeight);
-					log('Position style:', style.position);
-					log('HTML preview:', html.substring(0, 300));
-
 					setTimeout(function() {
 						injectQuizSelector(el);
 					}, 500);
@@ -162,11 +139,6 @@
 
 			if (looksLikeLesson) {
 				processedModals.add(overlay);
-				log('=== FOUND OVERLAY WITH LESSON CONTENT ===');
-				log('Element:', overlay.tagName, overlay.className);
-				log('ID:', overlay.id);
-				log('HTML preview:', html.substring(0, 500));
-
 				setTimeout(function() {
 					injectQuizSelector(overlay);
 				}, 500);
@@ -175,77 +147,11 @@
 	}
 
 	/**
-	 * Check if element is a lesson editor
-	 */
-	function isLessonEditor(element) {
-		// Skip if not visible.
-		if (element.offsetParent === null && !element.closest('[style*="display: block"]')) {
-			return false;
-		}
-
-		var html = element.innerHTML.toLowerCase();
-		var classList = (element.className || '').toLowerCase();
-
-		// Look for lesson-specific indicators.
-		var lessonIndicators = [
-			'lesson title',
-			'lesson name',
-			'add lesson',
-			'edit lesson',
-			'lesson content',
-			'lesson description',
-			'lesson preview',
-			'video source',
-			'video url'
-		];
-
-		var hasLessonContent = lessonIndicators.some(function(indicator) {
-			return html.indexOf(indicator) !== -1;
-		});
-
-		// Also check for specific input fields.
-		var hasLessonInput = element.querySelector([
-			'input[placeholder*="lesson" i]',
-			'input[placeholder*="title" i]',
-			'textarea[placeholder*="lesson" i]',
-			'[class*="lesson-title"]',
-			'[class*="lessonTitle"]',
-			'[data-lesson]',
-			'[data-lesson-id]'
-		].join(','));
-
-		// Check if it looks like a modal (has backdrop, centered, etc).
-		var looksLikeModal =
-			classList.indexOf('modal') !== -1 ||
-			classList.indexOf('dialog') !== -1 ||
-			classList.indexOf('drawer') !== -1 ||
-			classList.indexOf('overlay') !== -1 ||
-			element.getAttribute('role') === 'dialog';
-
-		var result = (hasLessonContent || hasLessonInput) && looksLikeModal;
-
-		if (hasLessonContent || hasLessonInput) {
-			log('Potential lesson element found:', {
-				hasLessonContent: hasLessonContent,
-				hasLessonInput: !!hasLessonInput,
-				looksLikeModal: looksLikeModal,
-				classList: classList,
-				result: result
-			});
-		}
-
-		return result;
-	}
-
-	/**
 	 * Inject the quiz selector into the lesson modal
 	 */
 	function injectQuizSelector(modal) {
-		log('Attempting to inject quiz selector into modal');
-
 		// Check if already injected.
 		if (modal.querySelector('.ppq-lesson-quiz-box')) {
-			log('Quiz selector already exists in this modal');
 			return;
 		}
 
@@ -253,21 +159,14 @@
 		var targetContainer = findInjectionTarget(modal);
 
 		if (!targetContainer) {
-			log('Could not find injection target in modal');
-			// Log modal structure for debugging.
-			logModalStructure(modal);
 			return;
 		}
 
-		log('Found injection target:', targetContainer);
-
 		// Get lesson ID if available.
 		var lessonId = getLessonId(modal);
-		log('Lesson ID:', lessonId);
 
 		// Get current quiz if any.
 		var currentQuiz = lessonId ? lessonQuizzes[lessonId] : null;
-		log('Current quiz for lesson:', currentQuiz);
 
 		// Create the quiz selector box.
 		var box = createQuizBox(currentQuiz, lessonId);
@@ -277,16 +176,12 @@
 
 		// Set up event handlers.
 		setupBoxHandlers(box, modal, lessonId);
-
-		log('Quiz selector injected successfully');
 	}
 
 	/**
 	 * Find the best place to inject our quiz box
 	 */
 	function findInjectionTarget(modal) {
-		log('Finding injection target in modal...');
-
 		// TutorLMS uses CSS-in-JS with classes like css-xxxxx.
 		// The lesson editor typically has a two-column layout.
 		// Let's find the structure by looking at the actual DOM.
@@ -312,15 +207,11 @@
 
 					// The right column is typically narrower (sidebar).
 					if (rightWidth < leftWidth && rightWidth > 200) {
-						log('Found two-column layout. Left:', leftWidth, 'Right:', rightWidth);
-						log('Right column classes:', visibleChildren[1].className);
 						bestTarget = visibleChildren[1];
 						break;
 					}
 					// Or the left might be the sidebar.
 					else if (leftWidth < rightWidth && leftWidth > 200) {
-						log('Found two-column layout (sidebar on left). Left:', leftWidth, 'Right:', rightWidth);
-						log('Left column classes:', visibleChildren[0].className);
 						bestTarget = visibleChildren[0];
 						break;
 					}
@@ -331,14 +222,12 @@
 		if (bestTarget) {
 			// Don't inject into TinyMCE editor elements.
 			if (bestTarget.querySelector('.mce-container, .mce-panel, [class*="mce-"]')) {
-				log('Target contains TinyMCE, looking for better spot inside...');
 				// Find a child that's not TinyMCE.
 				var nonMceChildren = Array.prototype.filter.call(bestTarget.children, function(c) {
 					return !c.querySelector('.mce-container, .mce-panel') && !c.classList.contains('mce-container');
 				});
 				if (nonMceChildren.length > 0) {
 					bestTarget = nonMceChildren[nonMceChildren.length - 1];
-					log('Using non-TinyMCE child:', bestTarget.className);
 				}
 			}
 			return bestTarget;
@@ -347,7 +236,6 @@
 		// Strategy 2: Look for the focus trap container and find columns inside.
 		var focusTrap = modal.querySelector('[data-focus-trap]');
 		if (focusTrap) {
-			log('Found focus trap container');
 			var innerDivs = focusTrap.querySelectorAll(':scope > div > div');
 			for (var j = 0; j < innerDivs.length; j++) {
 				var innerDiv = innerDivs[j];
@@ -362,7 +250,6 @@
 							return curr.offsetWidth < prev.offsetWidth ? curr : prev;
 						});
 						if (narrowest.offsetWidth > 200) {
-							log('Found sidebar in focus trap:', narrowest.className);
 							return narrowest;
 						}
 					}
@@ -382,7 +269,6 @@
 					if (section) {
 						var sectionParent = section.parentElement;
 						if (sectionParent && sectionParent.offsetWidth > 200) {
-							log('Found settings section via label "' + text + '":', sectionParent.className);
 							return sectionParent;
 						}
 					}
@@ -393,36 +279,10 @@
 		// Strategy 4: As a last resort, append to the modal content area.
 		var contentArea = modal.querySelector('[data-focus-trap] > div > div');
 		if (contentArea) {
-			log('Using content area as fallback');
 			return contentArea;
 		}
 
-		log('Could not find suitable injection target');
 		return null;
-	}
-
-	/**
-	 * Log modal structure for debugging
-	 */
-	function logModalStructure(modal) {
-		log('=== MODAL STRUCTURE DEBUG ===');
-		log('Modal tag:', modal.tagName);
-		log('Modal classes:', modal.className);
-		log('Modal ID:', modal.id);
-
-		function logChildren(el, depth) {
-			if (depth > 3) return;
-			var indent = '  '.repeat(depth);
-			Array.prototype.forEach.call(el.children, function(child) {
-				if (child.offsetWidth > 0) {
-					log(indent + child.tagName + '.' + (child.className || '').split(' ').slice(0, 3).join('.'));
-					logChildren(child, depth + 1);
-				}
-			});
-		}
-
-		logChildren(modal, 0);
-		log('=== END MODAL STRUCTURE ===');
 	}
 
 	// Track the currently editing lesson ID (set when user clicks edit on a lesson).
@@ -432,14 +292,9 @@
 	 * Set up click listeners on lesson items to capture the lesson ID before modal opens
 	 */
 	function setupLessonClickTracking() {
-		log('Setting up lesson click tracking...');
-
 		// Use event delegation to catch clicks on lesson edit buttons/items.
 		document.addEventListener('click', function(e) {
 			var target = e.target;
-
-			// Debug: log what was clicked.
-			log('Click detected on:', target.tagName, target.className);
 
 			// Look for lesson-related click targets.
 			// Walk up the DOM to find elements with lesson IDs.
@@ -453,7 +308,6 @@
 							   el.getAttribute('data-content-id');
 
 				if (lessonId && parseInt(lessonId) > 0) {
-					log('Captured lesson ID from data attribute:', lessonId);
 					currentEditingLessonId = lessonId;
 					return;
 				}
@@ -466,7 +320,6 @@
 							var fiber = el[keys[i]];
 							var id = findIdInReactFiber(fiber, 0);
 							if (id) {
-								log('Captured lesson ID from React fiber:', id);
 								currentEditingLessonId = id;
 								return;
 							}
@@ -481,24 +334,9 @@
 			}
 
 			// If we got here, try a more aggressive search.
-			// Look for any element in the click path that mentions "lesson" and has an ID nearby.
-			log('Standard search failed, trying aggressive search...');
-
 			el = target;
 			maxDepth = 15;
 			while (el && maxDepth > 0) {
-				// Check all attributes for any ID-like value.
-				if (el.attributes) {
-					for (var a = 0; a < el.attributes.length; a++) {
-						var attr = el.attributes[a];
-						var match = attr.value.match(/^(\d+)$/);
-						if (match && parseInt(match[1]) > 0) {
-							// Found a numeric attribute value - could be an ID.
-							log('Found numeric attribute:', attr.name, '=', attr.value, 'on', el.tagName);
-						}
-					}
-				}
-
 				// Deep search React fiber for any "id" field with post_type lesson.
 				var fiberKeys = Object.keys(el);
 				for (var k = 0; k < fiberKeys.length; k++) {
@@ -506,7 +344,6 @@
 						try {
 							var deepId = deepSearchFiberForLessonId(el[fiberKeys[k]], 0);
 							if (deepId) {
-								log('Found lesson ID from deep fiber search:', deepId);
 								currentEditingLessonId = deepId;
 								return;
 							}
@@ -610,11 +447,8 @@
 	 * Get lesson ID from modal
 	 */
 	function getLessonId(modal) {
-		log('Searching for lesson ID in modal...');
-
 		// Strategy 0: Use the captured lesson ID from click tracking.
 		if (currentEditingLessonId) {
-			log('Using captured lesson ID:', currentEditingLessonId);
 			var capturedId = currentEditingLessonId;
 			// Don't reset - keep it for subsequent operations on this modal.
 			return capturedId;
@@ -637,7 +471,6 @@
 			if (el) {
 				var value = el.value || el.getAttribute('data-lesson-id') || el.getAttribute('data-lesson_id') || el.getAttribute('data-lessonid') || el.getAttribute('data-id');
 				if (value && value !== '0' && value !== '') {
-					log('Found lesson ID from selector', selectors[i], ':', value);
 					return value;
 				}
 			}
@@ -645,14 +478,12 @@
 
 		// Strategy 2: Try to extract from URL hash or query params.
 		var hash = window.location.hash;
-		log('URL hash:', hash);
 
 		var lessonMatch = hash.match(/lesson[_-]?id[=:](\d+)/i) ||
 						  hash.match(/lesson[\/](\d+)/i) ||
 						  hash.match(/\/lesson\/(\d+)/i) ||
 						  hash.match(/edit\/(\d+)/i);
 		if (lessonMatch) {
-			log('Found lesson ID from URL hash:', lessonMatch[1]);
 			return lessonMatch[1];
 		}
 
@@ -667,32 +498,21 @@
 				if (rootKeys[j].startsWith('__reactContainer') || rootKeys[j].startsWith('_reactRoot')) {
 					try {
 						var container = reactRoot[rootKeys[j]];
-						log('Found React container, searching for lesson state...');
 						var lessonIdFromState = searchReactStateForLessonId(container, 0);
 						if (lessonIdFromState) {
-							log('Found lesson ID from React state:', lessonIdFromState);
 							return lessonIdFromState;
 						}
 					} catch (err) {
-						log('Error searching React state:', err.message);
+						// Ignore errors.
 					}
 				}
 			}
 		}
 
-		// Strategy 4: Look in window for TutorLMS global data.
-		var globalVars = ['_tutorCourseBuilder', 'tutorCourseBuilder', '_tutorobject', 'tutor_data'];
-		for (var g = 0; g < globalVars.length; g++) {
-			if (window[globalVars[g]]) {
-				log('Found global var:', globalVars[g], window[globalVars[g]]);
-			}
-		}
-
-		// Strategy 5: Try to find lesson in the curriculum list by title.
+		// Strategy 4: Try to find lesson in the curriculum list by title.
 		var titleInput = modal.querySelector('input[type="text"]');
 		if (titleInput && titleInput.value) {
 			var title = titleInput.value.trim();
-			log('Looking for lesson by title:', title);
 
 			// Search the page for lesson elements with this title.
 			var lessonElements = document.querySelectorAll('[class*="lesson"], [data-type="lesson"]');
@@ -700,7 +520,6 @@
 				if (lessonEl.textContent.indexOf(title) !== -1) {
 					var id = lessonEl.getAttribute('data-id') || lessonEl.getAttribute('data-lesson-id');
 					if (id) {
-						log('Found lesson ID by title match:', id);
 						currentEditingLessonId = id;
 					}
 				}
@@ -713,8 +532,6 @@
 
 		// Generate a temporary ID.
 		var tempId = 'temp-' + Date.now();
-		log('WARNING: Using temporary lesson ID (saving will fail):', tempId);
-		log('TIP: The lesson might be new and unsaved. Save the lesson first, then add the quiz.');
 		return tempId;
 	}
 
@@ -915,15 +732,13 @@
 		})
 		.then(function(response) { return response.json(); })
 		.then(function(data) {
-			log('Quiz search response:', data);
 			if (data.success && data.quizzes && data.quizzes.length > 0) {
 				renderQuizResults(data.quizzes, container, box, modal, lessonId);
 			} else {
 				container.innerHTML = '<div class="ppq-no-results">No quizzes found</div>';
 			}
 		})
-		.catch(function(err) {
-			log('Quiz search error:', err);
+		.catch(function() {
 			container.innerHTML = '<div class="ppq-error">Error loading quizzes</div>';
 		});
 	}
@@ -954,8 +769,6 @@
 	 * Select a quiz
 	 */
 	function selectQuiz(quiz, box, modal, lessonId) {
-		log('Selecting quiz:', quiz.id, 'for lesson:', lessonId);
-
 		// Save the association.
 		saveLessonQuiz(lessonId, quiz.id, function(success, data) {
 			if (success) {
@@ -991,8 +804,6 @@
 					e.preventDefault();
 					removeQuizFromLesson(box, modal, lessonId);
 				});
-
-				log('Quiz selected successfully');
 			} else {
 				alert('Failed to save quiz. Please try again.');
 			}
@@ -1003,8 +814,6 @@
 	 * Remove quiz from lesson
 	 */
 	function removeQuizFromLesson(box, modal, lessonId) {
-		log('Removing quiz from lesson:', lessonId);
-
 		saveLessonQuiz(lessonId, 0, function(success) {
 			if (success) {
 				delete lessonQuizzes[lessonId];
@@ -1023,8 +832,6 @@
 
 				// Reattach handlers.
 				setupBoxHandlers(box, modal, lessonId);
-
-				log('Quiz removed successfully');
 			}
 		});
 	}
@@ -1033,8 +840,6 @@
 	 * Save lesson quiz association
 	 */
 	function saveLessonQuiz(lessonId, quizId, callback) {
-		log('Saving lesson quiz - Lesson:', lessonId, 'Quiz:', quizId);
-
 		fetch(config.restUrl + 'ppq/v1/tutorlms/lesson-quiz', {
 			method: 'POST',
 			headers: {
@@ -1049,11 +854,9 @@
 		})
 		.then(function(response) { return response.json(); })
 		.then(function(data) {
-			log('Save response:', data);
 			callback(data.success, data);
 		})
-		.catch(function(err) {
-			log('Save error:', err);
+		.catch(function() {
 			callback(false);
 		});
 	}

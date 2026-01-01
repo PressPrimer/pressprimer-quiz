@@ -778,13 +778,9 @@
 						// Build detailed error message
 						var errorMessage = response.data.message || pressprimerQuizAIGeneration.strings.error;
 
-						// Log full response for debugging
-						console.error('Save questions failed:', response.data);
-
 						// Add individual errors if available
 						if (response.data.errors && response.data.errors.length > 0) {
 							errorMessage += '\n\nDetails:\n' + response.data.errors.join('\n');
-							console.error('Individual errors:', response.data.errors);
 						}
 
 						self.showError(errorMessage);
@@ -792,7 +788,6 @@
 				},
 				error: function(xhr, status, error) {
 					self.hideLoading();
-					console.error('AJAX error:', status, error, xhr.responseText);
 					self.showError(pressprimerQuizAIGeneration.strings.error);
 				}
 			});

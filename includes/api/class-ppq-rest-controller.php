@@ -422,7 +422,7 @@ class PressPrimer_Quiz_REST_Controller {
 	 * @return bool True if user has permission.
 	 */
 	public function check_permission() {
-		return current_user_can( 'ppq_manage_own' ) || current_user_can( 'ppq_manage_all' );
+		return current_user_can( 'pressprimer_quiz_manage_own' ) || current_user_can( 'pressprimer_quiz_manage_all' );
 	}
 
 	/**
@@ -433,7 +433,7 @@ class PressPrimer_Quiz_REST_Controller {
 	 * @return bool True if user has permission.
 	 */
 	public function check_settings_permission() {
-		return current_user_can( 'ppq_manage_settings' );
+		return current_user_can( 'pressprimer_quiz_manage_settings' );
 	}
 
 	/**
@@ -460,7 +460,7 @@ class PressPrimer_Quiz_REST_Controller {
 	 * @return bool True if user has permission.
 	 */
 	public function check_reports_permission() {
-		return current_user_can( 'ppq_view_results_own' ) || current_user_can( 'ppq_view_results_all' );
+		return current_user_can( 'pressprimer_quiz_view_results_own' ) || current_user_can( 'pressprimer_quiz_view_results_all' );
 	}
 
 	/**
@@ -473,7 +473,7 @@ class PressPrimer_Quiz_REST_Controller {
 	 * @return int|null Owner ID or null for all.
 	 */
 	private function get_owner_id_for_reports() {
-		if ( current_user_can( 'ppq_view_results_all' ) ) {
+		if ( current_user_can( 'pressprimer_quiz_view_results_all' ) ) {
 			return null;
 		}
 		return get_current_user_id();
@@ -511,7 +511,7 @@ class PressPrimer_Quiz_REST_Controller {
 		$where_values = [];
 
 		// Filter by owner for users who can only manage their own content
-		if ( ! current_user_can( 'ppq_manage_all' ) ) {
+		if ( ! current_user_can( 'pressprimer_quiz_manage_all' ) ) {
 			$where[]        = 'q.owner_id = %d';
 			$where_values[] = get_current_user_id();
 		}
@@ -630,7 +630,7 @@ class PressPrimer_Quiz_REST_Controller {
 		}
 
 		// Check ownership
-		if ( ! current_user_can( 'ppq_manage_all' ) && absint( $question->author_id ) !== get_current_user_id() ) {
+		if ( ! current_user_can( 'pressprimer_quiz_manage_all' ) && absint( $question->author_id ) !== get_current_user_id() ) {
 			return new WP_Error( 'forbidden', __( 'You do not have permission.', 'pressprimer-quiz' ), [ 'status' => 403 ] );
 		}
 
@@ -830,7 +830,7 @@ class PressPrimer_Quiz_REST_Controller {
 		}
 
 		// Check ownership
-		if ( ! current_user_can( 'ppq_manage_all' ) && absint( $question->author_id ) !== get_current_user_id() ) {
+		if ( ! current_user_can( 'pressprimer_quiz_manage_all' ) && absint( $question->author_id ) !== get_current_user_id() ) {
 			return new WP_Error( 'forbidden', __( 'You do not have permission.', 'pressprimer-quiz' ), [ 'status' => 403 ] );
 		}
 
@@ -1034,7 +1034,7 @@ class PressPrimer_Quiz_REST_Controller {
 		$user_id = get_current_user_id();
 
 		// Admins can see all banks, others see only their own
-		if ( current_user_can( 'ppq_manage_all' ) ) {
+		if ( current_user_can( 'pressprimer_quiz_manage_all' ) ) {
 			$banks = PressPrimer_Quiz_Bank::get_all();
 		} else {
 			$banks = PressPrimer_Quiz_Bank::get_for_user( $user_id );
@@ -1175,7 +1175,7 @@ class PressPrimer_Quiz_REST_Controller {
 
 		// Check ownership
 		$user_id = get_current_user_id();
-		if ( ! current_user_can( 'ppq_manage_all' ) && absint( $bank->owner_id ) !== $user_id ) {
+		if ( ! current_user_can( 'pressprimer_quiz_manage_all' ) && absint( $bank->owner_id ) !== $user_id ) {
 			return new WP_Error( 'forbidden', __( 'You do not have permission to edit this bank.', 'pressprimer-quiz' ), [ 'status' => 403 ] );
 		}
 
@@ -1236,7 +1236,7 @@ class PressPrimer_Quiz_REST_Controller {
 
 		// Check ownership
 		$user_id = get_current_user_id();
-		if ( ! current_user_can( 'ppq_manage_all' ) && absint( $bank->owner_id ) !== $user_id ) {
+		if ( ! current_user_can( 'pressprimer_quiz_manage_all' ) && absint( $bank->owner_id ) !== $user_id ) {
 			return new WP_Error( 'forbidden', __( 'You do not have permission to delete this bank.', 'pressprimer-quiz' ), [ 'status' => 403 ] );
 		}
 
@@ -1345,7 +1345,7 @@ class PressPrimer_Quiz_REST_Controller {
 		}
 
 		// Check ownership
-		if ( ! current_user_can( 'ppq_manage_all' ) && absint( $quiz->owner_id ) !== get_current_user_id() ) {
+		if ( ! current_user_can( 'pressprimer_quiz_manage_all' ) && absint( $quiz->owner_id ) !== get_current_user_id() ) {
 			return new WP_Error( 'forbidden', __( 'You do not have permission.', 'pressprimer-quiz' ), [ 'status' => 403 ] );
 		}
 
@@ -1461,7 +1461,7 @@ class PressPrimer_Quiz_REST_Controller {
 		}
 
 		// Check ownership
-		if ( ! current_user_can( 'ppq_manage_all' ) && absint( $quiz->owner_id ) !== get_current_user_id() ) {
+		if ( ! current_user_can( 'pressprimer_quiz_manage_all' ) && absint( $quiz->owner_id ) !== get_current_user_id() ) {
 			return new WP_Error( 'forbidden', __( 'You do not have permission.', 'pressprimer-quiz' ), [ 'status' => 403 ] );
 		}
 
@@ -2022,7 +2022,7 @@ class PressPrimer_Quiz_REST_Controller {
 			return new WP_Error( 'encryption_failed', $encrypted->get_error_message(), [ 'status' => 500 ] );
 		}
 
-		update_option( 'ppq_site_openai_api_key', $encrypted );
+		update_option( 'pressprimer_quiz_site_openai_api_key', $encrypted );
 
 		// Get status for response
 		$status = PressPrimer_Quiz_AI_Service::get_api_key_status();
@@ -2049,7 +2049,7 @@ class PressPrimer_Quiz_REST_Controller {
 	 */
 	public function delete_api_key( $request ) {
 		// Delete the site-wide API key
-		delete_option( 'ppq_site_openai_api_key' );
+		delete_option( 'pressprimer_quiz_site_openai_api_key' );
 
 		return new WP_REST_Response(
 			[
@@ -2167,7 +2167,7 @@ class PressPrimer_Quiz_REST_Controller {
 
 			// Determine owner restriction based on permissions
 			$owner_id = null;
-			if ( ! current_user_can( 'ppq_manage_all' ) ) {
+			if ( ! current_user_can( 'pressprimer_quiz_manage_all' ) ) {
 				$owner_id = get_current_user_id();
 			}
 
@@ -2347,7 +2347,7 @@ class PressPrimer_Quiz_REST_Controller {
 
 		// Determine owner restriction based on permissions
 		$owner_id = null;
-		if ( ! current_user_can( 'ppq_manage_all' ) ) {
+		if ( ! current_user_can( 'pressprimer_quiz_manage_all' ) ) {
 			$owner_id = get_current_user_id();
 		}
 

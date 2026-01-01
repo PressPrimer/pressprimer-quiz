@@ -70,7 +70,7 @@ const PopularQuizzes = ({ quizzes = [], loading }) => {
 							</div>
 							<div className="ppq-popular-quiz-info">
 								<a
-									href={`admin.php?page=ppq-quizzes&action=edit&quiz=${quiz.id}`}
+									href={`admin.php?page=pressprimer-quiz-quizzes&action=edit&quiz=${quiz.id}`}
 									className="ppq-popular-quiz-title"
 								>
 									{quiz.title}

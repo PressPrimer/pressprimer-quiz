@@ -15,7 +15,7 @@ document.addEventListener('DOMContentLoaded', () => {
 	const root = document.getElementById('ppq-reports-root');
 
 	if (root) {
-		const reportsData = window.ppqReportsData || {};
+		const reportsData = window.pressprimerQuizReportsData || {};
 
 		// Check URL for specific report
 		const urlParams = new URLSearchParams(window.location.search);

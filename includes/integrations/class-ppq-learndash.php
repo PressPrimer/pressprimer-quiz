@@ -67,10 +67,11 @@ class PressPrimer_Quiz_LearnDash {
 		add_action( 'save_post', [ $this, 'save_meta_box' ], 10, 2 );
 
 		// AJAX handler for classic editor quiz search
-		add_action( 'wp_ajax_ppq_search_quizzes_learndash', [ $this, 'ajax_search_quizzes' ] );
+		add_action( 'wp_ajax_pressprimer_quiz_search_quizzes_learndash', [ $this, 'ajax_search_quizzes' ] );
 
-		// Gutenberg support
+		// Gutenberg support - register meta on init AND rest_api_init for reliability across different server configurations
 		add_action( 'init', [ $this, 'register_meta_fields' ] );
+		add_action( 'rest_api_init', [ $this, 'register_meta_fields' ] );
 		add_action( 'enqueue_block_editor_assets', [ $this, 'enqueue_block_editor_assets' ] );
 
 		// Frontend hooks
@@ -130,7 +131,7 @@ class PressPrimer_Quiz_LearnDash {
 	 * @param WP_Post $post Current post object.
 	 */
 	public function render_meta_box( $post ) {
-		wp_nonce_field( 'ppq_learndash_meta_box', 'ppq_learndash_nonce' );
+		wp_nonce_field( 'pressprimer_quiz_learndash_meta_box', 'pressprimer_quiz_learndash_nonce' );
 
 		$quiz_id                 = get_post_meta( $post->ID, self::META_KEY_QUIZ_ID, true );
 		$restrict_until_complete = get_post_meta( $post->ID, self::META_KEY_RESTRICT_UNTIL_COMPLETE, true );
@@ -195,8 +196,49 @@ class PressPrimer_Quiz_LearnDash {
 			<?php endif; ?>
 		</div>
 
-		<?php // Inline styles/scripts required: Meta box output with dynamic nonces that cannot be enqueued. ?>
-		<style>
+		<?php
+		$this->enqueue_meta_box_assets();
+	}
+
+	/**
+	 * Enqueue meta box styles and scripts
+	 *
+	 * Uses wp_add_inline_style and wp_add_inline_script per WordPress.org guidelines.
+	 *
+	 * @since 1.0.0
+	 */
+	private function enqueue_meta_box_assets() {
+		// Ensure admin scripts are enqueued (they may not be on LMS post type edit screens).
+		wp_enqueue_style(
+			'ppq-admin',
+			PRESSPRIMER_QUIZ_PLUGIN_URL . 'assets/css/admin.css',
+			[],
+			PRESSPRIMER_QUIZ_VERSION
+		);
+
+		wp_enqueue_script(
+			'ppq-admin',
+			PRESSPRIMER_QUIZ_PLUGIN_URL . 'assets/js/admin.js',
+			[ 'jquery' ],
+			PRESSPRIMER_QUIZ_VERSION,
+			true
+		);
+
+		// Localize script data.
+		wp_localize_script(
+			'ppq-admin',
+			'pressprimerQuizLearnDash',
+			[
+				'nonce'   => wp_create_nonce( 'pressprimer_quiz_learndash_search' ),
+				'strings' => [
+					'noQuizzesFound' => __( 'No quizzes found', 'pressprimer-quiz' ),
+					'removeQuiz'     => __( 'Remove quiz', 'pressprimer-quiz' ),
+				],
+			]
+		);
+
+		// Meta box styles.
+		$inline_css = '
 			.ppq-learndash-meta-box .ppq-quiz-selector {
 				position: relative;
 				display: flex;
@@ -257,121 +299,117 @@ class PressPrimer_Quiz_LearnDash {
 				font-weight: 600;
 				margin-right: 4px;
 			}
-		</style>
+		';
+		wp_add_inline_style( 'ppq-admin', $inline_css );
 
-		<script>
-		jQuery(document).ready(function($) {
-			var searchTimeout;
-			var $search = $('#ppq_quiz_search');
-			var $results = $('#ppq_quiz_results');
-			var $quizId = $('#ppq_quiz_id');
-			var $removeBtn = $('.ppq-remove-quiz');
+		// Meta box script.
+		$inline_script = <<<'JS'
+jQuery(document).ready(function($) {
+	var config = window.ppqLearnDash || {};
+	var nonce = config.nonce || '';
+	var strings = config.strings || {};
+	var searchTimeout;
+	var $search = $('#ppq_quiz_search');
+	var $results = $('#ppq_quiz_results');
+	var $quizId = $('#ppq_quiz_id');
+	var $removeBtn = $('.ppq-remove-quiz');
 
-			// Format quiz display
-			function formatQuiz(quiz) {
-				return '<div class="ppq-quiz-result-item" data-id="' + quiz.id + '" data-title="' + $('<div/>').text(quiz.title).html() + '">' +
-					'<span class="ppq-quiz-id">' + quiz.id + '</span> - ' + $('<div/>').text(quiz.title).html() +
-					'</div>';
-			}
+	function formatQuiz(quiz) {
+		return '<div class="ppq-quiz-result-item" data-id="' + quiz.id + '" data-title="' + $('<div/>').text(quiz.title).html() + '">' +
+			'<span class="ppq-quiz-id">' + quiz.id + '</span> - ' + $('<div/>').text(quiz.title).html() +
+			'</div>';
+	}
 
-			// Load recent quizzes on focus (only if no quiz selected)
-			$search.on('focus', function() {
-				if ($quizId.val()) {
-					return; // Already has a selection
-				}
+	$search.on('focus', function() {
+		if ($quizId.val()) {
+			return;
+		}
 
-				// Load 50 most recent quizzes
-				$.ajax({
-					url: ajaxurl,
-					type: 'POST',
-					data: {
-						action: 'ppq_search_quizzes_learndash',
-						nonce: '<?php echo esc_js( wp_create_nonce( 'ppq_learndash_search' ) ); ?>',
-						recent: 1
-					},
-					success: function(response) {
-						if (response.success && response.data.quizzes.length > 0) {
-							var html = '';
-							response.data.quizzes.forEach(function(quiz) {
-								html += formatQuiz(quiz);
-							});
-							$results.html(html).show();
-						}
-					}
-				});
-			});
-
-			// Search quizzes on input
-			$search.on('input', function() {
-				var query = $(this).val();
-
-				clearTimeout(searchTimeout);
-
-				if (query.length < 2) {
-					// Show recent quizzes if input is short
-					$search.trigger('focus');
-					return;
-				}
-
-				searchTimeout = setTimeout(function() {
-					$.ajax({
-						url: ajaxurl,
-						type: 'POST',
-						data: {
-							action: 'ppq_search_quizzes_learndash',
-							nonce: '<?php echo esc_js( wp_create_nonce( 'ppq_learndash_search' ) ); ?>',
-							search: query
-						},
-						success: function(response) {
-							if (response.success && response.data.quizzes.length > 0) {
-								var html = '';
-								response.data.quizzes.forEach(function(quiz) {
-									html += formatQuiz(quiz);
-								});
-								$results.html(html).show();
-							} else {
-								$results.html('<div class="ppq-no-results"><?php echo esc_js( __( 'No quizzes found', 'pressprimer-quiz' ) ); ?></div>').show();
-							}
-						}
+		$.ajax({
+			url: ajaxurl,
+			type: 'POST',
+			data: {
+				action: 'pressprimer_quiz_search_quizzes_learndash',
+				nonce: nonce,
+				recent: 1
+			},
+			success: function(response) {
+				if (response.success && response.data.quizzes.length > 0) {
+					var html = '';
+					response.data.quizzes.forEach(function(quiz) {
+						html += formatQuiz(quiz);
 					});
-				}, 300);
-			});
-
-			// Select quiz
-			$results.on('click', '.ppq-quiz-result-item', function() {
-				var $item = $(this);
-				var id = $item.data('id');
-				var title = $item.data('title');
-				var display = id + ' - ' + title;
-
-				$quizId.val(id);
-				$search.val(display).attr('readonly', true);
-				$results.hide();
-
-				// Add remove button if not present
-				if (!$removeBtn.length) {
-					$search.after('<button type="button" class="ppq-remove-quiz button-link" aria-label="<?php echo esc_attr__( 'Remove quiz', 'pressprimer-quiz' ); ?>" title="<?php echo esc_attr__( 'Remove quiz', 'pressprimer-quiz' ); ?>"><span class="dashicons dashicons-no-alt"></span></button>');
-					$removeBtn = $('.ppq-remove-quiz');
+					$results.html(html).show();
 				}
-			});
-
-			// Remove quiz
-			$(document).on('click', '.ppq-remove-quiz', function() {
-				$quizId.val('');
-				$search.val('').removeAttr('readonly');
-				$(this).remove();
-				$removeBtn = $();
-			});
-
-			// Hide results on blur
-			$(document).on('click', function(e) {
-				if (!$(e.target).closest('.ppq-quiz-selector').length) {
-					$results.hide();
-				}
-			});
+			}
 		});
-		</script>
-		<?php
+	});
+
+	$search.on('input', function() {
+		var query = $(this).val();
+
+		clearTimeout(searchTimeout);
+
+		if (query.length < 2) {
+			$search.trigger('focus');
+			return;
+		}
+
+		searchTimeout = setTimeout(function() {
+			$.ajax({
+				url: ajaxurl,
+				type: 'POST',
+				data: {
+					action: 'pressprimer_quiz_search_quizzes_learndash',
+					nonce: nonce,
+					search: query
+				},
+				success: function(response) {
+					if (response.success && response.data.quizzes.length > 0) {
+						var html = '';
+						response.data.quizzes.forEach(function(quiz) {
+							html += formatQuiz(quiz);
+						});
+						$results.html(html).show();
+					} else {
+						$results.html('<div class="ppq-no-results">' + strings.noQuizzesFound + '</div>').show();
+					}
+				}
+			});
+		}, 300);
+	});
+
+	$results.on('click', '.ppq-quiz-result-item', function() {
+		var $item = $(this);
+		var id = $item.data('id');
+		var title = $item.data('title');
+		var display = id + ' - ' + title;
+
+		$quizId.val(id);
+		$search.val(display).attr('readonly', true);
+		$results.hide();
+
+		if (!$removeBtn.length) {
+			$search.after('<button type="button" class="ppq-remove-quiz button-link" aria-label="' + strings.removeQuiz + '" title="' + strings.removeQuiz + '"><span class="dashicons dashicons-no-alt"></span></button>');
+			$removeBtn = $('.ppq-remove-quiz');
+		}
+	});
+
+	$(document).on('click', '.ppq-remove-quiz', function() {
+		$quizId.val('');
+		$search.val('').removeAttr('readonly');
+		$(this).remove();
+		$removeBtn = $();
+	});
+
+	$(document).on('click', function(e) {
+		if (!$(e.target).closest('.ppq-quiz-selector').length) {
+			$results.hide();
+		}
+	});
+});
+JS;
+		wp_add_inline_script( 'ppq-admin', $inline_script );
 	}
 
 	/**
@@ -384,7 +422,7 @@ class PressPrimer_Quiz_LearnDash {
 	 */
 	public function save_meta_box( $post_id, $post ) {
 		// Verify nonce
-		if ( ! isset( $_POST['ppq_learndash_nonce'] ) || ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['ppq_learndash_nonce'] ) ), 'ppq_learndash_meta_box' ) ) {
+		if ( ! isset( $_POST['pressprimer_quiz_learndash_nonce'] ) || ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['pressprimer_quiz_learndash_nonce'] ) ), 'pressprimer_quiz_learndash_meta_box' ) ) {
 			return;
 		}
 
@@ -427,10 +465,14 @@ class PressPrimer_Quiz_LearnDash {
 	/**
 	 * Register meta fields for Gutenberg
 	 *
+	 * Uses both register_post_meta (for standard WP handling) and register_rest_field
+	 * (for compatibility with custom REST controllers like LearnDash uses).
+	 *
 	 * @since 1.0.0
 	 */
 	public function register_meta_fields() {
 		foreach ( $this->supported_post_types as $post_type ) {
+			// Standard meta registration.
 			register_post_meta(
 				$post_type,
 				self::META_KEY_QUIZ_ID,
@@ -442,6 +484,38 @@ class PressPrimer_Quiz_LearnDash {
 					'auth_callback'     => function () {
 						return current_user_can( 'edit_posts' );
 					},
+				]
+			);
+
+			// Also register as REST field for LearnDash custom REST controller compatibility.
+			register_rest_field(
+				$post_type,
+				'ppq_quiz_id',
+				[
+					'get_callback'    => function ( $post ) {
+						return absint( get_post_meta( $post['id'], self::META_KEY_QUIZ_ID, true ) );
+					},
+					'update_callback' => function ( $value, $post ) {
+						if ( ! current_user_can( 'edit_post', $post->ID ) ) {
+							return new WP_Error(
+								'rest_forbidden',
+								__( 'You do not have permission to edit this post.', 'pressprimer-quiz' ),
+								[ 'status' => 403 ]
+							);
+						}
+						$value = absint( $value );
+						if ( $value > 0 ) {
+							update_post_meta( $post->ID, self::META_KEY_QUIZ_ID, $value );
+						} else {
+							delete_post_meta( $post->ID, self::META_KEY_QUIZ_ID );
+						}
+						return true;
+					},
+					'schema'          => [
+						'type'        => 'integer',
+						'description' => __( 'PressPrimer Quiz ID', 'pressprimer-quiz' ),
+						'context'     => [ 'view', 'edit' ],
+					],
 				]
 			);
 		}
@@ -457,6 +531,37 @@ class PressPrimer_Quiz_LearnDash {
 				'auth_callback'     => function () {
 					return current_user_can( 'edit_posts' );
 				},
+			]
+		);
+
+		// REST field for restrict setting.
+		register_rest_field(
+			'sfwd-courses',
+			'ppq_restrict_until_complete',
+			[
+				'get_callback'    => function ( $post ) {
+					return get_post_meta( $post['id'], self::META_KEY_RESTRICT_UNTIL_COMPLETE, true );
+				},
+				'update_callback' => function ( $value, $post ) {
+					if ( ! current_user_can( 'edit_post', $post->ID ) ) {
+						return new WP_Error(
+							'rest_forbidden',
+							__( 'You do not have permission to edit this post.', 'pressprimer-quiz' ),
+							[ 'status' => 403 ]
+						);
+					}
+					if ( $value ) {
+						update_post_meta( $post->ID, self::META_KEY_RESTRICT_UNTIL_COMPLETE, '1' );
+					} else {
+						delete_post_meta( $post->ID, self::META_KEY_RESTRICT_UNTIL_COMPLETE );
+					}
+					return true;
+				},
+				'schema'          => [
+					'type'        => 'string',
+					'description' => __( 'Restrict quiz access until course content is complete', 'pressprimer-quiz' ),
+					'context'     => [ 'view', 'edit' ],
+				],
 			]
 		);
 	}
@@ -475,15 +580,15 @@ class PressPrimer_Quiz_LearnDash {
 
 		wp_enqueue_script(
 			'ppq-learndash-editor',
-			PPQ_PLUGIN_URL . 'assets/js/learndash-editor.js',
-			[ 'wp-plugins', 'wp-edit-post', 'wp-element', 'wp-components', 'wp-data', 'wp-api-fetch', 'wp-i18n' ],
-			PPQ_VERSION,
+			PRESSPRIMER_QUIZ_PLUGIN_URL . 'assets/js/learndash-editor.js',
+			[ 'wp-plugins', 'wp-edit-post', 'wp-editor', 'wp-element', 'wp-components', 'wp-data', 'wp-api-fetch', 'wp-i18n' ],
+			PRESSPRIMER_QUIZ_VERSION,
 			true
 		);
 
 		wp_localize_script(
 			'ppq-learndash-editor',
-			'ppqLearnDash',
+			'pressprimerQuizLearnDash',
 			[
 				'metaKeyQuizId'   => self::META_KEY_QUIZ_ID,
 				'metaKeyRestrict' => self::META_KEY_RESTRICT_UNTIL_COMPLETE,
@@ -534,7 +639,7 @@ class PressPrimer_Quiz_LearnDash {
 				$quiz_title = $quiz ? $quiz->title : __( 'Quiz', 'pressprimer-quiz' );
 
 				// Get custom message or use default
-				$restriction_message = get_option( 'ppq_learndash_restriction_message', '' );
+				$restriction_message = get_option( 'pressprimer_quiz_learndash_restriction_message', '' );
 				if ( empty( $restriction_message ) ) {
 					$restriction_message = __( 'Complete all lessons and topics to unlock this quiz.', 'pressprimer-quiz' );
 				}
@@ -551,7 +656,7 @@ class PressPrimer_Quiz_LearnDash {
 				$quiz_title = $quiz ? $quiz->title : __( 'Quiz', 'pressprimer-quiz' );
 
 				// Get custom message or use default for lessons
-				$restriction_message = get_option( 'ppq_learndash_lesson_restriction_message', '' );
+				$restriction_message = get_option( 'pressprimer_quiz_learndash_lesson_restriction_message', '' );
 				if ( empty( $restriction_message ) ) {
 					$restriction_message = __( 'Complete all topics in this lesson to unlock the quiz.', 'pressprimer-quiz' );
 				}
@@ -569,7 +674,7 @@ class PressPrimer_Quiz_LearnDash {
 
 		// Render quiz shortcode with context
 		$quiz_shortcode = sprintf(
-			'[ppq_quiz id="%d" context="%s"]',
+			'[pressprimer_quiz id="%d" context="%s"]',
 			absint( $quiz_id ),
 			esc_attr( base64_encode( wp_json_encode( $context_data ) ) )
 		);
@@ -1040,7 +1145,7 @@ class PressPrimer_Quiz_LearnDash {
 	 */
 	public function ajax_search_quizzes() {
 		// Verify nonce
-		if ( ! check_ajax_referer( 'ppq_learndash_search', 'nonce', false ) ) {
+		if ( ! check_ajax_referer( 'pressprimer_quiz_learndash_search', 'nonce', false ) ) {
 			wp_send_json_error( [ 'message' => __( 'Security check failed.', 'pressprimer-quiz' ) ] );
 		}
 
@@ -1249,7 +1354,7 @@ class PressPrimer_Quiz_LearnDash {
 
 		// Get settings
 		$settings = [
-			'restriction_message' => get_option( 'ppq_learndash_restriction_message', '' ),
+			'restriction_message' => get_option( 'pressprimer_quiz_learndash_restriction_message', '' ),
 		];
 
 		return new WP_REST_Response(
@@ -1273,7 +1378,7 @@ class PressPrimer_Quiz_LearnDash {
 		$restriction_message = $request->get_param( 'restriction_message' );
 
 		if ( null !== $restriction_message ) {
-			update_option( 'ppq_learndash_restriction_message', sanitize_textarea_field( $restriction_message ) );
+			update_option( 'pressprimer_quiz_learndash_restriction_message', sanitize_textarea_field( $restriction_message ) );
 		}
 
 		return new WP_REST_Response(
@@ -1491,6 +1596,9 @@ class PressPrimer_Quiz_LearnDash {
 	 * @return string HTML output.
 	 */
 	private function render_restriction_placeholder( $quiz_title, $restriction_message ) {
+		// Enqueue styles for the restriction placeholder.
+		$this->enqueue_restriction_placeholder_styles();
+
 		ob_start();
 		?>
 		<div class="ppq-restriction-placeholder">
@@ -1521,7 +1629,25 @@ class PressPrimer_Quiz_LearnDash {
 				</div>
 			</div>
 		</div>
-		<style>
+		<?php
+		return ob_get_clean();
+	}
+
+	/**
+	 * Enqueue styles for the restriction placeholder
+	 *
+	 * @since 1.0.0
+	 */
+	private function enqueue_restriction_placeholder_styles() {
+		static $styles_enqueued = false;
+
+		if ( $styles_enqueued ) {
+			return;
+		}
+
+		$styles_enqueued = true;
+
+		$inline_css = '
 			.ppq-restriction-placeholder {
 				position: relative;
 				margin: 24px 0;
@@ -1588,7 +1714,6 @@ class PressPrimer_Quiz_LearnDash {
 				color: #6c757d;
 				margin-bottom: 16px;
 			}
-			/* Inline styles required: Content filter output for restricted quiz placeholder. */
 			.ppq-restriction-placeholder__message {
 				font-size: 16px;
 				font-weight: 500;
@@ -1601,8 +1726,7 @@ class PressPrimer_Quiz_LearnDash {
 				border-radius: 8px;
 				box-shadow: 0 2px 8px rgba(0,0,0,0.1);
 			}
-		</style>
-		<?php
-		return ob_get_clean();
+		';
+		wp_add_inline_style( 'ppq-quiz', $inline_css );
 	}
 }

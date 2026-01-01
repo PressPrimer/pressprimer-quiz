@@ -9,7 +9,8 @@
 
 (function(wp) {
 	const { registerPlugin } = wp.plugins;
-	const { PluginDocumentSettingPanel } = wp.editPost;
+	// Use wp.editor for WP 6.6+, fall back to wp.editPost for older versions
+	const { PluginDocumentSettingPanel } = wp.editor || wp.editPost;
 	const { useSelect, useDispatch } = wp.data;
 	const { useState, useEffect, useCallback, createElement: el } = wp.element;
 	const {
@@ -21,7 +22,7 @@
 	const apiFetch = wp.apiFetch;
 
 	// Get configuration from localized data.
-	const config = window.ppqTutorLMS || {};
+	const config = window.pressprimerQuizTutorLMS || {};
 	const strings = config.strings || {};
 
 	/**

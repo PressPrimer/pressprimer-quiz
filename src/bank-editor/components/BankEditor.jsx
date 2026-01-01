@@ -83,7 +83,7 @@ const BankEditor = ({ bankData = {} }) => {
 
 			// If new, redirect to detail page where questions can be added
 			if (isNew && response.id) {
-				window.location.href = `admin.php?page=ppq-banks&action=view&bank_id=${response.id}&message=bank_created`;
+				window.location.href = `admin.php?page=pressprimer-quiz-banks&action=view&bank_id=${response.id}&message=bank_created`;
 			} else {
 				setCurrentBankId(response.id);
 			}
@@ -101,7 +101,7 @@ const BankEditor = ({ bankData = {} }) => {
 	 * Handle cancel/back button
 	 */
 	const handleCancel = () => {
-		window.location.href = 'admin.php?page=ppq-banks';
+		window.location.href = 'admin.php?page=pressprimer-quiz-banks';
 	};
 
 	/**
@@ -126,7 +126,7 @@ const BankEditor = ({ bankData = {} }) => {
 
 			// Redirect to banks list
 			setTimeout(() => {
-				window.location.href = 'admin.php?page=ppq-banks';
+				window.location.href = 'admin.php?page=pressprimer-quiz-banks';
 			}, 500);
 		} catch (error) {
 			debugError('Failed to delete bank:', error);

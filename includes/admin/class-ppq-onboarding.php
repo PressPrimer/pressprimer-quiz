@@ -26,28 +26,28 @@ class PressPrimer_Quiz_Onboarding {
 	 *
 	 * @var string
 	 */
-	const META_COMPLETED = 'ppq_onboarding_completed';
+	const META_COMPLETED = 'pressprimer_quiz_onboarding_completed';
 
 	/**
 	 * User meta key for permanent skip status.
 	 *
 	 * @var string
 	 */
-	const META_SKIPPED = 'ppq_onboarding_skipped';
+	const META_SKIPPED = 'pressprimer_quiz_onboarding_skipped';
 
 	/**
 	 * User meta key for current step.
 	 *
 	 * @var string
 	 */
-	const META_STEP = 'ppq_onboarding_step';
+	const META_STEP = 'pressprimer_quiz_onboarding_step';
 
 	/**
 	 * User meta key for started timestamp.
 	 *
 	 * @var string
 	 */
-	const META_STARTED = 'ppq_onboarding_started';
+	const META_STARTED = 'pressprimer_quiz_onboarding_started';
 
 	/**
 	 * Total number of wizard steps.
@@ -93,8 +93,8 @@ class PressPrimer_Quiz_Onboarding {
 	 */
 	private function init_hooks() {
 		// AJAX handlers.
-		add_action( 'wp_ajax_ppq_onboarding_progress', array( $this, 'ajax_onboarding_progress' ) );
-		add_action( 'wp_ajax_ppq_get_onboarding_state', array( $this, 'ajax_get_onboarding_state' ) );
+		add_action( 'wp_ajax_pressprimer_quiz_onboarding_progress', array( $this, 'ajax_onboarding_progress' ) );
+		add_action( 'wp_ajax_pressprimer_quiz_get_onboarding_state', array( $this, 'ajax_get_onboarding_state' ) );
 	}
 
 	/**
@@ -111,7 +111,7 @@ class PressPrimer_Quiz_Onboarding {
 		}
 
 		// Must have appropriate capability.
-		if ( ! user_can( $user_id, 'ppq_manage_own' ) ) {
+		if ( ! user_can( $user_id, 'pressprimer_quiz_manage_own' ) ) {
 			return false;
 		}
 
@@ -311,7 +311,7 @@ class PressPrimer_Quiz_Onboarding {
 	 * @return bool True if API key is configured.
 	 */
 	private function has_valid_api_key() {
-		$api_key = get_option( 'ppq_openai_api_key', '' );
+		$api_key = get_option( 'pressprimer_quiz_site_openai_api_key', '' );
 		return ! empty( $api_key );
 	}
 
@@ -321,9 +321,9 @@ class PressPrimer_Quiz_Onboarding {
 	 * @since 1.0.0
 	 */
 	public function ajax_onboarding_progress() {
-		check_ajax_referer( 'ppq_admin', 'nonce' );
+		check_ajax_referer( 'pressprimer_quiz_admin', 'nonce' );
 
-		if ( ! current_user_can( 'ppq_manage_own' ) ) {
+		if ( ! current_user_can( 'pressprimer_quiz_manage_own' ) ) {
 			wp_send_json_error( array( 'message' => __( 'Unauthorized access.', 'pressprimer-quiz' ) ) );
 		}
 
@@ -367,9 +367,9 @@ class PressPrimer_Quiz_Onboarding {
 	 * @since 1.0.0
 	 */
 	public function ajax_get_onboarding_state() {
-		check_ajax_referer( 'ppq_admin', 'nonce' );
+		check_ajax_referer( 'pressprimer_quiz_admin', 'nonce' );
 
-		if ( ! current_user_can( 'ppq_manage_own' ) ) {
+		if ( ! current_user_can( 'pressprimer_quiz_manage_own' ) ) {
 			wp_send_json_error( array( 'message' => __( 'Unauthorized access.', 'pressprimer-quiz' ) ) );
 		}
 
@@ -386,16 +386,16 @@ class PressPrimer_Quiz_Onboarding {
 	public function get_js_data() {
 		return array(
 			'state'     => $this->get_onboarding_state(),
-			'nonce'     => wp_create_nonce( 'ppq_admin' ),
+			'nonce'     => wp_create_nonce( 'pressprimer_quiz_admin' ),
 			'ajaxUrl'   => admin_url( 'admin-ajax.php' ),
-			'pluginUrl' => PPQ_PLUGIN_URL,
+			'pluginUrl' => PRESSPRIMER_QUIZ_PLUGIN_URL,
 			'urls'      => array(
-				'dashboard' => admin_url( 'admin.php?page=ppq-dashboard' ),
-				'questions' => admin_url( 'admin.php?page=ppq-questions' ),
-				'banks'     => admin_url( 'admin.php?page=ppq-banks' ),
-				'quizzes'   => admin_url( 'admin.php?page=ppq-quizzes' ),
-				'reports'   => admin_url( 'admin.php?page=ppq-reports' ),
-				'settings'  => admin_url( 'admin.php?page=ppq-settings' ),
+				'dashboard' => admin_url( 'admin.php?page=pressprimer-quiz' ),
+				'questions' => admin_url( 'admin.php?page=pressprimer-quiz-questions' ),
+				'banks'     => admin_url( 'admin.php?page=pressprimer-quiz-banks' ),
+				'quizzes'   => admin_url( 'admin.php?page=pressprimer-quiz-quizzes' ),
+				'reports'   => admin_url( 'admin.php?page=pressprimer-quiz-reports' ),
+				'settings'  => admin_url( 'admin.php?page=pressprimer-quiz-settings' ),
 			),
 			'i18n'      => array(
 				'welcome'          => __( 'Welcome to PressPrimer Quiz!', 'pressprimer-quiz' ),

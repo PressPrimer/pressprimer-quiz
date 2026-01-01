@@ -71,19 +71,19 @@ const CompletionModal = ({ title, content, onComplete, urls = {} }) => {
 			key: 'create-question',
 			icon: <QuestionCircleOutlined />,
 			label: __('Create a Question', 'pressprimer-quiz'),
-			href: urls.questions ? `${urls.questions}&action=new` : 'admin.php?page=ppq-questions&action=new',
+			href: urls.questions ? `${urls.questions}&action=new` : 'admin.php?page=pressprimer-quiz-questions&action=new',
 		},
 		{
 			key: 'create-bank',
 			icon: <FolderAddOutlined />,
 			label: __('Create a Bank', 'pressprimer-quiz'),
-			href: urls.banks ? `${urls.banks}&action=new` : 'admin.php?page=ppq-banks&action=new',
+			href: urls.banks ? `${urls.banks}&action=new` : 'admin.php?page=pressprimer-quiz-banks&action=new',
 		},
 		{
 			key: 'create-quiz',
 			icon: <PlusOutlined />,
 			label: __('Create a Quiz', 'pressprimer-quiz'),
-			href: urls.quizzes ? `${urls.quizzes}&action=new` : 'admin.php?page=ppq-quizzes&action=new',
+			href: urls.quizzes ? `${urls.quizzes}&action=new` : 'admin.php?page=pressprimer-quiz-quizzes&action=new',
 		},
 	];
 

@@ -60,7 +60,7 @@ class PressPrimer_Quiz_Automator_Loader {
 	 * @since 1.0.0
 	 */
 	private function include_files() {
-		$base_path = PPQ_PLUGIN_PATH . 'includes/integrations/uncanny-automator/';
+		$base_path = PRESSPRIMER_QUIZ_PLUGIN_PATH . 'includes/integrations/uncanny-automator/';
 
 		require_once $base_path . 'class-ppq-automator-integration.php';
 		require_once $base_path . 'class-ppq-automator-helpers.php';

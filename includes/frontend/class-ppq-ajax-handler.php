@@ -25,15 +25,15 @@ if ( ! defined( 'ABSPATH' ) ) {
  * This plugin uses grouped nonces by functional area for security:
  *
  * Frontend (quiz-taking):
- * - 'ppq_quiz_nonce'    : Quiz flow operations (start, save, sync, submit, check_answer)
+ * - 'pressprimer_quiz_nonce'    : Quiz flow operations (start, save, sync, submit, check_answer)
  *                         Shared because these are sequential operations in a single session.
- * - 'ppq_email_results' : Email results only (separate as it's a post-completion action)
+ * - 'pressprimer_quiz_email_results' : Email results only (separate as it's a post-completion action)
  *
  * Admin operations use separate nonces per sensitive action:
- * - 'ppq_admin_nonce'   : General admin operations
- * - 'ppq_ai_generation' : AI question generation
- * - 'ppq_save_quiz'     : Quiz creation/editing
- * - 'ppq_save_bank'     : Bank creation/editing
+ * - 'pressprimer_quiz_admin_nonce'   : General admin operations
+ * - 'pressprimer_quiz_ai_generation' : AI question generation
+ * - 'pressprimer_quiz_save_quiz'     : Quiz creation/editing
+ * - 'pressprimer_quiz_save_bank'     : Bank creation/editing
  * - etc.
  *
  * This grouped approach balances security with usability - quiz flow operations
@@ -48,35 +48,35 @@ class PressPrimer_Quiz_AJAX_Handler {
 	 * Initialize AJAX handlers
 	 *
 	 * Registers AJAX actions for both logged-in users and guests.
-	 * All handlers verify the 'ppq_quiz_nonce' except email_results
-	 * which uses 'ppq_email_results'.
+	 * All handlers verify the 'pressprimer_quiz_nonce' except email_results
+	 * which uses 'pressprimer_quiz_email_results'.
 	 *
 	 * @since 1.0.0
 	 */
 	public function init() {
 		// Start quiz (logged in and guests)
-		add_action( 'wp_ajax_ppq_start_quiz', [ $this, 'start_quiz' ] );
-		add_action( 'wp_ajax_nopriv_ppq_start_quiz', [ $this, 'start_quiz' ] );
+		add_action( 'wp_ajax_pressprimer_quiz_start_quiz', [ $this, 'start_quiz' ] );
+		add_action( 'wp_ajax_nopriv_pressprimer_quiz_start_quiz', [ $this, 'start_quiz' ] );
 
 		// Save answers (logged in and guests)
-		add_action( 'wp_ajax_ppq_save_answers', [ $this, 'save_answers' ] );
-		add_action( 'wp_ajax_nopriv_ppq_save_answers', [ $this, 'save_answers' ] );
+		add_action( 'wp_ajax_pressprimer_quiz_save_answers', [ $this, 'save_answers' ] );
+		add_action( 'wp_ajax_nopriv_pressprimer_quiz_save_answers', [ $this, 'save_answers' ] );
 
 		// Sync active time (logged in and guests)
-		add_action( 'wp_ajax_ppq_sync_time', [ $this, 'sync_time' ] );
-		add_action( 'wp_ajax_nopriv_ppq_sync_time', [ $this, 'sync_time' ] );
+		add_action( 'wp_ajax_pressprimer_quiz_sync_time', [ $this, 'sync_time' ] );
+		add_action( 'wp_ajax_nopriv_pressprimer_quiz_sync_time', [ $this, 'sync_time' ] );
 
 		// Submit quiz (logged in and guests)
-		add_action( 'wp_ajax_ppq_submit_quiz', [ $this, 'submit_quiz' ] );
-		add_action( 'wp_ajax_nopriv_ppq_submit_quiz', [ $this, 'submit_quiz' ] );
+		add_action( 'wp_ajax_pressprimer_quiz_submit_quiz', [ $this, 'submit_quiz' ] );
+		add_action( 'wp_ajax_nopriv_pressprimer_quiz_submit_quiz', [ $this, 'submit_quiz' ] );
 
 		// Email results (logged in and guests)
-		add_action( 'wp_ajax_ppq_email_results', [ $this, 'email_results' ] );
-		add_action( 'wp_ajax_nopriv_ppq_email_results', [ $this, 'email_results' ] );
+		add_action( 'wp_ajax_pressprimer_quiz_email_results', [ $this, 'email_results' ] );
+		add_action( 'wp_ajax_nopriv_pressprimer_quiz_email_results', [ $this, 'email_results' ] );
 
 		// Check answer - Tutorial Mode (logged in and guests)
-		add_action( 'wp_ajax_ppq_check_answer', [ $this, 'check_answer' ] );
-		add_action( 'wp_ajax_nopriv_ppq_check_answer', [ $this, 'check_answer' ] );
+		add_action( 'wp_ajax_pressprimer_quiz_check_answer', [ $this, 'check_answer' ] );
+		add_action( 'wp_ajax_nopriv_pressprimer_quiz_check_answer', [ $this, 'check_answer' ] );
 	}
 
 	/**
@@ -88,7 +88,7 @@ class PressPrimer_Quiz_AJAX_Handler {
 	 */
 	public function start_quiz() {
 		// Verify nonce
-		if ( ! check_ajax_referer( 'ppq_quiz_nonce', 'nonce', false ) ) {
+		if ( ! check_ajax_referer( 'pressprimer_quiz_nonce', 'nonce', false ) ) {
 			wp_send_json_error(
 				[
 					'message' => __( 'Security check failed. Please refresh the page and try again.', 'pressprimer-quiz' ),
@@ -194,7 +194,7 @@ class PressPrimer_Quiz_AJAX_Handler {
 	 */
 	public function save_answers() {
 		// Verify nonce
-		if ( ! check_ajax_referer( 'ppq_quiz_nonce', 'nonce', false ) ) {
+		if ( ! check_ajax_referer( 'pressprimer_quiz_nonce', 'nonce', false ) ) {
 			wp_send_json_error(
 				[
 					'message' => __( 'Security check failed.', 'pressprimer-quiz' ),
@@ -353,7 +353,7 @@ class PressPrimer_Quiz_AJAX_Handler {
 	 */
 	public function sync_time() {
 		// Verify nonce
-		if ( ! check_ajax_referer( 'ppq_quiz_nonce', 'nonce', false ) ) {
+		if ( ! check_ajax_referer( 'pressprimer_quiz_nonce', 'nonce', false ) ) {
 			wp_send_json_error(
 				[
 					'message' => __( 'Security check failed.', 'pressprimer-quiz' ),
@@ -426,7 +426,7 @@ class PressPrimer_Quiz_AJAX_Handler {
 	 */
 	public function submit_quiz() {
 		// Verify nonce
-		if ( ! check_ajax_referer( 'ppq_quiz_nonce', 'nonce', false ) ) {
+		if ( ! check_ajax_referer( 'pressprimer_quiz_nonce', 'nonce', false ) ) {
 			wp_send_json_error(
 				[
 					'message' => __( 'Security check failed.', 'pressprimer-quiz' ),
@@ -572,7 +572,7 @@ class PressPrimer_Quiz_AJAX_Handler {
 		}
 
 		// Check if admin
-		if ( current_user_can( 'ppq_manage_all' ) ) {
+		if ( current_user_can( 'pressprimer_quiz_manage_all' ) ) {
 			return true;
 		}
 
@@ -588,7 +588,7 @@ class PressPrimer_Quiz_AJAX_Handler {
 	 */
 	public function email_results() {
 		// Verify nonce
-		if ( ! check_ajax_referer( 'ppq_email_results', 'nonce', false ) ) {
+		if ( ! check_ajax_referer( 'pressprimer_quiz_email_results', 'nonce', false ) ) {
 			wp_send_json_error(
 				[
 					'message' => __( 'Security check failed. Please refresh the page and try again.', 'pressprimer-quiz' ),
@@ -682,7 +682,7 @@ class PressPrimer_Quiz_AJAX_Handler {
 	 */
 	public function check_answer() {
 		// Verify nonce
-		if ( ! check_ajax_referer( 'ppq_quiz_nonce', 'nonce', false ) ) {
+		if ( ! check_ajax_referer( 'pressprimer_quiz_nonce', 'nonce', false ) ) {
 			wp_send_json_error(
 				[
 					'message' => __( 'Security check failed.', 'pressprimer-quiz' ),
@@ -752,20 +752,20 @@ class PressPrimer_Quiz_AJAX_Handler {
 			);
 		}
 
-		// Get selected answers from POST
-		// phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- Values sanitized with intval via array_map below
-		$selected_answers = isset( $_POST['answers'] ) ? wp_unslash( $_POST['answers'] ) : [];
+		// Get selected answers from POST and sanitize
+		// phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- Array is sanitized element-by-element below
+		$answers_raw = isset( $_POST['answers'] ) ? wp_unslash( $_POST['answers'] ) : [];
 
-		// Ensure selected_answers is an array
-		if ( ! is_array( $selected_answers ) ) {
-			$selected_answers = [ $selected_answers ];
+		// Ensure answers is an array (single selection comes as scalar)
+		if ( ! is_array( $answers_raw ) ) {
+			$answers_raw = [ $answers_raw ];
 		}
 
-		// Convert to integers and filter empty values
+		// Sanitize: filter non-empty values and convert to integers
 		$selected_answers = array_map(
-			'intval',
+			'absint',
 			array_filter(
-				$selected_answers,
+				array_map( 'sanitize_text_field', $answers_raw ),
 				function ( $v ) {
 					return '' !== $v && null !== $v;
 				}

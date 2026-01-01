@@ -22,7 +22,7 @@ document.addEventListener('DOMContentLoaded', () => {
 	const root = document.getElementById('ppq-question-editor-root');
 
 	if (root) {
-		const questionData = window.ppqQuestionData || {};
+		const questionData = window.pressprimerQuizQuestionData || {};
 
 		render(
 			<QuestionEditor questionData={questionData} />,

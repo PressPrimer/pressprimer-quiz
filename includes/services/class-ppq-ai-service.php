@@ -173,8 +173,8 @@ class PressPrimer_Quiz_AI_Service {
 
 		// Allow clearing the key
 		if ( empty( $api_key ) ) {
-			delete_user_meta( $user_id, 'ppq_openai_api_key' );
-			delete_user_meta( $user_id, 'ppq_openai_model' );
+			delete_user_meta( $user_id, 'pressprimer_quiz_openai_api_key' );
+			delete_user_meta( $user_id, 'pressprimer_quiz_openai_model' );
 			return true;
 		}
 
@@ -185,7 +185,7 @@ class PressPrimer_Quiz_AI_Service {
 			return $encrypted;
 		}
 
-		$result = update_user_meta( $user_id, 'ppq_openai_api_key', $encrypted );
+		$result = update_user_meta( $user_id, 'pressprimer_quiz_openai_api_key', $encrypted );
 
 		return false !== $result;
 	}
@@ -202,7 +202,7 @@ class PressPrimer_Quiz_AI_Service {
 	 */
 	public static function get_api_key( $user_id = null ) {
 		// Get site-wide API key configured by admin in Settings
-		$site_key = get_option( 'ppq_site_openai_api_key', '' );
+		$site_key = get_option( 'pressprimer_quiz_site_openai_api_key', '' );
 
 		if ( ! empty( $site_key ) ) {
 			$decrypted = PressPrimer_Quiz_Helpers::decrypt( $site_key );
@@ -222,7 +222,7 @@ class PressPrimer_Quiz_AI_Service {
 		);
 		if ( ! empty( $admin_users ) ) {
 			$admin_id  = $admin_users[0]->ID;
-			$encrypted = get_user_meta( $admin_id, 'ppq_openai_api_key', true );
+			$encrypted = get_user_meta( $admin_id, 'pressprimer_quiz_openai_api_key', true );
 
 			if ( ! empty( $encrypted ) ) {
 				$decrypted = PressPrimer_Quiz_Helpers::decrypt( $encrypted );
@@ -253,7 +253,7 @@ class PressPrimer_Quiz_AI_Service {
 			return false;
 		}
 
-		return false !== update_user_meta( $user_id, 'ppq_openai_model', $model );
+		return false !== update_user_meta( $user_id, 'pressprimer_quiz_openai_model', $model );
 	}
 
 	/**
@@ -271,7 +271,7 @@ class PressPrimer_Quiz_AI_Service {
 			return self::DEFAULT_MODEL;
 		}
 
-		$model = get_user_meta( $user_id, 'ppq_openai_model', true );
+		$model = get_user_meta( $user_id, 'pressprimer_quiz_openai_model', true );
 
 		return $model ? $model : self::DEFAULT_MODEL;
 	}

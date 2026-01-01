@@ -109,7 +109,7 @@ const RecentActivity = ({ attempts = [], loading }) => {
 			dataIndex: 'quiz_title',
 			key: 'quiz',
 			render: (title, record) => (
-				<a href={`admin.php?page=ppq-quizzes&action=edit&quiz=${record.quiz_id}`}>
+				<a href={`admin.php?page=pressprimer-quiz-quizzes&action=edit&quiz=${record.quiz_id}`}>
 					{title}
 				</a>
 			),
@@ -178,7 +178,7 @@ const RecentActivity = ({ attempts = [], loading }) => {
 				</h3>
 				<Button
 					type="link"
-					href="admin.php?page=ppq-reports"
+					href="admin.php?page=pressprimer-quiz-reports"
 					icon={<ArrowRightOutlined />}
 					className="ppq-dashboard-card-action"
 				>

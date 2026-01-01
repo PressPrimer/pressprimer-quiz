@@ -13,7 +13,7 @@
  * @return {boolean} True if WP_DEBUG is enabled
  */
 export const isDebugMode = () => {
-	return window.ppqAdmin?.debug === true;
+	return window.pressprimerQuizAdmin?.debug === true;
 };
 
 /**

@@ -132,7 +132,7 @@ const QuizPerformanceReport = () => {
 			sorter: true,
 			sortOrder: sortField === 'title' ? sortOrder : null,
 			render: (title, record) => (
-				<a href={`admin.php?page=ppq-quizzes&action=edit&quiz=${record.id}`}>
+				<a href={`admin.php?page=pressprimer-quiz-quizzes&action=edit&quiz=${record.id}`}>
 					{title}
 				</a>
 			),
@@ -180,7 +180,7 @@ const QuizPerformanceReport = () => {
 	];
 
 	// Get the plugin URL from localized data
-	const pluginUrl = window.ppqReportsData?.pluginUrl || '';
+	const pluginUrl = window.pressprimerQuizReportsData?.pluginUrl || '';
 
 	return (
 		<div className="ppq-reports-container">
@@ -190,7 +190,7 @@ const QuizPerformanceReport = () => {
 					<Button
 						type="link"
 						icon={<ArrowLeftOutlined />}
-						href="admin.php?page=ppq-reports"
+						href="admin.php?page=pressprimer-quiz-reports"
 						className="ppq-reports-back-link"
 					>
 						{__('All Reports', 'pressprimer-quiz')}

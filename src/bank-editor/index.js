@@ -23,7 +23,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
 	if (root) {
 		// Get bank data from localized script
-		const bankData = window.ppqBankData || {};
+		const bankData = window.pressprimerQuizBankData || {};
 
 		// Render the editor
 		render(<BankEditor bankData={bankData} />, root);

@@ -53,12 +53,12 @@ class PressPrimer_Quiz_Capabilities {
 		}
 
 		// Full management access
-		$admin->add_cap( 'ppq_manage_all' );        // Manage all quizzes, questions, banks, groups
-		$admin->add_cap( 'ppq_manage_own' );        // Manage own content
-		$admin->add_cap( 'ppq_view_results_all' );  // View all student results
-		$admin->add_cap( 'ppq_view_results_own' );  // View results for own students
-		$admin->add_cap( 'ppq_take_quiz' );         // Take quizzes
-		$admin->add_cap( 'ppq_manage_settings' );   // Access plugin settings
+		$admin->add_cap( 'pressprimer_quiz_manage_all' );        // Manage all quizzes, questions, banks, groups
+		$admin->add_cap( 'pressprimer_quiz_manage_own' );        // Manage own content
+		$admin->add_cap( 'pressprimer_quiz_view_results_all' );  // View all student results
+		$admin->add_cap( 'pressprimer_quiz_view_results_own' );  // View results for own students
+		$admin->add_cap( 'pressprimer_quiz_take_quiz' );         // Take quizzes
+		$admin->add_cap( 'pressprimer_quiz_manage_settings' );   // Access plugin settings
 	}
 
 	/**
@@ -76,7 +76,7 @@ class PressPrimer_Quiz_Capabilities {
 		}
 
 		// Subscribers can only take quizzes
-		$subscriber->add_cap( 'ppq_take_quiz' );
+		$subscriber->add_cap( 'pressprimer_quiz_take_quiz' );
 	}
 
 	/**
@@ -89,20 +89,21 @@ class PressPrimer_Quiz_Capabilities {
 	 */
 	public static function create_teacher_role() {
 		// Remove role first if it exists (in case of capability changes)
-		remove_role( 'ppq_teacher' );
+		remove_role( 'pressprimer_quiz_teacher' );
 
 		// Create the role with base capabilities
+		// Note: Role name not translated as it's stored in database and translation runs too early during activation
 		add_role(
-			'ppq_teacher',
-			__( 'PressPrimer Teacher', 'pressprimer-quiz' ),
+			'pressprimer_quiz_teacher',
+			'PressPrimer Teacher',
 			[
 				// Basic WordPress capabilities
-				'read'                 => true,
+				'read'                              => true,
 
 				// PressPrimer Quiz capabilities
-				'ppq_manage_own'       => true,  // Manage own quizzes, questions, banks
-				'ppq_view_results_own' => true,  // View results for own students
-				'ppq_take_quiz'        => true,  // Take quizzes
+				'pressprimer_quiz_manage_own'       => true,  // Manage own quizzes, questions, banks
+				'pressprimer_quiz_view_results_own' => true,  // View results for own students
+				'pressprimer_quiz_take_quiz'        => true,  // Take quizzes
 			]
 		);
 	}
@@ -133,12 +134,12 @@ class PressPrimer_Quiz_Capabilities {
 			return;
 		}
 
-		$admin->remove_cap( 'ppq_manage_all' );
-		$admin->remove_cap( 'ppq_manage_own' );
-		$admin->remove_cap( 'ppq_view_results_all' );
-		$admin->remove_cap( 'ppq_view_results_own' );
-		$admin->remove_cap( 'ppq_take_quiz' );
-		$admin->remove_cap( 'ppq_manage_settings' );
+		$admin->remove_cap( 'pressprimer_quiz_manage_all' );
+		$admin->remove_cap( 'pressprimer_quiz_manage_own' );
+		$admin->remove_cap( 'pressprimer_quiz_view_results_all' );
+		$admin->remove_cap( 'pressprimer_quiz_view_results_own' );
+		$admin->remove_cap( 'pressprimer_quiz_take_quiz' );
+		$admin->remove_cap( 'pressprimer_quiz_manage_settings' );
 	}
 
 	/**
@@ -153,7 +154,7 @@ class PressPrimer_Quiz_Capabilities {
 			return;
 		}
 
-		$subscriber->remove_cap( 'ppq_take_quiz' );
+		$subscriber->remove_cap( 'pressprimer_quiz_take_quiz' );
 	}
 
 	/**
@@ -164,7 +165,7 @@ class PressPrimer_Quiz_Capabilities {
 	 * @since 1.0.0
 	 */
 	private static function remove_teacher_role() {
-		remove_role( 'ppq_teacher' );
+		remove_role( 'pressprimer_quiz_teacher' );
 	}
 
 	/**
@@ -179,12 +180,12 @@ class PressPrimer_Quiz_Capabilities {
 	 */
 	public static function get_all_capabilities() {
 		return [
-			'ppq_manage_all',
-			'ppq_manage_own',
-			'ppq_view_results_all',
-			'ppq_view_results_own',
-			'ppq_take_quiz',
-			'ppq_manage_settings',
+			'pressprimer_quiz_manage_all',
+			'pressprimer_quiz_manage_own',
+			'pressprimer_quiz_view_results_all',
+			'pressprimer_quiz_view_results_own',
+			'pressprimer_quiz_take_quiz',
+			'pressprimer_quiz_manage_settings',
 		];
 	}
 
@@ -202,12 +203,12 @@ class PressPrimer_Quiz_Capabilities {
 	 */
 	public static function user_can_manage_quiz( $user_id, $owner_id ) {
 		// Admins can manage all quizzes
-		if ( user_can( $user_id, 'ppq_manage_all' ) ) {
+		if ( user_can( $user_id, 'pressprimer_quiz_manage_all' ) ) {
 			return true;
 		}
 
 		// Check if user can manage own content and is the owner
-		if ( user_can( $user_id, 'ppq_manage_own' ) && $user_id === $owner_id ) {
+		if ( user_can( $user_id, 'pressprimer_quiz_manage_own' ) && $user_id === $owner_id ) {
 			return true;
 		}
 
@@ -227,7 +228,7 @@ class PressPrimer_Quiz_Capabilities {
 	 */
 	public static function user_can_view_results( $user_id, $student_id ) {
 		// Admins can view all results
-		if ( user_can( $user_id, 'ppq_view_results_all' ) ) {
+		if ( user_can( $user_id, 'pressprimer_quiz_view_results_all' ) ) {
 			return true;
 		}
 
@@ -238,7 +239,7 @@ class PressPrimer_Quiz_Capabilities {
 
 		// Teachers can view their students' results
 		// This will be enhanced in later phases to check group membership
-		if ( user_can( $user_id, 'ppq_view_results_own' ) ) {
+		if ( user_can( $user_id, 'pressprimer_quiz_view_results_own' ) ) {
 			// For now, teachers can't view other students' results
 			// Group membership checking will be added in Phase 2
 			return false;

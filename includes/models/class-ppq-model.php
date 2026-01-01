@@ -168,9 +168,6 @@ abstract class PressPrimer_Quiz_Model {
 		$result = $wpdb->insert( $table, $data );
 
 		if ( false === $result ) {
-			if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
-				error_log( 'PPQ Database Error (create): ' . $wpdb->last_error );
-			}
 			return new WP_Error(
 				'ppq_db_error',
 				__( 'Database error: Failed to create record.', 'pressprimer-quiz' )
@@ -229,9 +226,6 @@ abstract class PressPrimer_Quiz_Model {
 		);
 
 		if ( false === $result ) {
-			if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
-				error_log( 'PPQ Database Error (save): ' . $wpdb->last_error );
-			}
 			return new WP_Error(
 				'ppq_db_error',
 				__( 'Database error: Failed to save record.', 'pressprimer-quiz' )
@@ -270,9 +264,6 @@ abstract class PressPrimer_Quiz_Model {
 		);
 
 		if ( false === $result ) {
-			if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
-				error_log( 'PPQ Database Error (delete): ' . $wpdb->last_error );
-			}
 			return new WP_Error(
 				'ppq_db_error',
 				__( 'Database error: Failed to delete record.', 'pressprimer-quiz' )
@@ -348,19 +339,24 @@ abstract class PressPrimer_Quiz_Model {
 		// Build LIMIT clause
 		$limit_sql = '';
 		if ( null !== $args['limit'] ) {
-			$limit     = absint( $args['limit'] );
-			$offset    = absint( $args['offset'] ?? 0 );
-			$limit_sql = $offset > 0
-				? "LIMIT {$offset}, {$limit}"
-				: "LIMIT {$limit}";
+			$limit  = absint( $args['limit'] );
+			$offset = absint( $args['offset'] ?? 0 );
+			if ( $offset > 0 ) {
+				$limit_sql      = 'LIMIT %d, %d';
+				$where_values[] = $offset;
+				$where_values[] = $limit;
+			} else {
+				$limit_sql      = 'LIMIT %d';
+				$where_values[] = $limit;
+			}
 		}
 
 		// Build final query
 		$query = "SELECT * FROM {$table} {$where_sql} {$order_sql} {$limit_sql}";
 
-		// Prepare and execute
+		// Prepare and execute - always prepare if we have any values (WHERE or LIMIT)
 		if ( ! empty( $where_values ) ) {
-			$query = $wpdb->prepare( $query, $where_values ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
+			$query = $wpdb->prepare( $query, $where_values ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- Query built with placeholders
 		}
 
 		$rows = $wpdb->get_results( $query ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared,WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Custom table queries with dynamic conditions

@@ -66,16 +66,16 @@
 			var href = $link.attr('href');
 
 			PPQ.Admin.confirm(
-				window.ppqAdmin?.strings?.confirmDelete || 'Are you sure you want to delete this item?',
+				window.pressprimerQuizAdmin?.strings?.confirmDelete || 'Are you sure you want to delete this item?',
 				function() {
 					// Confirmed - navigate to delete URL
 					window.location.href = href;
 				},
 				null,
 				{
-					title: window.ppqAdmin?.strings?.confirmDeleteTitle || 'Delete Item',
-					confirmText: window.ppqAdmin?.strings?.delete || 'Delete',
-					cancelText: window.ppqAdmin?.strings?.cancel || 'Cancel'
+					title: window.pressprimerQuizAdmin?.strings?.confirmDeleteTitle || 'Delete Item',
+					confirmText: window.pressprimerQuizAdmin?.strings?.delete || 'Delete',
+					cancelText: window.pressprimerQuizAdmin?.strings?.cancel || 'Cancel'
 				}
 			);
 		},
@@ -127,11 +127,11 @@
 		 */
 		ajax: function(action, data, success, error) {
 			data = data || {};
-			data.action = 'ppq_' + action;
-			data.nonce = window.ppqAdmin.nonce;
+			data.action = 'pressprimer_quiz_' + action;
+			data.nonce = window.pressprimerQuizAdmin.nonce;
 
 			$.ajax({
-				url: window.ppqAdmin.ajaxUrl,
+				url: window.pressprimerQuizAdmin.ajaxUrl,
 				type: 'POST',
 				data: data,
 				success: function(response) {
@@ -144,7 +144,7 @@
 							error(response.data);
 						} else {
 							PPQ.Admin.alert(
-								window.ppqAdmin?.strings?.error || 'An error occurred.',
+								window.pressprimerQuizAdmin?.strings?.error || 'An error occurred.',
 								null,
 								{ type: 'error', title: 'Error' }
 							);
@@ -159,7 +159,7 @@
 						});
 					} else {
 						PPQ.Admin.alert(
-							window.ppqAdmin?.strings?.error || 'An error occurred.',
+							window.pressprimerQuizAdmin?.strings?.error || 'An error occurred.',
 							null,
 							{ type: 'error', title: 'Error' }
 						);
@@ -260,8 +260,8 @@
 				title: '',
 				message: '',
 				type: 'info',
-				confirmText: window.ppqAdmin?.strings?.ok || 'OK',
-				cancelText: window.ppqAdmin?.strings?.cancel || 'Cancel',
+				confirmText: window.pressprimerQuizAdmin?.strings?.ok || 'OK',
+				cancelText: window.pressprimerQuizAdmin?.strings?.cancel || 'Cancel',
 				onConfirm: null,
 				onCancel: null
 			};
@@ -391,10 +391,10 @@
 			options = options || {};
 			return this.showModal($.extend({
 				type: 'confirm',
-				title: options.title || (window.ppqAdmin?.strings?.confirmTitle || 'Confirm'),
+				title: options.title || (window.pressprimerQuizAdmin?.strings?.confirmTitle || 'Confirm'),
 				message: message,
-				confirmText: options.confirmText || (window.ppqAdmin?.strings?.yes || 'Yes'),
-				cancelText: options.cancelText || (window.ppqAdmin?.strings?.no || 'No'),
+				confirmText: options.confirmText || (window.pressprimerQuizAdmin?.strings?.yes || 'Yes'),
+				cancelText: options.cancelText || (window.pressprimerQuizAdmin?.strings?.no || 'No'),
 				onConfirm: onConfirm,
 				onCancel: onCancel
 			}, options));
@@ -414,7 +414,7 @@
 				type: options.type || 'info',
 				title: options.title || '',
 				message: message,
-				confirmText: options.confirmText || (window.ppqAdmin?.strings?.ok || 'OK'),
+				confirmText: options.confirmText || (window.pressprimerQuizAdmin?.strings?.ok || 'OK'),
 				onConfirm: onClose
 			}, options));
 		},

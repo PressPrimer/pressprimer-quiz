@@ -154,11 +154,11 @@ class PressPrimer_Quiz_Automator_Helpers {
 		global $wpdb;
 
 		// Search for shortcode in post content with various quote styles.
-		// Look for [ppq_quiz id="X"] or [ppq_quiz id='X'] or [ppq_quiz id=X].
+		// Look for [pressprimer_quiz id="X"] or [pressprimer_quiz id='X'] or [pressprimer_quiz id=X].
 		$shortcode_patterns = array(
-			'%[ppq_quiz %id="' . intval( $quiz_id ) . '"%',
-			"%[ppq_quiz %id='" . intval( $quiz_id ) . "'%",
-			'%[ppq_quiz %id=' . intval( $quiz_id ) . '%',
+			'%[pressprimer_quiz %id="' . intval( $quiz_id ) . '"%',
+			"%[pressprimer_quiz %id='" . intval( $quiz_id ) . "'%",
+			'%[pressprimer_quiz %id=' . intval( $quiz_id ) . '%',
 		);
 
 		$where_clauses = array();

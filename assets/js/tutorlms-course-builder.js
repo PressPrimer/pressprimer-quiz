@@ -12,7 +12,7 @@
 	'use strict';
 
 	// Get configuration from localized data.
-	var config = window.ppqTutorCourseBuilder || {};
+	var config = window.pressprimerQuizTutorCourseBuilder || {};
 	var strings = config.strings || {};
 	var courseId = config.courseId || 0;
 

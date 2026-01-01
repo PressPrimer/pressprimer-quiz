@@ -82,8 +82,11 @@ class PressPrimer_Quiz_LifterLMS {
 		// Uses the_content filter to append quiz after lesson content.
 		add_filter( 'the_content', [ $this, 'append_quiz_to_content' ], 20 );
 
-		// Hide LifterLMS complete button when quiz is attached.
+		// Check if lesson is complete (requires quiz pass).
 		add_filter( 'llms_is_complete', [ $this, 'check_ppq_quiz_complete' ], 10, 4 );
+
+		// Hide LifterLMS Mark Complete button when quiz pass is required.
+		add_filter( 'llms_show_mark_complete_button', [ $this, 'maybe_hide_complete_button' ], 10, 2 );
 
 		// Completion tracking.
 		add_action( 'pressprimer_quiz_quiz_passed', [ $this, 'handle_quiz_passed' ], 10, 2 );
@@ -92,7 +95,7 @@ class PressPrimer_Quiz_LifterLMS {
 		add_filter( 'pressprimer_quiz_user_has_teacher_capability', [ $this, 'check_instructor_capability' ], 10, 2 );
 
 		// AJAX handler for metabox quiz search (classic editor).
-		add_action( 'wp_ajax_ppq_search_quizzes_lifterlms', [ $this, 'ajax_search_quizzes' ] );
+		add_action( 'wp_ajax_pressprimer_quiz_search_quizzes_lifterlms', [ $this, 'ajax_search_quizzes' ] );
 
 		// Register REST routes.
 		add_action( 'rest_api_init', [ $this, 'register_rest_routes' ] );
@@ -122,7 +125,7 @@ class PressPrimer_Quiz_LifterLMS {
 	 * @param WP_Post $post Current post object.
 	 */
 	public function render_meta_box( $post ) {
-		wp_nonce_field( 'ppq_lifterlms_meta_box', 'ppq_lifterlms_nonce' );
+		wp_nonce_field( 'pressprimer_quiz_lifterlms_meta_box', 'pressprimer_quiz_lifterlms_nonce' );
 
 		$quiz_id      = get_post_meta( $post->ID, self::META_KEY_QUIZ_ID, true );
 		$require_pass = get_post_meta( $post->ID, self::META_KEY_REQUIRE_PASS, true );
@@ -174,9 +177,47 @@ class PressPrimer_Quiz_LifterLMS {
 				<?php esc_html_e( 'When enabled, students must pass this quiz to mark the lesson complete.', 'pressprimer-quiz' ); ?>
 			</p>
 		</div>
+		<?php
+		$this->enqueue_meta_box_assets();
+	}
 
-		<?php // Inline styles/scripts required: Meta box output with dynamic nonces that cannot be enqueued. ?>
-		<style>
+	/**
+	 * Enqueue meta box assets (styles and scripts)
+	 *
+	 * @since 1.0.0
+	 */
+	private function enqueue_meta_box_assets() {
+		// Ensure admin scripts are enqueued (they may not be on LMS post type edit screens).
+		wp_enqueue_style(
+			'ppq-admin',
+			PRESSPRIMER_QUIZ_PLUGIN_URL . 'assets/css/admin.css',
+			[],
+			PRESSPRIMER_QUIZ_VERSION
+		);
+
+		wp_enqueue_script(
+			'ppq-admin',
+			PRESSPRIMER_QUIZ_PLUGIN_URL . 'assets/js/admin.js',
+			[ 'jquery' ],
+			PRESSPRIMER_QUIZ_VERSION,
+			true
+		);
+
+		// Localize script with nonces and translatable strings.
+		wp_localize_script(
+			'ppq-admin',
+			'ppqLifterLMSMetaBox',
+			[
+				'nonce'   => wp_create_nonce( 'pressprimer_quiz_search_quizzes_lifterlms' ),
+				'strings' => [
+					'noQuizzesFound' => __( 'No quizzes found', 'pressprimer-quiz' ),
+					'removeQuiz'     => __( 'Remove quiz', 'pressprimer-quiz' ),
+				],
+			]
+		);
+
+		// Inline CSS for meta box styling.
+		$inline_css = '
 			.ppq-lifterlms-metabox .ppq-quiz-selector {
 				position: relative;
 				display: flex;
@@ -237,10 +278,13 @@ class PressPrimer_Quiz_LifterLMS {
 				font-weight: 600;
 				margin-right: 4px;
 			}
-		</style>
+		';
+		wp_add_inline_style( 'ppq-admin', $inline_css );
 
-		<script>
+		// Inline JavaScript for meta box functionality.
+		$inline_script = <<<'JS'
 		jQuery(document).ready(function($) {
+			var config = window.ppqLifterLMSMetaBox || {};
 			var searchTimeout;
 			var $search = $('#ppq_lifterlms_quiz_search');
 			var $results = $('#ppq_lifterlms_quiz_results');
@@ -264,8 +308,8 @@ class PressPrimer_Quiz_LifterLMS {
 					url: ajaxurl,
 					type: 'POST',
 					data: {
-						action: 'ppq_search_quizzes_lifterlms',
-						nonce: '<?php echo esc_js( wp_create_nonce( 'ppq_search_quizzes_lifterlms' ) ); ?>',
+						action: 'pressprimer_quiz_search_quizzes_lifterlms',
+						nonce: config.nonce,
 						recent: 1
 					},
 					success: function(response) {
@@ -297,8 +341,8 @@ class PressPrimer_Quiz_LifterLMS {
 						url: ajaxurl,
 						type: 'POST',
 						data: {
-							action: 'ppq_search_quizzes_lifterlms',
-							nonce: '<?php echo esc_js( wp_create_nonce( 'ppq_search_quizzes_lifterlms' ) ); ?>',
+							action: 'pressprimer_quiz_search_quizzes_lifterlms',
+							nonce: config.nonce,
 							search: query
 						},
 						success: function(response) {
@@ -309,7 +353,7 @@ class PressPrimer_Quiz_LifterLMS {
 								});
 								$results.html(html).show();
 							} else {
-								$results.html('<div class="ppq-no-results"><?php echo esc_js( __( 'No quizzes found', 'pressprimer-quiz' ) ); ?></div>').show();
+								$results.html('<div class="ppq-no-results">' + config.strings.noQuizzesFound + '</div>').show();
 							}
 						}
 					});
@@ -329,7 +373,7 @@ class PressPrimer_Quiz_LifterLMS {
 
 				// Add remove button if not present
 				if (!$removeBtn.length) {
-					$search.after('<button type="button" class="ppq-remove-quiz button-link" aria-label="<?php echo esc_attr__( 'Remove quiz', 'pressprimer-quiz' ); ?>" title="<?php echo esc_attr__( 'Remove quiz', 'pressprimer-quiz' ); ?>"><span class="dashicons dashicons-no-alt"></span></button>');
+					$search.after('<button type="button" class="ppq-remove-quiz button-link" aria-label="' + config.strings.removeQuiz + '" title="' + config.strings.removeQuiz + '"><span class="dashicons dashicons-no-alt"></span></button>');
 					$removeBtn = $('.ppq-remove-quiz');
 				}
 			});
@@ -349,8 +393,8 @@ class PressPrimer_Quiz_LifterLMS {
 				}
 			});
 		});
-		</script>
-		<?php
+JS;
+		wp_add_inline_script( 'ppq-admin', $inline_script );
 	}
 
 	/**
@@ -363,7 +407,7 @@ class PressPrimer_Quiz_LifterLMS {
 	 */
 	public function save_meta_box( $post_id, $post ) {
 		// Verify nonce.
-		if ( ! isset( $_POST['ppq_lifterlms_nonce'] ) || ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['ppq_lifterlms_nonce'] ) ), 'ppq_lifterlms_meta_box' ) ) {
+		if ( ! isset( $_POST['pressprimer_quiz_lifterlms_nonce'] ) || ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['pressprimer_quiz_lifterlms_nonce'] ) ), 'pressprimer_quiz_lifterlms_meta_box' ) ) {
 			return;
 		}
 
@@ -423,15 +467,15 @@ class PressPrimer_Quiz_LifterLMS {
 
 		wp_enqueue_script(
 			'ppq-lifterlms-course-builder',
-			PPQ_PLUGIN_URL . 'assets/js/lifterlms-course-builder.js',
+			PRESSPRIMER_QUIZ_PLUGIN_URL . 'assets/js/lifterlms-course-builder.js',
 			[ 'llms-builder' ],
-			PPQ_VERSION,
+			PRESSPRIMER_QUIZ_VERSION,
 			true
 		);
 
 		wp_localize_script(
 			'ppq-lifterlms-course-builder',
-			'ppqLifterLMS',
+			'pressprimerQuizLifterLMS',
 			[
 				'courseId'      => $course_id,
 				'lessonQuizzes' => $lesson_quizzes,
@@ -440,9 +484,9 @@ class PressPrimer_Quiz_LifterLMS {
 
 		wp_enqueue_style(
 			'ppq-lifterlms-course-builder',
-			PPQ_PLUGIN_URL . 'assets/css/lifterlms-course-builder.css',
+			PRESSPRIMER_QUIZ_PLUGIN_URL . 'assets/css/lifterlms-course-builder.css',
 			[],
-			PPQ_VERSION
+			PRESSPRIMER_QUIZ_VERSION
 		);
 	}
 
@@ -518,7 +562,7 @@ class PressPrimer_Quiz_LifterLMS {
 
 		// Render the quiz using shortcode.
 		$quiz_shortcode = sprintf(
-			'[ppq_quiz id="%d" context="%s"]',
+			'[pressprimer_quiz id="%d" context="%s"]',
 			absint( $quiz_id ),
 			esc_attr( base64_encode( wp_json_encode( $context_data ) ) )
 		);
@@ -585,7 +629,7 @@ class PressPrimer_Quiz_LifterLMS {
 
 		// Render the quiz using shortcode.
 		$quiz_shortcode = sprintf(
-			'[ppq_quiz id="%d" context="%s"]',
+			'[pressprimer_quiz id="%d" context="%s"]',
 			absint( $quiz_id ),
 			esc_attr( base64_encode( wp_json_encode( $context_data ) ) )
 		);
@@ -662,7 +706,7 @@ class PressPrimer_Quiz_LifterLMS {
 
 		// Render the quiz using shortcode.
 		$quiz_shortcode = sprintf(
-			'[ppq_quiz id="%d" context="%s"]',
+			'[pressprimer_quiz id="%d" context="%s"]',
 			absint( $quiz_id ),
 			esc_attr( base64_encode( wp_json_encode( $context_data ) ) )
 		);
@@ -703,6 +747,37 @@ class PressPrimer_Quiz_LifterLMS {
 		}
 
 		return $is_complete;
+	}
+
+	/**
+	 * Maybe hide the Mark Complete button
+	 *
+	 * Hides the button when a PPQ quiz is attached and "Require passing score" is enabled.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param bool        $show   Whether to show the button.
+	 * @param LLMS_Lesson $lesson The lesson object.
+	 * @return bool Whether to show the button.
+	 */
+	public function maybe_hide_complete_button( $show, $lesson ) {
+		if ( ! $show || ! $lesson ) {
+			return $show;
+		}
+
+		$lesson_id = $lesson->get( 'id' );
+		$quiz_id   = get_post_meta( $lesson_id, self::META_KEY_QUIZ_ID, true );
+
+		if ( $quiz_id ) {
+			// Only hide the button if "Require passing score" is enabled.
+			$require_pass = get_post_meta( $lesson_id, self::META_KEY_REQUIRE_PASS, true );
+
+			if ( '1' === $require_pass ) {
+				return false;
+			}
+		}
+
+		return $show;
 	}
 
 	/**
@@ -999,7 +1074,7 @@ class PressPrimer_Quiz_LifterLMS {
 	 * @since 1.0.0
 	 */
 	public function ajax_search_quizzes() {
-		check_ajax_referer( 'ppq_search_quizzes_lifterlms', 'nonce' );
+		check_ajax_referer( 'pressprimer_quiz_search_quizzes_lifterlms', 'nonce' );
 
 		if ( ! current_user_can( 'edit_posts' ) ) {
 			wp_send_json_error( [ 'message' => __( 'Permission denied.', 'pressprimer-quiz' ) ] );

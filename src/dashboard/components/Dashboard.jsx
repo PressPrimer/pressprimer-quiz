@@ -67,7 +67,7 @@ const Dashboard = ({ initialData = {} }) => {
 	 */
 	const handleLaunchTour = useCallback(async () => {
 		// Reset onboarding state via AJAX to start from step 1
-		const onboardingData = window.ppqOnboardingData || {};
+		const onboardingData = window.pressprimerQuizOnboardingData || {};
 
 		try {
 			// Call reset action first
@@ -92,7 +92,7 @@ const Dashboard = ({ initialData = {} }) => {
 	}, []);
 
 	// Get the plugin URL from localized data
-	const pluginUrl = window.ppqDashboardData?.pluginUrl || '';
+	const pluginUrl = window.pressprimerQuizDashboardData?.pluginUrl || '';
 
 	return (
 		<div className="ppq-dashboard-container">

@@ -14,7 +14,7 @@ document.addEventListener('DOMContentLoaded', () => {
 	const root = document.getElementById('ppq-dashboard-root');
 
 	if (root) {
-		const dashboardData = window.ppqDashboardData || {};
+		const dashboardData = window.pressprimerQuizDashboardData || {};
 
 		render(
 			<Dashboard initialData={dashboardData} />,

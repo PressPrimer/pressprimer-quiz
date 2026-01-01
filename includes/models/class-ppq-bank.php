@@ -407,12 +407,19 @@ class PressPrimer_Quiz_Bank extends PressPrimer_Quiz_Model {
 		$order_by  = sanitize_sql_orderby( "{$args['order_by']} {$args['order']}" );
 		$order_sql = $order_by ? "ORDER BY {$order_by}" : '';
 
-		// Build LIMIT
+		// Build LIMIT with placeholders
 		$limit_sql = '';
 		if ( null !== $args['limit'] ) {
-			$limit     = absint( $args['limit'] );
-			$offset    = absint( $args['offset'] );
-			$limit_sql = $offset > 0 ? "LIMIT {$offset}, {$limit}" : "LIMIT {$limit}";
+			$limit  = absint( $args['limit'] );
+			$offset = absint( $args['offset'] );
+			if ( $offset > 0 ) {
+				$limit_sql      = 'LIMIT %d, %d';
+				$where_values[] = $offset;
+				$where_values[] = $limit;
+			} else {
+				$limit_sql      = 'LIMIT %d';
+				$where_values[] = $limit;
+			}
 		}
 
 		// Build final query
@@ -426,8 +433,8 @@ class PressPrimer_Quiz_Bank extends PressPrimer_Quiz_Model {
 			{$limit_sql}
 		";
 
-		// Prepare and execute
-		$query = $wpdb->prepare( $query, $where_values ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
+		// Prepare and execute - always prepare since we always have where_values
+		$query = $wpdb->prepare( $query, $where_values ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- Query built with placeholders
 
 		$rows = $wpdb->get_results( $query ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
 
@@ -677,12 +684,12 @@ class PressPrimer_Quiz_Bank extends PressPrimer_Quiz_Model {
 		}
 
 		// Admins can access all banks
-		if ( user_can( $user_id, 'ppq_manage_all' ) ) {
+		if ( user_can( $user_id, 'pressprimer_quiz_manage_all' ) ) {
 			return true;
 		}
 
 		// Shared banks can be accessed by other teachers (future feature)
-		if ( 'shared' === $this->visibility && user_can( $user_id, 'ppq_manage_own' ) ) {
+		if ( 'shared' === $this->visibility && user_can( $user_id, 'pressprimer_quiz_manage_own' ) ) {
 			return true;
 		}
 

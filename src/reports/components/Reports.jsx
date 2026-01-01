@@ -67,7 +67,7 @@ const Reports = ({ initialData = {} }) => {
 			icon: <TrophyOutlined />,
 			color: '#faad14',
 			available: true,
-			href: 'admin.php?page=ppq-reports&report=quiz-performance',
+			href: 'admin.php?page=pressprimer-quiz-reports&report=quiz-performance',
 		},
 		{
 			key: 'recent-attempts',
@@ -76,7 +76,7 @@ const Reports = ({ initialData = {} }) => {
 			icon: <ClockCircleOutlined />,
 			color: '#1890ff',
 			available: true,
-			href: 'admin.php?page=ppq-reports&report=recent-attempts',
+			href: 'admin.php?page=pressprimer-quiz-reports&report=recent-attempts',
 		},
 		{
 			key: 'coming-soon',
@@ -90,7 +90,7 @@ const Reports = ({ initialData = {} }) => {
 	];
 
 	// Get the plugin URL from localized data
-	const pluginUrl = window.ppqReportsData?.pluginUrl || '';
+	const pluginUrl = window.pressprimerQuizReportsData?.pluginUrl || '';
 
 	return (
 		<div className="ppq-reports-container">

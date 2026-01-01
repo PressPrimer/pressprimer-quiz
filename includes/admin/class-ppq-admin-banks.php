@@ -80,7 +80,7 @@ class PressPrimer_Quiz_Admin_Banks {
 			[
 				'label'   => __( 'Banks per page', 'pressprimer-quiz' ),
 				'default' => 20,
-				'option'  => 'ppq_banks_per_page',
+				'option'  => 'pressprimer_quiz_banks_per_page',
 			]
 		);
 
@@ -118,7 +118,7 @@ class PressPrimer_Quiz_Admin_Banks {
 	 * @return mixed Screen option value.
 	 */
 	public function set_screen_option( $status, $option, $value ) {
-		if ( 'ppq_banks_per_page' === $option ) {
+		if ( 'pressprimer_quiz_banks_per_page' === $option ) {
 			return $value;
 		}
 
@@ -134,7 +134,7 @@ class PressPrimer_Quiz_Admin_Banks {
 	 */
 	public function render() {
 		// Check capability
-		if ( ! current_user_can( 'ppq_manage_own' ) ) {
+		if ( ! current_user_can( 'pressprimer_quiz_manage_own' ) ) {
 			wp_die(
 				esc_html__( 'You do not have permission to access this page.', 'pressprimer-quiz' ),
 				esc_html__( 'Permission Denied', 'pressprimer-quiz' ),
@@ -178,7 +178,7 @@ class PressPrimer_Quiz_Admin_Banks {
 		?>
 		<div class="wrap">
 			<h1 class="wp-heading-inline"><?php esc_html_e( 'Question Banks', 'pressprimer-quiz' ); ?></h1>
-			<a href="<?php echo esc_url( admin_url( 'admin.php?page=ppq-banks&action=new' ) ); ?>" class="page-title-action">
+			<a href="<?php echo esc_url( admin_url( 'admin.php?page=pressprimer-quiz-banks&action=new' ) ); ?>" class="page-title-action">
 				<?php esc_html_e( 'Add New', 'pressprimer-quiz' ); ?>
 			</a>
 			<hr class="wp-header-end">
@@ -186,7 +186,7 @@ class PressPrimer_Quiz_Admin_Banks {
 			<form method="get">
 				<input type="hidden" name="page" value="ppq-banks">
 				<?php
-				$this->list_table->search_box( __( 'Search Banks', 'pressprimer-quiz' ), 'ppq-banks' );
+				$this->list_table->search_box( __( 'Search Banks', 'pressprimer-quiz' ), 'pressprimer-quiz-banks' );
 				$this->list_table->display();
 				?>
 			</form>
@@ -218,7 +218,7 @@ class PressPrimer_Quiz_Admin_Banks {
 			}
 
 			// Check ownership
-			if ( ! current_user_can( 'ppq_manage_all' ) && absint( $bank->owner_id ) !== get_current_user_id() ) {
+			if ( ! current_user_can( 'pressprimer_quiz_manage_all' ) && absint( $bank->owner_id ) !== get_current_user_id() ) {
 				wp_die(
 					esc_html__( 'You do not have permission to edit this bank.', 'pressprimer-quiz' ),
 					esc_html__( 'Permission Denied', 'pressprimer-quiz' ),
@@ -247,7 +247,7 @@ class PressPrimer_Quiz_Admin_Banks {
 		// Enqueue Ant Design CSS
 		wp_enqueue_style(
 			'antd',
-			PPQ_PLUGIN_URL . 'assets/css/vendor/antd-reset.css',
+			PRESSPRIMER_QUIZ_PLUGIN_URL . 'assets/css/vendor/antd-reset.css',
 			[],
 			'5.12.0'
 		);
@@ -255,17 +255,17 @@ class PressPrimer_Quiz_Admin_Banks {
 		// Enqueue the built React bundle
 		wp_enqueue_script(
 			'ppq-bank-editor',
-			PPQ_PLUGIN_URL . 'build/bank-editor.js',
+			PRESSPRIMER_QUIZ_PLUGIN_URL . 'build/bank-editor.js',
 			[ 'wp-element', 'wp-i18n', 'wp-api-fetch' ],
-			PPQ_VERSION,
+			PRESSPRIMER_QUIZ_VERSION,
 			true
 		);
 
 		wp_enqueue_style(
 			'ppq-bank-editor',
-			PPQ_PLUGIN_URL . 'build/style-bank-editor.css',
+			PRESSPRIMER_QUIZ_PLUGIN_URL . 'build/style-bank-editor.css',
 			[],
-			PPQ_VERSION
+			PRESSPRIMER_QUIZ_VERSION
 		);
 
 		// Prepare bank data for JavaScript
@@ -291,16 +291,413 @@ class PressPrimer_Quiz_Admin_Banks {
 
 		// Add user capabilities
 		$bank_data['userCan'] = [
-			'manage_all' => current_user_can( 'ppq_manage_all' ),
-			'manage_own' => current_user_can( 'ppq_manage_own' ),
+			'manage_all' => current_user_can( 'pressprimer_quiz_manage_all' ),
+			'manage_own' => current_user_can( 'pressprimer_quiz_manage_own' ),
 		];
 
 		// Localize script with data
 		wp_localize_script(
 			'ppq-bank-editor',
-			'ppqBankData',
+			'pressprimerQuizBankData',
 			$bank_data
 		);
+	}
+
+	/**
+	 * Enqueue bank detail page scripts
+	 *
+	 * Uses wp_add_inline_script to properly enqueue JavaScript for the bank detail page.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param int $bank_id Bank ID.
+	 */
+	private function enqueue_bank_detail_scripts( $bank_id ) {
+		// Localize dynamic data for the inline script.
+		wp_localize_script(
+			'ppq-admin',
+			'ppqBankDetail',
+			[
+				'bankId'  => absint( $bank_id ),
+				'nonces'  => [
+					'searchQuestions'    => wp_create_nonce( 'pressprimer_quiz_search_questions' ),
+					'getRecentQuestions' => wp_create_nonce( 'pressprimer_quiz_get_recent_questions' ),
+				],
+				'strings' => [
+					'items'                 => __( 'items', 'pressprimer-quiz' ),
+					'of'                    => __( 'of', 'pressprimer-quiz' ),
+					'firstPage'             => __( 'First page', 'pressprimer-quiz' ),
+					'previousPage'          => __( 'Previous page', 'pressprimer-quiz' ),
+					'nextPage'              => __( 'Next page', 'pressprimer-quiz' ),
+					'lastPage'              => __( 'Last page', 'pressprimer-quiz' ),
+					'select'                => __( 'Select', 'pressprimer-quiz' ),
+					'question'              => __( 'Question', 'pressprimer-quiz' ),
+					'type'                  => __( 'Type', 'pressprimer-quiz' ),
+					'difficulty'            => __( 'Difficulty', 'pressprimer-quiz' ),
+					'category'              => __( 'Category', 'pressprimer-quiz' ),
+					'noQuestionsFound'      => __( 'No questions found matching your search.', 'pressprimer-quiz' ),
+					'noQuestionsYet'        => __( 'No questions found. Create some questions first!', 'pressprimer-quiz' ),
+					'errorSearching'        => __( 'Error searching questions. Please try again.', 'pressprimer-quiz' ),
+					'errorLoading'          => __( 'Error loading questions. Please refresh the page.', 'pressprimer-quiz' ),
+					'adding'                => __( 'Adding...', 'pressprimer-quiz' ),
+					'removing'              => __( 'Removing...', 'pressprimer-quiz' ),
+					'removeFromBank'        => __( 'Remove from Bank', 'pressprimer-quiz' ),
+					'noQuestionsInBank'     => __( 'No questions in this bank yet.', 'pressprimer-quiz' ),
+					'errorRemovingQuestion' => __( 'Error removing question.', 'pressprimer-quiz' ),
+					'errorRemovingRetry'    => __( 'Error removing question. Please try again.', 'pressprimer-quiz' ),
+				],
+			]
+		);
+
+		// The inline script that uses the localized data.
+		$inline_script = <<<'JS'
+jQuery(document).ready(function($) {
+	var searchTimeout;
+	var recentSelectedQuestions = [];
+	var searchSelectedQuestions = [];
+	var currentRecentPage = 1;
+	var currentSearchPage = 1;
+	var config = window.ppqBankDetail || {};
+	var strings = config.strings || {};
+
+	// Helper function to build pagination HTML
+	function buildPaginationHtml(currentPage, totalPages, totalItems, navClass) {
+		var pagHtml = '<div class="tablenav-pages">';
+		pagHtml += '<span class="displaying-num">' + totalItems + ' ' + strings.items + '</span>';
+		pagHtml += '<span class="pagination-links">';
+
+		// First page
+		if (currentPage > 1) {
+			pagHtml += '<a class="button ' + navClass + '" data-page="1" title="' + strings.firstPage + '">&laquo;</a> ';
+			pagHtml += '<a class="button ' + navClass + '" data-page="' + (currentPage - 1) + '" title="' + strings.previousPage + '">&lsaquo;</a> ';
+		} else {
+			pagHtml += '<span class="button disabled">&laquo;</span> ';
+			pagHtml += '<span class="button disabled">&lsaquo;</span> ';
+		}
+
+		pagHtml += '<span class="paging-input">' + currentPage + ' ' + strings.of + ' ' + totalPages + '</span> ';
+
+		// Last page
+		if (currentPage < totalPages) {
+			pagHtml += '<a class="button ' + navClass + '" data-page="' + (currentPage + 1) + '" title="' + strings.nextPage + '">&rsaquo;</a> ';
+			pagHtml += '<a class="button ' + navClass + '" data-page="' + totalPages + '" title="' + strings.lastPage + '">&raquo;</a>';
+		} else {
+			pagHtml += '<span class="button disabled">&rsaquo;</span> ';
+			pagHtml += '<span class="button disabled">&raquo;</span>';
+		}
+
+		pagHtml += '</span></div>';
+		return pagHtml;
+	}
+
+	// Helper function to build table HTML
+	function buildQuestionTableHtml(questions, selectedList, checkboxClass) {
+		var html = '<table class="widefat" style="margin: 0;">';
+		html += '<thead><tr>';
+		html += '<th style="width: 40px; text-align: center;">' + strings.select + '</th>';
+		html += '<th>' + strings.question + '</th>';
+		html += '<th style="width: 150px;">' + strings.type + '</th>';
+		html += '<th style="width: 120px;">' + strings.difficulty + '</th>';
+		html += '<th style="width: 150px;">' + strings.category + '</th>';
+		html += '</tr></thead><tbody>';
+
+		$.each(questions, function(i, q) {
+			var checked = selectedList.indexOf(q.id) !== -1 ? ' checked' : '';
+			html += '<tr>';
+			html += '<td style="text-align: center;"><input type="checkbox" value="' + q.id + '" class="' + checkboxClass + '"' + checked + '></td>';
+			html += '<td><strong>' + q.stem_preview + '</strong></td>';
+			html += '<td>' + q.type_label + '</td>';
+			html += '<td>' + q.difficulty_label + '</td>';
+			html += '<td>' + q.category + '</td>';
+			html += '</tr>';
+		});
+
+		html += '</tbody></table>';
+		return html;
+	}
+
+	// Function to perform question search with filters and pagination
+	function searchQuestions(page) {
+		currentSearchPage = page || 1;
+		var searchTerm = $('#question_search').val();
+		var type = $('#filter_question_type').val();
+		var difficulty = $('#filter_question_difficulty').val();
+		var categoryId = $('#filter_question_category').val();
+		var tagId = $('#filter_question_tag').val();
+
+		// AJAX search for questions
+		$.ajax({
+			url: ajaxurl,
+			type: 'POST',
+			data: {
+				action: 'pressprimer_quiz_search_questions',
+				nonce: config.nonces.searchQuestions,
+				search: searchTerm,
+				type: type,
+				difficulty: difficulty,
+				category_id: categoryId,
+				tag_id: tagId,
+				bank_id: config.bankId,
+				page: currentSearchPage
+			},
+			success: function(response) {
+				if (response.success && response.data.questions) {
+					var data = response.data;
+
+					if (data.questions.length === 0) {
+						$('#ppq-question-search-results').html('<p style="text-align: center; color: #646970; padding: 20px;"><em>' + strings.noQuestionsFound + '</em></p>');
+						$('#ppq-search-results-pagination').hide();
+						$('.ppq-add-search-selected').prop('disabled', true);
+					} else {
+						var html = buildQuestionTableHtml(data.questions, searchSelectedQuestions, 'ppq-search-checkbox');
+						$('#ppq-question-search-results').html(html);
+
+						// Build pagination
+						if (data.total_pages > 1) {
+							$('#ppq-search-results-pagination').html(buildPaginationHtml(currentSearchPage, data.total_pages, data.total_items, 'ppq-search-page-nav')).show();
+						} else {
+							$('#ppq-search-results-pagination').hide();
+						}
+
+						// Update button state
+						updateSearchButtonState();
+					}
+					$('#ppq-question-search-results-container').show();
+				}
+			},
+			error: function(xhr, status, error) {
+				console.error('Search AJAX error:', { status: status, error: error });
+				$('#ppq-question-search-results').html('<p style="color: #d63638; text-align: center;">' + strings.errorSearching + '</p>');
+				$('#ppq-question-search-results-container').show();
+			}
+		});
+	}
+
+	// Function to load recent questions
+	function loadRecentQuestions(page) {
+		currentRecentPage = page || 1;
+
+		$.ajax({
+			url: ajaxurl,
+			type: 'POST',
+			data: {
+				action: 'pressprimer_quiz_get_recent_questions',
+				nonce: config.nonces.getRecentQuestions,
+				bank_id: config.bankId,
+				page: currentRecentPage
+			},
+			success: function(response) {
+				if (response.success && response.data.questions) {
+					var data = response.data;
+
+					if (data.questions.length === 0) {
+						$('#ppq-recent-questions-list').html('<p style="text-align: center; color: #646970; padding: 20px;"><em>' + strings.noQuestionsYet + '</em></p>');
+						$('#ppq-recent-questions-pagination').hide();
+						$('.ppq-add-recent-selected').prop('disabled', true);
+					} else {
+						var html = buildQuestionTableHtml(data.questions, recentSelectedQuestions, 'ppq-recent-checkbox');
+						$('#ppq-recent-questions-list').html(html);
+
+						// Build pagination
+						if (data.total_pages > 1) {
+							$('#ppq-recent-questions-pagination').html(buildPaginationHtml(currentRecentPage, data.total_pages, data.total_items, 'ppq-recent-page-nav')).show();
+						} else {
+							$('#ppq-recent-questions-pagination').hide();
+						}
+
+						// Update button state
+						updateRecentButtonState();
+					}
+				}
+			},
+			error: function(xhr, status, error) {
+				console.error('Recent questions AJAX error:', { status: status, error: error });
+				$('#ppq-recent-questions-list').html('<p style="color: #d63638; text-align: center;">' + strings.errorLoading + '</p>');
+			}
+		});
+	}
+
+	// Update button states
+	function updateRecentButtonState() {
+		$('.ppq-add-recent-selected').prop('disabled', recentSelectedQuestions.length === 0);
+	}
+
+	function updateSearchButtonState() {
+		$('.ppq-add-search-selected').prop('disabled', searchSelectedQuestions.length === 0);
+	}
+
+	// Load recent questions on page load
+	loadRecentQuestions(1);
+
+	// Handle recent questions pagination clicks
+	$(document).on('click', '.ppq-recent-page-nav', function(e) {
+		e.preventDefault();
+		loadRecentQuestions(parseInt($(this).data('page')));
+	});
+
+	// Handle search results pagination clicks
+	$(document).on('click', '.ppq-search-page-nav', function(e) {
+		e.preventDefault();
+		searchQuestions(parseInt($(this).data('page')));
+	});
+
+	// Search on keyup with debounce
+	$('#question_search').on('keyup', function() {
+		var searchTerm = $(this).val();
+		clearTimeout(searchTimeout);
+
+		if (searchTerm.length < 2) {
+			$('#ppq-question-search-results-container').hide();
+			return;
+		}
+
+		searchTimeout = setTimeout(function() {
+			searchQuestions(1);
+		}, 300);
+	});
+
+	// Search button click
+	$('#ppq-search-questions').on('click', function(e) {
+		e.preventDefault();
+		searchQuestions(1);
+	});
+
+	// Reset filters button click
+	$('#ppq-reset-filters').on('click', function(e) {
+		e.preventDefault();
+		$('#question_search').val('');
+		$('#filter_question_type').val('');
+		$('#filter_question_difficulty').val('');
+		$('#filter_question_category').val('');
+		$('#filter_question_tag').val('');
+		$('#ppq-question-search-results-container').hide();
+		searchSelectedQuestions = [];
+		updateSearchButtonState();
+	});
+
+	// Also trigger search when filters change
+	$('.ppq-question-filter').on('change', function() {
+		if ($('#question_search').val().length >= 2 ||
+			$('#filter_question_type').val() ||
+			$('#filter_question_difficulty').val() ||
+			$('#filter_question_category').val() ||
+			$('#filter_question_tag').val()) {
+			searchQuestions(1);
+		}
+	});
+
+	// Handle recent questions checkbox changes
+	$(document).on('change', '.ppq-recent-checkbox', function() {
+		var questionId = parseInt($(this).val());
+		if ($(this).is(':checked')) {
+			if (recentSelectedQuestions.indexOf(questionId) === -1) {
+				recentSelectedQuestions.push(questionId);
+			}
+		} else {
+			recentSelectedQuestions = recentSelectedQuestions.filter(function(id) {
+				return id !== questionId;
+			});
+		}
+		updateRecentButtonState();
+	});
+
+	// Handle search results checkbox changes
+	$(document).on('change', '.ppq-search-checkbox', function() {
+		var questionId = parseInt($(this).val());
+		if ($(this).is(':checked')) {
+			if (searchSelectedQuestions.indexOf(questionId) === -1) {
+				searchSelectedQuestions.push(questionId);
+			}
+		} else {
+			searchSelectedQuestions = searchSelectedQuestions.filter(function(id) {
+				return id !== questionId;
+			});
+		}
+		updateSearchButtonState();
+	});
+
+	// Handle Add Selected from recent questions
+	$(document).on('click', '.ppq-add-recent-selected', function(e) {
+		e.preventDefault();
+		if (recentSelectedQuestions.length === 0) return;
+		submitSelectedQuestions(recentSelectedQuestions, $(this));
+	});
+
+	// Handle Add Selected from search results
+	$(document).on('click', '.ppq-add-search-selected', function(e) {
+		e.preventDefault();
+		if (searchSelectedQuestions.length === 0) return;
+		submitSelectedQuestions(searchSelectedQuestions, $(this));
+	});
+
+	// Function to submit selected questions via form
+	function submitSelectedQuestions(questionIds, $button) {
+		var $form = $('#ppq-add-question-form');
+
+		// Remove any existing hidden inputs
+		$form.find('input[name="question_ids[]"]').remove();
+
+		// Add hidden inputs for selected questions
+		$.each(questionIds, function(i, id) {
+			$form.append('<input type="hidden" name="question_ids[]" value="' + id + '">');
+		});
+
+		// Disable button and submit
+		$button.prop('disabled', true).text(strings.adding);
+		$form.submit();
+	}
+
+	// Remove question from bank via AJAX
+	$(document).on('click', '.ppq-remove-question-btn', function() {
+		var $btn = $(this);
+		var $row = $btn.closest('tr');
+		var bankId = $btn.data('bank-id');
+		var questionId = $btn.data('question-id');
+
+		// Disable button during request
+		$btn.prop('disabled', true).text(strings.removing);
+
+		$.ajax({
+			url: ajaxurl,
+			type: 'POST',
+			data: {
+				action: 'pressprimer_quiz_remove_question_from_bank',
+				nonce: window.ppqAdmin.nonce,
+				bank_id: bankId,
+				question_id: questionId
+			},
+			success: function(response) {
+				if (response.success) {
+					// Remove the row with a fade effect
+					$row.fadeOut(300, function() {
+						$(this).remove();
+
+						// Update the question count display
+						var $countDisplay = $('.ppq-form-section').first().find('div[style*="font-size: 48px"]');
+						if ($countDisplay.length && response.data.new_count !== undefined) {
+							$countDisplay.text(response.data.new_count);
+						}
+
+						// Check if table is now empty
+						if ($('.ppq-table tbody tr').length === 0) {
+							$('.ppq-table').replaceWith('<p><em>' + strings.noQuestionsInBank + '</em></p>');
+						}
+					});
+				} else {
+					$btn.prop('disabled', false).text(strings.removeFromBank);
+					alert(response.data.message || strings.errorRemovingQuestion);
+				}
+			},
+			error: function() {
+				$btn.prop('disabled', false).text(strings.removeFromBank);
+				alert(strings.errorRemovingRetry);
+			}
+		});
+	});
+});
+JS;
+
+		wp_add_inline_script( 'ppq-admin', $inline_script );
 	}
 
 	/**
@@ -311,6 +708,8 @@ class PressPrimer_Quiz_Admin_Banks {
 	 * @param int $bank_id Bank ID.
 	 */
 	private function render_detail( $bank_id ) {
+		// Enqueue scripts for this page.
+		$this->enqueue_bank_detail_scripts( $bank_id );
 		if ( ! $bank_id ) {
 			wp_die(
 				esc_html__( 'Invalid bank ID.', 'pressprimer-quiz' ),
@@ -366,7 +765,7 @@ class PressPrimer_Quiz_Admin_Banks {
 		<div class="wrap">
 			<h1>
 				<?php echo esc_html( $bank->name ); ?>
-				<a href="<?php echo esc_url( admin_url( 'admin.php?page=ppq-banks&action=edit&bank_id=' . $bank_id ) ); ?>" class="page-title-action">
+				<a href="<?php echo esc_url( admin_url( 'admin.php?page=pressprimer-quiz-banks&action=edit&bank_id=' . $bank_id ) ); ?>" class="page-title-action">
 					<?php esc_html_e( 'Edit Bank', 'pressprimer-quiz' ); ?>
 				</a>
 			</h1>
@@ -432,7 +831,7 @@ class PressPrimer_Quiz_Admin_Banks {
 					<h3><?php esc_html_e( 'Add Existing Questions', 'pressprimer-quiz' ); ?></h3>
 
 				<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" class="ppq-add-question-form" id="ppq-add-question-form">
-					<?php wp_nonce_field( 'ppq_add_question_to_bank', 'ppq_add_question_nonce' ); ?>
+					<?php wp_nonce_field( 'pressprimer_quiz_add_question_to_bank', 'pressprimer_quiz_add_question_nonce' ); ?>
 					<input type="hidden" name="action" value="ppq_add_question_to_bank">
 					<input type="hidden" name="bank_id" value="<?php echo esc_attr( $bank_id ); ?>">
 
@@ -618,7 +1017,7 @@ class PressPrimer_Quiz_Admin_Banks {
 					<?php // phpcs:enable WordPress.Security.NonceVerification.Recommended ?>
 
 					<button type="submit" class="button"><?php esc_html_e( 'Filter', 'pressprimer-quiz' ); ?></button>
-					<a href="<?php echo esc_url( admin_url( 'admin.php?page=ppq-banks&action=view&bank_id=' . $bank_id ) ); ?>#questions-in-bank" class="button">
+					<a href="<?php echo esc_url( admin_url( 'admin.php?page=pressprimer-quiz-banks&action=view&bank_id=' . $bank_id ) ); ?>#questions-in-bank" class="button">
 						<?php esc_html_e( 'Clear Filters', 'pressprimer-quiz' ); ?>
 					</a>
 				</form>
@@ -678,7 +1077,7 @@ class PressPrimer_Quiz_Admin_Banks {
 										<strong><?php echo esc_html( $stem_preview ); ?></strong>
 										<div class="row-actions">
 											<span class="edit">
-												<a href="<?php echo esc_url( admin_url( 'admin.php?page=ppq-questions&action=edit&question=' . $question->id ) ); ?>">
+												<a href="<?php echo esc_url( admin_url( 'admin.php?page=pressprimer-quiz-questions&action=edit&question=' . $question->id ) ); ?>">
 													<?php esc_html_e( 'Edit', 'pressprimer-quiz' ); ?>
 												</a>
 											</span>
@@ -686,7 +1085,7 @@ class PressPrimer_Quiz_Admin_Banks {
 									</td>
 									<td><?php echo esc_html( $type_label ); ?></td>
 									<td><?php echo esc_html( $difficulty_label ); ?></td>
-									<td><?php echo $category_display; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Category names escaped in loop above ?></td>
+									<td><?php echo wp_kses_post( $category_display ); ?></td>
 									<td>
 										<button
 											type="button"
@@ -704,352 +1103,6 @@ class PressPrimer_Quiz_Admin_Banks {
 				<?php endif; ?>
 			</div>
 		</div>
-
-		<?php // Inline script required: Contains dynamic nonces and localized strings for AJAX-driven question browser. ?>
-		<script type="text/javascript">
-		jQuery(document).ready(function($) {
-			var searchTimeout;
-			var recentSelectedQuestions = [];
-			var searchSelectedQuestions = [];
-			var currentRecentPage = 1;
-			var currentSearchPage = 1;
-
-			// Helper function to build pagination HTML
-			function buildPaginationHtml(currentPage, totalPages, totalItems, navClass) {
-				var pagHtml = '<div class="tablenav-pages">';
-				pagHtml += '<span class="displaying-num">' + totalItems + ' <?php esc_html_e( 'items', 'pressprimer-quiz' ); ?></span>';
-				pagHtml += '<span class="pagination-links">';
-
-				// First page
-				if (currentPage > 1) {
-					pagHtml += '<a class="button ' + navClass + '" data-page="1" title="<?php esc_attr_e( 'First page', 'pressprimer-quiz' ); ?>">&laquo;</a> ';
-					pagHtml += '<a class="button ' + navClass + '" data-page="' + (currentPage - 1) + '" title="<?php esc_attr_e( 'Previous page', 'pressprimer-quiz' ); ?>">&lsaquo;</a> ';
-				} else {
-					pagHtml += '<span class="button disabled">&laquo;</span> ';
-					pagHtml += '<span class="button disabled">&lsaquo;</span> ';
-				}
-
-				pagHtml += '<span class="paging-input">' + currentPage + ' <?php esc_html_e( 'of', 'pressprimer-quiz' ); ?> ' + totalPages + '</span> ';
-
-				// Last page
-				if (currentPage < totalPages) {
-					pagHtml += '<a class="button ' + navClass + '" data-page="' + (currentPage + 1) + '" title="<?php esc_attr_e( 'Next page', 'pressprimer-quiz' ); ?>">&rsaquo;</a> ';
-					pagHtml += '<a class="button ' + navClass + '" data-page="' + totalPages + '" title="<?php esc_attr_e( 'Last page', 'pressprimer-quiz' ); ?>">&raquo;</a>';
-				} else {
-					pagHtml += '<span class="button disabled">&rsaquo;</span> ';
-					pagHtml += '<span class="button disabled">&raquo;</span>';
-				}
-
-				pagHtml += '</span></div>';
-				return pagHtml;
-			}
-
-			// Helper function to build table HTML
-			function buildQuestionTableHtml(questions, selectedList, checkboxClass) {
-				var html = '<table class="widefat" style="margin: 0;">';
-				html += '<thead><tr>';
-				html += '<th style="width: 40px; text-align: center;"><?php esc_html_e( 'Select', 'pressprimer-quiz' ); ?></th>';
-				html += '<th><?php esc_html_e( 'Question', 'pressprimer-quiz' ); ?></th>';
-				html += '<th style="width: 150px;"><?php esc_html_e( 'Type', 'pressprimer-quiz' ); ?></th>';
-				html += '<th style="width: 120px;"><?php esc_html_e( 'Difficulty', 'pressprimer-quiz' ); ?></th>';
-				html += '<th style="width: 150px;"><?php esc_html_e( 'Category', 'pressprimer-quiz' ); ?></th>';
-				html += '</tr></thead><tbody>';
-
-				$.each(questions, function(i, q) {
-					var checked = selectedList.indexOf(q.id) !== -1 ? ' checked' : '';
-					html += '<tr>';
-					html += '<td style="text-align: center;"><input type="checkbox" value="' + q.id + '" class="' + checkboxClass + '"' + checked + '></td>';
-					html += '<td><strong>' + q.stem_preview + '</strong></td>';
-					html += '<td>' + q.type_label + '</td>';
-					html += '<td>' + q.difficulty_label + '</td>';
-					html += '<td>' + q.category + '</td>';
-					html += '</tr>';
-				});
-
-				html += '</tbody></table>';
-				return html;
-			}
-
-			// Function to perform question search with filters and pagination
-			function searchQuestions(page) {
-				currentSearchPage = page || 1;
-				var searchTerm = $('#question_search').val();
-				var type = $('#filter_question_type').val();
-				var difficulty = $('#filter_question_difficulty').val();
-				var categoryId = $('#filter_question_category').val();
-				var tagId = $('#filter_question_tag').val();
-
-				// AJAX search for questions
-				$.ajax({
-					url: ajaxurl,
-					type: 'POST',
-					data: {
-						action: 'ppq_search_questions',
-						nonce: '<?php echo esc_js( wp_create_nonce( 'ppq_search_questions' ) ); ?>',
-						search: searchTerm,
-						type: type,
-						difficulty: difficulty,
-						category_id: categoryId,
-						tag_id: tagId,
-						bank_id: <?php echo absint( $bank_id ); ?>,
-						page: currentSearchPage
-					},
-					success: function(response) {
-						if (response.success && response.data.questions) {
-							var data = response.data;
-
-							if (data.questions.length === 0) {
-								$('#ppq-question-search-results').html('<p style="text-align: center; color: #646970; padding: 20px;"><em><?php esc_html_e( 'No questions found matching your search.', 'pressprimer-quiz' ); ?></em></p>');
-								$('#ppq-search-results-pagination').hide();
-								$('.ppq-add-search-selected').prop('disabled', true);
-							} else {
-								var html = buildQuestionTableHtml(data.questions, searchSelectedQuestions, 'ppq-search-checkbox');
-								$('#ppq-question-search-results').html(html);
-
-								// Build pagination
-								if (data.total_pages > 1) {
-									$('#ppq-search-results-pagination').html(buildPaginationHtml(currentSearchPage, data.total_pages, data.total_items, 'ppq-search-page-nav')).show();
-								} else {
-									$('#ppq-search-results-pagination').hide();
-								}
-
-								// Update button state
-								updateSearchButtonState();
-							}
-							$('#ppq-question-search-results-container').show();
-						}
-					},
-					error: function(xhr, status, error) {
-						console.error('Search AJAX error:', { status: status, error: error });
-						$('#ppq-question-search-results').html('<p style="color: #d63638; text-align: center;"><?php esc_html_e( 'Error searching questions. Please try again.', 'pressprimer-quiz' ); ?></p>');
-						$('#ppq-question-search-results-container').show();
-					}
-				});
-			}
-
-			// Function to load recent questions
-			function loadRecentQuestions(page) {
-				currentRecentPage = page || 1;
-
-				$.ajax({
-					url: ajaxurl,
-					type: 'POST',
-					data: {
-						action: 'ppq_get_recent_questions',
-						nonce: '<?php echo esc_js( wp_create_nonce( 'ppq_get_recent_questions' ) ); ?>',
-						bank_id: <?php echo absint( $bank_id ); ?>,
-						page: currentRecentPage
-					},
-					success: function(response) {
-						if (response.success && response.data.questions) {
-							var data = response.data;
-
-							if (data.questions.length === 0) {
-								$('#ppq-recent-questions-list').html('<p style="text-align: center; color: #646970; padding: 20px;"><em><?php esc_html_e( 'No questions found. Create some questions first!', 'pressprimer-quiz' ); ?></em></p>');
-								$('#ppq-recent-questions-pagination').hide();
-								$('.ppq-add-recent-selected').prop('disabled', true);
-							} else {
-								var html = buildQuestionTableHtml(data.questions, recentSelectedQuestions, 'ppq-recent-checkbox');
-								$('#ppq-recent-questions-list').html(html);
-
-								// Build pagination
-								if (data.total_pages > 1) {
-									$('#ppq-recent-questions-pagination').html(buildPaginationHtml(currentRecentPage, data.total_pages, data.total_items, 'ppq-recent-page-nav')).show();
-								} else {
-									$('#ppq-recent-questions-pagination').hide();
-								}
-
-								// Update button state
-								updateRecentButtonState();
-							}
-						}
-					},
-					error: function(xhr, status, error) {
-						console.error('Recent questions AJAX error:', { status: status, error: error });
-						$('#ppq-recent-questions-list').html('<p style="color: #d63638; text-align: center;"><?php esc_html_e( 'Error loading questions. Please refresh the page.', 'pressprimer-quiz' ); ?></p>');
-					}
-				});
-			}
-
-			// Update button states
-			function updateRecentButtonState() {
-				$('.ppq-add-recent-selected').prop('disabled', recentSelectedQuestions.length === 0);
-			}
-
-			function updateSearchButtonState() {
-				$('.ppq-add-search-selected').prop('disabled', searchSelectedQuestions.length === 0);
-			}
-
-			// Load recent questions on page load
-			loadRecentQuestions(1);
-
-			// Handle recent questions pagination clicks
-			$(document).on('click', '.ppq-recent-page-nav', function(e) {
-				e.preventDefault();
-				loadRecentQuestions(parseInt($(this).data('page')));
-			});
-
-			// Handle search results pagination clicks
-			$(document).on('click', '.ppq-search-page-nav', function(e) {
-				e.preventDefault();
-				searchQuestions(parseInt($(this).data('page')));
-			});
-
-			// Search on keyup with debounce
-			$('#question_search').on('keyup', function() {
-				var searchTerm = $(this).val();
-				clearTimeout(searchTimeout);
-
-				if (searchTerm.length < 2) {
-					$('#ppq-question-search-results-container').hide();
-					return;
-				}
-
-				searchTimeout = setTimeout(function() {
-					searchQuestions(1);
-				}, 300);
-			});
-
-			// Search button click
-			$('#ppq-search-questions').on('click', function(e) {
-				e.preventDefault();
-				searchQuestions(1);
-			});
-
-			// Reset filters button click
-			$('#ppq-reset-filters').on('click', function(e) {
-				e.preventDefault();
-				$('#question_search').val('');
-				$('#filter_question_type').val('');
-				$('#filter_question_difficulty').val('');
-				$('#filter_question_category').val('');
-				$('#filter_question_tag').val('');
-				$('#ppq-question-search-results-container').hide();
-				searchSelectedQuestions = [];
-				updateSearchButtonState();
-			});
-
-			// Also trigger search when filters change
-			$('.ppq-question-filter').on('change', function() {
-				if ($('#question_search').val().length >= 2 ||
-					$('#filter_question_type').val() ||
-					$('#filter_question_difficulty').val() ||
-					$('#filter_question_category').val() ||
-					$('#filter_question_tag').val()) {
-					searchQuestions(1);
-				}
-			});
-
-			// Handle recent questions checkbox changes
-			$(document).on('change', '.ppq-recent-checkbox', function() {
-				var questionId = parseInt($(this).val());
-				if ($(this).is(':checked')) {
-					if (recentSelectedQuestions.indexOf(questionId) === -1) {
-						recentSelectedQuestions.push(questionId);
-					}
-				} else {
-					recentSelectedQuestions = recentSelectedQuestions.filter(function(id) {
-						return id !== questionId;
-					});
-				}
-				updateRecentButtonState();
-			});
-
-			// Handle search results checkbox changes
-			$(document).on('change', '.ppq-search-checkbox', function() {
-				var questionId = parseInt($(this).val());
-				if ($(this).is(':checked')) {
-					if (searchSelectedQuestions.indexOf(questionId) === -1) {
-						searchSelectedQuestions.push(questionId);
-					}
-				} else {
-					searchSelectedQuestions = searchSelectedQuestions.filter(function(id) {
-						return id !== questionId;
-					});
-				}
-				updateSearchButtonState();
-			});
-
-			// Handle Add Selected from recent questions
-			$(document).on('click', '.ppq-add-recent-selected', function(e) {
-				e.preventDefault();
-				if (recentSelectedQuestions.length === 0) return;
-				submitSelectedQuestions(recentSelectedQuestions, $(this));
-			});
-
-			// Handle Add Selected from search results
-			$(document).on('click', '.ppq-add-search-selected', function(e) {
-				e.preventDefault();
-				if (searchSelectedQuestions.length === 0) return;
-				submitSelectedQuestions(searchSelectedQuestions, $(this));
-			});
-
-			// Function to submit selected questions via form
-			function submitSelectedQuestions(questionIds, $button) {
-				var $form = $('#ppq-add-question-form');
-
-				// Remove any existing hidden inputs
-				$form.find('input[name="question_ids[]"]').remove();
-
-				// Add hidden inputs for selected questions
-				$.each(questionIds, function(i, id) {
-					$form.append('<input type="hidden" name="question_ids[]" value="' + id + '">');
-				});
-
-				// Disable button and submit
-				$button.prop('disabled', true).text('<?php esc_html_e( 'Adding...', 'pressprimer-quiz' ); ?>');
-				$form.submit();
-			}
-
-			// Remove question from bank via AJAX
-			$(document).on('click', '.ppq-remove-question-btn', function() {
-				var $btn = $(this);
-				var $row = $btn.closest('tr');
-				var bankId = $btn.data('bank-id');
-				var questionId = $btn.data('question-id');
-
-				// Disable button during request
-				$btn.prop('disabled', true).text('<?php esc_html_e( 'Removing...', 'pressprimer-quiz' ); ?>');
-
-				$.ajax({
-					url: ajaxurl,
-					type: 'POST',
-					data: {
-						action: 'ppq_remove_question_from_bank',
-						nonce: window.ppqAdmin.nonce,
-						bank_id: bankId,
-						question_id: questionId
-					},
-					success: function(response) {
-						if (response.success) {
-							// Remove the row with a fade effect
-							$row.fadeOut(300, function() {
-								$(this).remove();
-
-								// Update the question count display
-								var $countDisplay = $('.ppq-form-section').first().find('div[style*="font-size: 48px"]');
-								if ($countDisplay.length && response.data.new_count !== undefined) {
-									$countDisplay.text(response.data.new_count);
-								}
-
-								// Check if table is now empty
-								if ($('.ppq-table tbody tr').length === 0) {
-									$('.ppq-table').replaceWith('<p><em><?php esc_html_e( 'No questions in this bank yet.', 'pressprimer-quiz' ); ?></em></p>');
-								}
-							});
-						} else {
-							$btn.prop('disabled', false).text('<?php esc_html_e( 'Remove from Bank', 'pressprimer-quiz' ); ?>');
-							alert(response.data.message || '<?php esc_html_e( 'Error removing question.', 'pressprimer-quiz' ); ?>');
-						}
-					},
-					error: function() {
-						$btn.prop('disabled', false).text('<?php esc_html_e( 'Remove from Bank', 'pressprimer-quiz' ); ?>');
-						alert('<?php esc_html_e( 'Error removing question. Please try again.', 'pressprimer-quiz' ); ?>');
-					}
-				});
-			});
-		});
-		</script>
 		<?php
 	}
 
@@ -1060,12 +1113,12 @@ class PressPrimer_Quiz_Admin_Banks {
 	 */
 	public function handle_save() {
 		// Verify nonce
-		if ( ! isset( $_POST['ppq_bank_nonce'] ) || ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['ppq_bank_nonce'] ) ), 'ppq_save_bank' ) ) {
+		if ( ! isset( $_POST['pressprimer_quiz_bank_nonce'] ) || ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['pressprimer_quiz_bank_nonce'] ) ), 'pressprimer_quiz_save_bank' ) ) {
 			wp_die( esc_html__( 'Security check failed.', 'pressprimer-quiz' ) );
 		}
 
 		// Check capability
-		if ( ! current_user_can( 'ppq_manage_own' ) ) {
+		if ( ! current_user_can( 'pressprimer_quiz_manage_own' ) ) {
 			wp_die( esc_html__( 'You do not have permission to perform this action.', 'pressprimer-quiz' ) );
 		}
 
@@ -1089,7 +1142,7 @@ class PressPrimer_Quiz_Admin_Banks {
 				wp_die( esc_html__( 'Bank not found.', 'pressprimer-quiz' ) );
 			}
 
-			if ( ! current_user_can( 'ppq_manage_all' ) && absint( $bank->owner_id ) !== get_current_user_id() ) {
+			if ( ! current_user_can( 'pressprimer_quiz_manage_all' ) && absint( $bank->owner_id ) !== get_current_user_id() ) {
 				wp_die( esc_html__( 'You do not have permission to edit this bank.', 'pressprimer-quiz' ) );
 			}
 
@@ -1118,7 +1171,7 @@ class PressPrimer_Quiz_Admin_Banks {
 		wp_safe_redirect(
 			add_query_arg(
 				[
-					'page'    => 'ppq-banks',
+					'page'    => 'pressprimer-quiz-banks',
 					'action'  => 'view',
 					'bank_id' => $bank_id,
 					'message' => 'bank_saved',
@@ -1141,12 +1194,12 @@ class PressPrimer_Quiz_Admin_Banks {
 		}
 
 		// Verify nonce
-		if ( ! isset( $_GET['_wpnonce'] ) || ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_GET['_wpnonce'] ) ), 'ppq_delete_bank_' . absint( wp_unslash( $_GET['bank_id'] ) ) ) ) {
+		if ( ! isset( $_GET['_wpnonce'] ) || ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_GET['_wpnonce'] ) ), 'pressprimer_quiz_delete_bank_' . absint( wp_unslash( $_GET['bank_id'] ) ) ) ) {
 			wp_die( esc_html__( 'Security check failed.', 'pressprimer-quiz' ) );
 		}
 
 		// Check capability
-		if ( ! current_user_can( 'ppq_manage_own' ) ) {
+		if ( ! current_user_can( 'pressprimer_quiz_manage_own' ) ) {
 			wp_die( esc_html__( 'You do not have permission to perform this action.', 'pressprimer-quiz' ) );
 		}
 
@@ -1166,7 +1219,7 @@ class PressPrimer_Quiz_Admin_Banks {
 		}
 
 		// Check ownership
-		if ( ! current_user_can( 'ppq_manage_all' ) && absint( $bank->owner_id ) !== get_current_user_id() ) {
+		if ( ! current_user_can( 'pressprimer_quiz_manage_all' ) && absint( $bank->owner_id ) !== get_current_user_id() ) {
 			wp_die( esc_html__( 'You do not have permission to delete this bank.', 'pressprimer-quiz' ) );
 		}
 
@@ -1186,7 +1239,7 @@ class PressPrimer_Quiz_Admin_Banks {
 		wp_safe_redirect(
 			add_query_arg(
 				[
-					'page'    => 'ppq-banks',
+					'page'    => 'pressprimer-quiz-banks',
 					'message' => 'bank_deleted',
 				],
 				admin_url( 'admin.php' )
@@ -1202,12 +1255,12 @@ class PressPrimer_Quiz_Admin_Banks {
 	 */
 	public function handle_add_question() {
 		// Verify nonce
-		if ( ! isset( $_POST['ppq_add_question_nonce'] ) || ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['ppq_add_question_nonce'] ) ), 'ppq_add_question_to_bank' ) ) {
+		if ( ! isset( $_POST['pressprimer_quiz_add_question_nonce'] ) || ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['pressprimer_quiz_add_question_nonce'] ) ), 'pressprimer_quiz_add_question_to_bank' ) ) {
 			wp_die( esc_html__( 'Security check failed.', 'pressprimer-quiz' ) );
 		}
 
 		// Check capability
-		if ( ! current_user_can( 'ppq_manage_own' ) ) {
+		if ( ! current_user_can( 'pressprimer_quiz_manage_own' ) ) {
 			wp_die( esc_html__( 'You do not have permission to perform this action.', 'pressprimer-quiz' ) );
 		}
 
@@ -1229,7 +1282,7 @@ class PressPrimer_Quiz_Admin_Banks {
 		}
 
 		// Check ownership
-		if ( ! current_user_can( 'ppq_manage_all' ) && absint( $bank->owner_id ) !== get_current_user_id() ) {
+		if ( ! current_user_can( 'pressprimer_quiz_manage_all' ) && absint( $bank->owner_id ) !== get_current_user_id() ) {
 			wp_die( esc_html__( 'You do not have permission to edit this bank.', 'pressprimer-quiz' ) );
 		}
 
@@ -1245,7 +1298,7 @@ class PressPrimer_Quiz_Admin_Banks {
 		wp_safe_redirect(
 			add_query_arg(
 				[
-					'page'    => 'ppq-banks',
+					'page'    => 'pressprimer-quiz-banks',
 					'action'  => 'view',
 					'bank_id' => $bank_id,
 					'message' => 'questions_added',
@@ -1263,12 +1316,12 @@ class PressPrimer_Quiz_Admin_Banks {
 	 */
 	public function handle_remove_question() {
 		// Verify nonce
-		if ( ! isset( $_POST['ppq_remove_question_nonce'] ) || ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['ppq_remove_question_nonce'] ) ), 'ppq_remove_question_from_bank' ) ) {
+		if ( ! isset( $_POST['pressprimer_quiz_remove_question_nonce'] ) || ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['pressprimer_quiz_remove_question_nonce'] ) ), 'pressprimer_quiz_remove_question_from_bank' ) ) {
 			wp_die( esc_html__( 'Security check failed.', 'pressprimer-quiz' ) );
 		}
 
 		// Check capability
-		if ( ! current_user_can( 'ppq_manage_own' ) ) {
+		if ( ! current_user_can( 'pressprimer_quiz_manage_own' ) ) {
 			wp_die( esc_html__( 'You do not have permission to perform this action.', 'pressprimer-quiz' ) );
 		}
 
@@ -1289,7 +1342,7 @@ class PressPrimer_Quiz_Admin_Banks {
 		}
 
 		// Check ownership
-		if ( ! current_user_can( 'ppq_manage_all' ) && absint( $bank->owner_id ) !== get_current_user_id() ) {
+		if ( ! current_user_can( 'pressprimer_quiz_manage_all' ) && absint( $bank->owner_id ) !== get_current_user_id() ) {
 			wp_die( esc_html__( 'You do not have permission to edit this bank.', 'pressprimer-quiz' ) );
 		}
 
@@ -1303,7 +1356,7 @@ class PressPrimer_Quiz_Admin_Banks {
 		wp_safe_redirect(
 			add_query_arg(
 				[
-					'page'    => 'ppq-banks',
+					'page'    => 'pressprimer-quiz-banks',
 					'action'  => 'view',
 					'bank_id' => $bank_id,
 					'message' => 'question_removed',
@@ -1321,7 +1374,7 @@ class PressPrimer_Quiz_Admin_Banks {
 	 */
 	public function admin_notices() {
 		// phpcs:disable WordPress.Security.NonceVerification.Recommended -- Read-only notice flags from redirect
-		if ( ! isset( $_GET['page'] ) || 'ppq-banks' !== $_GET['page'] ) {
+		if ( ! isset( $_GET['page'] ) || 'pressprimer-quiz-banks' !== $_GET['page'] ) {
 			return;
 		}
 

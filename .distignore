@@ -3,6 +3,7 @@
 
 # Version Control
 .git
+.github
 .gitignore
 .gitattributes
 
@@ -109,4 +110,6 @@ Thumbs.db
 .distignore
 .npmrc
 .nvmrc
-dist
+
+# Build output (prevent recursive copying)
+/dist

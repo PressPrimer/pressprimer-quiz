@@ -255,4 +255,22 @@
 	<!-- Check for PHP cross-version compatibility -->
 	<config name="testVersion" value="7.4-"/>
 
+	<!--
+	==========================================================================
+	WordPress.org Plugin Directory - Additional Rules
+	==========================================================================
+	These rules are enforced by the WordPress.org plugin scanner but are not
+	included in the default WordPress-Core or WordPress-Extra rulesets.
+	Adding them here ensures we catch issues before submission.
+	-->
+
+	<!-- Heredoc/nowdoc syntax is not allowed by WordPress.org -->
+	<rule ref="Squiz.PHP.Heredoc"/>
+
+	<!--
+	Console statements in JavaScript should be removed for production.
+	While PHPCS doesn't check JS, this comment serves as a reminder.
+	Use the JavaScript linting rules in package.json for this.
+	-->
+
 </ruleset>

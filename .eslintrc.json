@@ -1,0 +1,43 @@
+{
+	"extends": ["plugin:@wordpress/eslint-plugin/recommended"],
+	"rules": {
+		"no-console": "error",
+		"no-debugger": "error",
+		"prettier/prettier": "off",
+		"jsdoc/require-param": "off",
+		"jsdoc/empty-tags": "off",
+		"jsdoc/check-line-alignment": "off",
+		"jsdoc/check-types": "off",
+		"jsdoc/no-undefined-types": "off",
+		"object-shorthand": "off",
+		"no-var": "off",
+		"no-unused-vars": "warn",
+		"no-lonely-if": "off",
+		"no-shadow": "off",
+		"no-alert": "off",
+		"no-multi-str": "off",
+		"prefer-const": "off",
+		"curly": "off",
+		"eqeqeq": "off",
+		"@wordpress/no-unused-vars-before-return": "off",
+		"@wordpress/i18n-ellipsis": "off"
+	},
+	"env": {
+		"browser": true,
+		"jquery": true
+	},
+	"globals": {
+		"wp": "readonly",
+		"jQuery": "readonly",
+		"ajaxurl": "readonly",
+		"tinyMCE": "readonly",
+		"ppqQuiz": "readonly",
+		"ppqAdmin": "readonly",
+		"ppqResults": "readonly",
+		"ppqAiGeneration": "readonly",
+		"pressprimerQuiz": "readonly",
+		"pressprimerQuizResults": "readonly",
+		"pressprimerQuizAIGeneration": "readonly",
+		"PPQ": "readonly"
+	}
+}

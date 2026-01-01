@@ -350,352 +350,274 @@ class PressPrimer_Quiz_Admin_Banks {
 		);
 
 		// The inline script that uses the localized data.
-		$inline_script = <<<'JS'
-jQuery(document).ready(function($) {
-	var searchTimeout;
-	var recentSelectedQuestions = [];
-	var searchSelectedQuestions = [];
-	var currentRecentPage = 1;
-	var currentSearchPage = 1;
-	var config = window.ppqBankDetail || {};
-	var strings = config.strings || {};
-
-	// Helper function to build pagination HTML
-	function buildPaginationHtml(currentPage, totalPages, totalItems, navClass) {
-		var pagHtml = '<div class="tablenav-pages">';
-		pagHtml += '<span class="displaying-num">' + totalItems + ' ' + strings.items + '</span>';
-		pagHtml += '<span class="pagination-links">';
-
-		// First page
-		if (currentPage > 1) {
-			pagHtml += '<a class="button ' + navClass + '" data-page="1" title="' + strings.firstPage + '">&laquo;</a> ';
-			pagHtml += '<a class="button ' + navClass + '" data-page="' + (currentPage - 1) + '" title="' + strings.previousPage + '">&lsaquo;</a> ';
-		} else {
-			pagHtml += '<span class="button disabled">&laquo;</span> ';
-			pagHtml += '<span class="button disabled">&lsaquo;</span> ';
-		}
-
-		pagHtml += '<span class="paging-input">' + currentPage + ' ' + strings.of + ' ' + totalPages + '</span> ';
-
-		// Last page
-		if (currentPage < totalPages) {
-			pagHtml += '<a class="button ' + navClass + '" data-page="' + (currentPage + 1) + '" title="' + strings.nextPage + '">&rsaquo;</a> ';
-			pagHtml += '<a class="button ' + navClass + '" data-page="' + totalPages + '" title="' + strings.lastPage + '">&raquo;</a>';
-		} else {
-			pagHtml += '<span class="button disabled">&rsaquo;</span> ';
-			pagHtml += '<span class="button disabled">&raquo;</span>';
-		}
-
-		pagHtml += '</span></div>';
-		return pagHtml;
-	}
-
-	// Helper function to build table HTML
-	function buildQuestionTableHtml(questions, selectedList, checkboxClass) {
-		var html = '<table class="widefat" style="margin: 0;">';
-		html += '<thead><tr>';
-		html += '<th style="width: 40px; text-align: center;">' + strings.select + '</th>';
-		html += '<th>' + strings.question + '</th>';
-		html += '<th style="width: 150px;">' + strings.type + '</th>';
-		html += '<th style="width: 120px;">' + strings.difficulty + '</th>';
-		html += '<th style="width: 150px;">' + strings.category + '</th>';
-		html += '</tr></thead><tbody>';
-
-		$.each(questions, function(i, q) {
-			var checked = selectedList.indexOf(q.id) !== -1 ? ' checked' : '';
-			html += '<tr>';
-			html += '<td style="text-align: center;"><input type="checkbox" value="' + q.id + '" class="' + checkboxClass + '"' + checked + '></td>';
-			html += '<td><strong>' + q.stem_preview + '</strong></td>';
-			html += '<td>' + q.type_label + '</td>';
-			html += '<td>' + q.difficulty_label + '</td>';
-			html += '<td>' + q.category + '</td>';
-			html += '</tr>';
-		});
-
-		html += '</tbody></table>';
-		return html;
-	}
-
-	// Function to perform question search with filters and pagination
-	function searchQuestions(page) {
-		currentSearchPage = page || 1;
-		var searchTerm = $('#question_search').val();
-		var type = $('#filter_question_type').val();
-		var difficulty = $('#filter_question_difficulty').val();
-		var categoryId = $('#filter_question_category').val();
-		var tagId = $('#filter_question_tag').val();
-
-		// AJAX search for questions
-		$.ajax({
-			url: ajaxurl,
-			type: 'POST',
-			data: {
-				action: 'pressprimer_quiz_search_questions',
-				nonce: config.nonces.searchQuestions,
-				search: searchTerm,
-				type: type,
-				difficulty: difficulty,
-				category_id: categoryId,
-				tag_id: tagId,
-				bank_id: config.bankId,
-				page: currentSearchPage
-			},
-			success: function(response) {
-				if (response.success && response.data.questions) {
-					var data = response.data;
-
-					if (data.questions.length === 0) {
-						$('#ppq-question-search-results').html('<p style="text-align: center; color: #646970; padding: 20px;"><em>' + strings.noQuestionsFound + '</em></p>');
-						$('#ppq-search-results-pagination').hide();
-						$('.ppq-add-search-selected').prop('disabled', true);
-					} else {
-						var html = buildQuestionTableHtml(data.questions, searchSelectedQuestions, 'ppq-search-checkbox');
-						$('#ppq-question-search-results').html(html);
-
-						// Build pagination
-						if (data.total_pages > 1) {
-							$('#ppq-search-results-pagination').html(buildPaginationHtml(currentSearchPage, data.total_pages, data.total_items, 'ppq-search-page-nav')).show();
-						} else {
-							$('#ppq-search-results-pagination').hide();
-						}
-
-						// Update button state
-						updateSearchButtonState();
-					}
-					$('#ppq-question-search-results-container').show();
-				}
-			},
-			error: function(xhr, status, error) {
-				console.error('Search AJAX error:', { status: status, error: error });
-				$('#ppq-question-search-results').html('<p style="color: #d63638; text-align: center;">' + strings.errorSearching + '</p>');
-				$('#ppq-question-search-results-container').show();
-			}
-		});
-	}
-
-	// Function to load recent questions
-	function loadRecentQuestions(page) {
-		currentRecentPage = page || 1;
-
-		$.ajax({
-			url: ajaxurl,
-			type: 'POST',
-			data: {
-				action: 'pressprimer_quiz_get_recent_questions',
-				nonce: config.nonces.getRecentQuestions,
-				bank_id: config.bankId,
-				page: currentRecentPage
-			},
-			success: function(response) {
-				if (response.success && response.data.questions) {
-					var data = response.data;
-
-					if (data.questions.length === 0) {
-						$('#ppq-recent-questions-list').html('<p style="text-align: center; color: #646970; padding: 20px;"><em>' + strings.noQuestionsYet + '</em></p>');
-						$('#ppq-recent-questions-pagination').hide();
-						$('.ppq-add-recent-selected').prop('disabled', true);
-					} else {
-						var html = buildQuestionTableHtml(data.questions, recentSelectedQuestions, 'ppq-recent-checkbox');
-						$('#ppq-recent-questions-list').html(html);
-
-						// Build pagination
-						if (data.total_pages > 1) {
-							$('#ppq-recent-questions-pagination').html(buildPaginationHtml(currentRecentPage, data.total_pages, data.total_items, 'ppq-recent-page-nav')).show();
-						} else {
-							$('#ppq-recent-questions-pagination').hide();
-						}
-
-						// Update button state
-						updateRecentButtonState();
-					}
-				}
-			},
-			error: function(xhr, status, error) {
-				console.error('Recent questions AJAX error:', { status: status, error: error });
-				$('#ppq-recent-questions-list').html('<p style="color: #d63638; text-align: center;">' + strings.errorLoading + '</p>');
-			}
-		});
-	}
-
-	// Update button states
-	function updateRecentButtonState() {
-		$('.ppq-add-recent-selected').prop('disabled', recentSelectedQuestions.length === 0);
-	}
-
-	function updateSearchButtonState() {
-		$('.ppq-add-search-selected').prop('disabled', searchSelectedQuestions.length === 0);
-	}
-
-	// Load recent questions on page load
-	loadRecentQuestions(1);
-
-	// Handle recent questions pagination clicks
-	$(document).on('click', '.ppq-recent-page-nav', function(e) {
-		e.preventDefault();
-		loadRecentQuestions(parseInt($(this).data('page')));
-	});
-
-	// Handle search results pagination clicks
-	$(document).on('click', '.ppq-search-page-nav', function(e) {
-		e.preventDefault();
-		searchQuestions(parseInt($(this).data('page')));
-	});
-
-	// Search on keyup with debounce
-	$('#question_search').on('keyup', function() {
-		var searchTerm = $(this).val();
-		clearTimeout(searchTimeout);
-
-		if (searchTerm.length < 2) {
-			$('#ppq-question-search-results-container').hide();
-			return;
-		}
-
-		searchTimeout = setTimeout(function() {
-			searchQuestions(1);
-		}, 300);
-	});
-
-	// Search button click
-	$('#ppq-search-questions').on('click', function(e) {
-		e.preventDefault();
-		searchQuestions(1);
-	});
-
-	// Reset filters button click
-	$('#ppq-reset-filters').on('click', function(e) {
-		e.preventDefault();
-		$('#question_search').val('');
-		$('#filter_question_type').val('');
-		$('#filter_question_difficulty').val('');
-		$('#filter_question_category').val('');
-		$('#filter_question_tag').val('');
-		$('#ppq-question-search-results-container').hide();
-		searchSelectedQuestions = [];
-		updateSearchButtonState();
-	});
-
-	// Also trigger search when filters change
-	$('.ppq-question-filter').on('change', function() {
-		if ($('#question_search').val().length >= 2 ||
-			$('#filter_question_type').val() ||
-			$('#filter_question_difficulty').val() ||
-			$('#filter_question_category').val() ||
-			$('#filter_question_tag').val()) {
-			searchQuestions(1);
-		}
-	});
-
-	// Handle recent questions checkbox changes
-	$(document).on('change', '.ppq-recent-checkbox', function() {
-		var questionId = parseInt($(this).val());
-		if ($(this).is(':checked')) {
-			if (recentSelectedQuestions.indexOf(questionId) === -1) {
-				recentSelectedQuestions.push(questionId);
-			}
-		} else {
-			recentSelectedQuestions = recentSelectedQuestions.filter(function(id) {
-				return id !== questionId;
-			});
-		}
-		updateRecentButtonState();
-	});
-
-	// Handle search results checkbox changes
-	$(document).on('change', '.ppq-search-checkbox', function() {
-		var questionId = parseInt($(this).val());
-		if ($(this).is(':checked')) {
-			if (searchSelectedQuestions.indexOf(questionId) === -1) {
-				searchSelectedQuestions.push(questionId);
-			}
-		} else {
-			searchSelectedQuestions = searchSelectedQuestions.filter(function(id) {
-				return id !== questionId;
-			});
-		}
-		updateSearchButtonState();
-	});
-
-	// Handle Add Selected from recent questions
-	$(document).on('click', '.ppq-add-recent-selected', function(e) {
-		e.preventDefault();
-		if (recentSelectedQuestions.length === 0) return;
-		submitSelectedQuestions(recentSelectedQuestions, $(this));
-	});
-
-	// Handle Add Selected from search results
-	$(document).on('click', '.ppq-add-search-selected', function(e) {
-		e.preventDefault();
-		if (searchSelectedQuestions.length === 0) return;
-		submitSelectedQuestions(searchSelectedQuestions, $(this));
-	});
-
-	// Function to submit selected questions via form
-	function submitSelectedQuestions(questionIds, $button) {
-		var $form = $('#ppq-add-question-form');
-
-		// Remove any existing hidden inputs
-		$form.find('input[name="question_ids[]"]').remove();
-
-		// Add hidden inputs for selected questions
-		$.each(questionIds, function(i, id) {
-			$form.append('<input type="hidden" name="question_ids[]" value="' + id + '">');
-		});
-
-		// Disable button and submit
-		$button.prop('disabled', true).text(strings.adding);
-		$form.submit();
-	}
-
-	// Remove question from bank via AJAX
-	$(document).on('click', '.ppq-remove-question-btn', function() {
-		var $btn = $(this);
-		var $row = $btn.closest('tr');
-		var bankId = $btn.data('bank-id');
-		var questionId = $btn.data('question-id');
-
-		// Disable button during request
-		$btn.prop('disabled', true).text(strings.removing);
-
-		$.ajax({
-			url: ajaxurl,
-			type: 'POST',
-			data: {
-				action: 'pressprimer_quiz_remove_question_from_bank',
-				nonce: window.ppqAdmin.nonce,
-				bank_id: bankId,
-				question_id: questionId
-			},
-			success: function(response) {
-				if (response.success) {
-					// Remove the row with a fade effect
-					$row.fadeOut(300, function() {
-						$(this).remove();
-
-						// Update the question count display
-						var $countDisplay = $('.ppq-form-section').first().find('div[style*="font-size: 48px"]');
-						if ($countDisplay.length && response.data.new_count !== undefined) {
-							$countDisplay.text(response.data.new_count);
-						}
-
-						// Check if table is now empty
-						if ($('.ppq-table tbody tr').length === 0) {
-							$('.ppq-table').replaceWith('<p><em>' + strings.noQuestionsInBank + '</em></p>');
-						}
-					});
-				} else {
-					$btn.prop('disabled', false).text(strings.removeFromBank);
-					alert(response.data.message || strings.errorRemovingQuestion);
-				}
-			},
-			error: function() {
-				$btn.prop('disabled', false).text(strings.removeFromBank);
-				alert(strings.errorRemovingRetry);
-			}
-		});
-	});
-});
-JS;
+		$inline_script = 'jQuery(document).ready(function($) {' .
+			'var searchTimeout;' .
+			'var recentSelectedQuestions = [];' .
+			'var searchSelectedQuestions = [];' .
+			'var currentRecentPage = 1;' .
+			'var currentSearchPage = 1;' .
+			'var config = window.ppqBankDetail || {};' .
+			'var strings = config.strings || {};' .
+			'function buildPaginationHtml(currentPage, totalPages, totalItems, navClass) {' .
+				'var pagHtml = \'<div class="tablenav-pages">\';' .
+				'pagHtml += \'<span class="displaying-num">\' + totalItems + " " + strings.items + \'</span>\';' .
+				'pagHtml += \'<span class="pagination-links">\';' .
+				'if (currentPage > 1) {' .
+					'pagHtml += \'<a class="button \' + navClass + \'" data-page="1" title="\' + strings.firstPage + \'">&laquo;</a> \';' .
+					'pagHtml += \'<a class="button \' + navClass + \'" data-page="\' + (currentPage - 1) + \'" title="\' + strings.previousPage + \'">&lsaquo;</a> \';' .
+				'} else {' .
+					'pagHtml += \'<span class="button disabled">&laquo;</span> \';' .
+					'pagHtml += \'<span class="button disabled">&lsaquo;</span> \';' .
+				'}' .
+				'pagHtml += \'<span class="paging-input">\' + currentPage + " " + strings.of + " " + totalPages + \'</span> \';' .
+				'if (currentPage < totalPages) {' .
+					'pagHtml += \'<a class="button \' + navClass + \'" data-page="\' + (currentPage + 1) + \'" title="\' + strings.nextPage + \'">&rsaquo;</a> \';' .
+					'pagHtml += \'<a class="button \' + navClass + \'" data-page="\' + totalPages + \'" title="\' + strings.lastPage + \'">&raquo;</a>\';' .
+				'} else {' .
+					'pagHtml += \'<span class="button disabled">&rsaquo;</span> \';' .
+					'pagHtml += \'<span class="button disabled">&raquo;</span>\';' .
+				'}' .
+				'pagHtml += \'</span></div>\';' .
+				'return pagHtml;' .
+			'}' .
+			'function buildQuestionTableHtml(questions, selectedList, checkboxClass) {' .
+				'var html = \'<table class="widefat" style="margin: 0;">\';' .
+				'html += \'<thead><tr>\';' .
+				'html += \'<th style="width: 40px; text-align: center;">\' + strings.select + \'</th>\';' .
+				'html += \'<th>\' + strings.question + \'</th>\';' .
+				'html += \'<th style="width: 150px;">\' + strings.type + \'</th>\';' .
+				'html += \'<th style="width: 120px;">\' + strings.difficulty + \'</th>\';' .
+				'html += \'<th style="width: 150px;">\' + strings.category + \'</th>\';' .
+				'html += \'</tr></thead><tbody>\';' .
+				'$.each(questions, function(i, q) {' .
+					'var checked = selectedList.indexOf(q.id) !== -1 ? " checked" : "";' .
+					'html += \'<tr>\';' .
+					'html += \'<td style="text-align: center;"><input type="checkbox" value="\' + q.id + \'" class="\' + checkboxClass + \'"\' + checked + \'></td>\';' .
+					'html += \'<td><strong>\' + q.stem_preview + \'</strong></td>\';' .
+					'html += \'<td>\' + q.type_label + \'</td>\';' .
+					'html += \'<td>\' + q.difficulty_label + \'</td>\';' .
+					'html += \'<td>\' + q.category + \'</td>\';' .
+					'html += \'</tr>\';' .
+				'});' .
+				'html += \'</tbody></table>\';' .
+				'return html;' .
+			'}' .
+			'function searchQuestions(page) {' .
+				'currentSearchPage = page || 1;' .
+				'var searchTerm = $("#question_search").val();' .
+				'var type = $("#filter_question_type").val();' .
+				'var difficulty = $("#filter_question_difficulty").val();' .
+				'var categoryId = $("#filter_question_category").val();' .
+				'var tagId = $("#filter_question_tag").val();' .
+				'$.ajax({' .
+					'url: ajaxurl,' .
+					'type: "POST",' .
+					'data: {' .
+						'action: "pressprimer_quiz_search_questions",' .
+						'nonce: config.nonces.searchQuestions,' .
+						'search: searchTerm,' .
+						'type: type,' .
+						'difficulty: difficulty,' .
+						'category_id: categoryId,' .
+						'tag_id: tagId,' .
+						'bank_id: config.bankId,' .
+						'page: currentSearchPage' .
+					'},' .
+					'success: function(response) {' .
+						'if (response.success && response.data.questions) {' .
+							'var data = response.data;' .
+							'if (data.questions.length === 0) {' .
+								'$("#ppq-question-search-results").html(\'<p style="text-align: center; color: #646970; padding: 20px;"><em>\' + strings.noQuestionsFound + \'</em></p>\');' .
+								'$("#ppq-search-results-pagination").hide();' .
+								'$(".ppq-add-search-selected").prop("disabled", true);' .
+							'} else {' .
+								'var html = buildQuestionTableHtml(data.questions, searchSelectedQuestions, "ppq-search-checkbox");' .
+								'$("#ppq-question-search-results").html(html);' .
+								'if (data.total_pages > 1) {' .
+									'$("#ppq-search-results-pagination").html(buildPaginationHtml(currentSearchPage, data.total_pages, data.total_items, "ppq-search-page-nav")).show();' .
+								'} else {' .
+									'$("#ppq-search-results-pagination").hide();' .
+								'}' .
+								'updateSearchButtonState();' .
+							'}' .
+							'$("#ppq-question-search-results-container").show();' .
+						'}' .
+					'},' .
+					'error: function() {' .
+						'$("#ppq-question-search-results").html(\'<p style="color: #d63638; text-align: center;">\' + strings.errorSearching + \'</p>\');' .
+						'$("#ppq-question-search-results-container").show();' .
+					'}' .
+				'});' .
+			'}' .
+			'function loadRecentQuestions(page) {' .
+				'currentRecentPage = page || 1;' .
+				'$.ajax({' .
+					'url: ajaxurl,' .
+					'type: "POST",' .
+					'data: {' .
+						'action: "pressprimer_quiz_get_recent_questions",' .
+						'nonce: config.nonces.getRecentQuestions,' .
+						'bank_id: config.bankId,' .
+						'page: currentRecentPage' .
+					'},' .
+					'success: function(response) {' .
+						'if (response.success && response.data.questions) {' .
+							'var data = response.data;' .
+							'if (data.questions.length === 0) {' .
+								'$("#ppq-recent-questions-list").html(\'<p style="text-align: center; color: #646970; padding: 20px;"><em>\' + strings.noQuestionsYet + \'</em></p>\');' .
+								'$("#ppq-recent-questions-pagination").hide();' .
+								'$(".ppq-add-recent-selected").prop("disabled", true);' .
+							'} else {' .
+								'var html = buildQuestionTableHtml(data.questions, recentSelectedQuestions, "ppq-recent-checkbox");' .
+								'$("#ppq-recent-questions-list").html(html);' .
+								'if (data.total_pages > 1) {' .
+									'$("#ppq-recent-questions-pagination").html(buildPaginationHtml(currentRecentPage, data.total_pages, data.total_items, "ppq-recent-page-nav")).show();' .
+								'} else {' .
+									'$("#ppq-recent-questions-pagination").hide();' .
+								'}' .
+								'updateRecentButtonState();' .
+							'}' .
+						'}' .
+					'},' .
+					'error: function() {' .
+						'$("#ppq-recent-questions-list").html(\'<p style="color: #d63638; text-align: center;">\' + strings.errorLoading + \'</p>\');' .
+					'}' .
+				'});' .
+			'}' .
+			'function updateRecentButtonState() {' .
+				'$(".ppq-add-recent-selected").prop("disabled", recentSelectedQuestions.length === 0);' .
+			'}' .
+			'function updateSearchButtonState() {' .
+				'$(".ppq-add-search-selected").prop("disabled", searchSelectedQuestions.length === 0);' .
+			'}' .
+			'loadRecentQuestions(1);' .
+			'$(document).on("click", ".ppq-recent-page-nav", function(e) {' .
+				'e.preventDefault();' .
+				'loadRecentQuestions(parseInt($(this).data("page")));' .
+			'});' .
+			'$(document).on("click", ".ppq-search-page-nav", function(e) {' .
+				'e.preventDefault();' .
+				'searchQuestions(parseInt($(this).data("page")));' .
+			'});' .
+			'$("#question_search").on("keyup", function() {' .
+				'var searchTerm = $(this).val();' .
+				'clearTimeout(searchTimeout);' .
+				'if (searchTerm.length < 2) {' .
+					'$("#ppq-question-search-results-container").hide();' .
+					'return;' .
+				'}' .
+				'searchTimeout = setTimeout(function() {' .
+					'searchQuestions(1);' .
+				'}, 300);' .
+			'});' .
+			'$("#ppq-search-questions").on("click", function(e) {' .
+				'e.preventDefault();' .
+				'searchQuestions(1);' .
+			'});' .
+			'$("#ppq-reset-filters").on("click", function(e) {' .
+				'e.preventDefault();' .
+				'$("#question_search").val("");' .
+				'$("#filter_question_type").val("");' .
+				'$("#filter_question_difficulty").val("");' .
+				'$("#filter_question_category").val("");' .
+				'$("#filter_question_tag").val("");' .
+				'$("#ppq-question-search-results-container").hide();' .
+				'searchSelectedQuestions = [];' .
+				'updateSearchButtonState();' .
+			'});' .
+			'$(".ppq-question-filter").on("change", function() {' .
+				'if ($("#question_search").val().length >= 2 ||' .
+					'$("#filter_question_type").val() ||' .
+					'$("#filter_question_difficulty").val() ||' .
+					'$("#filter_question_category").val() ||' .
+					'$("#filter_question_tag").val()) {' .
+					'searchQuestions(1);' .
+				'}' .
+			'});' .
+			'$(document).on("change", ".ppq-recent-checkbox", function() {' .
+				'var questionId = parseInt($(this).val());' .
+				'if ($(this).is(":checked")) {' .
+					'if (recentSelectedQuestions.indexOf(questionId) === -1) {' .
+						'recentSelectedQuestions.push(questionId);' .
+					'}' .
+				'} else {' .
+					'recentSelectedQuestions = recentSelectedQuestions.filter(function(id) {' .
+						'return id !== questionId;' .
+					'});' .
+				'}' .
+				'updateRecentButtonState();' .
+			'});' .
+			'$(document).on("change", ".ppq-search-checkbox", function() {' .
+				'var questionId = parseInt($(this).val());' .
+				'if ($(this).is(":checked")) {' .
+					'if (searchSelectedQuestions.indexOf(questionId) === -1) {' .
+						'searchSelectedQuestions.push(questionId);' .
+					'}' .
+				'} else {' .
+					'searchSelectedQuestions = searchSelectedQuestions.filter(function(id) {' .
+						'return id !== questionId;' .
+					'});' .
+				'}' .
+				'updateSearchButtonState();' .
+			'});' .
+			'$(document).on("click", ".ppq-add-recent-selected", function(e) {' .
+				'e.preventDefault();' .
+				'if (recentSelectedQuestions.length === 0) return;' .
+				'submitSelectedQuestions(recentSelectedQuestions, $(this));' .
+			'});' .
+			'$(document).on("click", ".ppq-add-search-selected", function(e) {' .
+				'e.preventDefault();' .
+				'if (searchSelectedQuestions.length === 0) return;' .
+				'submitSelectedQuestions(searchSelectedQuestions, $(this));' .
+			'});' .
+			'function submitSelectedQuestions(questionIds, $button) {' .
+				'var $form = $("#ppq-add-question-form");' .
+				'$form.find(\'input[name="question_ids[]"]\').remove();' .
+				'$.each(questionIds, function(i, id) {' .
+					'$form.append(\'<input type="hidden" name="question_ids[]" value="\' + id + \'">\');' .
+				'});' .
+				'$button.prop("disabled", true).text(strings.adding);' .
+				'$form.submit();' .
+			'}' .
+			'$(document).on("click", ".ppq-remove-question-btn", function() {' .
+				'var $btn = $(this);' .
+				'var $row = $btn.closest("tr");' .
+				'var bankId = $btn.data("bank-id");' .
+				'var questionId = $btn.data("question-id");' .
+				'$btn.prop("disabled", true).text(strings.removing);' .
+				'$.ajax({' .
+					'url: ajaxurl,' .
+					'type: "POST",' .
+					'data: {' .
+						'action: "pressprimer_quiz_remove_question_from_bank",' .
+						'nonce: window.ppqAdmin.nonce,' .
+						'bank_id: bankId,' .
+						'question_id: questionId' .
+					'},' .
+					'success: function(response) {' .
+						'if (response.success) {' .
+							'$row.fadeOut(300, function() {' .
+								'$(this).remove();' .
+								'var $countDisplay = $(".ppq-form-section").first().find(\'div[style*="font-size: 48px"]\');' .
+								'if ($countDisplay.length && response.data.new_count !== undefined) {' .
+									'$countDisplay.text(response.data.new_count);' .
+								'}' .
+								'if ($(".ppq-table tbody tr").length === 0) {' .
+									'$(".ppq-table").replaceWith(\'<p><em>\' + strings.noQuestionsInBank + \'</em></p>\');' .
+								'}' .
+							'});' .
+						'} else {' .
+							'$btn.prop("disabled", false).text(strings.removeFromBank);' .
+							'alert(response.data.message || strings.errorRemovingQuestion);' .
+						'}' .
+					'},' .
+					'error: function() {' .
+						'$btn.prop("disabled", false).text(strings.removeFromBank);' .
+						'alert(strings.errorRemovingRetry);' .
+					'}' .
+				'});' .
+			'});' .
+		'});';
 
 		wp_add_inline_script( 'ppq-admin', $inline_script );
 	}

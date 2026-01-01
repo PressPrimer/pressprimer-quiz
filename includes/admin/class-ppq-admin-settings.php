@@ -642,66 +642,56 @@ Good luck with your studies!',
 			]
 		);
 
-		$inline_script = <<<'JS'
-jQuery(document).ready(function($) {
-	var config = window.ppqSiteApiKey || {};
-	var strings = config.strings || {};
-	var nonce = config.nonce || '';
-
-	// Save site-wide API key
-	$('#ppq-save-site-key').on('click', function() {
-		var key = $('#ppq-site-api-key-input').val().trim();
-		if (!key) {
-			alert(strings.enterApiKey);
-			return;
-		}
-
-		var $button = $(this);
-		$button.prop('disabled', true).text(strings.saving);
-
-		$.post(ajaxurl, {
-			action: 'pressprimer_quiz_save_site_api_key',
-			nonce: nonce,
-			api_key: key
-		}, function(response) {
-			if (response.success) {
-				location.reload();
-			} else {
-				alert(response.data.message || strings.failedToSave);
-				$button.prop('disabled', false).text(strings.saveKey);
-			}
-		}).fail(function() {
-			alert(strings.requestFailed);
-			$button.prop('disabled', false).text(strings.saveKey);
-		});
-	});
-
-	// Clear API key
-	$('#ppq-clear-site-key').on('click', function() {
-		if (!confirm(strings.confirmClear)) {
-			return;
-		}
-
-		var $button = $(this);
-		$button.prop('disabled', true);
-
-		$.post(ajaxurl, {
-			action: 'pressprimer_quiz_clear_site_api_key',
-			nonce: nonce
-		}, function(response) {
-			if (response.success) {
-				location.reload();
-			} else {
-				alert(response.data.message || strings.failedToClear);
-				$button.prop('disabled', false);
-			}
-		}).fail(function() {
-			alert(strings.requestFailed);
-			$button.prop('disabled', false);
-		});
-	});
-});
-JS;
+		$inline_script = 'jQuery(document).ready(function($) {' .
+			'var config = window.ppqSiteApiKey || {};' .
+			'var strings = config.strings || {};' .
+			'var nonce = config.nonce || "";' .
+			'$("#ppq-save-site-key").on("click", function() {' .
+				'var key = $("#ppq-site-api-key-input").val().trim();' .
+				'if (!key) {' .
+					'alert(strings.enterApiKey);' .
+					'return;' .
+				'}' .
+				'var $button = $(this);' .
+				'$button.prop("disabled", true).text(strings.saving);' .
+				'$.post(ajaxurl, {' .
+					'action: "pressprimer_quiz_save_site_api_key",' .
+					'nonce: nonce,' .
+					'api_key: key' .
+				'}, function(response) {' .
+					'if (response.success) {' .
+						'location.reload();' .
+					'} else {' .
+						'alert(response.data.message || strings.failedToSave);' .
+						'$button.prop("disabled", false).text(strings.saveKey);' .
+					'}' .
+				'}).fail(function() {' .
+					'alert(strings.requestFailed);' .
+					'$button.prop("disabled", false).text(strings.saveKey);' .
+				'});' .
+			'});' .
+			'$("#ppq-clear-site-key").on("click", function() {' .
+				'if (!confirm(strings.confirmClear)) {' .
+					'return;' .
+				'}' .
+				'var $button = $(this);' .
+				'$button.prop("disabled", true);' .
+				'$.post(ajaxurl, {' .
+					'action: "pressprimer_quiz_clear_site_api_key",' .
+					'nonce: nonce' .
+				'}, function(response) {' .
+					'if (response.success) {' .
+						'location.reload();' .
+					'} else {' .
+						'alert(response.data.message || strings.failedToClear);' .
+						'$button.prop("disabled", false);' .
+					'}' .
+				'}).fail(function() {' .
+					'alert(strings.requestFailed);' .
+					'$button.prop("disabled", false);' .
+				'});' .
+			'});' .
+		'});';
 
 		wp_add_inline_script( 'ppq-admin', $inline_script );
 	}
@@ -1057,223 +1047,193 @@ JS;
 			]
 		);
 
-		$inline_script = <<<'JS'
-jQuery(document).ready(function($) {
-	var config = window.ppqApiKeySettings || {};
-	var strings = config.strings || {};
-	var nonce = config.nonce || '';
-
-	var PPQ_APIKey = {
-		init: function() {
-			this.bindEvents();
-		},
-
-		bindEvents: function() {
-			$('#ppq-save-key').on('click', this.saveKey.bind(this));
-			$('#ppq-validate-key').on('click', this.validateKey.bind(this));
-			$('#ppq-clear-key').on('click', this.clearKey.bind(this));
-			$('#ppq-toggle-key-visibility').on('click', this.toggleVisibility.bind(this));
-			$('#ppq-api-model').on('change', this.saveModelPreference.bind(this));
-			$('#ppq-refresh-models').on('click', this.refreshModels.bind(this));
-		},
-
-		saveKey: function() {
-			var key = $('#ppq-api-key-input').val().trim();
-
-			if (!key) {
-				this.showResult('error', strings.enterApiKey);
-				return;
-			}
-
-			if (!key.startsWith('sk-')) {
-				this.showResult('error', strings.invalidKeyFormat);
-				return;
-			}
-
-			this.setLoading('#ppq-save-key', true);
-
-			$.ajax({
-				url: ajaxurl,
-				type: 'POST',
-				data: {
-					action: 'pressprimer_quiz_save_user_api_key',
-					nonce: nonce,
-					api_key: key
-				},
-				success: function(response) {
-					this.setLoading('#ppq-save-key', false);
-
-					if (response.success) {
-						this.showResult('success', response.data.message);
-						setTimeout(function() {
-							location.reload();
-						}, 1500);
-					} else {
-						this.showResult('error', response.data.message || strings.failedToSave);
-					}
-				}.bind(this),
-				error: function() {
-					this.setLoading('#ppq-save-key', false);
-					this.showResult('error', strings.errorOccurred);
-				}.bind(this)
-			});
-		},
-
-		validateKey: function() {
-			this.setLoading('#ppq-validate-key', true);
-
-			$.ajax({
-				url: ajaxurl,
-				type: 'POST',
-				data: {
-					action: 'pressprimer_quiz_validate_api_key',
-					nonce: nonce
-				},
-				success: function(response) {
-					this.setLoading('#ppq-validate-key', false);
-
-					if (response.success) {
-						this.showResult('success', response.data.message);
-					} else {
-						this.showResult('error', response.data.message || strings.invalidApiKey);
-					}
-				}.bind(this),
-				error: function() {
-					this.setLoading('#ppq-validate-key', false);
-					this.showResult('error', strings.errorOccurred);
-				}.bind(this)
-			});
-		},
-
-		clearKey: function() {
-			if (!confirm(strings.confirmClearKey)) {
-				return;
-			}
-
-			this.setLoading('#ppq-clear-key', true);
-
-			$.ajax({
-				url: ajaxurl,
-				type: 'POST',
-				data: {
-					action: 'pressprimer_quiz_clear_user_api_key',
-					nonce: nonce
-				},
-				success: function(response) {
-					this.setLoading('#ppq-clear-key', false);
-
-					if (response.success) {
-						this.showResult('success', response.data.message);
-						setTimeout(function() {
-							location.reload();
-						}, 1500);
-					} else {
-						this.showResult('error', response.data.message || strings.failedToClear);
-					}
-				}.bind(this),
-				error: function() {
-					this.setLoading('#ppq-clear-key', false);
-					this.showResult('error', strings.errorOccurred);
-				}.bind(this)
-			});
-		},
-
-		toggleVisibility: function() {
-			var input = $('#ppq-api-key-input');
-			var icon = $('#ppq-toggle-key-visibility .dashicons');
-
-			if (input.attr('type') === 'password') {
-				input.attr('type', 'text');
-				icon.removeClass('dashicons-visibility').addClass('dashicons-hidden');
-			} else {
-				input.attr('type', 'password');
-				icon.removeClass('dashicons-hidden').addClass('dashicons-visibility');
-			}
-		},
-
-		saveModelPreference: function() {
-			var model = $('#ppq-api-model').val();
-
-			$.ajax({
-				url: ajaxurl,
-				type: 'POST',
-				data: {
-					action: 'pressprimer_quiz_save_user_api_key',
-					nonce: nonce,
-					model: model
-				},
-				success: function(response) {
-					if (response.success) {
-						this.showResult('success', strings.modelSaved);
-					}
-				}.bind(this)
-			});
-		},
-
-		refreshModels: function() {
-			this.setLoading('#ppq-refresh-models', true);
-
-			$.ajax({
-				url: ajaxurl,
-				type: 'POST',
-				data: {
-					action: 'pressprimer_quiz_get_api_models',
-					nonce: nonce
-				},
-				success: function(response) {
-					this.setLoading('#ppq-refresh-models', false);
-
-					if (response.success && response.data.models) {
-						var select = $('#ppq-api-model');
-						var currentValue = select.val();
-						select.empty();
-
-						response.data.models.forEach(function(model) {
-							select.append($('<option>', {
-								value: model,
-								text: model,
-								selected: model === currentValue
-							}));
-						});
-
-						this.showResult('success', strings.modelsRefreshed);
-					} else {
-						this.showResult('error', response.data.message || strings.failedToFetchModels);
-					}
-				}.bind(this),
-				error: function() {
-					this.setLoading('#ppq-refresh-models', false);
-					this.showResult('error', strings.errorOccurred);
-				}.bind(this)
-			});
-		},
-
-		showResult: function(type, message) {
-			var $result = $('#ppq-validation-result');
-			$result.removeClass('success error').addClass(type).text(message).show();
-
-			setTimeout(function() {
-				$result.fadeOut();
-			}, 5000);
-		},
-
-		setLoading: function(selector, loading) {
-			var $btn = $(selector);
-			if (loading) {
-				$btn.prop('disabled', true);
-				if (!$btn.find('.spinner').length) {
-					$btn.append(' <span class="spinner is-active"></span>');
-				}
-			} else {
-				$btn.prop('disabled', false);
-				$btn.find('.spinner').remove();
-			}
-		}
-	};
-
-	PPQ_APIKey.init();
-});
-JS;
+		$inline_script = 'jQuery(document).ready(function($) {' .
+			'var config = window.ppqApiKeySettings || {};' .
+			'var strings = config.strings || {};' .
+			'var nonce = config.nonce || "";' .
+			'var PPQ_APIKey = {' .
+				'init: function() {' .
+					'this.bindEvents();' .
+				'},' .
+				'bindEvents: function() {' .
+					'$("#ppq-save-key").on("click", this.saveKey.bind(this));' .
+					'$("#ppq-validate-key").on("click", this.validateKey.bind(this));' .
+					'$("#ppq-clear-key").on("click", this.clearKey.bind(this));' .
+					'$("#ppq-toggle-key-visibility").on("click", this.toggleVisibility.bind(this));' .
+					'$("#ppq-api-model").on("change", this.saveModelPreference.bind(this));' .
+					'$("#ppq-refresh-models").on("click", this.refreshModels.bind(this));' .
+				'},' .
+				'saveKey: function() {' .
+					'var key = $("#ppq-api-key-input").val().trim();' .
+					'if (!key) {' .
+						'this.showResult("error", strings.enterApiKey);' .
+						'return;' .
+					'}' .
+					'if (!key.startsWith("sk-")) {' .
+						'this.showResult("error", strings.invalidKeyFormat);' .
+						'return;' .
+					'}' .
+					'this.setLoading("#ppq-save-key", true);' .
+					'$.ajax({' .
+						'url: ajaxurl,' .
+						'type: "POST",' .
+						'data: {' .
+							'action: "pressprimer_quiz_save_user_api_key",' .
+							'nonce: nonce,' .
+							'api_key: key' .
+						'},' .
+						'success: function(response) {' .
+							'this.setLoading("#ppq-save-key", false);' .
+							'if (response.success) {' .
+								'this.showResult("success", response.data.message);' .
+								'setTimeout(function() {' .
+									'location.reload();' .
+								'}, 1500);' .
+							'} else {' .
+								'this.showResult("error", response.data.message || strings.failedToSave);' .
+							'}' .
+						'}.bind(this),' .
+						'error: function() {' .
+							'this.setLoading("#ppq-save-key", false);' .
+							'this.showResult("error", strings.errorOccurred);' .
+						'}.bind(this)' .
+					'});' .
+				'},' .
+				'validateKey: function() {' .
+					'this.setLoading("#ppq-validate-key", true);' .
+					'$.ajax({' .
+						'url: ajaxurl,' .
+						'type: "POST",' .
+						'data: {' .
+							'action: "pressprimer_quiz_validate_api_key",' .
+							'nonce: nonce' .
+						'},' .
+						'success: function(response) {' .
+							'this.setLoading("#ppq-validate-key", false);' .
+							'if (response.success) {' .
+								'this.showResult("success", response.data.message);' .
+							'} else {' .
+								'this.showResult("error", response.data.message || strings.invalidApiKey);' .
+							'}' .
+						'}.bind(this),' .
+						'error: function() {' .
+							'this.setLoading("#ppq-validate-key", false);' .
+							'this.showResult("error", strings.errorOccurred);' .
+						'}.bind(this)' .
+					'});' .
+				'},' .
+				'clearKey: function() {' .
+					'if (!confirm(strings.confirmClearKey)) {' .
+						'return;' .
+					'}' .
+					'this.setLoading("#ppq-clear-key", true);' .
+					'$.ajax({' .
+						'url: ajaxurl,' .
+						'type: "POST",' .
+						'data: {' .
+							'action: "pressprimer_quiz_clear_user_api_key",' .
+							'nonce: nonce' .
+						'},' .
+						'success: function(response) {' .
+							'this.setLoading("#ppq-clear-key", false);' .
+							'if (response.success) {' .
+								'this.showResult("success", response.data.message);' .
+								'setTimeout(function() {' .
+									'location.reload();' .
+								'}, 1500);' .
+							'} else {' .
+								'this.showResult("error", response.data.message || strings.failedToClear);' .
+							'}' .
+						'}.bind(this),' .
+						'error: function() {' .
+							'this.setLoading("#ppq-clear-key", false);' .
+							'this.showResult("error", strings.errorOccurred);' .
+						'}.bind(this)' .
+					'});' .
+				'},' .
+				'toggleVisibility: function() {' .
+					'var input = $("#ppq-api-key-input");' .
+					'var icon = $("#ppq-toggle-key-visibility .dashicons");' .
+					'if (input.attr("type") === "password") {' .
+						'input.attr("type", "text");' .
+						'icon.removeClass("dashicons-visibility").addClass("dashicons-hidden");' .
+					'} else {' .
+						'input.attr("type", "password");' .
+						'icon.removeClass("dashicons-hidden").addClass("dashicons-visibility");' .
+					'}' .
+				'},' .
+				'saveModelPreference: function() {' .
+					'var model = $("#ppq-api-model").val();' .
+					'$.ajax({' .
+						'url: ajaxurl,' .
+						'type: "POST",' .
+						'data: {' .
+							'action: "pressprimer_quiz_save_user_api_key",' .
+							'nonce: nonce,' .
+							'model: model' .
+						'},' .
+						'success: function(response) {' .
+							'if (response.success) {' .
+								'this.showResult("success", strings.modelSaved);' .
+							'}' .
+						'}.bind(this)' .
+					'});' .
+				'},' .
+				'refreshModels: function() {' .
+					'this.setLoading("#ppq-refresh-models", true);' .
+					'$.ajax({' .
+						'url: ajaxurl,' .
+						'type: "POST",' .
+						'data: {' .
+							'action: "pressprimer_quiz_get_api_models",' .
+							'nonce: nonce' .
+						'},' .
+						'success: function(response) {' .
+							'this.setLoading("#ppq-refresh-models", false);' .
+							'if (response.success && response.data.models) {' .
+								'var select = $("#ppq-api-model");' .
+								'var currentValue = select.val();' .
+								'select.empty();' .
+								'response.data.models.forEach(function(model) {' .
+									'select.append($("<option>", {' .
+										'value: model,' .
+										'text: model,' .
+										'selected: model === currentValue' .
+									'}));' .
+								'});' .
+								'this.showResult("success", strings.modelsRefreshed);' .
+							'} else {' .
+								'this.showResult("error", response.data.message || strings.failedToFetchModels);' .
+							'}' .
+						'}.bind(this),' .
+						'error: function() {' .
+							'this.setLoading("#ppq-refresh-models", false);' .
+							'this.showResult("error", strings.errorOccurred);' .
+						'}.bind(this)' .
+					'});' .
+				'},' .
+				'showResult: function(type, message) {' .
+					'var $result = $("#ppq-validation-result");' .
+					'$result.removeClass("success error").addClass(type).text(message).show();' .
+					'setTimeout(function() {' .
+						'$result.fadeOut();' .
+					'}, 5000);' .
+				'},' .
+				'setLoading: function(selector, loading) {' .
+					'var $btn = $(selector);' .
+					'if (loading) {' .
+						'$btn.prop("disabled", true);' .
+						'if (!$btn.find(".spinner").length) {' .
+							'$btn.append(\' <span class="spinner is-active"></span>\');' .
+						'}' .
+					'} else {' .
+						'$btn.prop("disabled", false);' .
+						'$btn.find(".spinner").remove();' .
+					'}' .
+				'}' .
+			'};' .
+			'PPQ_APIKey.init();' .
+		'});';
 
 		wp_add_inline_script( 'ppq-admin', $inline_script );
 	}

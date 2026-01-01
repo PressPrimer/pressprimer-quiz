@@ -282,118 +282,94 @@ class PressPrimer_Quiz_LifterLMS {
 		wp_add_inline_style( 'ppq-admin', $inline_css );
 
 		// Inline JavaScript for meta box functionality.
-		$inline_script = <<<'JS'
-		jQuery(document).ready(function($) {
-			var config = window.ppqLifterLMSMetaBox || {};
-			var searchTimeout;
-			var $search = $('#ppq_lifterlms_quiz_search');
-			var $results = $('#ppq_lifterlms_quiz_results');
-			var $quizId = $('#ppq_lifterlms_quiz_id');
-			var $removeBtn = $('.ppq-remove-quiz');
-
-			function formatQuiz(quiz) {
-				return '<div class="ppq-quiz-result-item" data-id="' + quiz.id + '" data-title="' + $('<div/>').text(quiz.title).html() + '">' +
-					'<span class="ppq-quiz-id">' + quiz.id + '</span> - ' + $('<div/>').text(quiz.title).html() +
-					'</div>';
-			}
-
-			// Load recent quizzes on focus (only if no quiz selected)
-			$search.on('focus', function() {
-				if ($quizId.val()) {
-					return; // Already has a selection
-				}
-
-				// Load 50 most recent quizzes
-				$.ajax({
-					url: ajaxurl,
-					type: 'POST',
-					data: {
-						action: 'pressprimer_quiz_search_quizzes_lifterlms',
-						nonce: config.nonce,
-						recent: 1
-					},
-					success: function(response) {
-						if (response.success && response.data.quizzes && response.data.quizzes.length > 0) {
-							var html = '';
-							response.data.quizzes.forEach(function(quiz) {
-								html += formatQuiz(quiz);
-							});
-							$results.html(html).show();
-						}
-					}
-				});
-			});
-
-			// Search quizzes on input
-			$search.on('input', function() {
-				var query = $(this).val();
-
-				clearTimeout(searchTimeout);
-
-				if (query.length < 2) {
-					// Show recent quizzes if input is short
-					$search.trigger('focus');
-					return;
-				}
-
-				searchTimeout = setTimeout(function() {
-					$.ajax({
-						url: ajaxurl,
-						type: 'POST',
-						data: {
-							action: 'pressprimer_quiz_search_quizzes_lifterlms',
-							nonce: config.nonce,
-							search: query
-						},
-						success: function(response) {
-							if (response.success && response.data.quizzes && response.data.quizzes.length > 0) {
-								var html = '';
-								response.data.quizzes.forEach(function(quiz) {
-									html += formatQuiz(quiz);
-								});
-								$results.html(html).show();
-							} else {
-								$results.html('<div class="ppq-no-results">' + config.strings.noQuizzesFound + '</div>').show();
-							}
-						}
-					});
-				}, 300);
-			});
-
-			// Select quiz
-			$results.on('click', '.ppq-quiz-result-item', function() {
-				var $item = $(this);
-				var id = $item.data('id');
-				var title = $item.data('title');
-				var display = id + ' - ' + title;
-
-				$quizId.val(id);
-				$search.val(display).attr('readonly', true);
-				$results.hide();
-
-				// Add remove button if not present
-				if (!$removeBtn.length) {
-					$search.after('<button type="button" class="ppq-remove-quiz button-link" aria-label="' + config.strings.removeQuiz + '" title="' + config.strings.removeQuiz + '"><span class="dashicons dashicons-no-alt"></span></button>');
-					$removeBtn = $('.ppq-remove-quiz');
-				}
-			});
-
-			// Remove quiz
-			$(document).on('click', '.ppq-remove-quiz', function() {
-				$quizId.val('');
-				$search.val('').removeAttr('readonly');
-				$(this).remove();
-				$removeBtn = $();
-			});
-
-			// Hide results on click outside
-			$(document).on('click', function(e) {
-				if (!$(e.target).closest('.ppq-quiz-selector').length) {
-					$results.hide();
-				}
-			});
-		});
-JS;
+		$inline_script = 'jQuery(document).ready(function($) {' .
+			'var config = window.ppqLifterLMSMetaBox || {};' .
+			'var searchTimeout;' .
+			'var $search = $("#ppq_lifterlms_quiz_search");' .
+			'var $results = $("#ppq_lifterlms_quiz_results");' .
+			'var $quizId = $("#ppq_lifterlms_quiz_id");' .
+			'var $removeBtn = $(".ppq-remove-quiz");' .
+			'function formatQuiz(quiz) {' .
+				'return \'<div class="ppq-quiz-result-item" data-id="\' + quiz.id + \'" data-title="\' + $("<div/>").text(quiz.title).html() + \'">\' +' .
+					'\'<span class="ppq-quiz-id">\' + quiz.id + \'</span> - \' + $("<div/>").text(quiz.title).html() +' .
+					'\'</div>\';' .
+			'}' .
+			'$search.on("focus", function() {' .
+				'if ($quizId.val()) { return; }' .
+				'$.ajax({' .
+					'url: ajaxurl,' .
+					'type: "POST",' .
+					'data: {' .
+						'action: "pressprimer_quiz_search_quizzes_lifterlms",' .
+						'nonce: config.nonce,' .
+						'recent: 1' .
+					'},' .
+					'success: function(response) {' .
+						'if (response.success && response.data.quizzes && response.data.quizzes.length > 0) {' .
+							'var html = "";' .
+							'response.data.quizzes.forEach(function(quiz) {' .
+								'html += formatQuiz(quiz);' .
+							'});' .
+							'$results.html(html).show();' .
+						'}' .
+					'}' .
+				'});' .
+			'});' .
+			'$search.on("input", function() {' .
+				'var query = $(this).val();' .
+				'clearTimeout(searchTimeout);' .
+				'if (query.length < 2) {' .
+					'$search.trigger("focus");' .
+					'return;' .
+				'}' .
+				'searchTimeout = setTimeout(function() {' .
+					'$.ajax({' .
+						'url: ajaxurl,' .
+						'type: "POST",' .
+						'data: {' .
+							'action: "pressprimer_quiz_search_quizzes_lifterlms",' .
+							'nonce: config.nonce,' .
+							'search: query' .
+						'},' .
+						'success: function(response) {' .
+							'if (response.success && response.data.quizzes && response.data.quizzes.length > 0) {' .
+								'var html = "";' .
+								'response.data.quizzes.forEach(function(quiz) {' .
+									'html += formatQuiz(quiz);' .
+								'});' .
+								'$results.html(html).show();' .
+							'} else {' .
+								'$results.html(\'<div class="ppq-no-results">\' + config.strings.noQuizzesFound + \'</div>\').show();' .
+							'}' .
+						'}' .
+					'});' .
+				'}, 300);' .
+			'});' .
+			'$results.on("click", ".ppq-quiz-result-item", function() {' .
+				'var $item = $(this);' .
+				'var id = $item.data("id");' .
+				'var title = $item.data("title");' .
+				'var display = id + " - " + title;' .
+				'$quizId.val(id);' .
+				'$search.val(display).attr("readonly", true);' .
+				'$results.hide();' .
+				'if (!$removeBtn.length) {' .
+					'$search.after(\'<button type="button" class="ppq-remove-quiz button-link" aria-label="\' + config.strings.removeQuiz + \'" title="\' + config.strings.removeQuiz + \'"><span class="dashicons dashicons-no-alt"></span></button>\');' .
+					'$removeBtn = $(".ppq-remove-quiz");' .
+				'}' .
+			'});' .
+			'$(document).on("click", ".ppq-remove-quiz", function() {' .
+				'$quizId.val("");' .
+				'$search.val("").removeAttr("readonly");' .
+				'$(this).remove();' .
+				'$removeBtn = $();' .
+			'});' .
+			'$(document).on("click", function(e) {' .
+				'if (!$(e.target).closest(".ppq-quiz-selector").length) {' .
+					'$results.hide();' .
+				'}' .
+			'});' .
+		'});';
 		wp_add_inline_script( 'ppq-admin', $inline_script );
 	}
 

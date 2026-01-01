@@ -53,7 +53,7 @@ class PressPrimer_Quiz_Email_Service {
 		}
 
 		// Get email settings
-		$settings   = get_option( 'ppq_settings', [] );
+		$settings   = get_option( 'pressprimer_quiz_settings', [] );
 		$from_name  = isset( $settings['email_from_name'] ) && $settings['email_from_name']
 			? $settings['email_from_name']
 			: get_bloginfo( 'name' );
@@ -208,7 +208,7 @@ class PressPrimer_Quiz_Email_Service {
 			$page_id = $wpdb->get_var(
 				$wpdb->prepare(
 					"SELECT ID FROM {$wpdb->posts} WHERE post_status = 'publish' AND post_content LIKE %s LIMIT 1",
-					'%[ppq_quiz id="' . $quiz->id . '"%'
+					'%[pressprimer_quiz id="' . $quiz->id . '"%'
 				)
 			);
 
@@ -240,7 +240,7 @@ class PressPrimer_Quiz_Email_Service {
 	 * @return string HTML email body.
 	 */
 	private static function build_html_email( $body_text, $attempt, $quiz, $tokens ) {
-		$settings = get_option( 'ppq_settings', [] );
+		$settings = get_option( 'pressprimer_quiz_settings', [] );
 		$logo_url = isset( $settings['email_logo_url'] ) ? $settings['email_logo_url'] : '';
 
 		$passed_status = $attempt->passed
@@ -343,7 +343,7 @@ class PressPrimer_Quiz_Email_Service {
 </head>
 <body>
 	<div class="email-container">
-		<?php echo $header_html; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
+		<?php echo wp_kses_post( $header_html ); ?>
 
 		<div class="email-body">
 			<div class="message-content">
@@ -351,7 +351,7 @@ class PressPrimer_Quiz_Email_Service {
 			</div>
 		</div>
 
-		<?php echo $footer_html; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
+		<?php echo wp_kses_post( $footer_html ); ?>
 	</div>
 </body>
 </html>
@@ -579,7 +579,7 @@ Good luck with your studies!
 		$first_name   = $parts[0];
 
 		// Get email settings
-		$settings   = get_option( 'ppq_settings', [] );
+		$settings   = get_option( 'pressprimer_quiz_settings', [] );
 		$from_name  = isset( $settings['email_from_name'] ) && $settings['email_from_name']
 			? $settings['email_from_name']
 			: get_bloginfo( 'name' );
@@ -647,7 +647,7 @@ Good luck with your studies!
 	 * @return string HTML email body.
 	 */
 	private static function build_test_html_email( $body_text, $tokens ) {
-		$settings = get_option( 'ppq_settings', [] );
+		$settings = get_option( 'pressprimer_quiz_settings', [] );
 		$logo_url = isset( $settings['email_logo_url'] ) ? $settings['email_logo_url'] : '';
 
 		// Build header HTML
@@ -769,7 +769,7 @@ Good luck with your studies!
 </head>
 <body>
 	<div class="email-container">
-		<?php echo $header_html; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
+		<?php echo wp_kses_post( $header_html ); ?>
 
 		<div class="email-body">
 			<div class="test-banner">
@@ -781,7 +781,7 @@ Good luck with your studies!
 			</div>
 		</div>
 
-		<?php echo $footer_html; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
+		<?php echo wp_kses_post( $footer_html ); ?>
 	</div>
 </body>
 </html>
@@ -799,7 +799,7 @@ Good luck with your studies!
 	 * @param int $attempt_id Attempt ID.
 	 */
 	public static function maybe_send_on_completion( $attempt_id ) {
-		$settings  = get_option( 'ppq_settings', [] );
+		$settings  = get_option( 'pressprimer_quiz_settings', [] );
 		$auto_send = isset( $settings['email_results_auto_send'] ) && $settings['email_results_auto_send'];
 
 		if ( ! $auto_send ) {

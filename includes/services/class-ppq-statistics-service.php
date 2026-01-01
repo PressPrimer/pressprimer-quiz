@@ -46,7 +46,7 @@ class PressPrimer_Quiz_Statistics_Service {
 	 * @since 1.0.0
 	 * @var string
 	 */
-	const OVERVIEW_STATS_OPTION = 'ppq_cached_overview_stats';
+	const OVERVIEW_STATS_OPTION = 'pressprimer_quiz_cached_overview_stats';
 
 	/**
 	 * Cron hook name for stats recalculation
@@ -54,7 +54,7 @@ class PressPrimer_Quiz_Statistics_Service {
 	 * @since 1.0.0
 	 * @var string
 	 */
-	const CRON_HOOK = 'ppq_recalculate_overview_stats';
+	const CRON_HOOK = 'pressprimer_quiz_recalculate_overview_stats';
 
 	/**
 	 * Get dashboard statistics
@@ -496,6 +496,10 @@ class PressPrimer_Quiz_Statistics_Service {
 		$orderby_column = $allowed_orderby[ $args['orderby'] ] ?? 'attempts';
 		$order          = strtoupper( $args['order'] ) === 'ASC' ? 'ASC' : 'DESC';
 
+		// Build ORDER BY with sanitize_sql_orderby
+		$order_sql = sanitize_sql_orderby( "{$orderby_column} {$order}" );
+		$order_sql = $order_sql ? "ORDER BY {$order_sql}" : 'ORDER BY attempts DESC';
+
 		$offset = ( $args['page'] - 1 ) * $args['per_page'];
 
 		// Main query
@@ -516,7 +520,7 @@ class PressPrimer_Quiz_Statistics_Service {
 				 LEFT JOIN {$attempts_table} a ON q.id = a.quiz_id
 				 WHERE {$where_sql}
 				 GROUP BY q.id
-				 ORDER BY {$orderby_column} {$order}
+				 {$order_sql}
 				 LIMIT %d OFFSET %d", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Table names and validated clauses safely constructed
 				$args['per_page'],
 				$offset
@@ -621,6 +625,10 @@ class PressPrimer_Quiz_Statistics_Service {
 		$orderby_column = $allowed_orderby[ $args['orderby'] ] ?? 'a.finished_at';
 		$order          = strtoupper( $args['order'] ) === 'ASC' ? 'ASC' : 'DESC';
 
+		// Build ORDER BY with sanitize_sql_orderby
+		$order_sql = sanitize_sql_orderby( "{$orderby_column} {$order}" );
+		$order_sql = $order_sql ? "ORDER BY {$order_sql}" : 'ORDER BY a.finished_at DESC';
+
 		$offset = ( $args['page'] - 1 ) * $args['per_page'];
 
 		$attempt_items_table = $wpdb->prefix . 'ppq_attempt_items';
@@ -650,7 +658,7 @@ class PressPrimer_Quiz_Statistics_Service {
 				 INNER JOIN {$quizzes_table} q ON a.quiz_id = q.id
 				 LEFT JOIN {$users_table} u ON a.user_id = u.ID
 				 WHERE {$where_sql}
-				 ORDER BY {$orderby_column} {$order}
+				 {$order_sql}
 				 LIMIT %d OFFSET %d", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Table names and validated clauses safely constructed
 				$args['per_page'],
 				$offset

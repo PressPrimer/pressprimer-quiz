@@ -93,7 +93,7 @@ class PressPrimer_Quiz_Blocks {
 	 */
 	private function register_quiz_block() {
 		// Get asset file for dependencies and version
-		$asset_file = PPQ_PLUGIN_PATH . 'build/blocks/quiz/index.asset.php';
+		$asset_file = PRESSPRIMER_QUIZ_PLUGIN_PATH . 'build/blocks/quiz/index.asset.php';
 
 		if ( ! file_exists( $asset_file ) ) {
 			return;
@@ -104,7 +104,7 @@ class PressPrimer_Quiz_Blocks {
 		// Register block script
 		wp_register_script(
 			'pressprimer-quiz-quiz-block-editor',
-			PPQ_PLUGIN_URL . 'build/blocks/quiz/index.js',
+			PRESSPRIMER_QUIZ_PLUGIN_URL . 'build/blocks/quiz/index.js',
 			$asset['dependencies'],
 			$asset['version']
 		);
@@ -112,17 +112,17 @@ class PressPrimer_Quiz_Blocks {
 		// Register editor style
 		wp_register_style(
 			'pressprimer-quiz-quiz-block-editor-style',
-			PPQ_PLUGIN_URL . 'blocks/quiz/editor.css',
+			PRESSPRIMER_QUIZ_PLUGIN_URL . 'blocks/quiz/editor.css',
 			[],
-			PPQ_VERSION
+			PRESSPRIMER_QUIZ_VERSION
 		);
 
 		// Register frontend style
 		wp_register_style(
 			'pressprimer-quiz-quiz-block-style',
-			PPQ_PLUGIN_URL . 'blocks/quiz/style.css',
+			PRESSPRIMER_QUIZ_PLUGIN_URL . 'blocks/quiz/style.css',
 			[],
-			PPQ_VERSION
+			PRESSPRIMER_QUIZ_VERSION
 		);
 
 		// Register block type
@@ -196,7 +196,7 @@ class PressPrimer_Quiz_Blocks {
 	 */
 	private function register_my_attempts_block() {
 		// Get asset file for dependencies and version
-		$asset_file = PPQ_PLUGIN_PATH . 'build/blocks/my-attempts/index.asset.php';
+		$asset_file = PRESSPRIMER_QUIZ_PLUGIN_PATH . 'build/blocks/my-attempts/index.asset.php';
 
 		if ( ! file_exists( $asset_file ) ) {
 			return;
@@ -207,7 +207,7 @@ class PressPrimer_Quiz_Blocks {
 		// Register block script
 		wp_register_script(
 			'pressprimer-quiz-my-attempts-block-editor',
-			PPQ_PLUGIN_URL . 'build/blocks/my-attempts/index.js',
+			PRESSPRIMER_QUIZ_PLUGIN_URL . 'build/blocks/my-attempts/index.js',
 			$asset['dependencies'],
 			$asset['version']
 		);
@@ -215,17 +215,17 @@ class PressPrimer_Quiz_Blocks {
 		// Register editor style
 		wp_register_style(
 			'pressprimer-quiz-my-attempts-block-editor-style',
-			PPQ_PLUGIN_URL . 'blocks/my-attempts/editor.css',
+			PRESSPRIMER_QUIZ_PLUGIN_URL . 'blocks/my-attempts/editor.css',
 			[],
-			PPQ_VERSION
+			PRESSPRIMER_QUIZ_VERSION
 		);
 
 		// Register frontend style
 		wp_register_style(
 			'pressprimer-quiz-my-attempts-block-style',
-			PPQ_PLUGIN_URL . 'blocks/my-attempts/style.css',
+			PRESSPRIMER_QUIZ_PLUGIN_URL . 'blocks/my-attempts/style.css',
 			[],
-			PPQ_VERSION
+			PRESSPRIMER_QUIZ_VERSION
 		);
 
 		// Register block type

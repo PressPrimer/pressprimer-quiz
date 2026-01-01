@@ -762,25 +762,34 @@ class PressPrimer_Quiz_Question extends PressPrimer_Quiz_Model {
 
 		$where_sql = 'WHERE ' . implode( ' AND ', $where_clauses );
 
-		// Build ORDER BY
-		$order_by  = sanitize_key( $args['order_by'] ?? 'id' );
-		$order     = strtoupper( $args['order'] ?? 'DESC' );
-		$order_sql = "ORDER BY `{$order_by}` {$order}";
+		// Build ORDER BY with validation
+		$order_by_field = sanitize_key( $args['order_by'] ?? 'id' );
+		$order_dir      = strtoupper( $args['order'] ?? 'DESC' );
+		$order_dir      = in_array( $order_dir, [ 'ASC', 'DESC' ], true ) ? $order_dir : 'DESC';
+		$order_sql      = sanitize_sql_orderby( "{$order_by_field} {$order_dir}" );
+		$order_sql      = $order_sql ? "ORDER BY {$order_sql}" : '';
 
-		// Build LIMIT
+		// Build LIMIT with placeholders
 		$limit_sql = '';
 		if ( isset( $args['limit'] ) ) {
-			$limit     = absint( $args['limit'] );
-			$offset    = absint( $args['offset'] ?? 0 );
-			$limit_sql = $offset > 0 ? "LIMIT {$offset}, {$limit}" : "LIMIT {$limit}";
+			$limit  = absint( $args['limit'] );
+			$offset = absint( $args['offset'] ?? 0 );
+			if ( $offset > 0 ) {
+				$limit_sql      = 'LIMIT %d, %d';
+				$where_values[] = $offset;
+				$where_values[] = $limit;
+			} else {
+				$limit_sql      = 'LIMIT %d';
+				$where_values[] = $limit;
+			}
 		}
 
 		// Build final query
 		$query = "SELECT * FROM {$table} {$where_sql} {$order_sql} {$limit_sql}";
 
-		// Prepare and execute
+		// Prepare and execute - always prepare if we have any values
 		if ( ! empty( $where_values ) ) {
-			$query = $wpdb->prepare( $query, $where_values ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
+			$query = $wpdb->prepare( $query, $where_values ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- Query built with placeholders
 		}
 
 		$rows = $wpdb->get_results( $query ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared

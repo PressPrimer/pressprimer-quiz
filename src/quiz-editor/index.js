@@ -23,7 +23,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
 	if (root) {
 		// Get quiz data from localized script
-		const quizData = window.ppqQuizData || {};
+		const quizData = window.pressprimerQuizQuizData || {};
 
 		// Render the editor
 		render(<QuizEditor quizData={quizData} />, root);

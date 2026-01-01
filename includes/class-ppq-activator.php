@@ -77,8 +77,8 @@ class PressPrimer_Quiz_Activator {
 		// Check WordPress version
 		if ( version_compare( get_bloginfo( 'version' ), '6.4', '<' ) ) {
 			wp_die(
-				esc_html__( 'PressPrimer Quiz requires WordPress 6.4 or higher.', 'pressprimer-quiz' ),
-				esc_html__( 'Plugin Activation Error', 'pressprimer-quiz' ),
+				'PressPrimer Quiz requires WordPress 6.4 or higher.',
+				'Plugin Activation Error',
 				[ 'back_link' => true ]
 			);
 		}
@@ -86,8 +86,8 @@ class PressPrimer_Quiz_Activator {
 		// Check PHP version
 		if ( version_compare( PHP_VERSION, '7.4', '<' ) ) {
 			wp_die(
-				esc_html__( 'PressPrimer Quiz requires PHP 7.4 or higher.', 'pressprimer-quiz' ),
-				esc_html__( 'Plugin Activation Error', 'pressprimer-quiz' ),
+				'PressPrimer Quiz requires PHP 7.4 or higher.',
+				'Plugin Activation Error',
 				[ 'back_link' => true ]
 			);
 		}
@@ -118,8 +118,8 @@ class PressPrimer_Quiz_Activator {
 		flush_rewrite_rules();
 
 		// Set activation flag
-		update_option( 'ppq_activation_time', current_time( 'timestamp' ) );
-		update_option( 'ppq_version', PPQ_VERSION );
+		update_option( 'pressprimer_quiz_activation_time', current_time( 'timestamp' ) );
+		update_option( 'pressprimer_quiz_version', PRESSPRIMER_QUIZ_VERSION );
 	}
 
 	/**
@@ -152,7 +152,7 @@ class PressPrimer_Quiz_Activator {
 				dbDelta( $sql );
 
 				// Update database version
-				update_option( 'ppq_db_version', PPQ_DB_VERSION );
+				update_option( 'pressprimer_quiz_db_version', PRESSPRIMER_QUIZ_DB_VERSION );
 			}
 		}
 	}
@@ -174,16 +174,16 @@ class PressPrimer_Quiz_Activator {
 			'remove_data_on_uninstall' => false, // Keep data by default for safety
 		];
 
-		$existing_settings = get_option( 'ppq_settings' );
+		$existing_settings = get_option( 'pressprimer_quiz_settings' );
 
 		if ( false === $existing_settings ) {
 			// Fresh install - set all defaults
-			add_option( 'ppq_settings', $default_settings );
+			add_option( 'pressprimer_quiz_settings', $default_settings );
 		} else {
 			// Existing install - ALWAYS reset remove_data_on_uninstall to false on activation
 			// This is a critical safety measure to prevent accidental data loss
 			$existing_settings['remove_data_on_uninstall'] = false;
-			update_option( 'ppq_settings', $existing_settings );
+			update_option( 'pressprimer_quiz_settings', $existing_settings );
 		}
 	}
 
@@ -199,7 +199,7 @@ class PressPrimer_Quiz_Activator {
 	 */
 	public static function activate_new_site( $new_site ) {
 		// Only run if plugin is network-activated
-		if ( ! is_plugin_active_for_network( PPQ_PLUGIN_BASENAME ) ) {
+		if ( ! is_plugin_active_for_network( PRESSPRIMER_QUIZ_PLUGIN_BASENAME ) ) {
 			return;
 		}
 

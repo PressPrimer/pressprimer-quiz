@@ -12,7 +12,7 @@
 	'use strict';
 
 	// Get configuration from localized data.
-	var config = window.ppqLifterLMS || {};
+	var config = window.pressprimerQuizLifterLMS || {};
 
 	// Store lesson quiz associations from PHP.
 	var lessonQuizzes = config.lessonQuizzes || {};

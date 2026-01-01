@@ -76,7 +76,7 @@ class PressPrimer_Quiz_TutorLMS {
 		add_action( 'save_post', [ $this, 'save_meta_box' ], 10, 2 );
 
 		// AJAX handler for classic editor quiz search.
-		add_action( 'wp_ajax_ppq_search_quizzes_tutorlms', [ $this, 'ajax_search_quizzes' ] );
+		add_action( 'wp_ajax_pressprimer_quiz_search_quizzes_tutorlms', [ $this, 'ajax_search_quizzes' ] );
 
 		// Gutenberg support.
 		add_action( 'init', [ $this, 'register_meta_fields' ] );
@@ -134,7 +134,7 @@ class PressPrimer_Quiz_TutorLMS {
 	 * @param WP_Post $post Current post object.
 	 */
 	public function render_meta_box( $post ) {
-		wp_nonce_field( 'ppq_tutorlms_meta_box', 'ppq_tutorlms_nonce' );
+		wp_nonce_field( 'pressprimer_quiz_tutorlms_meta_box', 'pressprimer_quiz_tutorlms_nonce' );
 
 		$quiz_id      = get_post_meta( $post->ID, self::META_KEY_QUIZ_ID, true );
 		$require_pass = get_post_meta( $post->ID, self::META_KEY_REQUIRE_PASS, true );
@@ -191,9 +191,47 @@ class PressPrimer_Quiz_TutorLMS {
 				<?php esc_html_e( 'When enabled, students must pass this quiz to mark the lesson complete.', 'pressprimer-quiz' ); ?>
 			</p>
 		</div>
+		<?php
+		$this->enqueue_meta_box_assets();
+	}
 
-		<?php // Inline styles/scripts required: Meta box output with dynamic nonces that cannot be enqueued. ?>
-		<style>
+	/**
+	 * Enqueue meta box assets (styles and scripts)
+	 *
+	 * @since 1.0.0
+	 */
+	private function enqueue_meta_box_assets() {
+		// Ensure admin scripts are enqueued (they may not be on LMS post type edit screens).
+		wp_enqueue_style(
+			'ppq-admin',
+			PRESSPRIMER_QUIZ_PLUGIN_URL . 'assets/css/admin.css',
+			[],
+			PRESSPRIMER_QUIZ_VERSION
+		);
+
+		wp_enqueue_script(
+			'ppq-admin',
+			PRESSPRIMER_QUIZ_PLUGIN_URL . 'assets/js/admin.js',
+			[ 'jquery' ],
+			PRESSPRIMER_QUIZ_VERSION,
+			true
+		);
+
+		// Localize script with nonces and translatable strings.
+		wp_localize_script(
+			'ppq-admin',
+			'ppqTutorLMSMetaBox',
+			[
+				'nonce'   => wp_create_nonce( 'pressprimer_quiz_tutorlms_search' ),
+				'strings' => [
+					'noQuizzesFound' => __( 'No quizzes found', 'pressprimer-quiz' ),
+					'removeQuiz'     => __( 'Remove quiz', 'pressprimer-quiz' ),
+				],
+			]
+		);
+
+		// Inline CSS for meta box styling.
+		$inline_css = '
 			.ppq-tutorlms-meta-box .ppq-quiz-selector {
 				position: relative;
 				display: flex;
@@ -254,112 +292,99 @@ class PressPrimer_Quiz_TutorLMS {
 				font-weight: 600;
 				margin-right: 4px;
 			}
-		</style>
+		';
+		wp_add_inline_style( 'ppq-admin', $inline_css );
 
-		<script>
-		jQuery(document).ready(function($) {
-			var searchTimeout;
-			var $search = $('#ppq_quiz_search');
-			var $results = $('#ppq_quiz_results');
-			var $quizId = $('#ppq_quiz_id');
-			var $removeBtn = $('.ppq-remove-quiz');
-
-			function formatQuiz(quiz) {
-				return '<div class="ppq-quiz-result-item" data-id="' + quiz.id + '" data-title="' + $('<div/>').text(quiz.title).html() + '">' +
-					'<span class="ppq-quiz-id">' + quiz.id + '</span> - ' + $('<div/>').text(quiz.title).html() +
-					'</div>';
-			}
-
-			$search.on('focus', function() {
-				if ($quizId.val()) {
-					return;
-				}
-
-				$.ajax({
-					url: ajaxurl,
-					type: 'POST',
-					data: {
-						action: 'ppq_search_quizzes_tutorlms',
-						nonce: '<?php echo esc_js( wp_create_nonce( 'ppq_tutorlms_search' ) ); ?>',
-						recent: 1
-					},
-					success: function(response) {
-						if (response.success && response.data.quizzes.length > 0) {
-							var html = '';
-							response.data.quizzes.forEach(function(quiz) {
-								html += formatQuiz(quiz);
-							});
-							$results.html(html).show();
-						}
-					}
-				});
-			});
-
-			$search.on('input', function() {
-				var query = $(this).val();
-
-				clearTimeout(searchTimeout);
-
-				if (query.length < 2) {
-					$search.trigger('focus');
-					return;
-				}
-
-				searchTimeout = setTimeout(function() {
-					$.ajax({
-						url: ajaxurl,
-						type: 'POST',
-						data: {
-							action: 'ppq_search_quizzes_tutorlms',
-							nonce: '<?php echo esc_js( wp_create_nonce( 'ppq_tutorlms_search' ) ); ?>',
-							search: query
-						},
-						success: function(response) {
-							if (response.success && response.data.quizzes.length > 0) {
-								var html = '';
-								response.data.quizzes.forEach(function(quiz) {
-									html += formatQuiz(quiz);
-								});
-								$results.html(html).show();
-							} else {
-								$results.html('<div class="ppq-no-results"><?php echo esc_js( __( 'No quizzes found', 'pressprimer-quiz' ) ); ?></div>').show();
-							}
-						}
-					});
-				}, 300);
-			});
-
-			$results.on('click', '.ppq-quiz-result-item', function() {
-				var $item = $(this);
-				var id = $item.data('id');
-				var title = $item.data('title');
-				var display = id + ' - ' + title;
-
-				$quizId.val(id);
-				$search.val(display).attr('readonly', true);
-				$results.hide();
-
-				if (!$removeBtn.length) {
-					$search.after('<button type="button" class="ppq-remove-quiz button-link" aria-label="<?php echo esc_attr__( 'Remove quiz', 'pressprimer-quiz' ); ?>" title="<?php echo esc_attr__( 'Remove quiz', 'pressprimer-quiz' ); ?>"><span class="dashicons dashicons-no-alt"></span></button>');
-					$removeBtn = $('.ppq-remove-quiz');
-				}
-			});
-
-			$(document).on('click', '.ppq-remove-quiz', function() {
-				$quizId.val('');
-				$search.val('').removeAttr('readonly');
-				$(this).remove();
-				$removeBtn = $();
-			});
-
-			$(document).on('click', function(e) {
-				if (!$(e.target).closest('.ppq-quiz-selector').length) {
-					$results.hide();
-				}
-			});
-		});
-		</script>
-		<?php
+		// Inline JavaScript for meta box functionality.
+		$inline_script = 'jQuery(document).ready(function($) {' .
+			'var config = window.ppqTutorLMSMetaBox || {};' .
+			'var searchTimeout;' .
+			'var $search = $("#ppq_quiz_search");' .
+			'var $results = $("#ppq_quiz_results");' .
+			'var $quizId = $("#ppq_quiz_id");' .
+			'var $removeBtn = $(".ppq-remove-quiz");' .
+			'function formatQuiz(quiz) {' .
+				'return \'<div class="ppq-quiz-result-item" data-id="\' + quiz.id + \'" data-title="\' + $("<div/>").text(quiz.title).html() + \'">\' +' .
+					'\'<span class="ppq-quiz-id">\' + quiz.id + \'</span> - \' + $("<div/>").text(quiz.title).html() +' .
+					'\'</div>\';' .
+			'}' .
+			'$search.on("focus", function() {' .
+				'if ($quizId.val()) { return; }' .
+				'$.ajax({' .
+					'url: ajaxurl,' .
+					'type: "POST",' .
+					'data: {' .
+						'action: "pressprimer_quiz_search_quizzes_tutorlms",' .
+						'nonce: config.nonce,' .
+						'recent: 1' .
+					'},' .
+					'success: function(response) {' .
+						'if (response.success && response.data.quizzes.length > 0) {' .
+							'var html = "";' .
+							'response.data.quizzes.forEach(function(quiz) {' .
+								'html += formatQuiz(quiz);' .
+							'});' .
+							'$results.html(html).show();' .
+						'}' .
+					'}' .
+				'});' .
+			'});' .
+			'$search.on("input", function() {' .
+				'var query = $(this).val();' .
+				'clearTimeout(searchTimeout);' .
+				'if (query.length < 2) {' .
+					'$search.trigger("focus");' .
+					'return;' .
+				'}' .
+				'searchTimeout = setTimeout(function() {' .
+					'$.ajax({' .
+						'url: ajaxurl,' .
+						'type: "POST",' .
+						'data: {' .
+							'action: "pressprimer_quiz_search_quizzes_tutorlms",' .
+							'nonce: config.nonce,' .
+							'search: query' .
+						'},' .
+						'success: function(response) {' .
+							'if (response.success && response.data.quizzes.length > 0) {' .
+								'var html = "";' .
+								'response.data.quizzes.forEach(function(quiz) {' .
+									'html += formatQuiz(quiz);' .
+								'});' .
+								'$results.html(html).show();' .
+							'} else {' .
+								'$results.html(\'<div class="ppq-no-results">\' + config.strings.noQuizzesFound + \'</div>\').show();' .
+							'}' .
+						'}' .
+					'});' .
+				'}, 300);' .
+			'});' .
+			'$results.on("click", ".ppq-quiz-result-item", function() {' .
+				'var $item = $(this);' .
+				'var id = $item.data("id");' .
+				'var title = $item.data("title");' .
+				'var display = id + " - " + title;' .
+				'$quizId.val(id);' .
+				'$search.val(display).attr("readonly", true);' .
+				'$results.hide();' .
+				'if (!$removeBtn.length) {' .
+					'$search.after(\'<button type="button" class="ppq-remove-quiz button-link" aria-label="\' + config.strings.removeQuiz + \'" title="\' + config.strings.removeQuiz + \'"><span class="dashicons dashicons-no-alt"></span></button>\');' .
+					'$removeBtn = $(".ppq-remove-quiz");' .
+				'}' .
+			'});' .
+			'$(document).on("click", ".ppq-remove-quiz", function() {' .
+				'$quizId.val("");' .
+				'$search.val("").removeAttr("readonly");' .
+				'$(this).remove();' .
+				'$removeBtn = $();' .
+			'});' .
+			'$(document).on("click", function(e) {' .
+				'if (!$(e.target).closest(".ppq-quiz-selector").length) {' .
+					'$results.hide();' .
+				'}' .
+			'});' .
+		'});';
+		wp_add_inline_script( 'ppq-admin', $inline_script );
 	}
 
 	/**
@@ -372,8 +397,8 @@ class PressPrimer_Quiz_TutorLMS {
 	 */
 	public function save_meta_box( $post_id, $post ) {
 		// Verify nonce.
-		if ( ! isset( $_POST['ppq_tutorlms_nonce'] ) ||
-			! wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['ppq_tutorlms_nonce'] ) ), 'ppq_tutorlms_meta_box' ) ) {
+		if ( ! isset( $_POST['pressprimer_quiz_tutorlms_nonce'] ) ||
+			! wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['pressprimer_quiz_tutorlms_nonce'] ) ), 'pressprimer_quiz_tutorlms_meta_box' ) ) {
 			return;
 		}
 
@@ -454,15 +479,15 @@ class PressPrimer_Quiz_TutorLMS {
 
 		wp_enqueue_script(
 			'ppq-tutorlms-editor',
-			PPQ_PLUGIN_URL . 'assets/js/tutorlms-editor.js',
-			[ 'wp-plugins', 'wp-edit-post', 'wp-element', 'wp-components', 'wp-data', 'wp-api-fetch', 'wp-i18n' ],
-			PPQ_VERSION,
+			PRESSPRIMER_QUIZ_PLUGIN_URL . 'assets/js/tutorlms-editor.js',
+			[ 'wp-plugins', 'wp-edit-post', 'wp-editor', 'wp-element', 'wp-components', 'wp-data', 'wp-api-fetch', 'wp-i18n' ],
+			PRESSPRIMER_QUIZ_VERSION,
 			true
 		);
 
 		wp_localize_script(
 			'ppq-tutorlms-editor',
-			'ppqTutorLMS',
+			'pressprimerQuizTutorLMS',
 			[
 				'metaKeyQuizId'      => self::META_KEY_QUIZ_ID,
 				'metaKeyRequirePass' => self::META_KEY_REQUIRE_PASS,
@@ -508,15 +533,15 @@ class PressPrimer_Quiz_TutorLMS {
 
 		wp_enqueue_script(
 			'ppq-tutorlms-course-builder',
-			PPQ_PLUGIN_URL . 'assets/js/tutorlms-course-builder.js',
+			PRESSPRIMER_QUIZ_PLUGIN_URL . 'assets/js/tutorlms-course-builder.js',
 			[],
-			PPQ_VERSION,
+			PRESSPRIMER_QUIZ_VERSION,
 			true
 		);
 
 		wp_localize_script(
 			'ppq-tutorlms-course-builder',
-			'ppqTutorCourseBuilder',
+			'pressprimerQuizTutorCourseBuilder',
 			[
 				'courseId'      => $course_id,
 				'restUrl'       => rest_url(),
@@ -591,7 +616,7 @@ class PressPrimer_Quiz_TutorLMS {
 	 */
 	public function ajax_search_quizzes() {
 		// Verify nonce.
-		if ( ! check_ajax_referer( 'ppq_tutorlms_search', 'nonce', false ) ) {
+		if ( ! check_ajax_referer( 'pressprimer_quiz_tutorlms_search', 'nonce', false ) ) {
 			wp_send_json_error( [ 'message' => __( 'Security check failed.', 'pressprimer-quiz' ) ] );
 		}
 
@@ -668,7 +693,7 @@ class PressPrimer_Quiz_TutorLMS {
 
 		// Render quiz shortcode with context.
 		$quiz_shortcode = sprintf(
-			'[ppq_quiz id="%d" context="%s"]',
+			'[pressprimer_quiz id="%d" context="%s"]',
 			absint( $quiz_id ),
 			esc_attr( base64_encode( wp_json_encode( $context_data ) ) )
 		);
@@ -796,8 +821,13 @@ class PressPrimer_Quiz_TutorLMS {
 		$quiz_id = get_post_meta( $post_id, self::META_KEY_QUIZ_ID, true );
 
 		if ( $quiz_id ) {
-			// Return empty to hide the complete button.
-			return '';
+			// Only hide the complete button if "Require passing score" is enabled.
+			$require_pass = get_post_meta( $post_id, self::META_KEY_REQUIRE_PASS, true );
+
+			if ( '1' === $require_pass ) {
+				// Return empty to hide the complete button - user must pass quiz.
+				return '';
+			}
 		}
 
 		return $form;

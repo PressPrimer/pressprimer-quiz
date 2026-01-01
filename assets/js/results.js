@@ -48,18 +48,18 @@
 
 			// Show loading state
 			const originalText = $button.html();
-			$button.html('<span class="ppq-spinner"></span> ' + ppqResults.sendingText);
+			$button.html('<span class="ppq-spinner"></span> ' + pressprimerQuizResults.sendingText);
 
 			// Hide previous status
 			$status.hide().removeClass('success error');
 
 			// Send AJAX request
 			$.ajax({
-				url: ppqResults.ajaxUrl,
+				url: pressprimerQuizResults.ajaxUrl,
 				type: 'POST',
 				data: {
-					action: 'ppq_email_results',
-					nonce: ppqResults.nonce,
+					action: 'pressprimer_quiz_email_results',
+					nonce: pressprimerQuizResults.nonce,
 					attempt_id: attemptId,
 					email: email
 				},
@@ -68,11 +68,11 @@
 						// Show success message
 						$status
 							.addClass('success')
-							.html(response.data.message || ppqResults.successText)
+							.html(response.data.message || pressprimerQuizResults.successText)
 							.fadeIn();
 
 						// Keep button disabled with success icon
-						$button.html('<span class="ppq-email-icon">✓</span> ' + ppqResults.sentText);
+						$button.html('<span class="ppq-email-icon">✓</span> ' + pressprimerQuizResults.sentText);
 
 						// Re-enable button after 3 seconds
 						setTimeout(function() {
@@ -82,7 +82,7 @@
 						// Show error message
 						$status
 							.addClass('error')
-							.html(response.data.message || ppqResults.errorText)
+							.html(response.data.message || pressprimerQuizResults.errorText)
 							.fadeIn();
 
 						// Re-enable button
@@ -93,7 +93,7 @@
 					// Show generic error
 					$status
 						.addClass('error')
-						.html(ppqResults.errorText)
+						.html(pressprimerQuizResults.errorText)
 						.fadeIn();
 
 					// Re-enable button

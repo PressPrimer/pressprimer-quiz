@@ -128,7 +128,7 @@ class PressPrimer_Quiz_Categories_List_Table extends WP_List_Table {
 		];
 
 		// Filter by owner for users who can only manage their own content
-		if ( ! current_user_can( 'ppq_manage_all' ) ) {
+		if ( ! current_user_can( 'pressprimer_quiz_manage_all' ) ) {
 			$args['where']['created_by'] = get_current_user_id();
 		}
 
@@ -174,7 +174,7 @@ class PressPrimer_Quiz_Categories_List_Table extends WP_List_Table {
 		}
 
 		// Check capability
-		if ( ! current_user_can( 'ppq_manage_own' ) ) {
+		if ( ! current_user_can( 'pressprimer_quiz_manage_own' ) ) {
 			return;
 		}
 
@@ -199,7 +199,7 @@ class PressPrimer_Quiz_Categories_List_Table extends WP_List_Table {
 		}
 
 		// Redirect
-		$page_slug = ( 'tag' === $this->taxonomy ) ? 'ppq-tags' : 'ppq-categories';
+		$page_slug = ( 'tag' === $this->taxonomy ) ? 'pressprimer-quiz-tags' : 'pressprimer-quiz-categories';
 		wp_safe_redirect(
 			add_query_arg(
 				[
@@ -255,7 +255,7 @@ class PressPrimer_Quiz_Categories_List_Table extends WP_List_Table {
 	 * @return string Name column HTML.
 	 */
 	protected function column_name( $item ) {
-		$page_slug = ( 'tag' === $this->taxonomy ) ? 'ppq-tags' : 'ppq-categories';
+		$page_slug = ( 'tag' === $this->taxonomy ) ? 'pressprimer-quiz-tags' : 'pressprimer-quiz-categories';
 
 		$edit_url = add_query_arg(
 			[
@@ -275,7 +275,7 @@ class PressPrimer_Quiz_Categories_List_Table extends WP_List_Table {
 				],
 				admin_url( 'admin-post.php' )
 			),
-			'ppq_delete_category_' . $item->id
+			'pressprimer_quiz_delete_category_' . $item->id
 		);
 
 		$title = '<strong><a href="' . esc_url( $edit_url ) . '">' . esc_html( $item->name ) . '</a></strong>';

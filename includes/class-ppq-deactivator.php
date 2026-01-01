@@ -36,9 +36,9 @@ class PressPrimer_Quiz_Deactivator {
 	 */
 	public static function deactivate() {
 		// Clear any scheduled cron jobs
-		$timestamp = wp_next_scheduled( 'ppq_cleanup_abandoned_attempts' );
+		$timestamp = wp_next_scheduled( 'pressprimer_quiz_cleanup_abandoned_attempts' );
 		if ( $timestamp ) {
-			wp_unschedule_event( $timestamp, 'ppq_cleanup_abandoned_attempts' );
+			wp_unschedule_event( $timestamp, 'pressprimer_quiz_cleanup_abandoned_attempts' );
 		}
 
 		// Unschedule statistics recalculation cron
@@ -53,7 +53,7 @@ class PressPrimer_Quiz_Deactivator {
 		flush_rewrite_rules();
 
 		// Set deactivation flag
-		update_option( 'ppq_deactivation_time', current_time( 'timestamp' ) );
+		update_option( 'pressprimer_quiz_deactivation_time', current_time( 'timestamp' ) );
 	}
 
 	/**

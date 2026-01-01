@@ -22,11 +22,11 @@ export const STEP_TYPE = {
  * Get the admin URL for a page
  */
 const getAdminUrl = (page) => {
-	const baseUrl = window.ppqOnboardingData?.urls?.[page] || '';
+	const baseUrl = window.pressprimerQuizOnboardingData?.urls?.[page] || '';
 	if (baseUrl) return baseUrl;
 
 	// Fallback construction
-	return `admin.php?page=ppq${page === 'dashboard' ? '' : '-' + page}`;
+	return `admin.php?page=pressprimer-quiz${page === 'dashboard' ? '' : '-' + page}`;
 };
 
 /**
@@ -62,8 +62,8 @@ export const tourSteps = [
 		title: __('PressPrimer Quiz Menu', 'pressprimer-quiz'),
 		content: __('This is your main menu for PressPrimer Quiz. From here you can access all the key areas: Dashboard, Quizzes, Questions, Question Banks, and Reports.', 'pressprimer-quiz'),
 		// Use the top-level menu item which has a consistent structure
-		selector: '#toplevel_page_ppq',
-		fallbackSelector: '.toplevel_page_ppq',
+		selector: '#toplevel_page_pressprimer-quiz',
+		fallbackSelector: '.toplevel_page_pressprimer-quiz',
 		position: 'right',
 		page: null, // Can be shown on any page
 		pageUrl: null,
@@ -78,7 +78,7 @@ export const tourSteps = [
 		selector: '.ppq-dashboard-container',
 		fallbackSelector: '#ppq-dashboard-root',
 		position: 'bottom',
-		page: 'ppq',
+		page: 'pressprimer-quiz',
 		pageUrl: getAdminUrl('dashboard'),
 	},
 
@@ -91,7 +91,7 @@ export const tourSteps = [
 		selector: '.ppq-question-editor-container, .ppq-questions-page',
 		fallbackSelector: '#ppq-question-editor-root',
 		position: 'bottom',
-		page: 'ppq-questions',
+		page: 'pressprimer-quiz-questions',
 		pageUrl: getAdminUrl('questions'),
 	},
 
@@ -104,7 +104,7 @@ export const tourSteps = [
 		selector: '.ppq-bank-editor-container, .ppq-banks-page',
 		fallbackSelector: '#ppq-bank-editor-root',
 		position: 'bottom',
-		page: 'ppq-banks',
+		page: 'pressprimer-quiz-banks',
 		pageUrl: getAdminUrl('banks'),
 	},
 
@@ -117,7 +117,7 @@ export const tourSteps = [
 		selector: '.ppq-quiz-editor-container, .ppq-quizzes-page',
 		fallbackSelector: '#ppq-quiz-editor-root',
 		position: 'bottom',
-		page: 'ppq-quizzes',
+		page: 'pressprimer-quiz-quizzes',
 		pageUrl: getAdminUrl('quizzes'),
 	},
 
@@ -130,7 +130,7 @@ export const tourSteps = [
 		selector: '.ppq-reports-container',
 		fallbackSelector: '#ppq-reports-root',
 		position: 'bottom',
-		page: 'ppq-reports',
+		page: 'pressprimer-quiz-reports',
 		pageUrl: getAdminUrl('reports'),
 	},
 

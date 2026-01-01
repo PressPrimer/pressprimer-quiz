@@ -22,7 +22,7 @@ import { Button, Checkbox } from 'antd';
  */
 const WelcomeModal = ({ title, content, onStart, onSkip }) => {
 	// Get plugin URL for logo
-	const pluginUrl = window.ppqOnboardingData?.pluginUrl || window.ppqDashboardData?.pluginUrl || '';
+	const pluginUrl = window.pressprimerQuizOnboardingData?.pluginUrl || window.pressprimerQuizDashboardData?.pluginUrl || '';
 	const [dontShowAgain, setDontShowAgain] = useState(false);
 	const modalRef = useRef(null);
 	const startButtonRef = useRef(null);

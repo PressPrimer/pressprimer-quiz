@@ -47,8 +47,7 @@ registerBlockType('pressprimer-quiz/quiz', {
 					setQuizzes(response || []);
 					setLoading(false);
 				})
-				.catch((error) => {
-					console.error('Failed to fetch quizzes:', error);
+				.catch(() => {
 					setQuizzes([]);
 					setLoading(false);
 				});

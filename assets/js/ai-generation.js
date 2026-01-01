@@ -122,15 +122,15 @@
 			$(document).on('click', '#ppq-ai-discard', function(e) {
 				e.preventDefault();
 				PPQ.Admin.confirm(
-					ppqAIGeneration.strings.confirmDiscard,
+					pressprimerQuizAIGeneration.strings.confirmDiscard,
 					function() {
 						self.discardQuestions();
 					},
 					null,
 					{
-						title: ppqAIGeneration.strings.discardTitle || 'Discard Questions',
-						confirmText: ppqAIGeneration.strings.discard || 'Discard',
-						cancelText: ppqAIGeneration.strings.cancel || 'Cancel'
+						title: pressprimerQuizAIGeneration.strings.discardTitle || 'Discard Questions',
+						confirmText: pressprimerQuizAIGeneration.strings.discard || 'Discard',
+						cancelText: pressprimerQuizAIGeneration.strings.cancel || 'Cancel'
 					}
 				);
 			});
@@ -212,13 +212,13 @@
 			];
 
 			if (validTypes.indexOf(file.type) === -1) {
-				this.showError(ppqAIGeneration.strings.invalidFileType);
+				this.showError(pressprimerQuizAIGeneration.strings.invalidFileType);
 				return;
 			}
 
 			// Validate file size
-			if (file.size > ppqAIGeneration.maxFileSize) {
-				this.showError(ppqAIGeneration.strings.fileTooLarge + ' ' + ppqAIGeneration.maxFileSizeFormatted);
+			if (file.size > pressprimerQuizAIGeneration.maxFileSize) {
+				this.showError(pressprimerQuizAIGeneration.strings.fileTooLarge + ' ' + pressprimerQuizAIGeneration.maxFileSizeFormatted);
 				return;
 			}
 
@@ -239,15 +239,15 @@
 			var self = this;
 			var formData = new FormData();
 
-			formData.append('action', 'ppq_ai_upload_file');
-			formData.append('nonce', ppqAIGeneration.nonce);
+			formData.append('action', 'pressprimer_quiz_ai_upload_file');
+			formData.append('nonce', pressprimerQuizAIGeneration.nonce);
 			formData.append('file', file);
 
 			// Show loading
-			this.showLoading(ppqAIGeneration.strings.processing);
+			this.showLoading(pressprimerQuizAIGeneration.strings.processing);
 
 			$.ajax({
-				url: ppqAIGeneration.ajaxUrl,
+				url: pressprimerQuizAIGeneration.ajaxUrl,
 				type: 'POST',
 				data: formData,
 				processData: false,
@@ -266,13 +266,13 @@
 						$('#ppq-ai-extracted-text').text(previewText);
 						$('#ppq-ai-extracted-preview').show();
 					} else {
-						self.showError(response.data.message || ppqAIGeneration.strings.error);
+						self.showError(response.data.message || pressprimerQuizAIGeneration.strings.error);
 						self.removeFile();
 					}
 				},
 				error: function() {
 					self.hideLoading();
-					self.showError(ppqAIGeneration.strings.error);
+					self.showError(pressprimerQuizAIGeneration.strings.error);
 					self.removeFile();
 				}
 			});
@@ -308,7 +308,7 @@
 			}
 
 			if (!content) {
-				this.showError(ppqAIGeneration.strings.noContent);
+				this.showError(pressprimerQuizAIGeneration.strings.noContent);
 				return;
 			}
 
@@ -345,15 +345,15 @@
 
 			// Show loading
 			this.isGenerating = true;
-			this.showLoading(ppqAIGeneration.strings.generating);
+			this.showLoading(pressprimerQuizAIGeneration.strings.generating);
 
 			// Make AJAX request
 			$.ajax({
-				url: ppqAIGeneration.ajaxUrl,
+				url: pressprimerQuizAIGeneration.ajaxUrl,
 				type: 'POST',
 				data: {
-					action: 'ppq_ai_generate_questions',
-					nonce: ppqAIGeneration.nonce,
+					action: 'pressprimer_quiz_ai_generate_questions',
+					nonce: pressprimerQuizAIGeneration.nonce,
 					content: content,
 					count: count,
 					types: types,
@@ -371,7 +371,7 @@
 						self.displayResults(response.data);
 					} else {
 						// Build detailed error message
-						var errorMessage = response.data.message || ppqAIGeneration.strings.error;
+						var errorMessage = response.data.message || pressprimerQuizAIGeneration.strings.error;
 
 						// Add validation error details if available
 						if (response.data.validation_errors && response.data.validation_errors.length > 0) {
@@ -388,7 +388,7 @@
 					self.isGenerating = false;
 					self.hideLoading();
 
-					var message = ppqAIGeneration.strings.error;
+					var message = pressprimerQuizAIGeneration.strings.error;
 					if (status === 'timeout') {
 						message = 'Request timed out. The AI is taking too long to respond. Please try with less content or fewer questions.';
 					} else if (xhr.responseJSON && xhr.responseJSON.data && xhr.responseJSON.data.message) {
@@ -416,7 +416,7 @@
 
 			// Show info if content was truncated
 			if (data.content_info && data.content_info.was_truncated) {
-				infoMessages.push('<span class="dashicons dashicons-info"></span> ' + ppqAIGeneration.strings.truncatedWarning);
+				infoMessages.push('<span class="dashicons dashicons-info"></span> ' + pressprimerQuizAIGeneration.strings.truncatedWarning);
 			}
 
 			// Show token usage info
@@ -707,7 +707,7 @@
 			var self = this;
 
 			if (this.selectedQuestions.length === 0) {
-				this.showError(ppqAIGeneration.strings.selectQuestions);
+				this.showError(pressprimerQuizAIGeneration.strings.selectQuestions);
 				return;
 			}
 
@@ -723,15 +723,15 @@
 			});
 
 			// Show loading
-			this.showLoading(ppqAIGeneration.strings.saving);
+			this.showLoading(pressprimerQuizAIGeneration.strings.saving);
 
 			// Make AJAX request
 			$.ajax({
-				url: ppqAIGeneration.ajaxUrl,
+				url: pressprimerQuizAIGeneration.ajaxUrl,
 				type: 'POST',
 				data: {
-					action: 'ppq_ai_save_questions',
-					nonce: ppqAIGeneration.nonce,
+					action: 'pressprimer_quiz_ai_save_questions',
+					nonce: pressprimerQuizAIGeneration.nonce,
 					bank_id: bankId,
 					questions: JSON.stringify(questionsToSave),
 					categories: categories
@@ -749,7 +749,7 @@
 							},
 							{
 								type: 'success',
-								title: ppqAIGeneration.strings.successTitle || 'Success'
+								title: pressprimerQuizAIGeneration.strings.successTitle || 'Success'
 							}
 						);
 
@@ -776,15 +776,11 @@
 						// Page will reload after user closes success modal
 					} else {
 						// Build detailed error message
-						var errorMessage = response.data.message || ppqAIGeneration.strings.error;
-
-						// Log full response for debugging
-						console.error('Save questions failed:', response.data);
+						var errorMessage = response.data.message || pressprimerQuizAIGeneration.strings.error;
 
 						// Add individual errors if available
 						if (response.data.errors && response.data.errors.length > 0) {
 							errorMessage += '\n\nDetails:\n' + response.data.errors.join('\n');
-							console.error('Individual errors:', response.data.errors);
 						}
 
 						self.showError(errorMessage);
@@ -792,8 +788,7 @@
 				},
 				error: function(xhr, status, error) {
 					self.hideLoading();
-					console.error('AJAX error:', status, error, xhr.responseText);
-					self.showError(ppqAIGeneration.strings.error);
+					self.showError(pressprimerQuizAIGeneration.strings.error);
 				}
 			});
 		},

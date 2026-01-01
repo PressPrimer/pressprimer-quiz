@@ -12,7 +12,7 @@ import { useState, useCallback } from '@wordpress/element';
 /**
  * useOnboarding Hook
  *
- * @param {Object} initialData Initial data from PHP (ppqOnboardingData)
+ * @param {Object} initialData Initial data from PHP (pressprimerQuizOnboardingData)
  * @returns {Object} Onboarding state and actions
  */
 const useOnboarding = (initialData = {}) => {
@@ -33,7 +33,7 @@ const useOnboarding = (initialData = {}) => {
 
 		try {
 			const formData = new FormData();
-			formData.append('action', 'ppq_onboarding_progress');
+			formData.append('action', 'pressprimer_quiz_onboarding_progress');
 			formData.append('onboarding_action', action);
 			formData.append('nonce', nonce);
 

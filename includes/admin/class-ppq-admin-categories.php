@@ -69,7 +69,7 @@ class PressPrimer_Quiz_Admin_Categories {
 	 */
 	private function render_taxonomy_page() {
 		// Check capability
-		if ( ! current_user_can( 'ppq_manage_own' ) ) {
+		if ( ! current_user_can( 'pressprimer_quiz_manage_own' ) ) {
 			wp_die(
 				esc_html__( 'You do not have permission to access this page.', 'pressprimer-quiz' ),
 				esc_html__( 'Permission Denied', 'pressprimer-quiz' ),
@@ -117,7 +117,7 @@ class PressPrimer_Quiz_Admin_Categories {
 							<h2><?php printf( esc_html__( 'Add New %s', 'pressprimer-quiz' ), esc_html( $singular ) ); ?></h2>
 
 							<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" id="ppq-category-form">
-								<?php wp_nonce_field( 'ppq_save_category', 'ppq_category_nonce' ); ?>
+								<?php wp_nonce_field( 'pressprimer_quiz_save_category', 'pressprimer_quiz_category_nonce' ); ?>
 								<input type="hidden" name="action" value="ppq_save_category">
 								<input type="hidden" name="taxonomy" value="<?php echo esc_attr( $this->taxonomy ); ?>">
 								<input type="hidden" name="return_url" value="<?php echo esc_url( isset( $_SERVER['REQUEST_URI'] ) ? sanitize_url( wp_unslash( $_SERVER['REQUEST_URI'] ) ) : '' ); ?>">
@@ -158,7 +158,17 @@ class PressPrimer_Quiz_Admin_Categories {
 										<label for="category_parent"><?php esc_html_e( 'Parent Category', 'pressprimer-quiz' ); ?></label>
 										<select name="category_parent" id="category_parent">
 											<option value="0"><?php esc_html_e( 'None', 'pressprimer-quiz' ); ?></option>
-											<?php echo $this->get_category_options(); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Output escaped in get_category_options method ?>
+											<?php
+											echo wp_kses(
+												$this->get_category_options(),
+												[
+													'option' => [
+														'value'    => [],
+														'selected' => [],
+													],
+												]
+											);
+											?>
 										</select>
 										<p class="description">
 											<?php esc_html_e( 'Categories can have a hierarchy. You might have a Jazz category, and under that have children categories for Bebop and Big Band. Optional.', 'pressprimer-quiz' ); ?>
@@ -228,7 +238,7 @@ class PressPrimer_Quiz_Admin_Categories {
 		$singular    = $is_category ? __( 'Category', 'pressprimer-quiz' ) : __( 'Tag', 'pressprimer-quiz' );
 		$plural      = $is_category ? __( 'Categories', 'pressprimer-quiz' ) : __( 'Tags', 'pressprimer-quiz' );
 
-		$page_slug = $is_category ? 'ppq-categories' : 'ppq-tags';
+		$page_slug = $is_category ? 'pressprimer-quiz-categories' : 'pressprimer-quiz-tags';
 		$back_url  = admin_url( 'admin.php?page=' . $page_slug );
 
 		?>
@@ -237,7 +247,7 @@ class PressPrimer_Quiz_Admin_Categories {
 			<h1><?php printf( esc_html__( 'Edit %s', 'pressprimer-quiz' ), esc_html( $singular ) ); ?></h1>
 
 			<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" id="ppq-category-edit-form">
-				<?php wp_nonce_field( 'ppq_save_category', 'ppq_category_nonce' ); ?>
+				<?php wp_nonce_field( 'pressprimer_quiz_save_category', 'pressprimer_quiz_category_nonce' ); ?>
 				<input type="hidden" name="action" value="ppq_save_category">
 				<input type="hidden" name="taxonomy" value="<?php echo esc_attr( $this->taxonomy ); ?>">
 				<input type="hidden" name="category_id" value="<?php echo esc_attr( $category->id ); ?>">
@@ -289,7 +299,17 @@ class PressPrimer_Quiz_Admin_Categories {
 								<td>
 									<select name="category_parent" id="category_parent">
 										<option value="0"><?php esc_html_e( 'None', 'pressprimer-quiz' ); ?></option>
-										<?php echo $this->get_category_options( $category->parent_id, $category->id ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Output escaped in get_category_options method ?>
+										<?php
+													echo wp_kses(
+														$this->get_category_options( $category->parent_id, $category->id ),
+														[
+															'option' => [
+																'value'    => [],
+																'selected' => [],
+															],
+														]
+													);
+										?>
 									</select>
 								</td>
 							</tr>
@@ -368,7 +388,7 @@ class PressPrimer_Quiz_Admin_Categories {
 		}
 
 		// Filter by owner for users who can only manage their own content
-		if ( ! current_user_can( 'ppq_manage_all' ) ) {
+		if ( ! current_user_can( 'pressprimer_quiz_manage_all' ) ) {
 			$args['where']['created_by'] = get_current_user_id();
 		}
 
@@ -418,18 +438,18 @@ class PressPrimer_Quiz_Admin_Categories {
 	 */
 	public function handle_save() {
 		// Verify nonce
-		if ( ! isset( $_POST['ppq_category_nonce'] ) || ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['ppq_category_nonce'] ) ), 'ppq_save_category' ) ) {
+		if ( ! isset( $_POST['pressprimer_quiz_category_nonce'] ) || ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['pressprimer_quiz_category_nonce'] ) ), 'pressprimer_quiz_save_category' ) ) {
 			wp_die( esc_html__( 'Security check failed.', 'pressprimer-quiz' ) );
 		}
 
 		// Check capability
-		if ( ! current_user_can( 'ppq_manage_own' ) ) {
+		if ( ! current_user_can( 'pressprimer_quiz_manage_own' ) ) {
 			wp_die( esc_html__( 'You do not have permission to perform this action.', 'pressprimer-quiz' ) );
 		}
 
 		$taxonomy    = isset( $_POST['taxonomy'] ) ? sanitize_key( wp_unslash( $_POST['taxonomy'] ) ) : 'category';
 		$category_id = isset( $_POST['category_id'] ) ? absint( wp_unslash( $_POST['category_id'] ) ) : 0;
-		$return_url  = isset( $_POST['return_url'] ) ? esc_url_raw( wp_unslash( $_POST['return_url'] ) ) : admin_url( 'admin.php?page=ppq-categories' );
+		$return_url  = isset( $_POST['return_url'] ) ? esc_url_raw( wp_unslash( $_POST['return_url'] ) ) : admin_url( 'admin.php?page=pressprimer-quiz-categories' );
 
 		$data = [
 			'name'        => isset( $_POST['category_name'] ) ? sanitize_text_field( wp_unslash( $_POST['category_name'] ) ) : '',
@@ -491,12 +511,12 @@ class PressPrimer_Quiz_Admin_Categories {
 		}
 
 		// Verify nonce
-		if ( ! isset( $_GET['_wpnonce'] ) || ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_GET['_wpnonce'] ) ), 'ppq_delete_category_' . absint( wp_unslash( $_GET['id'] ) ) ) ) {
+		if ( ! isset( $_GET['_wpnonce'] ) || ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_GET['_wpnonce'] ) ), 'pressprimer_quiz_delete_category_' . absint( wp_unslash( $_GET['id'] ) ) ) ) {
 			wp_die( esc_html__( 'Security check failed.', 'pressprimer-quiz' ) );
 		}
 
 		// Check capability
-		if ( ! current_user_can( 'ppq_manage_own' ) ) {
+		if ( ! current_user_can( 'pressprimer_quiz_manage_own' ) ) {
 			wp_die( esc_html__( 'You do not have permission to perform this action.', 'pressprimer-quiz' ) );
 		}
 
@@ -521,7 +541,7 @@ class PressPrimer_Quiz_Admin_Categories {
 		}
 
 		// Redirect with success message
-		$page_slug = ( 'tag' === $taxonomy ) ? 'ppq-tags' : 'ppq-categories';
+		$page_slug = ( 'tag' === $taxonomy ) ? 'pressprimer-quiz-tags' : 'pressprimer-quiz-categories';
 		wp_safe_redirect(
 			add_query_arg(
 				[
@@ -543,7 +563,7 @@ class PressPrimer_Quiz_Admin_Categories {
 		// phpcs:disable WordPress.Security.NonceVerification.Recommended -- Read-only notice flags from redirect
 		$page = isset( $_GET['page'] ) ? sanitize_key( wp_unslash( $_GET['page'] ) ) : '';
 
-		if ( ! in_array( $page, [ 'ppq-categories', 'ppq-tags' ], true ) ) {
+		if ( ! in_array( $page, [ 'pressprimer-quiz-categories', 'pressprimer-quiz-tags' ], true ) ) {
 			return;
 		}
 

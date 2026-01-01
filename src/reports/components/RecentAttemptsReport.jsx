@@ -262,7 +262,7 @@ const RecentAttemptsReport = () => {
 	];
 
 	// Get the plugin URL from localized data
-	const pluginUrl = window.ppqReportsData?.pluginUrl || '';
+	const pluginUrl = window.pressprimerQuizReportsData?.pluginUrl || '';
 
 	return (
 		<div className="ppq-reports-container">
@@ -272,7 +272,7 @@ const RecentAttemptsReport = () => {
 					<Button
 						type="link"
 						icon={<ArrowLeftOutlined />}
-						href="admin.php?page=ppq-reports"
+						href="admin.php?page=pressprimer-quiz-reports"
 						className="ppq-reports-back-link"
 					>
 						{__('All Reports', 'pressprimer-quiz')}

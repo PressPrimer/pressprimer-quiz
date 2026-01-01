@@ -133,7 +133,7 @@ const SettingsPage = ({ settingsData = {} }) => {
 	const ActiveTabComponent = TABS.find(tab => tab.id === activeTab)?.component || GeneralTab;
 
 	// Get the plugin URL from localized data
-	const pluginUrl = window.ppqSettingsData?.pluginUrl || '';
+	const pluginUrl = window.pressprimerQuizSettingsData?.pluginUrl || '';
 
 	return (
 		<div className="ppq-settings-container">

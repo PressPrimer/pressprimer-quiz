@@ -140,8 +140,8 @@ class PressPrimer_Quiz_Theme_Loader {
 			$theme    = self::get_theme( 'default' );
 		}
 
-		$theme_url  = PPQ_PLUGIN_URL . 'assets/css/themes/' . $theme['file'];
-		$theme_path = PPQ_PLUGIN_PATH . 'assets/css/themes/' . $theme['file'];
+		$theme_url  = PRESSPRIMER_QUIZ_PLUGIN_URL . 'assets/css/themes/' . $theme['file'];
+		$theme_path = PRESSPRIMER_QUIZ_PLUGIN_PATH . 'assets/css/themes/' . $theme['file'];
 
 		// Only enqueue if file exists
 		if ( file_exists( $theme_path ) ) {
@@ -149,7 +149,7 @@ class PressPrimer_Quiz_Theme_Loader {
 				'ppq-theme-' . $theme_id,
 				$theme_url,
 				[ 'ppq-quiz' ],
-				PPQ_VERSION
+				PRESSPRIMER_QUIZ_VERSION
 			);
 		}
 
@@ -299,6 +299,8 @@ class PressPrimer_Quiz_Theme_Loader {
 		$css = $global_css . $quiz_css;
 
 		if ( ! empty( $css ) ) {
+			// Sanitize CSS - strip any HTML/script tags that shouldn't be in CSS
+			$css = wp_strip_all_tags( $css );
 			wp_add_inline_style( 'ppq-theme-' . $theme_id, $css );
 		}
 	}

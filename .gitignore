@@ -34,6 +34,9 @@ composer.lock
 /tests/results/
 .phpunit.result.cache
 
+# Internal documentation (kept locally, not pushed to public repo)
+/docs/
+
 # Environment
 .env
 .env.local
@@ -41,3 +44,6 @@ composer.lock
 
 # OS
 Thumbs.db
+
+# Internal documentation (kept locally, not pushed to public repo)
+/docs/

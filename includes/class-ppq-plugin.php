@@ -98,7 +98,7 @@ class PressPrimer_Quiz_Plugin {
 	private function ensure_capabilities() {
 		// Check if admin role has our capabilities
 		$admin = get_role( 'administrator' );
-		if ( $admin && ! $admin->has_cap( 'ppq_manage_own' ) ) {
+		if ( $admin && ! $admin->has_cap( 'pressprimer_quiz_manage_own' ) ) {
 			// Capabilities missing, set them up
 			if ( class_exists( 'PressPrimer_Quiz_Capabilities' ) ) {
 				PressPrimer_Quiz_Capabilities::setup_capabilities();
@@ -186,7 +186,7 @@ class PressPrimer_Quiz_Plugin {
 
 		// Uncanny Automator integration
 		if ( class_exists( 'Uncanny_Automator\Automator_Functions' ) ) {
-			require_once PPQ_PLUGIN_PATH . 'includes/integrations/uncanny-automator/class-ppq-automator-loader.php';
+			require_once PRESSPRIMER_QUIZ_PLUGIN_PATH . 'includes/integrations/uncanny-automator/class-ppq-automator-loader.php';
 			$automator = new PressPrimer_Quiz_Automator_Loader();
 			$automator->init();
 		}

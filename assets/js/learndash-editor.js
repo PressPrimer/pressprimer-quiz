@@ -9,7 +9,8 @@
 
 (function(wp) {
 	const { registerPlugin } = wp.plugins;
-	const { PluginDocumentSettingPanel } = wp.editPost;
+	// Use wp.editor for WP 6.6+, fall back to wp.editPost for older versions
+	const { PluginDocumentSettingPanel } = wp.editor || wp.editPost;
 	const { useSelect, useDispatch } = wp.data;
 	const { useState, useEffect, useCallback, createElement: el, Fragment } = wp.element;
 	const {
@@ -23,7 +24,7 @@
 	const apiFetch = wp.apiFetch;
 
 	// Get configuration from localized data
-	const config = window.ppqLearnDash || {};
+	const config = window.pressprimerQuizLearnDash || {};
 	const strings = config.strings || {};
 
 	/**
@@ -162,13 +163,29 @@
 	 */
 	const PPQLearnDashPanel = () => {
 		const { editPost } = useDispatch('core/editor');
-		const meta = useSelect(select => select('core/editor').getEditedPostAttribute('meta') || {});
 
-		const quizId = meta[config.metaKeyQuizId] || 0;
-		const restrictUntilComplete = meta[config.metaKeyRestrict] || '';
+		// Try REST field first (ppq_quiz_id), fall back to meta for compatibility
+		const postData = useSelect(select => {
+			const editor = select('core/editor');
+			return {
+				ppqQuizId: editor.getEditedPostAttribute('ppq_quiz_id'),
+				ppqRestrict: editor.getEditedPostAttribute('ppq_restrict_until_complete'),
+				meta: editor.getEditedPostAttribute('meta') || {},
+			};
+		});
+
+		// Use REST field if available, otherwise fall back to meta
+		const quizId = postData.ppqQuizId !== undefined
+			? postData.ppqQuizId
+			: (postData.meta[config.metaKeyQuizId] || 0);
+		const restrictUntilComplete = postData.ppqRestrict !== undefined
+			? postData.ppqRestrict
+			: (postData.meta[config.metaKeyRestrict] || '');
 
 		const handleQuizSelect = useCallback((newQuizId) => {
+			// Update both REST field and meta for compatibility
 			editPost({
+				ppq_quiz_id: newQuizId,
 				meta: {
 					[config.metaKeyQuizId]: newQuizId,
 				},
@@ -176,7 +193,9 @@
 		}, [editPost]);
 
 		const handleRestrictToggle = useCallback((value) => {
+			// Update both REST field and meta for compatibility
 			editPost({
+				ppq_restrict_until_complete: value ? '1' : '',
 				meta: {
 					[config.metaKeyRestrict]: value ? '1' : '',
 				},

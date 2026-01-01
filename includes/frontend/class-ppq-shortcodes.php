@@ -41,8 +41,8 @@ class PressPrimer_Quiz_Shortcodes {
 	 * @since 1.0.0
 	 */
 	public function register_shortcodes() {
-		add_shortcode( 'ppq_quiz', [ $this, 'render_quiz' ] );
-		add_shortcode( 'ppq_my_attempts', [ $this, 'render_my_attempts' ] );
+		add_shortcode( 'pressprimer_quiz', [ $this, 'render_quiz' ] );
+		add_shortcode( 'pressprimer_quiz_my_attempts', [ $this, 'render_my_attempts' ] );
 	}
 
 	/**
@@ -50,8 +50,8 @@ class PressPrimer_Quiz_Shortcodes {
 	 *
 	 * Displays a quiz landing page or quiz interface.
 	 *
-	 * Usage: [ppq_quiz id="123"]
-	 * Usage with context: [ppq_quiz id="123" context="base64_encoded_json"]
+	 * Usage: [pressprimer_quiz id="123"]
+	 * Usage with context: [pressprimer_quiz id="123" context="base64_encoded_json"]
 	 *
 	 * @since 1.0.0
 	 *
@@ -66,7 +66,7 @@ class PressPrimer_Quiz_Shortcodes {
 				'context' => '', // Base64 encoded JSON for integration context (e.g., LearnDash)
 			],
 			$atts,
-			'ppq_quiz'
+			'pressprimer_quiz'
 		);
 
 		// Decode context if provided (used by LMS integrations)
@@ -101,7 +101,7 @@ class PressPrimer_Quiz_Shortcodes {
 		}
 
 		// Check if quiz is published
-		if ( 'published' !== $quiz->status && ! current_user_can( 'ppq_manage_all' ) ) {
+		if ( 'published' !== $quiz->status && ! current_user_can( 'pressprimer_quiz_manage_all' ) ) {
 			// Allow quiz owners to preview their own draft quizzes
 			if ( ! ( $quiz->owner_id && get_current_user_id() === absint( $quiz->owner_id ) ) ) {
 				return $this->render_error( __( 'This quiz is not available.', 'pressprimer-quiz' ) );
@@ -182,7 +182,7 @@ class PressPrimer_Quiz_Shortcodes {
 		}
 
 		// Check if admin
-		if ( current_user_can( 'ppq_manage_all' ) ) {
+		if ( current_user_can( 'pressprimer_quiz_manage_all' ) ) {
 			$can_access = true;
 		}
 
@@ -208,17 +208,17 @@ class PressPrimer_Quiz_Shortcodes {
 			// Enqueue quiz CSS (base styles)
 			wp_enqueue_style(
 				'ppq-quiz',
-				PPQ_PLUGIN_URL . 'assets/css/quiz.css',
+				PRESSPRIMER_QUIZ_PLUGIN_URL . 'assets/css/quiz.css',
 				[],
-				PPQ_VERSION
+				PRESSPRIMER_QUIZ_VERSION
 			);
 
 			// Enqueue results CSS
 			wp_enqueue_style(
 				'ppq-results',
-				PPQ_PLUGIN_URL . 'assets/css/results.css',
+				PRESSPRIMER_QUIZ_PLUGIN_URL . 'assets/css/results.css',
 				[ 'ppq-quiz' ],
-				PPQ_VERSION
+				PRESSPRIMER_QUIZ_VERSION
 			);
 
 			// Enqueue theme CSS
@@ -232,19 +232,19 @@ class PressPrimer_Quiz_Shortcodes {
 			// Enqueue results JavaScript
 			wp_enqueue_script(
 				'ppq-results',
-				PPQ_PLUGIN_URL . 'assets/js/results.js',
+				PRESSPRIMER_QUIZ_PLUGIN_URL . 'assets/js/results.js',
 				[ 'jquery' ],
-				PPQ_VERSION,
+				PRESSPRIMER_QUIZ_VERSION,
 				true
 			);
 
 			// Localize script
 			wp_localize_script(
 				'ppq-results',
-				'ppqResults',
+				'pressprimerQuizResults',
 				[
 					'ajaxUrl'     => admin_url( 'admin-ajax.php' ),
-					'nonce'       => wp_create_nonce( 'ppq_email_results' ),
+					'nonce'       => wp_create_nonce( 'pressprimer_quiz_email_results' ),
 					'sendingText' => __( 'Sending...', 'pressprimer-quiz' ),
 					'sentText'    => __( 'Sent', 'pressprimer-quiz' ),
 					'successText' => __( 'Results emailed successfully!', 'pressprimer-quiz' ),
@@ -283,9 +283,9 @@ class PressPrimer_Quiz_Shortcodes {
 		// Enqueue results CSS
 		wp_enqueue_style(
 			'ppq-results',
-			PPQ_PLUGIN_URL . 'assets/css/results.css',
+			PRESSPRIMER_QUIZ_PLUGIN_URL . 'assets/css/results.css',
 			[],
-			PPQ_VERSION
+			PRESSPRIMER_QUIZ_VERSION
 		);
 
 		// Parse attributes
@@ -296,7 +296,7 @@ class PressPrimer_Quiz_Shortcodes {
 				'show_date'  => true,
 			],
 			$atts,
-			'ppq_my_attempts'
+			'pressprimer_quiz_my_attempts'
 		);
 
 		// Convert string 'false' to boolean false (for shortcode usage)
@@ -361,6 +361,10 @@ class PressPrimer_Quiz_Shortcodes {
 
 		$order = 'desc' === strtolower( $sort_order ) ? 'DESC' : 'ASC';
 
+		// Build ORDER BY with sanitize_sql_orderby
+		$order_sql = sanitize_sql_orderby( "{$sort_column} {$order}" );
+		$order_sql = $order_sql ? "ORDER BY {$order_sql}" : 'ORDER BY started_at DESC';
+
 		// Count total
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- User history pagination, not suitable for caching
 		$total = $wpdb->get_var(
@@ -376,7 +380,7 @@ class PressPrimer_Quiz_Shortcodes {
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- User history pagination, not suitable for caching
 		$attempts = $wpdb->get_results(
 			$wpdb->prepare(
-				"SELECT * FROM {$attempts_table} WHERE {$where_clause} ORDER BY {$sort_column} {$order} LIMIT %d OFFSET %d", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+				"SELECT * FROM {$attempts_table} WHERE {$where_clause} {$order_sql} LIMIT %d OFFSET %d", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 				$per_page,
 				$offset
 			)
@@ -400,13 +404,16 @@ class PressPrimer_Quiz_Shortcodes {
 			<!-- Filters -->
 			<form method="get" class="ppq-attempts-filters">
 				<?php
-				// Preserve existing query params
-				// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Reading filter params for form preservation
-				foreach ( $_GET as $key => $value ) {
-					if ( ! in_array( $key, [ 'filter_quiz', 'filter_status', 'filter_from', 'filter_to', 'sort_by', 'sort_order', 'ppq_paged' ], true ) ) {
-						echo '<input type="hidden" name="' . esc_attr( sanitize_key( $key ) ) . '" value="' . esc_attr( sanitize_text_field( wp_unslash( $value ) ) ) . '">';
-					}
+				// Preserve page identifier for non-pretty permalinks
+				// Only preserve specific known WordPress parameters, not the entire $_GET array
+				// phpcs:disable WordPress.Security.NonceVerification.Recommended -- Reading page identifiers for form action, no state change
+				if ( isset( $_GET['page_id'] ) ) {
+					echo '<input type="hidden" name="page_id" value="' . esc_attr( absint( wp_unslash( $_GET['page_id'] ) ) ) . '">';
 				}
+				if ( isset( $_GET['p'] ) ) {
+					echo '<input type="hidden" name="p" value="' . esc_attr( absint( wp_unslash( $_GET['p'] ) ) ) . '">';
+				}
+				// phpcs:enable WordPress.Security.NonceVerification.Recommended
 				?>
 
 				<div class="ppq-filter-row">
@@ -546,11 +553,11 @@ class PressPrimer_Quiz_Shortcodes {
 	private function render_attempt_row( $attempt, $quiz, $show_score = true, $show_date = true ) {
 		?>
 		<tr class="ppq-attempt-row">
-			<td class="ppq-attempt-quiz">
+			<td class="ppq-attempt-quiz" data-label="<?php esc_attr_e( 'Quiz', 'pressprimer-quiz' ); ?>">
 				<?php echo esc_html( $quiz->title ); ?>
 			</td>
 			<?php if ( $show_score ) : ?>
-				<td class="ppq-attempt-score">
+				<td class="ppq-attempt-score" data-label="<?php esc_attr_e( 'Score', 'pressprimer-quiz' ); ?>">
 					<?php if ( 'submitted' === $attempt->status && null !== $attempt->score_percent ) : ?>
 						<?php echo esc_html( number_format_i18n( $attempt->score_percent, 1 ) ); ?>%
 					<?php else : ?>
@@ -558,7 +565,7 @@ class PressPrimer_Quiz_Shortcodes {
 					<?php endif; ?>
 				</td>
 			<?php endif; ?>
-			<td class="ppq-attempt-status">
+			<td class="ppq-attempt-status" data-label="<?php esc_attr_e( 'Status', 'pressprimer-quiz' ); ?>">
 				<?php if ( 'submitted' === $attempt->status ) : ?>
 					<?php if ( $attempt->passed ) : ?>
 						<span class="ppq-badge ppq-badge-success"><?php esc_html_e( 'Passed', 'pressprimer-quiz' ); ?></span>
@@ -572,18 +579,18 @@ class PressPrimer_Quiz_Shortcodes {
 				<?php endif; ?>
 			</td>
 			<?php if ( $show_date ) : ?>
-				<td class="ppq-attempt-date">
+				<td class="ppq-attempt-date" data-label="<?php esc_attr_e( 'Date', 'pressprimer-quiz' ); ?>">
 					<?php echo esc_html( wp_date( get_option( 'date_format' ) . ' ' . get_option( 'time_format' ), strtotime( $attempt->started_at ) ) ); ?>
 				</td>
 			<?php endif; ?>
-			<td class="ppq-attempt-duration">
+			<td class="ppq-attempt-duration" data-label="<?php esc_attr_e( 'Duration', 'pressprimer-quiz' ); ?>">
 				<?php if ( $attempt->elapsed_ms ) : ?>
 					<?php echo esc_html( $this->format_duration_readable( $attempt->elapsed_ms ) ); ?>
 				<?php else : ?>
 					<span class="ppq-text-muted">—</span>
 				<?php endif; ?>
 			</td>
-			<td class="ppq-attempt-actions">
+			<td class="ppq-attempt-actions" data-label="<?php esc_attr_e( 'Actions', 'pressprimer-quiz' ); ?>">
 				<?php
 				// Use the stored source URL from the attempt, fall back to searching for shortcode
 				$quiz_page_url = $attempt->source_url ?: $this->get_quiz_page_url( $quiz->id );
@@ -722,7 +729,7 @@ class PressPrimer_Quiz_Shortcodes {
 	/**
 	 * Get the URL of a page/post containing a specific quiz shortcode
 	 *
-	 * Searches for posts/pages containing [ppq_quiz id="X"] shortcode.
+	 * Searches for posts/pages containing [pressprimer_quiz id="X"] shortcode.
 	 * Results are cached for performance.
 	 *
 	 * @since 1.0.0
@@ -742,11 +749,11 @@ class PressPrimer_Quiz_Shortcodes {
 		global $wpdb;
 
 		// Search for shortcode in post content
-		// Look for [ppq_quiz id="X"] or [ppq_quiz id='X'] or [ppq_quiz id=X]
+		// Look for [pressprimer_quiz id="X"] or [pressprimer_quiz id='X'] or [pressprimer_quiz id=X]
 		$shortcode_patterns = [
-			'%[ppq_quiz %id="' . $quiz_id . '"%',
-			"%[ppq_quiz %id='" . $quiz_id . "'%",
-			'%[ppq_quiz %id=' . $quiz_id . '%',
+			'%[pressprimer_quiz %id="' . $quiz_id . '"%',
+			"%[pressprimer_quiz %id='" . $quiz_id . "'%",
+			'%[pressprimer_quiz %id=' . $quiz_id . '%',
 		];
 
 		$where_clauses = [];

@@ -42,7 +42,7 @@
 
 			// Validate quiz ID
 			if (!quizId) {
-				this.showError(ppqQuiz.strings.error);
+				this.showError(pressprimerQuiz.strings.error);
 				return;
 			}
 
@@ -55,7 +55,7 @@
 
 				// Validate email if provided
 				if (guestEmail && !this.isValidEmail(guestEmail)) {
-					this.showError(ppqQuiz.strings.emailRequired);
+					this.showError(pressprimerQuiz.strings.emailRequired);
 					$emailInput.focus();
 					return;
 				}
@@ -66,11 +66,11 @@
 
 			// Make AJAX request to create attempt
 			$.ajax({
-				url: ppqQuiz.ajaxUrl,
+				url: pressprimerQuiz.ajaxUrl,
 				type: 'POST',
 				data: {
-					action: 'ppq_start_quiz',
-					nonce: ppqQuiz.nonce,
+					action: 'pressprimer_quiz_start_quiz',
+					nonce: pressprimerQuiz.nonce,
 					quiz_id: quizId,
 					guest_email: guestEmail
 				},
@@ -86,13 +86,13 @@
 						// Show error message
 						const errorMessage = response.data && response.data.message
 							? response.data.message
-							: ppqQuiz.strings.error;
+							: pressprimerQuiz.strings.error;
 						this.showError(errorMessage);
 						$button.prop('disabled', false).removeClass('ppq-loading');
 					}
 				},
 				error: () => {
-					this.showError(ppqQuiz.strings.error);
+					this.showError(pressprimerQuiz.strings.error);
 					$button.prop('disabled', false).removeClass('ppq-loading');
 				}
 			});
@@ -438,12 +438,41 @@
 			// Show navigation buttons again
 			$('#ppq-prev-button').show();
 
-			// If this is the last question, show submit button
+			// Check if all questions on current page have been checked (for paged mode)
+			let allPageQuestionsChecked = true;
+			let isLastPage = false;
+
+			if (this.pageMode === 'paged') {
+				const startIndex = this.currentPage * this.questionsPerPage;
+				const endIndex = Math.min(startIndex + this.questionsPerPage, this.totalQuestions);
+				isLastPage = endIndex >= this.totalQuestions;
+
+				for (let i = startIndex; i < endIndex; i++) {
+					if (!this.feedbackShown[i]) {
+						allPageQuestionsChecked = false;
+						break;
+					}
+				}
+			} else {
+				// Single question mode - check if this is the last question
+				isLastPage = questionIndex === this.totalQuestions - 1;
+				allPageQuestionsChecked = true;
+			}
+
+			// If this is the last question overall, show submit button
 			if (questionIndex === this.totalQuestions - 1) {
 				$('#ppq-submit-button').show();
 				$('#ppq-next-button').hide();
+			} else if (this.pageMode === 'paged' && !allPageQuestionsChecked) {
+				// More unchecked questions on this page - don't advance, just update visibility
+				// Navigation buttons are already shown, user can continue with other questions
+				this.updateCheckButtonVisibility();
+			} else if (this.pageMode === 'paged' && allPageQuestionsChecked && isLastPage) {
+				// All questions on last page checked - show submit
+				$('#ppq-submit-button').show();
+				$('#ppq-next-button').hide();
 			} else {
-				// Show next button and auto-advance to next question
+				// Show next button and auto-advance to next question/page
 				$('#ppq-next-button').show();
 				this.nextQuestion();
 			}
@@ -468,7 +497,7 @@
 				}
 
 				// Show warning
-				const message = ppqQuiz.strings.unsavedChanges || 'You have unsaved answers. Are you sure you want to leave?';
+				const message = pressprimerQuiz.strings.unsavedChanges || 'You have unsaved answers. Are you sure you want to leave?';
 				e.returnValue = message;
 				return message;
 			});
@@ -503,7 +532,7 @@
 						window.history.pushState('quiz-active', null, window.location.href);
 
 						// Confirm if user wants to abandon quiz
-						if (confirm(ppqQuiz.strings.confirmLeave || 'Are you sure you want to leave this quiz? Your progress is saved, but you can only resume if the time limit allows.')) {
+						if (confirm(pressprimerQuiz.strings.confirmLeave || 'Are you sure you want to leave this quiz? Your progress is saved, but you can only resume if the time limit allows.')) {
 							// Allow navigation
 							window.history.back();
 						}
@@ -526,8 +555,9 @@
 				}
 				this.performAutoSave();
 			} else {
-				// No pending answers, but sync the active time
-				this.syncActiveTime();
+				// No pending answers, but sync the active time using beacon API
+				// (more reliable when tab is hidden, especially in Safari)
+				this.syncActiveTimeBeacon();
 			}
 		},
 
@@ -568,7 +598,7 @@
 			// Show offline indicator
 			let $indicator = $('.ppq-offline-indicator');
 			if (!$indicator.length) {
-				const offlineMsg = ppqQuiz.strings.offlineMessage || 'You are offline. Answers will be saved when connection is restored.';
+				const offlineMsg = pressprimerQuiz.strings.offlineMessage || 'You are offline. Answers will be saved when connection is restored.';
 				$indicator = $('<div class="ppq-offline-indicator">' + offlineMsg + '</div>')
 					.appendTo('body');
 			}
@@ -621,7 +651,7 @@
 			// Announce question change to screen readers
 			const questionNumber = index + 1;
 			this.announceToScreenReader(
-				(ppqQuiz.strings.questionOf || 'Question {current} of {total}')
+				(pressprimerQuiz.strings.questionOf || 'Question {current} of {total}')
 					.replace('{current}', questionNumber)
 					.replace('{total}', this.totalQuestions)
 			);
@@ -668,7 +698,7 @@
 			// Announce page change to screen readers
 			const pageNumber = pageIndex + 1;
 			this.announceToScreenReader(
-				(ppqQuiz.strings.pageOf || 'Page {current} of {total}')
+				(pressprimerQuiz.strings.pageOf || 'Page {current} of {total}')
 					.replace('{current}', pageNumber)
 					.replace('{total}', this.totalPages)
 			);
@@ -806,8 +836,8 @@
 				$nextButton.prop('disabled', false).removeAttr('title');
 			} else {
 				const tooltip = this.pageMode === 'paged'
-					? (ppqQuiz.strings.skipNotAllowedTooltipPage || 'You must answer all questions on this page to proceed.')
-					: (ppqQuiz.strings.skipNotAllowedTooltip || 'You must answer this question to proceed.');
+					? (pressprimerQuiz.strings.skipNotAllowedTooltipPage || 'You must answer all questions on this page to proceed.')
+					: (pressprimerQuiz.strings.skipNotAllowedTooltip || 'You must answer this question to proceed.');
 				$nextButton.prop('disabled', true).attr('title', tooltip);
 			}
 		},
@@ -868,6 +898,12 @@
 		 */
 		handleConfidenceChange: function($input) {
 			const itemId = $input.data('item-id');
+
+			// Validate item ID exists
+			if (itemId === undefined || itemId === null || itemId === '') {
+				return;
+			}
+
 			const isConfident = $input.is(':checked');
 
 			// Mark as having unsaved changes
@@ -903,34 +939,50 @@
 		},
 
 		/**
-		 * Update Check button visibility for current question (tutorial mode)
+		 * Update Check button visibility for visible questions (tutorial mode)
 		 *
-		 * Shows Check button if question has at least one answer selected
-		 * and hasn't been checked yet.
+		 * Shows Check button for each visible question that has at least one answer
+		 * selected and hasn't been checked yet. Handles multiple questions per page.
 		 */
 		updateCheckButtonVisibility: function() {
 			if (this.quizMode !== 'tutorial') {
 				return;
 			}
 
-			const $currentQuestion = $('.ppq-question[data-question-index="' + this.currentQuestionIndex + '"]');
-			const questionIndex = this.currentQuestionIndex;
-			const $checkContainer = $currentQuestion.find('.ppq-check-answer-container');
+			const self = this;
 
-			// If already checked, hide the button
-			if (this.feedbackShown[questionIndex]) {
-				$checkContainer.hide();
-				return;
-			}
-
-			// Check if any answer is selected
-			const hasAnswer = $currentQuestion.find('.ppq-answer-input:checked').length > 0;
-
-			if (hasAnswer) {
-				$checkContainer.slideDown(200);
+			// Get all visible questions on the current page
+			let visibleQuestions = [];
+			if (this.pageMode === 'paged') {
+				const startIndex = this.currentPage * this.questionsPerPage;
+				const endIndex = Math.min(startIndex + this.questionsPerPage, this.totalQuestions);
+				for (let i = startIndex; i < endIndex; i++) {
+					visibleQuestions.push(i);
+				}
 			} else {
-				$checkContainer.slideUp(200);
+				visibleQuestions.push(this.currentQuestionIndex);
 			}
+
+			// Update Check button for each visible question
+			visibleQuestions.forEach(function(questionIndex) {
+				const $question = $('.ppq-question[data-question-index="' + questionIndex + '"]');
+				const $checkContainer = $question.find('.ppq-check-answer-container');
+
+				// If already checked, hide the button
+				if (self.feedbackShown[questionIndex]) {
+					$checkContainer.hide();
+					return;
+				}
+
+				// Check if any answer is selected
+				const hasAnswer = $question.find('.ppq-answer-input:checked').length > 0;
+
+				if (hasAnswer) {
+					$checkContainer.slideDown(200);
+				} else {
+					$checkContainer.slideUp(200);
+				}
+			});
 		},
 
 		/**
@@ -952,6 +1004,11 @@
 			const questionIndex = $question.data('question-index');
 			const itemId = $question.data('item-id');
 
+			// Validate item ID exists
+			if (itemId === undefined || itemId === null || itemId === '') {
+				return;
+			}
+
 			// Check if already checked
 			if (this.feedbackShown[questionIndex]) {
 				return;
@@ -970,15 +1027,15 @@
 
 			// Set checking state
 			this.isCheckingAnswer = true;
-			$button.prop('disabled', true).text(ppqQuiz.strings.checking || 'Checking...');
+			$button.prop('disabled', true).text(pressprimerQuiz.strings.checking || 'Checking...');
 
 			// Submit to server
 			$.ajax({
-				url: ppqQuiz.ajaxUrl,
+				url: pressprimerQuiz.ajaxUrl,
 				type: 'POST',
 				data: {
-					action: 'ppq_check_answer',
-					nonce: ppqQuiz.nonce,
+					action: 'pressprimer_quiz_check_answer',
+					nonce: pressprimerQuiz.nonce,
 					attempt_id: this.attemptId,
 					item_id: itemId,
 					answers: selectedAnswers,
@@ -991,14 +1048,14 @@
 						self.showQuestionFeedback($question, response.data);
 					} else {
 						// Re-enable button on error
-						$button.prop('disabled', false).text(ppqQuiz.strings.checkAnswer || 'Check Answer');
-						alert(response.data.message || ppqQuiz.strings.error);
+						$button.prop('disabled', false).text(pressprimerQuiz.strings.checkAnswer || 'Check Answer');
+						alert(response.data.message || pressprimerQuiz.strings.error);
 					}
 				},
 				error: function() {
 					self.isCheckingAnswer = false;
-					$button.prop('disabled', false).text(ppqQuiz.strings.checkAnswer || 'Check Answer');
-					alert(ppqQuiz.strings.error);
+					$button.prop('disabled', false).text(pressprimerQuiz.strings.checkAnswer || 'Check Answer');
+					alert(pressprimerQuiz.strings.error);
 				}
 			});
 		},
@@ -1040,8 +1097,8 @@
 			const $feedback = $question.find('.ppq-feedback');
 			const resultClass = data.is_correct ? 'ppq-feedback-correct' : 'ppq-feedback-incorrect';
 			const resultText = data.is_correct
-				? (ppqQuiz.strings.correct || 'Correct!')
-				: (ppqQuiz.strings.incorrect || 'Incorrect');
+				? (pressprimerQuiz.strings.correct || 'Correct!')
+				: (pressprimerQuiz.strings.incorrect || 'Incorrect');
 
 			$feedback.find('.ppq-feedback-result')
 				.removeClass('ppq-feedback-correct ppq-feedback-incorrect')
@@ -1072,6 +1129,11 @@
 			const self = this;
 			const itemId = $input.data('item-id');
 			const $question = $input.closest('.ppq-question');
+
+			// Validate item ID exists
+			if (itemId === undefined || itemId === null || itemId === '') {
+				return;
+			}
 
 			// Get selected answer(s)
 			let selectedAnswers = [];
@@ -1139,8 +1201,8 @@
 
 			// Build form data manually to ensure proper array serialization
 			const formData = {
-				action: 'ppq_save_answers',
-				nonce: ppqQuiz.nonce,
+				action: 'pressprimer_quiz_save_answers',
+				nonce: pressprimerQuiz.nonce,
 				attempt_id: this.attemptId,
 				active_elapsed_ms: activeElapsedMs,
 				guest_token: this.guestToken
@@ -1166,7 +1228,7 @@
 
 			// Make AJAX request
 			$.ajax({
-				url: ppqQuiz.ajaxUrl,
+				url: pressprimerQuiz.ajaxUrl,
 				type: 'POST',
 				data: formData,
 				success: function(response) {
@@ -1186,7 +1248,7 @@
 						// Show more descriptive error message
 						const errorMsg = response.data && response.data.message
 							? response.data.message
-							: ppqQuiz.strings.saveFailed;
+							: pressprimerQuiz.strings.saveFailed;
 						self.showAutoSaveIndicator('failed', errorMsg);
 					}
 				},
@@ -1222,18 +1284,18 @@
 
 			// Update text and icon based on state
 			if (state === 'saving') {
-				$text.text(ppqQuiz.strings.saving);
+				$text.text(pressprimerQuiz.strings.saving);
 				$icon.text('💾');
 				$indicator.removeClass('ppq-autosave-error').addClass('ppq-autosave-saving');
 			} else if (state === 'saved') {
-				$text.text(ppqQuiz.strings.saved);
+				$text.text(pressprimerQuiz.strings.saved);
 				$icon.text('✓');
 				$indicator.removeClass('ppq-autosave-saving ppq-autosave-error');
 				// Announce save success to screen readers
-				self.announceToScreenReader(ppqQuiz.strings.saved || 'Answer saved');
+				self.announceToScreenReader(pressprimerQuiz.strings.saved || 'Answer saved');
 			} else if (state === 'failed') {
 				// Use custom message if provided, otherwise use default
-				const errorMsg = message || ppqQuiz.strings.saveFailed;
+				const errorMsg = message || pressprimerQuiz.strings.saveFailed;
 				$text.text(errorMsg);
 				$icon.text('⚠️');
 				$indicator.removeClass('ppq-autosave-saving').addClass('ppq-autosave-error');
@@ -1278,7 +1340,7 @@
 					if (!self.oneMinuteWarningAnnounced) {
 						self.oneMinuteWarningAnnounced = true;
 						self.announceToScreenReader(
-							ppqQuiz.strings.oneMinuteWarning || 'Warning: One minute remaining!',
+							pressprimerQuiz.strings.oneMinuteWarning || 'Warning: One minute remaining!',
 							'assertive'
 						);
 					}
@@ -1290,7 +1352,7 @@
 					if (!self.fiveMinuteWarningAnnounced) {
 						self.fiveMinuteWarningAnnounced = true;
 						self.announceToScreenReader(
-							ppqQuiz.strings.fiveMinuteWarning || 'Warning: Five minutes remaining!',
+							pressprimerQuiz.strings.fiveMinuteWarning || 'Warning: Five minutes remaining!',
 							'polite'
 						);
 					}
@@ -1378,11 +1440,11 @@
 
 			// Make AJAX request
 			$.ajax({
-				url: ppqQuiz.ajaxUrl,
+				url: pressprimerQuiz.ajaxUrl,
 				type: 'POST',
 				data: {
-					action: 'ppq_submit_quiz',
-					nonce: ppqQuiz.nonce,
+					action: 'pressprimer_quiz_submit_quiz',
+					nonce: pressprimerQuiz.nonce,
 					attempt_id: this.attemptId,
 					timed_out: this.isAutoSubmit,
 					current_url: window.location.href,
@@ -1397,7 +1459,7 @@
 						// Show error
 						const errorMessage = response.data && response.data.message
 							? response.data.message
-							: ppqQuiz.strings.error;
+							: pressprimerQuiz.strings.error;
 						alert(errorMessage);
 
 						// Re-enable submit button
@@ -1411,7 +1473,7 @@
 					}
 				},
 				error: () => {
-					alert(ppqQuiz.strings.error);
+					alert(pressprimerQuiz.strings.error);
 					$submitButton.prop('disabled', false).removeClass('ppq-loading');
 					self.isSubmitting = false;
 
@@ -1562,11 +1624,11 @@
 			// Build message
 			let message;
 			if (unanswered.length === 1) {
-				message = ppqQuiz.strings.unansweredSingle.replace('{question}', questionNumbers[0]);
+				message = pressprimerQuiz.strings.unansweredSingle.replace('{question}', questionNumbers[0]);
 			} else if (unanswered.length <= 5) {
-				message = ppqQuiz.strings.unansweredMultiple.replace('{questions}', questionNumbers.join(', '));
+				message = pressprimerQuiz.strings.unansweredMultiple.replace('{questions}', questionNumbers.join(', '));
 			} else {
-				message = ppqQuiz.strings.unansweredMany.replace('{count}', unanswered.length);
+				message = pressprimerQuiz.strings.unansweredMany.replace('{count}', unanswered.length);
 			}
 
 			// Remove any existing warning
@@ -1575,14 +1637,14 @@
 			// Create overlay with warning
 			const $overlay = $('<div class="ppq-unanswered-overlay">' +
 				'<div class="ppq-unanswered-warning">' +
-				'<p><strong>' + ppqQuiz.strings.unansweredTitle + '</strong></p>' +
+				'<p><strong>' + pressprimerQuiz.strings.unansweredTitle + '</strong></p>' +
 				'<p>' + message + '</p>' +
 				'<div class="ppq-unanswered-actions">' +
 				'<button type="button" class="ppq-button ppq-button-secondary ppq-go-to-first">' +
-				ppqQuiz.strings.goToQuestion.replace('{question}', questionNumbers[0]) +
+				pressprimerQuiz.strings.goToQuestion.replace('{question}', questionNumbers[0]) +
 				'</button>' +
 				'<button type="button" class="ppq-button ppq-button-primary ppq-submit-anyway">' +
-				ppqQuiz.strings.submitAnyway +
+				pressprimerQuiz.strings.submitAnyway +
 				'</button>' +
 				'</div>' +
 				'</div>' +
@@ -1639,7 +1701,7 @@
 
 			// Create message element
 			const $message = $('<div class="ppq-backward-not-allowed-message ppq-notice ppq-notice-warning">' +
-				'<p>' + (ppqQuiz.strings.backwardNotAllowed || 'You cannot go back to previous questions in this quiz.') + '</p>' +
+				'<p>' + (pressprimerQuiz.strings.backwardNotAllowed || 'You cannot go back to previous questions in this quiz.') + '</p>' +
 				'</div>');
 
 			// Insert message before the question content
@@ -1650,7 +1712,7 @@
 
 			// Announce to screen reader
 			this.announceToScreenReader(
-				ppqQuiz.strings.backwardNotAllowed || 'You cannot go back to previous questions in this quiz.',
+				pressprimerQuiz.strings.backwardNotAllowed || 'You cannot go back to previous questions in this quiz.',
 				'assertive'
 			);
 
@@ -1668,8 +1730,6 @@
 		 * Lightweight endpoint that only updates active_elapsed_ms.
 		 */
 		syncActiveTime: function() {
-			const self = this;
-
 			// Don't sync if offline
 			if (!this.isOnline) {
 				return;
@@ -1678,11 +1738,11 @@
 			const activeElapsedMs = this.getCurrentActiveElapsedMs();
 
 			$.ajax({
-				url: ppqQuiz.ajaxUrl,
+				url: pressprimerQuiz.ajaxUrl,
 				type: 'POST',
 				data: {
-					action: 'ppq_sync_time',
-					nonce: ppqQuiz.nonce,
+					action: 'pressprimer_quiz_sync_time',
+					nonce: pressprimerQuiz.nonce,
 					attempt_id: this.attemptId,
 					active_elapsed_ms: activeElapsedMs,
 					guest_token: this.guestToken
@@ -1695,6 +1755,41 @@
 					// Ignore errors for heartbeat - will retry next interval
 				}
 			});
+		},
+
+		/**
+		 * Sync active time using Beacon API (for tab hidden/page unload)
+		 *
+		 * Uses navigator.sendBeacon which is more reliable when the page
+		 * is being hidden or unloaded, especially in Safari.
+		 */
+		syncActiveTimeBeacon: function() {
+			// Don't sync if offline
+			if (!this.isOnline) {
+				return;
+			}
+
+			// Check if sendBeacon is supported
+			if (!navigator.sendBeacon) {
+				// Fall back to regular AJAX
+				this.syncActiveTime();
+				return;
+			}
+
+			const activeElapsedMs = this.getCurrentActiveElapsedMs();
+
+			// Build form data for beacon
+			const formData = new FormData();
+			formData.append('action', 'pressprimer_quiz_sync_time');
+			formData.append('nonce', pressprimerQuiz.nonce);
+			formData.append('attempt_id', this.attemptId);
+			formData.append('active_elapsed_ms', activeElapsedMs);
+			if (this.guestToken) {
+				formData.append('guest_token', this.guestToken);
+			}
+
+			// Send using beacon API - fire and forget, works reliably when tab is hidden
+			navigator.sendBeacon(pressprimerQuiz.ajaxUrl, formData);
 		}
 	};
 

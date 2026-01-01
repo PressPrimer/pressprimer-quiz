@@ -82,7 +82,7 @@ class PressPrimer_Quiz_Admin_Questions {
 			[
 				'label'   => __( 'Questions per page', 'pressprimer-quiz' ),
 				'default' => 100,
-				'option'  => 'ppq_questions_per_page',
+				'option'  => 'pressprimer_quiz_questions_per_page',
 			]
 		);
 
@@ -119,7 +119,7 @@ class PressPrimer_Quiz_Admin_Questions {
 	 * @return mixed
 	 */
 	public function set_screen_option( $status, $option, $value ) {
-		if ( 'ppq_questions_per_page' === $option ) {
+		if ( 'pressprimer_quiz_questions_per_page' === $option ) {
 			return $value;
 		}
 
@@ -133,7 +133,7 @@ class PressPrimer_Quiz_Admin_Questions {
 	 */
 	public function admin_notices() {
 		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only check for page routing
-		if ( ! isset( $_GET['page'] ) || 'ppq-questions' !== $_GET['page'] ) {
+		if ( ! isset( $_GET['page'] ) || 'pressprimer-quiz-questions' !== $_GET['page'] ) {
 			return;
 		}
 
@@ -178,7 +178,7 @@ class PressPrimer_Quiz_Admin_Questions {
 	 */
 	public function render() {
 		// Check capability
-		if ( ! current_user_can( 'ppq_manage_own' ) && ! current_user_can( 'ppq_manage_all' ) ) {
+		if ( ! current_user_can( 'pressprimer_quiz_manage_own' ) && ! current_user_can( 'pressprimer_quiz_manage_all' ) ) {
 			wp_die(
 				esc_html__( 'You do not have permission to access this page.', 'pressprimer-quiz' ),
 				esc_html__( 'Permission Denied', 'pressprimer-quiz' ),
@@ -213,7 +213,7 @@ class PressPrimer_Quiz_Admin_Questions {
 		?>
 		<div class="wrap">
 			<h1 class="wp-heading-inline"><?php esc_html_e( 'Questions', 'pressprimer-quiz' ); ?></h1>
-			<a href="<?php echo esc_url( admin_url( 'admin.php?page=ppq-questions&action=new' ) ); ?>" class="page-title-action">
+			<a href="<?php echo esc_url( admin_url( 'admin.php?page=pressprimer-quiz-questions&action=new' ) ); ?>" class="page-title-action">
 				<?php esc_html_e( 'Add New', 'pressprimer-quiz' ); ?>
 			</a>
 			<hr class="wp-header-end">
@@ -250,7 +250,7 @@ class PressPrimer_Quiz_Admin_Questions {
 			}
 
 			// Check permission
-			if ( ! current_user_can( 'ppq_manage_all' ) && absint( $question->author_id ) !== get_current_user_id() ) {
+			if ( ! current_user_can( 'pressprimer_quiz_manage_all' ) && absint( $question->author_id ) !== get_current_user_id() ) {
 				wp_die( esc_html__( 'You do not have permission to edit this question.', 'pressprimer-quiz' ) );
 			}
 		}
@@ -279,7 +279,7 @@ class PressPrimer_Quiz_Admin_Questions {
 		// Enqueue Ant Design CSS
 		wp_enqueue_style(
 			'antd',
-			PPQ_PLUGIN_URL . 'assets/css/vendor/antd-reset.css',
+			PRESSPRIMER_QUIZ_PLUGIN_URL . 'assets/css/vendor/antd-reset.css',
 			[],
 			'5.12.0'
 		);
@@ -287,17 +287,17 @@ class PressPrimer_Quiz_Admin_Questions {
 		// Enqueue built React app
 		wp_enqueue_script(
 			'ppq-question-editor',
-			PPQ_PLUGIN_URL . 'build/question-editor.js',
+			PRESSPRIMER_QUIZ_PLUGIN_URL . 'build/question-editor.js',
 			[ 'wp-element', 'wp-i18n', 'wp-api-fetch', 'wp-editor' ],
-			PPQ_VERSION,
+			PRESSPRIMER_QUIZ_VERSION,
 			true
 		);
 
 		wp_enqueue_style(
 			'ppq-question-editor',
-			PPQ_PLUGIN_URL . 'build/question-editor.css',
+			PRESSPRIMER_QUIZ_PLUGIN_URL . 'build/question-editor.css',
 			[],
-			PPQ_VERSION
+			PRESSPRIMER_QUIZ_VERSION
 		);
 
 		// Prepare question data for React
@@ -366,14 +366,14 @@ class PressPrimer_Quiz_Admin_Questions {
 		// Localize script with data
 		wp_localize_script(
 			'ppq-question-editor',
-			'ppqQuestionData',
+			'pressprimerQuizQuestionData',
 			$question_data
 		);
 
 		// Also pass admin URL
 		wp_localize_script(
 			'ppq-question-editor',
-			'ppqAdmin',
+			'pressprimerQuizAdmin',
 			[
 				'adminUrl' => admin_url(),
 				'nonce'    => wp_create_nonce( 'wp_rest' ),
@@ -389,7 +389,7 @@ class PressPrimer_Quiz_Admin_Questions {
 	public function handle_actions() {
 		// Only on questions page
 		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only page check; nonce verified in individual handlers
-		if ( ! isset( $_GET['page'] ) || 'ppq-questions' !== $_GET['page'] ) {
+		if ( ! isset( $_GET['page'] ) || 'pressprimer-quiz-questions' !== $_GET['page'] ) {
 			return;
 		}
 
@@ -425,7 +425,7 @@ class PressPrimer_Quiz_Admin_Questions {
 		$question_id_raw = absint( wp_unslash( $_GET['question'] ) );
 		check_admin_referer( 'delete-question_' . $question_id_raw );
 
-		if ( ! current_user_can( 'ppq_manage_own' ) && ! current_user_can( 'ppq_manage_all' ) ) {
+		if ( ! current_user_can( 'pressprimer_quiz_manage_own' ) && ! current_user_can( 'pressprimer_quiz_manage_all' ) ) {
 			wp_die( esc_html__( 'You do not have permission to delete questions.', 'pressprimer-quiz' ) );
 		}
 
@@ -437,7 +437,7 @@ class PressPrimer_Quiz_Admin_Questions {
 		}
 
 		// Check permission
-		if ( ! current_user_can( 'ppq_manage_all' ) && absint( $question->author_id ) !== get_current_user_id() ) {
+		if ( ! current_user_can( 'pressprimer_quiz_manage_all' ) && absint( $question->author_id ) !== get_current_user_id() ) {
 			wp_die( esc_html__( 'You do not have permission to delete this question.', 'pressprimer-quiz' ) );
 		}
 
@@ -453,7 +453,7 @@ class PressPrimer_Quiz_Admin_Questions {
 			PressPrimer_Quiz_Statistics_Service::clear_dashboard_cache();
 		}
 
-		wp_safe_redirect( add_query_arg( 'deleted', '1', admin_url( 'admin.php?page=ppq-questions' ) ) );
+		wp_safe_redirect( add_query_arg( 'deleted', '1', admin_url( 'admin.php?page=pressprimer-quiz-questions' ) ) );
 		exit;
 	}
 
@@ -465,7 +465,7 @@ class PressPrimer_Quiz_Admin_Questions {
 	private function handle_bulk_delete() {
 		check_admin_referer( 'bulk-questions' );
 
-		if ( ! current_user_can( 'ppq_manage_own' ) && ! current_user_can( 'ppq_manage_all' ) ) {
+		if ( ! current_user_can( 'pressprimer_quiz_manage_own' ) && ! current_user_can( 'pressprimer_quiz_manage_all' ) ) {
 			wp_die( esc_html__( 'You do not have permission to delete questions.', 'pressprimer-quiz' ) );
 		}
 
@@ -481,7 +481,7 @@ class PressPrimer_Quiz_Admin_Questions {
 			}
 
 			// Check permission
-			if ( ! current_user_can( 'ppq_manage_all' ) && absint( $question->author_id ) !== get_current_user_id() ) {
+			if ( ! current_user_can( 'pressprimer_quiz_manage_all' ) && absint( $question->author_id ) !== get_current_user_id() ) {
 				continue;
 			}
 
@@ -497,7 +497,7 @@ class PressPrimer_Quiz_Admin_Questions {
 			PressPrimer_Quiz_Statistics_Service::clear_dashboard_cache();
 		}
 
-		wp_safe_redirect( add_query_arg( 'deleted', $deleted, admin_url( 'admin.php?page=ppq-questions' ) ) );
+		wp_safe_redirect( add_query_arg( 'deleted', $deleted, admin_url( 'admin.php?page=pressprimer-quiz-questions' ) ) );
 		exit;
 	}
 
@@ -514,7 +514,7 @@ class PressPrimer_Quiz_Admin_Questions {
 		$question_id_raw = absint( wp_unslash( $_GET['question'] ) );
 		check_admin_referer( 'duplicate-question_' . $question_id_raw );
 
-		if ( ! current_user_can( 'ppq_manage_own' ) && ! current_user_can( 'ppq_manage_all' ) ) {
+		if ( ! current_user_can( 'pressprimer_quiz_manage_own' ) && ! current_user_can( 'pressprimer_quiz_manage_all' ) ) {
 			wp_die( esc_html__( 'You do not have permission to duplicate questions.', 'pressprimer-quiz' ) );
 		}
 
@@ -526,7 +526,7 @@ class PressPrimer_Quiz_Admin_Questions {
 		}
 
 		// Check permission
-		if ( ! current_user_can( 'ppq_manage_all' ) && absint( $question->author_id ) !== get_current_user_id() ) {
+		if ( ! current_user_can( 'pressprimer_quiz_manage_all' ) && absint( $question->author_id ) !== get_current_user_id() ) {
 			wp_die( esc_html__( 'You do not have permission to duplicate this question.', 'pressprimer-quiz' ) );
 		}
 
@@ -675,7 +675,7 @@ class PressPrimer_Quiz_Admin_Questions {
 			wp_safe_redirect(
 				add_query_arg(
 					[
-						'page'       => 'ppq-questions',
+						'page'       => 'pressprimer-quiz-questions',
 						'action'     => 'edit',
 						'question'   => $new_question->id,
 						'duplicated' => '1',
@@ -794,7 +794,7 @@ class PressPrimer_Quiz_Questions_List_Table extends WP_List_Table {
 	public function prepare_items() {
 		global $wpdb;
 
-		$per_page     = $this->get_items_per_page( 'ppq_questions_per_page', 100 );
+		$per_page     = $this->get_items_per_page( 'pressprimer_quiz_questions_per_page', 100 );
 		$current_page = $this->get_pagenum();
 		$offset       = ( $current_page - 1 ) * $per_page;
 
@@ -845,7 +845,7 @@ class PressPrimer_Quiz_Questions_List_Table extends WP_List_Table {
 		if ( $get_author > 0 ) {
 			$where_clauses[] = 'author_id = %d';
 			$where_values[]  = $get_author;
-		} elseif ( ! current_user_can( 'ppq_manage_all' ) ) {
+		} elseif ( ! current_user_can( 'pressprimer_quiz_manage_all' ) ) {
 			// Non-admins see only their own questions
 			$where_clauses[] = 'author_id = %d';
 			$where_values[]  = get_current_user_id();
@@ -865,12 +865,15 @@ class PressPrimer_Quiz_Questions_List_Table extends WP_List_Table {
 
 		$where_sql = 'WHERE ' . implode( ' AND ', $where_clauses );
 
-		// Order by
-		$orderby = isset( $_GET['orderby'] ) && '' !== $_GET['orderby'] ? sanitize_key( wp_unslash( $_GET['orderby'] ) ) : 'created_at';
-		$order   = isset( $_GET['order'] ) && 'asc' === strtolower( sanitize_key( wp_unslash( $_GET['order'] ) ) ) ? 'ASC' : 'DESC';
+		// Order by - validate against allowed fields
+		$allowed_orderby = [ 'id', 'type', 'difficulty_author', 'author_id', 'created_at', 'updated_at' ];
+		$orderby         = isset( $_GET['orderby'] ) && '' !== $_GET['orderby'] ? sanitize_key( wp_unslash( $_GET['orderby'] ) ) : 'created_at';
+		$orderby         = in_array( $orderby, $allowed_orderby, true ) ? $orderby : 'created_at';
+		$order           = isset( $_GET['order'] ) && 'asc' === strtolower( sanitize_key( wp_unslash( $_GET['order'] ) ) ) ? 'ASC' : 'DESC';
 		// phpcs:enable WordPress.Security.NonceVerification.Recommended
 
-		$order_sql = "ORDER BY {$orderby} {$order}";
+		$order_sql = sanitize_sql_orderby( "{$orderby} {$order}" );
+		$order_sql = $order_sql ? "ORDER BY {$order_sql}" : 'ORDER BY created_at DESC';
 
 		// Count total items
 		$count_query = "SELECT COUNT(*) FROM {$questions_table} {$where_sql}";
@@ -929,7 +932,7 @@ class PressPrimer_Quiz_Questions_List_Table extends WP_List_Table {
 			<?php $this->render_difficulty_filter(); ?>
 			<?php $this->render_category_filter(); ?>
 			<?php $this->render_bank_filter(); ?>
-			<?php if ( current_user_can( 'ppq_manage_all' ) ) : ?>
+			<?php if ( current_user_can( 'pressprimer_quiz_manage_all' ) ) : ?>
 				<?php $this->render_author_filter(); ?>
 			<?php endif; ?>
 			<?php submit_button( __( 'Filter', 'pressprimer-quiz' ), '', 'filter_action', false ); ?>
@@ -1139,23 +1142,23 @@ class PressPrimer_Quiz_Questions_List_Table extends WP_List_Table {
 		$actions = [];
 
 		// Check if user can edit this question
-		$can_edit = current_user_can( 'ppq_manage_all' ) || ( current_user_can( 'ppq_manage_own' ) && absint( $item->author_id ) === get_current_user_id() );
+		$can_edit = current_user_can( 'pressprimer_quiz_manage_all' ) || ( current_user_can( 'pressprimer_quiz_manage_own' ) && absint( $item->author_id ) === get_current_user_id() );
 
 		if ( $can_edit ) {
 			$actions['edit'] = sprintf(
 				'<a href="%s">%s</a>',
-				esc_url( admin_url( 'admin.php?page=ppq-questions&action=edit&question=' . $item->id ) ),
+				esc_url( admin_url( 'admin.php?page=pressprimer-quiz-questions&action=edit&question=' . $item->id ) ),
 				esc_html__( 'Edit', 'pressprimer-quiz' )
 			);
 		}
 
 		// Users can duplicate any question they can view (to create their own copy)
-		if ( current_user_can( 'ppq_manage_own' ) ) {
+		if ( current_user_can( 'pressprimer_quiz_manage_own' ) ) {
 			$actions['duplicate'] = sprintf(
 				'<a href="%s">%s</a>',
 				esc_url(
 					wp_nonce_url(
-						admin_url( 'admin.php?page=ppq-questions&action=duplicate&question=' . $item->id ),
+						admin_url( 'admin.php?page=pressprimer-quiz-questions&action=duplicate&question=' . $item->id ),
 						'duplicate-question_' . $item->id
 					)
 				),
@@ -1168,7 +1171,7 @@ class PressPrimer_Quiz_Questions_List_Table extends WP_List_Table {
 				'<a href="%s" class="ppq-delete-confirm">%s</a>',
 				esc_url(
 					wp_nonce_url(
-						admin_url( 'admin.php?page=ppq-questions&action=delete&question=' . $item->id ),
+						admin_url( 'admin.php?page=pressprimer-quiz-questions&action=delete&question=' . $item->id ),
 						'delete-question_' . $item->id
 					)
 				),
@@ -1305,7 +1308,7 @@ class PressPrimer_Quiz_Questions_List_Table extends WP_List_Table {
 			return '—';
 		}
 
-		if ( current_user_can( 'ppq_manage_all' ) ) {
+		if ( current_user_can( 'pressprimer_quiz_manage_all' ) ) {
 			return sprintf(
 				'<a href="%s">%s</a>',
 				esc_url( add_query_arg( 'author', $item->author_id ) ),

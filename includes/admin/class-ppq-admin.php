@@ -33,9 +33,9 @@ class PressPrimer_Quiz_Admin {
 	public function init() {
 		add_action( 'admin_menu', [ $this, 'register_menus' ] );
 		add_action( 'admin_enqueue_scripts', [ $this, 'enqueue_assets' ] );
-		add_action( 'wp_ajax_ppq_search_questions', [ $this, 'ajax_search_questions' ] );
-		add_action( 'wp_ajax_ppq_get_recent_questions', [ $this, 'ajax_get_recent_questions' ] );
-		add_action( 'wp_ajax_ppq_remove_question_from_bank', [ $this, 'ajax_remove_question_from_bank' ] );
+		add_action( 'wp_ajax_pressprimer_quiz_search_questions', [ $this, 'ajax_search_questions' ] );
+		add_action( 'wp_ajax_pressprimer_quiz_get_recent_questions', [ $this, 'ajax_get_recent_questions' ] );
+		add_action( 'wp_ajax_pressprimer_quiz_remove_question_from_bank', [ $this, 'ajax_remove_question_from_bank' ] );
 
 		// Initialize settings
 		if ( class_exists( 'PressPrimer_Quiz_Admin_Settings' ) ) {
@@ -86,8 +86,8 @@ class PressPrimer_Quiz_Admin {
 		add_menu_page(
 			__( 'PressPrimer Quiz', 'pressprimer-quiz' ),           // Page title
 			__( 'PressPrimer Quiz', 'pressprimer-quiz' ),           // Menu title
-			'ppq_manage_own',                                        // Capability
-			'ppq',                                                   // Menu slug
+			'pressprimer_quiz_manage_own',                           // Capability
+			'pressprimer-quiz',                                      // Menu slug
 			[ $this, 'render_dashboard' ],                          // Callback
 			$this->get_menu_icon(),                                  // Icon
 			30                                                       // Position (after Comments)
@@ -95,81 +95,81 @@ class PressPrimer_Quiz_Admin {
 
 		// Dashboard submenu (replaces main menu link)
 		add_submenu_page(
-			'ppq',                                                   // Parent slug
+			'pressprimer-quiz',                                      // Parent slug
 			__( 'Dashboard', 'pressprimer-quiz' ),                  // Page title
 			__( 'Dashboard', 'pressprimer-quiz' ),                  // Menu title
-			'ppq_manage_own',                                        // Capability
-			'ppq',                                                   // Menu slug (same as parent)
+			'pressprimer_quiz_manage_own',                           // Capability
+			'pressprimer-quiz',                                      // Menu slug (same as parent)
 			[ $this, 'render_dashboard' ]                           // Callback
 		);
 
 		// Quizzes submenu
 		add_submenu_page(
-			'ppq',
+			'pressprimer-quiz',
 			__( 'Quizzes', 'pressprimer-quiz' ),
 			__( 'Quizzes', 'pressprimer-quiz' ),
-			'ppq_manage_own',
-			'ppq-quizzes',
+			'pressprimer_quiz_manage_own',
+			'pressprimer-quiz-quizzes',
 			[ $this, 'render_quizzes' ]
 		);
 
 		// Questions submenu
 		add_submenu_page(
-			'ppq',
+			'pressprimer-quiz',
 			__( 'Questions', 'pressprimer-quiz' ),
 			__( 'Questions', 'pressprimer-quiz' ),
-			'ppq_manage_own',
-			'ppq-questions',
+			'pressprimer_quiz_manage_own',
+			'pressprimer-quiz-questions',
 			[ $this, 'render_questions' ]
 		);
 
 		// Question Banks submenu
 		add_submenu_page(
-			'ppq',
+			'pressprimer-quiz',
 			__( 'Question Banks', 'pressprimer-quiz' ),
 			__( 'Question Banks', 'pressprimer-quiz' ),
-			'ppq_manage_own',
-			'ppq-banks',
+			'pressprimer_quiz_manage_own',
+			'pressprimer-quiz-banks',
 			[ $this, 'render_banks' ]
 		);
 
 		// Categories submenu
 		add_submenu_page(
-			'ppq',
+			'pressprimer-quiz',
 			__( 'Categories', 'pressprimer-quiz' ),
 			__( 'Categories', 'pressprimer-quiz' ),
-			'ppq_manage_own',
-			'ppq-categories',
+			'pressprimer_quiz_manage_own',
+			'pressprimer-quiz-categories',
 			[ $this, 'render_categories' ]
 		);
 
 		// Tags submenu
 		add_submenu_page(
-			'ppq',
+			'pressprimer-quiz',
 			__( 'Tags', 'pressprimer-quiz' ),
 			__( 'Tags', 'pressprimer-quiz' ),
-			'ppq_manage_own',
-			'ppq-tags',
+			'pressprimer_quiz_manage_own',
+			'pressprimer-quiz-tags',
 			[ $this, 'render_tags' ]
 		);
 
 		// Reports submenu
 		add_submenu_page(
-			'ppq',
+			'pressprimer-quiz',
 			__( 'Reports', 'pressprimer-quiz' ),
 			__( 'Reports', 'pressprimer-quiz' ),
-			'ppq_view_results_own',                                 // Different capability
-			'ppq-reports',
+			'pressprimer_quiz_view_results_own',                    // Different capability
+			'pressprimer-quiz-reports',
 			[ $this, 'render_reports' ]
 		);
 
 		// Settings submenu
 		add_submenu_page(
-			'ppq',
+			'pressprimer-quiz',
 			__( 'Settings', 'pressprimer-quiz' ),
 			__( 'Settings', 'pressprimer-quiz' ),
-			'ppq_manage_settings',                                  // Admin only
-			'ppq-settings',
+			'pressprimer_quiz_manage_settings',                     // Admin only
+			'pressprimer-quiz-settings',
 			[ $this, 'render_settings' ]
 		);
 	}
@@ -184,51 +184,51 @@ class PressPrimer_Quiz_Admin {
 	 * @param string $hook Current admin page hook.
 	 */
 	public function enqueue_assets( $hook ) {
-		// Only load on PPQ admin pages
-		if ( false === strpos( $hook, 'ppq' ) ) {
+		// Only load on PressPrimer Quiz admin pages
+		if ( false === strpos( $hook, 'pressprimer-quiz' ) ) {
 			return;
 		}
 
 		// Enqueue admin CSS
 		wp_enqueue_style(
 			'ppq-admin',
-			PPQ_PLUGIN_URL . 'assets/css/admin.css',
+			PRESSPRIMER_QUIZ_PLUGIN_URL . 'assets/css/admin.css',
 			[],
-			PPQ_VERSION
+			PRESSPRIMER_QUIZ_VERSION
 		);
 
 		// Enqueue admin JavaScript
 		wp_enqueue_script(
 			'ppq-admin',
-			PPQ_PLUGIN_URL . 'assets/js/admin.js',
+			PRESSPRIMER_QUIZ_PLUGIN_URL . 'assets/js/admin.js',
 			[ 'jquery' ],
-			PPQ_VERSION,
+			PRESSPRIMER_QUIZ_VERSION,
 			true
 		);
 
 		// Enqueue question builder on question pages
 		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only page check for conditional asset loading
-		if ( isset( $_GET['page'] ) && 'ppq-questions' === $_GET['page'] ) {
+		if ( isset( $_GET['page'] ) && 'pressprimer-quiz-questions' === $_GET['page'] ) {
 			// Enqueue jQuery UI for sortable
 			wp_enqueue_script( 'jquery-ui-sortable' );
 
 			// Enqueue question builder script
 			wp_enqueue_script(
 				'ppq-question-builder',
-				PPQ_PLUGIN_URL . 'assets/js/question-builder.js',
+				PRESSPRIMER_QUIZ_PLUGIN_URL . 'assets/js/question-builder.js',
 				[ 'jquery', 'jquery-ui-sortable' ],
-				PPQ_VERSION,
+				PRESSPRIMER_QUIZ_VERSION,
 				true
 			);
 		}
 
 		// Enqueue Dashboard React app on main dashboard page
-		if ( 'toplevel_page_ppq' === $hook ) {
+		if ( 'toplevel_page_pressprimer-quiz' === $hook ) {
 			$this->enqueue_dashboard_assets();
 		}
 
 		// Enqueue Reports React app on reports page
-		if ( 'pressprimer-quiz_page_ppq-reports' === $hook ) {
+		if ( 'pressprimer-quiz_page_pressprimer-quiz-reports' === $hook ) {
 			$this->enqueue_reports_assets();
 		}
 
@@ -238,10 +238,10 @@ class PressPrimer_Quiz_Admin {
 		// Localize script with data
 		wp_localize_script(
 			'ppq-admin',
-			'ppqAdmin',
+			'pressprimerQuizAdmin',
 			[
 				'ajaxUrl' => admin_url( 'admin-ajax.php' ),
-				'nonce'   => wp_create_nonce( 'ppq_admin_nonce' ),
+				'nonce'   => wp_create_nonce( 'pressprimer_quiz_admin_nonce' ),
 				'debug'   => defined( 'WP_DEBUG' ) && WP_DEBUG,
 				'strings' => [
 					'confirmDelete'         => __( 'Are you sure you want to delete this item?', 'pressprimer-quiz' ),
@@ -268,7 +268,7 @@ class PressPrimer_Quiz_Admin {
 	 * @since 1.0.0
 	 */
 	private function enqueue_dashboard_assets() {
-		$asset_file = PPQ_PLUGIN_PATH . 'build/dashboard.asset.php';
+		$asset_file = PRESSPRIMER_QUIZ_PLUGIN_PATH . 'build/dashboard.asset.php';
 
 		if ( ! file_exists( $asset_file ) ) {
 			return;
@@ -279,7 +279,7 @@ class PressPrimer_Quiz_Admin {
 		// Enqueue the dashboard script
 		wp_enqueue_script(
 			'ppq-dashboard',
-			PPQ_PLUGIN_URL . 'build/dashboard.js',
+			PRESSPRIMER_QUIZ_PLUGIN_URL . 'build/dashboard.js',
 			$asset['dependencies'],
 			$asset['version'],
 			true
@@ -288,7 +288,7 @@ class PressPrimer_Quiz_Admin {
 		// Enqueue the dashboard styles
 		wp_enqueue_style(
 			'ppq-dashboard',
-			PPQ_PLUGIN_URL . 'build/style-dashboard.css',
+			PRESSPRIMER_QUIZ_PLUGIN_URL . 'build/style-dashboard.css',
 			[],
 			$asset['version']
 		);
@@ -296,14 +296,14 @@ class PressPrimer_Quiz_Admin {
 		// Localize script with dashboard data
 		wp_localize_script(
 			'ppq-dashboard',
-			'ppqDashboardData',
+			'pressprimerQuizDashboardData',
 			[
-				'pluginUrl' => PPQ_PLUGIN_URL,
+				'pluginUrl' => PRESSPRIMER_QUIZ_PLUGIN_URL,
 				'urls'      => [
-					'create_quiz'  => admin_url( 'admin.php?page=ppq-quizzes&action=new' ),
-					'add_question' => admin_url( 'admin.php?page=ppq-questions&action=new' ),
-					'create_bank'  => admin_url( 'admin.php?page=ppq-banks&action=new' ),
-					'reports'      => admin_url( 'admin.php?page=ppq-reports' ),
+					'create_quiz'  => admin_url( 'admin.php?page=pressprimer-quiz-quizzes&action=new' ),
+					'add_question' => admin_url( 'admin.php?page=pressprimer-quiz-questions&action=new' ),
+					'create_bank'  => admin_url( 'admin.php?page=pressprimer-quiz-banks&action=new' ),
+					'reports'      => admin_url( 'admin.php?page=pressprimer-quiz-reports' ),
 				],
 			]
 		);
@@ -315,7 +315,7 @@ class PressPrimer_Quiz_Admin {
 	 * @since 1.0.0
 	 */
 	private function enqueue_reports_assets() {
-		$asset_file = PPQ_PLUGIN_PATH . 'build/reports.asset.php';
+		$asset_file = PRESSPRIMER_QUIZ_PLUGIN_PATH . 'build/reports.asset.php';
 
 		if ( ! file_exists( $asset_file ) ) {
 			return;
@@ -326,7 +326,7 @@ class PressPrimer_Quiz_Admin {
 		// Enqueue the reports script
 		wp_enqueue_script(
 			'ppq-reports',
-			PPQ_PLUGIN_URL . 'build/reports.js',
+			PRESSPRIMER_QUIZ_PLUGIN_URL . 'build/reports.js',
 			$asset['dependencies'],
 			$asset['version'],
 			true
@@ -335,7 +335,7 @@ class PressPrimer_Quiz_Admin {
 		// Enqueue the reports styles
 		wp_enqueue_style(
 			'ppq-reports',
-			PPQ_PLUGIN_URL . 'build/style-reports.css',
+			PRESSPRIMER_QUIZ_PLUGIN_URL . 'build/style-reports.css',
 			[],
 			$asset['version']
 		);
@@ -343,9 +343,9 @@ class PressPrimer_Quiz_Admin {
 		// Localize script with reports data
 		wp_localize_script(
 			'ppq-reports',
-			'ppqReportsData',
+			'pressprimerQuizReportsData',
 			[
-				'pluginUrl'  => PPQ_PLUGIN_URL,
+				'pluginUrl'  => PRESSPRIMER_QUIZ_PLUGIN_URL,
 				'resultsUrl' => home_url( '/quiz-results/' ),
 			]
 		);
@@ -357,7 +357,7 @@ class PressPrimer_Quiz_Admin {
 	 * @since 1.0.0
 	 */
 	private function enqueue_onboarding_assets() {
-		$asset_file = PPQ_PLUGIN_PATH . 'build/onboarding.asset.php';
+		$asset_file = PRESSPRIMER_QUIZ_PLUGIN_PATH . 'build/onboarding.asset.php';
 
 		if ( ! file_exists( $asset_file ) ) {
 			return;
@@ -375,7 +375,7 @@ class PressPrimer_Quiz_Admin {
 		// Enqueue the onboarding script
 		wp_enqueue_script(
 			'ppq-onboarding',
-			PPQ_PLUGIN_URL . 'build/onboarding.js',
+			PRESSPRIMER_QUIZ_PLUGIN_URL . 'build/onboarding.js',
 			$asset['dependencies'],
 			$asset['version'],
 			true
@@ -384,7 +384,7 @@ class PressPrimer_Quiz_Admin {
 		// Enqueue the onboarding styles
 		wp_enqueue_style(
 			'ppq-onboarding',
-			PPQ_PLUGIN_URL . 'build/style-onboarding.css',
+			PRESSPRIMER_QUIZ_PLUGIN_URL . 'build/style-onboarding.css',
 			[],
 			$asset['version']
 		);
@@ -392,7 +392,7 @@ class PressPrimer_Quiz_Admin {
 		// Localize script with onboarding data
 		wp_localize_script(
 			'ppq-onboarding',
-			'ppqOnboardingData',
+			'pressprimerQuizOnboardingData',
 			$onboarding->get_js_data()
 		);
 	}
@@ -406,7 +406,7 @@ class PressPrimer_Quiz_Admin {
 	 */
 	public function render_dashboard() {
 		// Check capability
-		if ( ! current_user_can( 'ppq_manage_own' ) ) {
+		if ( ! current_user_can( 'pressprimer_quiz_manage_own' ) ) {
 			wp_die(
 				esc_html__( 'You do not have permission to access this page.', 'pressprimer-quiz' ),
 				esc_html__( 'Permission Denied', 'pressprimer-quiz' ),
@@ -497,7 +497,7 @@ class PressPrimer_Quiz_Admin {
 	 */
 	public function render_reports() {
 		// Check capability
-		if ( ! current_user_can( 'ppq_view_results_own' ) && ! current_user_can( 'ppq_view_results_all' ) ) {
+		if ( ! current_user_can( 'pressprimer_quiz_view_results_own' ) && ! current_user_can( 'pressprimer_quiz_view_results_all' ) ) {
 			wp_die(
 				esc_html__( 'You do not have permission to access this page.', 'pressprimer-quiz' ),
 				esc_html__( 'Permission Denied', 'pressprimer-quiz' ),
@@ -532,12 +532,12 @@ class PressPrimer_Quiz_Admin {
 	 */
 	public function ajax_search_questions() {
 		// Verify nonce
-		if ( ! isset( $_POST['nonce'] ) || ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['nonce'] ) ), 'ppq_search_questions' ) ) {
+		if ( ! isset( $_POST['nonce'] ) || ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['nonce'] ) ), 'pressprimer_quiz_search_questions' ) ) {
 			wp_send_json_error( [ 'message' => __( 'Security check failed.', 'pressprimer-quiz' ) ] );
 		}
 
 		// Check capability
-		if ( ! current_user_can( 'ppq_manage_own' ) ) {
+		if ( ! current_user_can( 'pressprimer_quiz_manage_own' ) ) {
 			wp_send_json_error( [ 'message' => __( 'You do not have permission.', 'pressprimer-quiz' ) ] );
 		}
 
@@ -558,92 +558,83 @@ class PressPrimer_Quiz_Admin {
 		$revisions_table = $wpdb->prefix . 'ppq_question_revisions';
 		$taxonomy_table  = $wpdb->prefix . 'ppq_question_tax';
 
-		// Start with base query
-		// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Table names safely constructed from $wpdb->prefix
-		$sql = "SELECT DISTINCT q.id, q.type, q.difficulty_author, r.stem
-				FROM {$questions_table} q
-				INNER JOIN {$revisions_table} r ON q.current_revision_id = r.id";
-
-		// Add taxonomy join if filtering by category or tag
+		// Build JOIN clause
+		$join_sql = "INNER JOIN {$revisions_table} r ON q.current_revision_id = r.id";
 		if ( $category_id > 0 || $tag_id > 0 ) {
-			$sql .= " INNER JOIN {$taxonomy_table} qt ON q.id = qt.question_id";
+			$join_sql .= " INNER JOIN {$taxonomy_table} qt ON q.id = qt.question_id";
 		}
 
-		$sql .= ' WHERE q.deleted_at IS NULL';
-
-		$params = [];
+		// Build WHERE conditions
+		$where_conditions = [ 'q.deleted_at IS NULL' ];
+		$params           = [];
 
 		// Search filter
 		if ( ! empty( $search ) ) {
-			$search_term = '%' . $wpdb->esc_like( $search ) . '%';
-			$sql        .= ' AND r.stem LIKE %s';
-			$params[]    = $search_term;
+			$search_term        = '%' . $wpdb->esc_like( $search ) . '%';
+			$where_conditions[] = 'r.stem LIKE %s';
+			$params[]           = $search_term;
 		}
 
 		// Type filter
 		if ( ! empty( $type ) ) {
-			$sql     .= ' AND q.type = %s';
-			$params[] = $type;
+			$where_conditions[] = 'q.type = %s';
+			$params[]           = $type;
 		}
 
 		// Difficulty filter
 		if ( ! empty( $difficulty ) ) {
-			$sql     .= ' AND q.difficulty_author = %s';
-			$params[] = $difficulty;
+			$where_conditions[] = 'q.difficulty_author = %s';
+			$params[]           = $difficulty;
 		}
 
 		// Category filter
 		if ( $category_id > 0 ) {
-			$sql     .= ' AND qt.category_id = %d';
-			$params[] = $category_id;
+			$where_conditions[] = 'qt.category_id = %d';
+			$params[]           = $category_id;
 		}
 
 		// Tag filter
 		if ( $tag_id > 0 ) {
-			$sql     .= ' AND qt.category_id = %d';
-			$params[] = $tag_id;
+			$where_conditions[] = 'qt.category_id = %d';
+			$params[]           = $tag_id;
 		}
 
 		// Filter by author if not admin
-		if ( ! current_user_can( 'ppq_manage_all' ) ) {
-			$sql     .= ' AND q.author_id = %d';
-			$params[] = get_current_user_id();
+		if ( ! current_user_can( 'pressprimer_quiz_manage_all' ) ) {
+			$where_conditions[] = 'q.author_id = %d';
+			$params[]           = get_current_user_id();
 		}
 
 		// Exclude questions already in this bank
 		if ( $bank_id > 0 ) {
 			$bank_questions_table = $wpdb->prefix . 'ppq_bank_questions';
-			$sql                 .= " AND q.id NOT IN (SELECT question_id FROM {$bank_questions_table} WHERE bank_id = %d)";
+			$where_conditions[]   = "q.id NOT IN (SELECT question_id FROM {$bank_questions_table} WHERE bank_id = %d)";
 			$params[]             = $bank_id;
 		}
 
-		// Get total count first (using same WHERE conditions without LIMIT)
-		$count_sql = str_replace( 'SELECT DISTINCT q.id, q.type, q.difficulty_author, r.stem', 'SELECT COUNT(DISTINCT q.id)', $sql );
+		// Build WHERE clause
+		$where_sql = 'WHERE ' . implode( ' AND ', $where_conditions );
+
+		// Build and execute count query
+		$count_sql = "SELECT COUNT(DISTINCT q.id) FROM {$questions_table} q {$join_sql} {$where_sql}";
 		if ( ! empty( $params ) ) {
 			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Dynamic search with pagination, not suitable for caching
-			// phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- Query is prepared with placeholders
-			$total_items = absint( $wpdb->get_var( $wpdb->prepare( $count_sql, $params ) ) );
+			$total_items = absint( $wpdb->get_var( $wpdb->prepare( $count_sql, $params ) ) ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- Query built with placeholders
 		} else {
 			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Dynamic search with pagination, not suitable for caching
-			// phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- No user input in query
-			$total_items = absint( $wpdb->get_var( $count_sql ) );
+			$total_items = absint( $wpdb->get_var( $count_sql ) ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- No user input in query
 		}
 
-		// Add pagination
-		$sql     .= ' LIMIT %d OFFSET %d';
-		$params[] = $per_page;
-		$params[] = $offset;
+		// Build and execute main query with pagination
+		$sql = "SELECT DISTINCT q.id, q.type, q.difficulty_author, r.stem FROM {$questions_table} q {$join_sql} {$where_sql} LIMIT %d OFFSET %d";
 
-		// Execute query
-		if ( ! empty( $params ) ) {
-			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Dynamic search with pagination, not suitable for caching
-			// phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- Query is prepared with placeholders
-			$results = $wpdb->get_results( $wpdb->prepare( $sql, $params ) );
-		} else {
-			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Dynamic search with pagination, not suitable for caching
-			// phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- No user input in query
-			$results = $wpdb->get_results( $sql );
-		}
+		// Add pagination params
+		$select_params   = $params;
+		$select_params[] = $per_page;
+		$select_params[] = $offset;
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Dynamic search with pagination, not suitable for caching
+		$results = $wpdb->get_results( $wpdb->prepare( $sql, $select_params ) ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- Query built with placeholders
 
 		$questions = [];
 		if ( ! empty( $results ) ) {
@@ -712,12 +703,12 @@ class PressPrimer_Quiz_Admin {
 	 */
 	public function ajax_get_recent_questions() {
 		// Verify nonce
-		if ( ! isset( $_POST['nonce'] ) || ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['nonce'] ) ), 'ppq_get_recent_questions' ) ) {
+		if ( ! isset( $_POST['nonce'] ) || ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['nonce'] ) ), 'pressprimer_quiz_get_recent_questions' ) ) {
 			wp_send_json_error( [ 'message' => __( 'Security check failed.', 'pressprimer-quiz' ) ] );
 		}
 
 		// Check capability
-		if ( ! current_user_can( 'ppq_manage_own' ) ) {
+		if ( ! current_user_can( 'pressprimer_quiz_manage_own' ) ) {
 			wp_send_json_error( [ 'message' => __( 'You do not have permission.', 'pressprimer-quiz' ) ] );
 		}
 
@@ -843,12 +834,12 @@ class PressPrimer_Quiz_Admin {
 	 */
 	public function ajax_remove_question_from_bank() {
 		// Verify nonce
-		if ( ! isset( $_POST['nonce'] ) || ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['nonce'] ) ), 'ppq_admin_nonce' ) ) {
+		if ( ! isset( $_POST['nonce'] ) || ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['nonce'] ) ), 'pressprimer_quiz_admin_nonce' ) ) {
 			wp_send_json_error( [ 'message' => __( 'Security check failed.', 'pressprimer-quiz' ) ] );
 		}
 
 		// Check capability
-		if ( ! current_user_can( 'ppq_manage_own' ) ) {
+		if ( ! current_user_can( 'pressprimer_quiz_manage_own' ) ) {
 			wp_send_json_error( [ 'message' => __( 'You do not have permission.', 'pressprimer-quiz' ) ] );
 		}
 
@@ -869,7 +860,7 @@ class PressPrimer_Quiz_Admin {
 		}
 
 		// Check ownership
-		if ( ! current_user_can( 'ppq_manage_all' ) && absint( $bank->owner_id ) !== get_current_user_id() ) {
+		if ( ! current_user_can( 'pressprimer_quiz_manage_all' ) && absint( $bank->owner_id ) !== get_current_user_id() ) {
 			wp_send_json_error( [ 'message' => __( 'You do not have permission to edit this bank.', 'pressprimer-quiz' ) ] );
 		}
 

@@ -30,7 +30,7 @@ class PressPrimer_Quiz_Migrator {
 	 * @since 1.0.0
 	 * @var string
 	 */
-	const DB_VERSION_OPTION = 'ppq_db_version';
+	const DB_VERSION_OPTION = 'pressprimer_quiz_db_version';
 
 	/**
 	 * Maybe run migrations
@@ -42,7 +42,7 @@ class PressPrimer_Quiz_Migrator {
 	 */
 	public static function maybe_migrate() {
 		$current_version = get_option( self::DB_VERSION_OPTION, '0' );
-		$target_version  = PPQ_DB_VERSION;
+		$target_version  = PRESSPRIMER_QUIZ_DB_VERSION;
 
 		// Check if migration is needed
 		if ( version_compare( $current_version, $target_version, '<' ) ) {
@@ -63,10 +63,7 @@ class PressPrimer_Quiz_Migrator {
 	private static function run_migrations( $from_version, $to_version ) {
 		global $wpdb;
 
-		// Load WordPress upgrade functions
-		require_once ABSPATH . 'wp-admin/includes/upgrade.php';
-
-		// Run schema updates
+		// Run schema updates (includes dbDelta call)
 		self::update_schema();
 
 		// Run version-specific data migrations
@@ -83,6 +80,7 @@ class PressPrimer_Quiz_Migrator {
 	 * Update database schema
 	 *
 	 * Runs dbDelta to create or update all database tables.
+	 * Loads wp-admin/includes/upgrade.php and immediately calls dbDelta().
 	 *
 	 * @since 1.0.0
 	 */
@@ -90,7 +88,8 @@ class PressPrimer_Quiz_Migrator {
 		// Get schema SQL
 		$sql = PressPrimer_Quiz_Schema::get_schema();
 
-		// Run dbDelta
+		// Load WordPress upgrade functions and immediately use dbDelta
+		require_once ABSPATH . 'wp-admin/includes/upgrade.php';
 		dbDelta( $sql );
 
 		// Verify critical tables exist
@@ -182,7 +181,7 @@ class PressPrimer_Quiz_Migrator {
 	 */
 	private static function log_migration( $from_version, $to_version ) {
 		// Get migration history
-		$history = get_option( 'ppq_migration_history', [] );
+		$history = get_option( 'pressprimer_quiz_migration_history', [] );
 
 		// Add this migration
 		$history[] = [
@@ -195,7 +194,7 @@ class PressPrimer_Quiz_Migrator {
 		$history = array_slice( $history, -10 );
 
 		// Save history
-		update_option( 'ppq_migration_history', $history );
+		update_option( 'pressprimer_quiz_migration_history', $history );
 	}
 
 	/**
@@ -221,7 +220,7 @@ class PressPrimer_Quiz_Migrator {
 	 * @return array Migration history.
 	 */
 	public static function get_migration_history() {
-		return get_option( 'ppq_migration_history', [] );
+		return get_option( 'pressprimer_quiz_migration_history', [] );
 	}
 
 	/**
@@ -241,7 +240,7 @@ class PressPrimer_Quiz_Migrator {
 		}
 
 		$current_version = self::get_current_version();
-		$target_version  = PPQ_DB_VERSION;
+		$target_version  = PRESSPRIMER_QUIZ_DB_VERSION;
 
 		self::run_migrations( $current_version, $target_version );
 
@@ -360,9 +359,6 @@ class PressPrimer_Quiz_Migrator {
 			];
 		}
 
-		// Load WordPress upgrade functions
-		require_once ABSPATH . 'wp-admin/includes/upgrade.php';
-
 		// Get current status to know what's missing
 		$before_status = self::get_table_status();
 		$was_missing   = [];
@@ -376,6 +372,9 @@ class PressPrimer_Quiz_Migrator {
 		// Run dbDelta to create missing tables
 		if ( class_exists( 'PressPrimer_Quiz_Schema' ) ) {
 			$sql = PressPrimer_Quiz_Schema::get_schema();
+
+			// Load WordPress upgrade functions and immediately use dbDelta
+			require_once ABSPATH . 'wp-admin/includes/upgrade.php';
 			dbDelta( $sql );
 		}
 
@@ -391,7 +390,7 @@ class PressPrimer_Quiz_Migrator {
 
 		// Update database version if tables were repaired
 		if ( ! empty( $repaired ) ) {
-			update_option( self::DB_VERSION_OPTION, PPQ_DB_VERSION );
+			update_option( self::DB_VERSION_OPTION, PRESSPRIMER_QUIZ_DB_VERSION );
 		}
 
 		return [

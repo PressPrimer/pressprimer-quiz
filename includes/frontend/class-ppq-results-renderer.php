@@ -302,7 +302,7 @@ class PressPrimer_Quiz_Results_Renderer {
 	 */
 	private function render_email_sent_notice( $attempt ) {
 		// Check if auto-send is enabled
-		$settings  = get_option( 'ppq_settings', [] );
+		$settings  = get_option( 'pressprimer_quiz_settings', [] );
 		$auto_send = isset( $settings['email_results_auto_send'] ) && $settings['email_results_auto_send'];
 
 		if ( ! $auto_send ) {

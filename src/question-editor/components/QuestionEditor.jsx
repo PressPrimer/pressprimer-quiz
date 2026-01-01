@@ -133,7 +133,7 @@ const QuestionEditor = ({ questionData = {} }) => {
 
 			// Redirect to questions list
 			setTimeout(() => {
-				window.location.href = `${window.ppqAdmin.adminUrl}admin.php?page=ppq-questions&saved=1`;
+				window.location.href = `${window.pressprimerQuizAdmin.adminUrl}admin.php?page=pressprimer-quiz-questions&saved=1`;
 			}, 1000);
 
 		} catch (error) {
@@ -149,7 +149,7 @@ const QuestionEditor = ({ questionData = {} }) => {
 	 */
 	const handleCancel = () => {
 		if (window.confirm(__('Are you sure you want to cancel? Any unsaved changes will be lost.', 'pressprimer-quiz'))) {
-			window.location.href = `${window.ppqAdmin.adminUrl}admin.php?page=ppq-questions`;
+			window.location.href = `${window.pressprimerQuizAdmin.adminUrl}admin.php?page=pressprimer-quiz-questions`;
 		}
 	};
 

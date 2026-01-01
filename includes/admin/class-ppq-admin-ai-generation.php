@@ -30,10 +30,10 @@ class PressPrimer_Quiz_Admin_AI_Generation {
 	 */
 	public function init() {
 		// Register AJAX handlers
-		add_action( 'wp_ajax_ppq_ai_generate_questions', [ $this, 'ajax_generate_questions' ] );
-		add_action( 'wp_ajax_ppq_ai_save_questions', [ $this, 'ajax_save_questions' ] );
-		add_action( 'wp_ajax_ppq_ai_upload_file', [ $this, 'ajax_upload_file' ] );
-		add_action( 'wp_ajax_ppq_ai_check_status', [ $this, 'ajax_check_status' ] );
+		add_action( 'wp_ajax_pressprimer_quiz_ai_generate_questions', [ $this, 'ajax_generate_questions' ] );
+		add_action( 'wp_ajax_pressprimer_quiz_ai_save_questions', [ $this, 'ajax_save_questions' ] );
+		add_action( 'wp_ajax_pressprimer_quiz_ai_upload_file', [ $this, 'ajax_upload_file' ] );
+		add_action( 'wp_ajax_pressprimer_quiz_ai_check_status', [ $this, 'ajax_check_status' ] );
 
 		// Enqueue scripts on relevant pages
 		add_action( 'admin_enqueue_scripts', [ $this, 'enqueue_scripts' ] );
@@ -48,26 +48,26 @@ class PressPrimer_Quiz_Admin_AI_Generation {
 	 */
 	public function enqueue_scripts( $hook ) {
 		// Only on our pages
-		if ( strpos( $hook, 'ppq-banks' ) === false ) {
+		if ( strpos( $hook, 'pressprimer-quiz-banks' ) === false ) {
 			return;
 		}
 
 		// Enqueue AI generation script
 		wp_enqueue_script(
 			'ppq-ai-generation',
-			PPQ_PLUGIN_URL . 'assets/js/ai-generation.js',
+			PRESSPRIMER_QUIZ_PLUGIN_URL . 'assets/js/ai-generation.js',
 			[ 'jquery' ],
-			PPQ_VERSION,
+			PRESSPRIMER_QUIZ_VERSION,
 			true
 		);
 
 		// Localize script data
 		wp_localize_script(
 			'ppq-ai-generation',
-			'ppqAIGeneration',
+			'pressprimerQuizAIGeneration',
 			[
 				'ajaxUrl'              => admin_url( 'admin-ajax.php' ),
-				'nonce'                => wp_create_nonce( 'ppq_ai_generation' ),
+				'nonce'                => wp_create_nonce( 'pressprimer_quiz_ai_generation' ),
 				'maxFileSize'          => PressPrimer_Quiz_File_Processor::get_max_file_size(),
 				'maxFileSizeFormatted' => size_format( PressPrimer_Quiz_File_Processor::get_max_file_size() ),
 				'supportedTypes'       => PressPrimer_Quiz_File_Processor::get_supported_types(),
@@ -96,9 +96,9 @@ class PressPrimer_Quiz_Admin_AI_Generation {
 		// Enqueue AI generation styles
 		wp_enqueue_style(
 			'ppq-ai-generation',
-			PPQ_PLUGIN_URL . 'assets/css/ai-generation.css',
+			PRESSPRIMER_QUIZ_PLUGIN_URL . 'assets/css/ai-generation.css',
 			[],
-			PPQ_VERSION
+			PRESSPRIMER_QUIZ_VERSION
 		);
 	}
 
@@ -136,7 +136,7 @@ class PressPrimer_Quiz_Admin_AI_Generation {
 				<span class="dashicons dashicons-admin-generic"></span>
 				<h3><?php esc_html_e( 'AI Question Generation', 'pressprimer-quiz' ); ?></h3>
 				<p><?php esc_html_e( 'Generate quiz questions automatically from your course content using AI.', 'pressprimer-quiz' ); ?></p>
-				<a href="<?php echo esc_url( admin_url( 'admin.php?page=ppq-settings' ) ); ?>" class="button button-primary">
+				<a href="<?php echo esc_url( admin_url( 'admin.php?page=pressprimer-quiz-settings' ) ); ?>" class="button button-primary">
 					<?php esc_html_e( 'Configure API Key in Settings', 'pressprimer-quiz' ); ?>
 				</a>
 			</div>
@@ -374,12 +374,12 @@ class PressPrimer_Quiz_Admin_AI_Generation {
 	 */
 	public function ajax_generate_questions() {
 		// Verify nonce
-		if ( ! check_ajax_referer( 'ppq_ai_generation', 'nonce', false ) ) {
+		if ( ! check_ajax_referer( 'pressprimer_quiz_ai_generation', 'nonce', false ) ) {
 			wp_send_json_error( [ 'message' => __( 'Security check failed.', 'pressprimer-quiz' ) ] );
 		}
 
 		// Check capability
-		if ( ! current_user_can( 'ppq_manage_own' ) ) {
+		if ( ! current_user_can( 'pressprimer_quiz_manage_own' ) ) {
 			wp_send_json_error( [ 'message' => __( 'Permission denied.', 'pressprimer-quiz' ) ] );
 		}
 
@@ -467,12 +467,12 @@ class PressPrimer_Quiz_Admin_AI_Generation {
 	 */
 	public function ajax_upload_file() {
 		// Verify nonce
-		if ( ! check_ajax_referer( 'ppq_ai_generation', 'nonce', false ) ) {
+		if ( ! check_ajax_referer( 'pressprimer_quiz_ai_generation', 'nonce', false ) ) {
 			wp_send_json_error( [ 'message' => __( 'Security check failed.', 'pressprimer-quiz' ) ] );
 		}
 
 		// Check capability
-		if ( ! current_user_can( 'ppq_manage_own' ) ) {
+		if ( ! current_user_can( 'pressprimer_quiz_manage_own' ) ) {
 			wp_send_json_error( [ 'message' => __( 'Permission denied.', 'pressprimer-quiz' ) ] );
 		}
 
@@ -508,26 +508,34 @@ class PressPrimer_Quiz_Admin_AI_Generation {
 	 */
 	public function ajax_save_questions() {
 		// Verify nonce
-		if ( ! check_ajax_referer( 'ppq_ai_generation', 'nonce', false ) ) {
+		if ( ! check_ajax_referer( 'pressprimer_quiz_ai_generation', 'nonce', false ) ) {
 			wp_send_json_error( [ 'message' => __( 'Security check failed.', 'pressprimer-quiz' ) ] );
 		}
 
 		// Check capability
-		if ( ! current_user_can( 'ppq_manage_own' ) ) {
+		if ( ! current_user_can( 'pressprimer_quiz_manage_own' ) ) {
 			wp_send_json_error( [ 'message' => __( 'Permission denied.', 'pressprimer-quiz' ) ] );
 		}
 
 		// Get parameters
-		$bank_id = isset( $_POST['bank_id'] ) ? absint( wp_unslash( $_POST['bank_id'] ) ) : 0;
-		// phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- Complex data structure sanitized in sanitize_question_data method
-		$questions = isset( $_POST['questions'] ) ? wp_unslash( $_POST['questions'] ) : [];
-		// phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- Values sanitized with absint via array_map
+		$bank_id    = isset( $_POST['bank_id'] ) ? absint( wp_unslash( $_POST['bank_id'] ) ) : 0;
 		$categories = isset( $_POST['categories'] ) ? array_map( 'absint', (array) wp_unslash( $_POST['categories'] ) ) : [];
 
-		// Decode questions if sent as JSON string
-		// Note: wp_unslash() already removed slashes, so don't use stripslashes() again
-		if ( is_string( $questions ) ) {
-			$questions = json_decode( $questions, true );
+		// Get questions data and decode if JSON string
+		// Note: Individual question fields are sanitized in sanitize_question_data() with appropriate
+		// functions (sanitize_key, sanitize_textarea_field, wp_kses_post) based on field type.
+		// phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- Complex nested structure; each field sanitized appropriately in sanitize_question_data()
+		$questions_raw = isset( $_POST['questions'] ) ? wp_unslash( $_POST['questions'] ) : [];
+
+		if ( is_string( $questions_raw ) ) {
+			$questions = json_decode( $questions_raw, true );
+			if ( json_last_error() !== JSON_ERROR_NONE ) {
+				wp_send_json_error( [ 'message' => __( 'Invalid question data format.', 'pressprimer-quiz' ) ] );
+			}
+		} elseif ( is_array( $questions_raw ) ) {
+			$questions = $questions_raw;
+		} else {
+			$questions = [];
 		}
 
 		if ( ! $bank_id ) {
@@ -544,7 +552,7 @@ class PressPrimer_Quiz_Admin_AI_Generation {
 			wp_send_json_error( [ 'message' => __( 'Bank not found.', 'pressprimer-quiz' ) ] );
 		}
 
-		if ( ! current_user_can( 'ppq_manage_all' ) && absint( $bank->owner_id ) !== get_current_user_id() ) {
+		if ( ! current_user_can( 'pressprimer_quiz_manage_all' ) && absint( $bank->owner_id ) !== get_current_user_id() ) {
 			wp_send_json_error( [ 'message' => __( 'You do not have permission to add to this bank.', 'pressprimer-quiz' ) ] );
 		}
 
@@ -556,7 +564,12 @@ class PressPrimer_Quiz_Admin_AI_Generation {
 			$question_data = $this->sanitize_question_data( $q_data );
 
 			if ( is_wp_error( $question_data ) ) {
-				$errors[] = sprintf( 'Question %d: %s', $index + 1, $question_data->get_error_message() );
+				$errors[] = sprintf(
+					/* translators: 1: question number, 2: error message */
+					esc_html__( 'Question %1$d: %2$s', 'pressprimer-quiz' ),
+					$index + 1,
+					esc_html( $question_data->get_error_message() )
+				);
 				continue;
 			}
 
@@ -564,7 +577,12 @@ class PressPrimer_Quiz_Admin_AI_Generation {
 			$result = $this->create_question( $question_data, $categories, $bank_id );
 
 			if ( is_wp_error( $result ) ) {
-				$errors[] = sprintf( 'Question %d: %s', $index + 1, $result->get_error_message() );
+				$errors[] = sprintf(
+					/* translators: 1: question number, 2: error message */
+					esc_html__( 'Question %1$d: %2$s', 'pressprimer-quiz' ),
+					$index + 1,
+					esc_html( $result->get_error_message() )
+				);
 			} else {
 				++$saved_count;
 			}
@@ -607,7 +625,7 @@ class PressPrimer_Quiz_Admin_AI_Generation {
 	 */
 	public function ajax_check_status() {
 		// Verify nonce
-		if ( ! check_ajax_referer( 'ppq_ai_generation', 'nonce', false ) ) {
+		if ( ! check_ajax_referer( 'pressprimer_quiz_ai_generation', 'nonce', false ) ) {
 			wp_send_json_error( [ 'message' => __( 'Security check failed.', 'pressprimer-quiz' ) ] );
 		}
 

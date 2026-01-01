@@ -251,7 +251,7 @@ const SettingsPanel = ({ form, generationMode, setGenerationMode }) => {
 							<Radio value="timed">
 								<div>
 									<div style={{ fontWeight: 600 }}>
-										{__('Timed Mode', 'pressprimer-quiz')}
+										{__('Test Mode', 'pressprimer-quiz')}
 									</div>
 									<Text type="secondary" style={{ fontSize: 14 }}>
 										{__('Show feedback only after submission - best for assessments', 'pressprimer-quiz')}

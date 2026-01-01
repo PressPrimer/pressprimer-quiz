@@ -22,7 +22,7 @@ document.addEventListener('DOMContentLoaded', () => {
 	const root = document.getElementById('ppq-settings-root');
 
 	if (root) {
-		const settingsData = window.ppqSettingsData || {};
+		const settingsData = window.pressprimerQuizSettingsData || {};
 
 		render(
 			<SettingsPage settingsData={settingsData} />,

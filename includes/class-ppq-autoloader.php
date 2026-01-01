@@ -74,7 +74,7 @@ class PressPrimer_Quiz_Autoloader {
 		$file                 = 'class-ppq-' . strtolower( str_replace( '_', '-', $class_without_prefix ) ) . '.php';
 
 		// Check in includes root
-		$path = PPQ_PLUGIN_PATH . 'includes/' . $file;
+		$path = PRESSPRIMER_QUIZ_PLUGIN_PATH . 'includes/' . $file;
 		if ( file_exists( $path ) ) {
 			require_once $path;
 			return;
@@ -82,7 +82,7 @@ class PressPrimer_Quiz_Autoloader {
 
 		// Check in subdirectories
 		foreach ( self::$directories as $dir ) {
-			$path = PPQ_PLUGIN_PATH . 'includes/' . $dir . '/' . $file;
+			$path = PRESSPRIMER_QUIZ_PLUGIN_PATH . 'includes/' . $dir . '/' . $file;
 			if ( file_exists( $path ) ) {
 				require_once $path;
 				return;

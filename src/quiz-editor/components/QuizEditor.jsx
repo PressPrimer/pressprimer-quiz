@@ -130,7 +130,7 @@ const QuizEditor = ({ quizData = {} }) => {
 
 			// Update URL to edit page if this was a new quiz
 			if (!quizId && response.id) {
-				window.history.replaceState({}, '', `${window.ppqAdmin.adminUrl}admin.php?page=ppq-quizzes&action=edit&quiz=${response.id}`);
+				window.history.replaceState({}, '', `${window.pressprimerQuizAdmin.adminUrl}admin.php?page=pressprimer-quiz-quizzes&action=edit&quiz=${response.id}`);
 				setCurrentQuizId(response.id);
 			}
 
@@ -147,7 +147,7 @@ const QuizEditor = ({ quizData = {} }) => {
 	 */
 	const handleCancel = () => {
 		if (window.confirm(__('Are you sure you want to cancel? Any unsaved changes will be lost.', 'pressprimer-quiz'))) {
-			window.location.href = `${window.ppqAdmin.adminUrl}admin.php?page=ppq-quizzes`;
+			window.location.href = `${window.pressprimerQuizAdmin.adminUrl}admin.php?page=pressprimer-quiz-quizzes`;
 		}
 	};
 
@@ -188,7 +188,7 @@ const QuizEditor = ({ quizData = {} }) => {
 				window.history.replaceState(
 					{},
 					'',
-					`${window.ppqAdmin.adminUrl}admin.php?page=ppq-quizzes&action=edit&quiz=${response.id}`
+					`${window.pressprimerQuizAdmin.adminUrl}admin.php?page=pressprimer-quiz-quizzes&action=edit&quiz=${response.id}`
 				);
 			}
 
@@ -255,8 +255,8 @@ const QuizEditor = ({ quizData = {} }) => {
 						title: '',
 						description: '',
 						status: 'published',
-						mode: 'tutorial',
-						pass_percent: 70,
+						mode: quizData.mode || 'tutorial',
+						pass_percent: quizData.pass_percent || 70,
 						allow_skip: true,
 						allow_backward: true,
 						allow_resume: true,

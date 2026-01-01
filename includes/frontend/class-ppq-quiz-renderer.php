@@ -593,7 +593,10 @@ class PressPrimer_Quiz_Quiz_Renderer {
 			<!-- Questions Container -->
 			<div class="ppq-questions-container" id="ppq-questions-container" role="region" aria-label="<?php esc_attr_e( 'Quiz questions', 'pressprimer-quiz' ); ?>">
 				<?php foreach ( $items as $index => $item ) : ?>
-					<?php echo $this->render_question( $item, $index, count( $items ) ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Output escaped in render_question method ?>
+					<?php
+					// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- render_question() returns trusted HTML with properly escaped values
+					echo $this->render_question( $item, $index, count( $items ) );
+					?>
 				<?php endforeach; ?>
 			</div>
 
@@ -650,6 +653,11 @@ class PressPrimer_Quiz_Quiz_Renderer {
 	 * @return string Rendered HTML.
 	 */
 	private function render_question( $item, $index, $total ) {
+		// Validate item has a valid ID (required for answer saving)
+		if ( empty( $item->id ) ) {
+			return '';
+		}
+
 		$question = $item->get_question();
 		$revision = $item->get_question_revision();
 
@@ -830,9 +838,9 @@ class PressPrimer_Quiz_Quiz_Renderer {
 		// Enqueue quiz CSS
 		wp_enqueue_style(
 			'ppq-quiz',
-			PPQ_PLUGIN_URL . 'assets/css/quiz.css',
+			PRESSPRIMER_QUIZ_PLUGIN_URL . 'assets/css/quiz.css',
 			[],
-			PPQ_VERSION
+			PRESSPRIMER_QUIZ_VERSION
 		);
 
 		// Enqueue theme CSS
@@ -847,19 +855,19 @@ class PressPrimer_Quiz_Quiz_Renderer {
 		// Enqueue quiz JavaScript
 		wp_enqueue_script(
 			'ppq-quiz',
-			PPQ_PLUGIN_URL . 'assets/js/quiz.js',
+			PRESSPRIMER_QUIZ_PLUGIN_URL . 'assets/js/quiz.js',
 			[ 'jquery' ],
-			PPQ_VERSION,
+			PRESSPRIMER_QUIZ_VERSION,
 			true
 		);
 
 		// Localize script with data
 		wp_localize_script(
 			'ppq-quiz',
-			'ppqQuiz',
+			'pressprimerQuiz',
 			[
 				'ajaxUrl' => admin_url( 'admin-ajax.php' ),
-				'nonce'   => wp_create_nonce( 'ppq_quiz_nonce' ),
+				'nonce'   => wp_create_nonce( 'pressprimer_quiz_nonce' ),
 				'strings' => [
 					'startingQuiz'              => __( 'Starting quiz...', 'pressprimer-quiz' ),
 					'error'                     => __( 'An error occurred. Please try again.', 'pressprimer-quiz' ),

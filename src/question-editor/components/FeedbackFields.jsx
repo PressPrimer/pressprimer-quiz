@@ -23,17 +23,23 @@ const FeedbackFields = ({ form }) => {
 	const [correctLength, setCorrectLength] = useState(0);
 	const [incorrectLength, setIncorrectLength] = useState(0);
 
-	// Initialize character counts when form values are available
+	// Watch form field values to properly initialize character counts
+	// Form.useWatch reacts to actual value changes, unlike form.getFieldValue
+	const watchedCorrect = Form.useWatch('feedbackCorrect', form);
+	const watchedIncorrect = Form.useWatch('feedbackIncorrect', form);
+
+	// Update character counts when watched values change (including initial load)
 	useEffect(() => {
-		const correctValue = form.getFieldValue('feedbackCorrect');
-		const incorrectValue = form.getFieldValue('feedbackIncorrect');
-		if (correctValue) {
-			setCorrectLength(correctValue.length);
+		if (watchedCorrect !== undefined) {
+			setCorrectLength(watchedCorrect ? watchedCorrect.length : 0);
 		}
-		if (incorrectValue) {
-			setIncorrectLength(incorrectValue.length);
+	}, [watchedCorrect]);
+
+	useEffect(() => {
+		if (watchedIncorrect !== undefined) {
+			setIncorrectLength(watchedIncorrect ? watchedIncorrect.length : 0);
 		}
-	}, [form]);
+	}, [watchedIncorrect]);
 
 	const correctPercent = (correctLength / maxChars) * 100;
 	const incorrectPercent = (incorrectLength / maxChars) * 100;

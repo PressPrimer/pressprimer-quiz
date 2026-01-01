@@ -23,20 +23,20 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 // Plugin constants
-define( 'PPQ_VERSION', '1.0.0' );
-define( 'PPQ_PLUGIN_FILE', __FILE__ );
-define( 'PPQ_PLUGIN_PATH', plugin_dir_path( __FILE__ ) );
-define( 'PPQ_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
-define( 'PPQ_PLUGIN_BASENAME', plugin_basename( __FILE__ ) );
-define( 'PPQ_DB_VERSION', '1.0.6' );
+define( 'PRESSPRIMER_QUIZ_VERSION', '1.0.0' );
+define( 'PRESSPRIMER_QUIZ_PLUGIN_FILE', __FILE__ );
+define( 'PRESSPRIMER_QUIZ_PLUGIN_PATH', plugin_dir_path( __FILE__ ) );
+define( 'PRESSPRIMER_QUIZ_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
+define( 'PRESSPRIMER_QUIZ_PLUGIN_BASENAME', plugin_basename( __FILE__ ) );
+define( 'PRESSPRIMER_QUIZ_DB_VERSION', '1.0.6' );
 
 // Composer autoloader (for smalot/pdfparser and other vendor dependencies)
-if ( file_exists( PPQ_PLUGIN_PATH . 'vendor/autoload.php' ) ) {
-	require_once PPQ_PLUGIN_PATH . 'vendor/autoload.php';
+if ( file_exists( PRESSPRIMER_QUIZ_PLUGIN_PATH . 'vendor/autoload.php' ) ) {
+	require_once PRESSPRIMER_QUIZ_PLUGIN_PATH . 'vendor/autoload.php';
 }
 
 // Autoloader
-require_once PPQ_PLUGIN_PATH . 'includes/class-ppq-autoloader.php';
+require_once PRESSPRIMER_QUIZ_PLUGIN_PATH . 'includes/class-ppq-autoloader.php';
 PressPrimer_Quiz_Autoloader::register();
 
 // Activation/Deactivation hooks

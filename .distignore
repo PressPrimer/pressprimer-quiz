@@ -3,6 +3,7 @@
 
 # Version Control
 .git
+.github
 .gitignore
 .gitattributes
 
@@ -11,6 +12,9 @@
 
 # Claude Code / AI
 .claude
+
+# WordPress.org Assets (banners, icons, screenshots - stored in repo but not in plugin zip)
+.wordpress-org
 
 # Development Dependencies
 node_modules
@@ -21,11 +25,29 @@ package-lock.json
 # Note: composer.json and package.json are intentionally included per WordPress.org guidelines
 # to allow others to review, understand, and modify dependencies
 
-# Vendor dev-only files (composer install --no-dev handles packages)
-# These patterns clean up development artifacts from production dependencies
+# Vendor dev-only packages (composer install --no-dev should remove these, but exclude as safety)
+# Note: symfony/polyfill-mbstring is a production dependency of smalot/pdfparser
 vendor/bin
+vendor/dealerdirect
+vendor/doctrine
+vendor/myclabs
+vendor/nikic
+vendor/phar-io
+vendor/phpcompatibility
+vendor/phpcsstandards
+vendor/phpunit
+vendor/sebastian
+vendor/squizlabs
+vendor/theseer
+vendor/wp-coding-standards
+
+# Vendor dev-only files (cleanup for production dependencies)
+# These patterns clean up development artifacts from production dependencies
+vendor/smalot/pdfparser/doc
 vendor/*/.github
 vendor/*/*/.github
+vendor/*/*.php-dist
+vendor/*/*/*.php-dist
 vendor/*/Makefile
 vendor/*/*/Makefile
 vendor/*/.php-cs-fixer.php
@@ -46,6 +68,11 @@ vendor/*/tests
 vendor/*/*/tests
 vendor/*/.editorconfig
 vendor/*/*/.editorconfig
+vendor/*/*.php-dist
+vendor/*/*/*.php-dist
+
+# WordPress.org assets (handled via SVN separately)
+.wordpress-org
 
 # Build Tools / Config
 webpack.config.js
@@ -68,6 +95,7 @@ phpcs.xml
 phpcs.xml.dist
 .eslintrc
 .eslintrc.js
+.eslintrc.json
 .eslintignore
 .prettierrc
 .prettierignore
@@ -99,4 +127,6 @@ Thumbs.db
 .distignore
 .npmrc
 .nvmrc
-dist
+
+# Build output (prevent recursive copying)
+/dist

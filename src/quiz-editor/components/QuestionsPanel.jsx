@@ -418,7 +418,7 @@ const QuestionsPanel = ({ quizId, generationMode }) => {
 							type="text"
 							icon={<EditOutlined />}
 							onClick={() => {
-								const editUrl = `${window.ppqAdmin.adminUrl}admin.php?page=ppq-questions&action=edit&question=${record.question_id}`;
+								const editUrl = `${window.pressprimerQuizAdmin.adminUrl}admin.php?page=pressprimer-quiz-questions&action=edit&question=${record.question_id}`;
 								window.open(editUrl, '_blank');
 							}}
 						/>

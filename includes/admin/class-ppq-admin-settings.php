@@ -29,7 +29,7 @@ class PressPrimer_Quiz_Admin_Settings {
 	 * @since 1.0.0
 	 * @var string
 	 */
-	const OPTION_NAME = 'ppq_settings';
+	const OPTION_NAME = 'pressprimer_quiz_settings';
 
 	/**
 	 * Initialize settings
@@ -42,15 +42,15 @@ class PressPrimer_Quiz_Admin_Settings {
 		add_action( 'admin_init', [ $this, 'register_settings' ] );
 
 		// AJAX handlers for API key management
-		add_action( 'wp_ajax_ppq_save_user_api_key', [ $this, 'ajax_save_user_api_key' ] );
-		add_action( 'wp_ajax_ppq_validate_api_key', [ $this, 'ajax_validate_api_key' ] );
-		add_action( 'wp_ajax_ppq_clear_user_api_key', [ $this, 'ajax_clear_user_api_key' ] );
-		add_action( 'wp_ajax_ppq_get_api_models', [ $this, 'ajax_get_api_models' ] );
-		add_action( 'wp_ajax_ppq_save_site_api_key', [ $this, 'ajax_save_site_api_key' ] );
-		add_action( 'wp_ajax_ppq_clear_site_api_key', [ $this, 'ajax_clear_site_api_key' ] );
+		add_action( 'wp_ajax_pressprimer_quiz_save_user_api_key', [ $this, 'ajax_save_user_api_key' ] );
+		add_action( 'wp_ajax_pressprimer_quiz_validate_api_key', [ $this, 'ajax_validate_api_key' ] );
+		add_action( 'wp_ajax_pressprimer_quiz_clear_user_api_key', [ $this, 'ajax_clear_user_api_key' ] );
+		add_action( 'wp_ajax_pressprimer_quiz_get_api_models', [ $this, 'ajax_get_api_models' ] );
+		add_action( 'wp_ajax_pressprimer_quiz_save_site_api_key', [ $this, 'ajax_save_site_api_key' ] );
+		add_action( 'wp_ajax_pressprimer_quiz_clear_site_api_key', [ $this, 'ajax_clear_site_api_key' ] );
 
 		// AJAX handler for database repair
-		add_action( 'wp_ajax_ppq_repair_database_tables', [ $this, 'ajax_repair_database_tables' ] );
+		add_action( 'wp_ajax_pressprimer_quiz_repair_database_tables', [ $this, 'ajax_repair_database_tables' ] );
 	}
 
 	/**
@@ -63,7 +63,7 @@ class PressPrimer_Quiz_Admin_Settings {
 	public function register_settings() {
 		// Register the main settings option
 		register_setting(
-			'ppq_settings_group',
+			'pressprimer_quiz_settings_group',
 			self::OPTION_NAME,
 			[
 				'sanitize_callback' => [ $this, 'sanitize_settings' ],
@@ -72,10 +72,10 @@ class PressPrimer_Quiz_Admin_Settings {
 
 		// General Section
 		add_settings_section(
-			'ppq_general_section',
+			'pressprimer_quiz_general_section',
 			__( 'General Settings', 'pressprimer-quiz' ),
 			[ $this, 'render_general_section' ],
-			'ppq-settings'
+			'pressprimer-quiz-settings'
 		);
 
 		// Quiz Defaults Section
@@ -83,7 +83,7 @@ class PressPrimer_Quiz_Admin_Settings {
 			'ppq_quiz_defaults_section',
 			__( 'Quiz Defaults', 'pressprimer-quiz' ),
 			[ $this, 'render_quiz_defaults_section' ],
-			'ppq-settings'
+			'pressprimer-quiz-settings'
 		);
 
 		// Email Section
@@ -91,7 +91,7 @@ class PressPrimer_Quiz_Admin_Settings {
 			'ppq_email_section',
 			__( 'Email Settings', 'pressprimer-quiz' ),
 			[ $this, 'render_email_section' ],
-			'ppq-settings'
+			'pressprimer-quiz-settings'
 		);
 
 		// API Keys Section
@@ -99,7 +99,7 @@ class PressPrimer_Quiz_Admin_Settings {
 			'ppq_api_keys_section',
 			__( 'API Keys', 'pressprimer-quiz' ),
 			[ $this, 'render_api_keys_section' ],
-			'ppq-settings'
+			'pressprimer-quiz-settings'
 		);
 
 		// Social Sharing Section
@@ -107,7 +107,7 @@ class PressPrimer_Quiz_Admin_Settings {
 			'ppq_social_sharing_section',
 			__( 'Social Sharing', 'pressprimer-quiz' ),
 			[ $this, 'render_social_sharing_section' ],
-			'ppq-settings'
+			'pressprimer-quiz-settings'
 		);
 
 		// Advanced Section
@@ -115,7 +115,7 @@ class PressPrimer_Quiz_Admin_Settings {
 			'ppq_advanced_section',
 			__( 'Advanced Settings', 'pressprimer-quiz' ),
 			[ $this, 'render_advanced_section' ],
-			'ppq-settings'
+			'pressprimer-quiz-settings'
 		);
 
 		// Register individual fields
@@ -147,7 +147,7 @@ class PressPrimer_Quiz_Admin_Settings {
 			'default_passing_score',
 			__( 'Default Passing Score', 'pressprimer-quiz' ),
 			[ $this, 'render_passing_score_field' ],
-			'ppq-settings',
+			'pressprimer-quiz-settings',
 			'ppq_quiz_defaults_section'
 		);
 
@@ -156,7 +156,7 @@ class PressPrimer_Quiz_Admin_Settings {
 			'default_quiz_mode',
 			__( 'Default Quiz Mode', 'pressprimer-quiz' ),
 			[ $this, 'render_quiz_mode_field' ],
-			'ppq-settings',
+			'pressprimer-quiz-settings',
 			'ppq_quiz_defaults_section'
 		);
 	}
@@ -172,7 +172,7 @@ class PressPrimer_Quiz_Admin_Settings {
 			'email_from_name',
 			__( 'From Name', 'pressprimer-quiz' ),
 			[ $this, 'render_email_from_name_field' ],
-			'ppq-settings',
+			'pressprimer-quiz-settings',
 			'ppq_email_section'
 		);
 
@@ -181,7 +181,7 @@ class PressPrimer_Quiz_Admin_Settings {
 			'email_from_email',
 			__( 'From Email Address', 'pressprimer-quiz' ),
 			[ $this, 'render_email_from_address_field' ],
-			'ppq-settings',
+			'pressprimer-quiz-settings',
 			'ppq_email_section'
 		);
 
@@ -190,7 +190,7 @@ class PressPrimer_Quiz_Admin_Settings {
 			'email_results_auto_send',
 			__( 'Auto-send Results', 'pressprimer-quiz' ),
 			[ $this, 'render_email_auto_send_field' ],
-			'ppq-settings',
+			'pressprimer-quiz-settings',
 			'ppq_email_section'
 		);
 
@@ -199,7 +199,7 @@ class PressPrimer_Quiz_Admin_Settings {
 			'email_results_subject',
 			__( 'Results Email Subject', 'pressprimer-quiz' ),
 			[ $this, 'render_email_subject_field' ],
-			'ppq-settings',
+			'pressprimer-quiz-settings',
 			'ppq_email_section'
 		);
 
@@ -208,7 +208,7 @@ class PressPrimer_Quiz_Admin_Settings {
 			'email_results_body',
 			__( 'Results Email Body', 'pressprimer-quiz' ),
 			[ $this, 'render_email_body_field' ],
-			'ppq-settings',
+			'pressprimer-quiz-settings',
 			'ppq_email_section'
 		);
 	}
@@ -224,7 +224,7 @@ class PressPrimer_Quiz_Admin_Settings {
 			'site_openai_api_key',
 			__( 'OpenAI API Key', 'pressprimer-quiz' ),
 			[ $this, 'render_site_openai_api_key_field' ],
-			'ppq-settings',
+			'pressprimer-quiz-settings',
 			'ppq_api_keys_section'
 		);
 	}
@@ -240,7 +240,7 @@ class PressPrimer_Quiz_Admin_Settings {
 			'social_sharing_twitter',
 			__( 'Enable Twitter', 'pressprimer-quiz' ),
 			[ $this, 'render_social_twitter_field' ],
-			'ppq-settings',
+			'pressprimer-quiz-settings',
 			'ppq_social_sharing_section'
 		);
 
@@ -249,7 +249,7 @@ class PressPrimer_Quiz_Admin_Settings {
 			'social_sharing_facebook',
 			__( 'Enable Facebook', 'pressprimer-quiz' ),
 			[ $this, 'render_social_facebook_field' ],
-			'ppq-settings',
+			'pressprimer-quiz-settings',
 			'ppq_social_sharing_section'
 		);
 
@@ -258,7 +258,7 @@ class PressPrimer_Quiz_Admin_Settings {
 			'social_sharing_linkedin',
 			__( 'Enable LinkedIn', 'pressprimer-quiz' ),
 			[ $this, 'render_social_linkedin_field' ],
-			'ppq-settings',
+			'pressprimer-quiz-settings',
 			'ppq_social_sharing_section'
 		);
 
@@ -267,7 +267,7 @@ class PressPrimer_Quiz_Admin_Settings {
 			'social_sharing_include_score',
 			__( 'Include Score in Share', 'pressprimer-quiz' ),
 			[ $this, 'render_social_include_score_field' ],
-			'ppq-settings',
+			'pressprimer-quiz-settings',
 			'ppq_social_sharing_section'
 		);
 
@@ -276,7 +276,7 @@ class PressPrimer_Quiz_Admin_Settings {
 			'social_sharing_message',
 			__( 'Share Message Template', 'pressprimer-quiz' ),
 			[ $this, 'render_social_message_field' ],
-			'ppq-settings',
+			'pressprimer-quiz-settings',
 			'ppq_social_sharing_section'
 		);
 	}
@@ -292,7 +292,7 @@ class PressPrimer_Quiz_Admin_Settings {
 			'remove_data_on_uninstall',
 			__( 'Remove Data on Uninstall', 'pressprimer-quiz' ),
 			[ $this, 'render_remove_data_field' ],
-			'ppq-settings',
+			'pressprimer-quiz-settings',
 			'ppq_advanced_section'
 		);
 	}
@@ -553,7 +553,7 @@ Good luck with your studies!',
 	 * @since 1.0.0
 	 */
 	public function render_site_openai_api_key_field() {
-		$site_key      = get_option( 'ppq_site_openai_api_key', '' );
+		$site_key      = get_option( 'pressprimer_quiz_site_openai_api_key', '' );
 		$is_configured = ! empty( $site_key );
 		$masked_key    = '';
 
@@ -612,64 +612,88 @@ Good luck with your studies!',
 			</div>
 		</div>
 
-		<?php // Inline script required: Contains dynamic nonces and localized strings for AJAX operations. ?>
-		<script type="text/javascript">
-		jQuery(document).ready(function($) {
-			// Save site-wide API key
-			$('#ppq-save-site-key').on('click', function() {
-				var key = $('#ppq-site-api-key-input').val().trim();
-				if (!key) {
-					alert('<?php echo esc_js( __( 'Please enter an API key.', 'pressprimer-quiz' ) ); ?>');
-					return;
-				}
-
-				var $button = $(this);
-				$button.prop('disabled', true).text('<?php echo esc_js( __( 'Saving...', 'pressprimer-quiz' ) ); ?>');
-
-				$.post(ajaxurl, {
-					action: 'ppq_save_site_api_key',
-					nonce: '<?php echo esc_js( wp_create_nonce( 'ppq_site_api_key' ) ); ?>',
-					api_key: key
-				}, function(response) {
-					if (response.success) {
-						location.reload();
-					} else {
-						alert(response.data.message || '<?php echo esc_js( __( 'Failed to save API key.', 'pressprimer-quiz' ) ); ?>');
-						$button.prop('disabled', false).text('<?php echo esc_js( __( 'Save Key', 'pressprimer-quiz' ) ); ?>');
-					}
-				}).fail(function() {
-					alert('<?php echo esc_js( __( 'Request failed. Please try again.', 'pressprimer-quiz' ) ); ?>');
-					$button.prop('disabled', false).text('<?php echo esc_js( __( 'Save Key', 'pressprimer-quiz' ) ); ?>');
-				});
-			});
-
-			// Clear API key
-			$('#ppq-clear-site-key').on('click', function() {
-				if (!confirm('<?php echo esc_js( __( 'Are you sure you want to remove the API key?', 'pressprimer-quiz' ) ); ?>')) {
-					return;
-				}
-
-				var $button = $(this);
-				$button.prop('disabled', true);
-
-				$.post(ajaxurl, {
-					action: 'ppq_clear_site_api_key',
-					nonce: '<?php echo esc_js( wp_create_nonce( 'ppq_site_api_key' ) ); ?>'
-				}, function(response) {
-					if (response.success) {
-						location.reload();
-					} else {
-						alert(response.data.message || '<?php echo esc_js( __( 'Failed to clear API key.', 'pressprimer-quiz' ) ); ?>');
-						$button.prop('disabled', false);
-					}
-				}).fail(function() {
-					alert('<?php echo esc_js( __( 'Request failed. Please try again.', 'pressprimer-quiz' ) ); ?>');
-					$button.prop('disabled', false);
-				});
-			});
-		});
-		</script>
 		<?php
+		$this->enqueue_site_api_key_script();
+	}
+
+	/**
+	 * Enqueue site API key management script
+	 *
+	 * Uses wp_add_inline_script and wp_localize_script per WordPress.org guidelines.
+	 *
+	 * @since 1.0.0
+	 */
+	private function enqueue_site_api_key_script() {
+		// Localize dynamic data for the inline script.
+		wp_localize_script(
+			'ppq-admin',
+			'ppqSiteApiKey',
+			[
+				'nonce'   => wp_create_nonce( 'pressprimer_quiz_site_api_key' ),
+				'strings' => [
+					'enterApiKey'   => __( 'Please enter an API key.', 'pressprimer-quiz' ),
+					'saving'        => __( 'Saving...', 'pressprimer-quiz' ),
+					'saveKey'       => __( 'Save Key', 'pressprimer-quiz' ),
+					'failedToSave'  => __( 'Failed to save API key.', 'pressprimer-quiz' ),
+					'requestFailed' => __( 'Request failed. Please try again.', 'pressprimer-quiz' ),
+					'confirmClear'  => __( 'Are you sure you want to remove the API key?', 'pressprimer-quiz' ),
+					'failedToClear' => __( 'Failed to clear API key.', 'pressprimer-quiz' ),
+				],
+			]
+		);
+
+		$inline_script = 'jQuery(document).ready(function($) {' .
+			'var config = window.ppqSiteApiKey || {};' .
+			'var strings = config.strings || {};' .
+			'var nonce = config.nonce || "";' .
+			'$("#ppq-save-site-key").on("click", function() {' .
+				'var key = $("#ppq-site-api-key-input").val().trim();' .
+				'if (!key) {' .
+					'alert(strings.enterApiKey);' .
+					'return;' .
+				'}' .
+				'var $button = $(this);' .
+				'$button.prop("disabled", true).text(strings.saving);' .
+				'$.post(ajaxurl, {' .
+					'action: "pressprimer_quiz_save_site_api_key",' .
+					'nonce: nonce,' .
+					'api_key: key' .
+				'}, function(response) {' .
+					'if (response.success) {' .
+						'location.reload();' .
+					'} else {' .
+						'alert(response.data.message || strings.failedToSave);' .
+						'$button.prop("disabled", false).text(strings.saveKey);' .
+					'}' .
+				'}).fail(function() {' .
+					'alert(strings.requestFailed);' .
+					'$button.prop("disabled", false).text(strings.saveKey);' .
+				'});' .
+			'});' .
+			'$("#ppq-clear-site-key").on("click", function() {' .
+				'if (!confirm(strings.confirmClear)) {' .
+					'return;' .
+				'}' .
+				'var $button = $(this);' .
+				'$button.prop("disabled", true);' .
+				'$.post(ajaxurl, {' .
+					'action: "pressprimer_quiz_clear_site_api_key",' .
+					'nonce: nonce' .
+				'}, function(response) {' .
+					'if (response.success) {' .
+						'location.reload();' .
+					'} else {' .
+						'alert(response.data.message || strings.failedToClear);' .
+						'$button.prop("disabled", false);' .
+					'}' .
+				'}).fail(function() {' .
+					'alert(strings.requestFailed);' .
+					'$button.prop("disabled", false);' .
+				'});' .
+			'});' .
+		'});';
+
+		wp_add_inline_script( 'ppq-admin', $inline_script );
 	}
 
 	/**
@@ -835,12 +859,12 @@ Good luck with your studies!',
 	/**
 	 * Enqueue API key management styles
 	 *
+	 * Uses wp_add_inline_style to properly enqueue CSS per WordPress.org guidelines.
+	 *
 	 * @since 1.0.0
 	 */
 	private function enqueue_api_key_styles() {
-		// Inline styles required: Rendered within settings page callback, paired with inline script containing dynamic nonces.
-		?>
-		<style>
+		$inline_css = '
 			.ppq-api-key-manager {
 				max-width: 700px;
 			}
@@ -989,234 +1013,229 @@ Good luck with your studies!',
 				float: none;
 				margin: 0;
 			}
-		</style>
-		<?php
+		';
+
+		wp_add_inline_style( 'ppq-admin', $inline_css );
 	}
 
 	/**
 	 * Enqueue API key management script
 	 *
+	 * Uses wp_add_inline_script and wp_localize_script per WordPress.org guidelines.
+	 *
 	 * @since 1.0.0
 	 */
 	private function enqueue_api_key_script() {
-		// Inline script required: Contains dynamic nonces and localized strings for AJAX operations.
-		?>
-		<script>
-		jQuery(document).ready(function($) {
-			var PPQ_APIKey = {
-				init: function() {
-					this.bindEvents();
-				},
+		// Localize dynamic data for the inline script.
+		wp_localize_script(
+			'ppq-admin',
+			'ppqApiKeySettings',
+			[
+				'nonce'   => wp_create_nonce( 'pressprimer_quiz_api_key_nonce' ),
+				'strings' => [
+					'enterApiKey'         => __( 'Please enter an API key.', 'pressprimer-quiz' ),
+					'invalidKeyFormat'    => __( 'Invalid API key format. Keys should start with "sk-".', 'pressprimer-quiz' ),
+					'failedToSave'        => __( 'Failed to save API key.', 'pressprimer-quiz' ),
+					'errorOccurred'       => __( 'An error occurred. Please try again.', 'pressprimer-quiz' ),
+					'invalidApiKey'       => __( 'Invalid API key.', 'pressprimer-quiz' ),
+					'confirmClearKey'     => __( 'Are you sure you want to remove your API key? You will not be able to use AI generation until you add a new key.', 'pressprimer-quiz' ),
+					'failedToClear'       => __( 'Failed to clear API key.', 'pressprimer-quiz' ),
+					'modelSaved'          => __( 'Model preference saved.', 'pressprimer-quiz' ),
+					'modelsRefreshed'     => __( 'Models refreshed.', 'pressprimer-quiz' ),
+					'failedToFetchModels' => __( 'Failed to fetch models.', 'pressprimer-quiz' ),
+				],
+			]
+		);
 
-				bindEvents: function() {
-					$('#ppq-save-key').on('click', this.saveKey.bind(this));
-					$('#ppq-validate-key').on('click', this.validateKey.bind(this));
-					$('#ppq-clear-key').on('click', this.clearKey.bind(this));
-					$('#ppq-toggle-key-visibility').on('click', this.toggleVisibility.bind(this));
-					$('#ppq-api-model').on('change', this.saveModelPreference.bind(this));
-					$('#ppq-refresh-models').on('click', this.refreshModels.bind(this));
-				},
+		$inline_script = 'jQuery(document).ready(function($) {' .
+			'var config = window.ppqApiKeySettings || {};' .
+			'var strings = config.strings || {};' .
+			'var nonce = config.nonce || "";' .
+			'var PPQ_APIKey = {' .
+				'init: function() {' .
+					'this.bindEvents();' .
+				'},' .
+				'bindEvents: function() {' .
+					'$("#ppq-save-key").on("click", this.saveKey.bind(this));' .
+					'$("#ppq-validate-key").on("click", this.validateKey.bind(this));' .
+					'$("#ppq-clear-key").on("click", this.clearKey.bind(this));' .
+					'$("#ppq-toggle-key-visibility").on("click", this.toggleVisibility.bind(this));' .
+					'$("#ppq-api-model").on("change", this.saveModelPreference.bind(this));' .
+					'$("#ppq-refresh-models").on("click", this.refreshModels.bind(this));' .
+				'},' .
+				'saveKey: function() {' .
+					'var key = $("#ppq-api-key-input").val().trim();' .
+					'if (!key) {' .
+						'this.showResult("error", strings.enterApiKey);' .
+						'return;' .
+					'}' .
+					'if (!key.startsWith("sk-")) {' .
+						'this.showResult("error", strings.invalidKeyFormat);' .
+						'return;' .
+					'}' .
+					'this.setLoading("#ppq-save-key", true);' .
+					'$.ajax({' .
+						'url: ajaxurl,' .
+						'type: "POST",' .
+						'data: {' .
+							'action: "pressprimer_quiz_save_user_api_key",' .
+							'nonce: nonce,' .
+							'api_key: key' .
+						'},' .
+						'success: function(response) {' .
+							'this.setLoading("#ppq-save-key", false);' .
+							'if (response.success) {' .
+								'this.showResult("success", response.data.message);' .
+								'setTimeout(function() {' .
+									'location.reload();' .
+								'}, 1500);' .
+							'} else {' .
+								'this.showResult("error", response.data.message || strings.failedToSave);' .
+							'}' .
+						'}.bind(this),' .
+						'error: function() {' .
+							'this.setLoading("#ppq-save-key", false);' .
+							'this.showResult("error", strings.errorOccurred);' .
+						'}.bind(this)' .
+					'});' .
+				'},' .
+				'validateKey: function() {' .
+					'this.setLoading("#ppq-validate-key", true);' .
+					'$.ajax({' .
+						'url: ajaxurl,' .
+						'type: "POST",' .
+						'data: {' .
+							'action: "pressprimer_quiz_validate_api_key",' .
+							'nonce: nonce' .
+						'},' .
+						'success: function(response) {' .
+							'this.setLoading("#ppq-validate-key", false);' .
+							'if (response.success) {' .
+								'this.showResult("success", response.data.message);' .
+							'} else {' .
+								'this.showResult("error", response.data.message || strings.invalidApiKey);' .
+							'}' .
+						'}.bind(this),' .
+						'error: function() {' .
+							'this.setLoading("#ppq-validate-key", false);' .
+							'this.showResult("error", strings.errorOccurred);' .
+						'}.bind(this)' .
+					'});' .
+				'},' .
+				'clearKey: function() {' .
+					'if (!confirm(strings.confirmClearKey)) {' .
+						'return;' .
+					'}' .
+					'this.setLoading("#ppq-clear-key", true);' .
+					'$.ajax({' .
+						'url: ajaxurl,' .
+						'type: "POST",' .
+						'data: {' .
+							'action: "pressprimer_quiz_clear_user_api_key",' .
+							'nonce: nonce' .
+						'},' .
+						'success: function(response) {' .
+							'this.setLoading("#ppq-clear-key", false);' .
+							'if (response.success) {' .
+								'this.showResult("success", response.data.message);' .
+								'setTimeout(function() {' .
+									'location.reload();' .
+								'}, 1500);' .
+							'} else {' .
+								'this.showResult("error", response.data.message || strings.failedToClear);' .
+							'}' .
+						'}.bind(this),' .
+						'error: function() {' .
+							'this.setLoading("#ppq-clear-key", false);' .
+							'this.showResult("error", strings.errorOccurred);' .
+						'}.bind(this)' .
+					'});' .
+				'},' .
+				'toggleVisibility: function() {' .
+					'var input = $("#ppq-api-key-input");' .
+					'var icon = $("#ppq-toggle-key-visibility .dashicons");' .
+					'if (input.attr("type") === "password") {' .
+						'input.attr("type", "text");' .
+						'icon.removeClass("dashicons-visibility").addClass("dashicons-hidden");' .
+					'} else {' .
+						'input.attr("type", "password");' .
+						'icon.removeClass("dashicons-hidden").addClass("dashicons-visibility");' .
+					'}' .
+				'},' .
+				'saveModelPreference: function() {' .
+					'var model = $("#ppq-api-model").val();' .
+					'$.ajax({' .
+						'url: ajaxurl,' .
+						'type: "POST",' .
+						'data: {' .
+							'action: "pressprimer_quiz_save_user_api_key",' .
+							'nonce: nonce,' .
+							'model: model' .
+						'},' .
+						'success: function(response) {' .
+							'if (response.success) {' .
+								'this.showResult("success", strings.modelSaved);' .
+							'}' .
+						'}.bind(this)' .
+					'});' .
+				'},' .
+				'refreshModels: function() {' .
+					'this.setLoading("#ppq-refresh-models", true);' .
+					'$.ajax({' .
+						'url: ajaxurl,' .
+						'type: "POST",' .
+						'data: {' .
+							'action: "pressprimer_quiz_get_api_models",' .
+							'nonce: nonce' .
+						'},' .
+						'success: function(response) {' .
+							'this.setLoading("#ppq-refresh-models", false);' .
+							'if (response.success && response.data.models) {' .
+								'var select = $("#ppq-api-model");' .
+								'var currentValue = select.val();' .
+								'select.empty();' .
+								'response.data.models.forEach(function(model) {' .
+									'select.append($("<option>", {' .
+										'value: model,' .
+										'text: model,' .
+										'selected: model === currentValue' .
+									'}));' .
+								'});' .
+								'this.showResult("success", strings.modelsRefreshed);' .
+							'} else {' .
+								'this.showResult("error", response.data.message || strings.failedToFetchModels);' .
+							'}' .
+						'}.bind(this),' .
+						'error: function() {' .
+							'this.setLoading("#ppq-refresh-models", false);' .
+							'this.showResult("error", strings.errorOccurred);' .
+						'}.bind(this)' .
+					'});' .
+				'},' .
+				'showResult: function(type, message) {' .
+					'var $result = $("#ppq-validation-result");' .
+					'$result.removeClass("success error").addClass(type).text(message).show();' .
+					'setTimeout(function() {' .
+						'$result.fadeOut();' .
+					'}, 5000);' .
+				'},' .
+				'setLoading: function(selector, loading) {' .
+					'var $btn = $(selector);' .
+					'if (loading) {' .
+						'$btn.prop("disabled", true);' .
+						'if (!$btn.find(".spinner").length) {' .
+							'$btn.append(\' <span class="spinner is-active"></span>\');' .
+						'}' .
+					'} else {' .
+						'$btn.prop("disabled", false);' .
+						'$btn.find(".spinner").remove();' .
+					'}' .
+				'}' .
+			'};' .
+			'PPQ_APIKey.init();' .
+		'});';
 
-				saveKey: function() {
-					var key = $('#ppq-api-key-input').val().trim();
-
-					if (!key) {
-						this.showResult('error', '<?php echo esc_js( __( 'Please enter an API key.', 'pressprimer-quiz' ) ); ?>');
-						return;
-					}
-
-					if (!key.startsWith('sk-')) {
-						this.showResult('error', '<?php echo esc_js( __( 'Invalid API key format. Keys should start with "sk-".', 'pressprimer-quiz' ) ); ?>');
-						return;
-					}
-
-					this.setLoading('#ppq-save-key', true);
-
-					$.ajax({
-						url: ajaxurl,
-						type: 'POST',
-						data: {
-							action: 'ppq_save_user_api_key',
-							nonce: '<?php echo esc_js( wp_create_nonce( 'ppq_api_key_nonce' ) ); ?>',
-							api_key: key
-						},
-						success: function(response) {
-							this.setLoading('#ppq-save-key', false);
-
-							if (response.success) {
-								this.showResult('success', response.data.message);
-								// Reload to update UI
-								setTimeout(function() {
-									location.reload();
-								}, 1500);
-							} else {
-								this.showResult('error', response.data.message || '<?php echo esc_js( __( 'Failed to save API key.', 'pressprimer-quiz' ) ); ?>');
-							}
-						}.bind(this),
-						error: function() {
-							this.setLoading('#ppq-save-key', false);
-							this.showResult('error', '<?php echo esc_js( __( 'An error occurred. Please try again.', 'pressprimer-quiz' ) ); ?>');
-						}.bind(this)
-					});
-				},
-
-				validateKey: function() {
-					this.setLoading('#ppq-validate-key', true);
-
-					$.ajax({
-						url: ajaxurl,
-						type: 'POST',
-						data: {
-							action: 'ppq_validate_api_key',
-							nonce: '<?php echo esc_js( wp_create_nonce( 'ppq_api_key_nonce' ) ); ?>'
-						},
-						success: function(response) {
-							this.setLoading('#ppq-validate-key', false);
-
-							if (response.success) {
-								this.showResult('success', response.data.message);
-							} else {
-								this.showResult('error', response.data.message || '<?php echo esc_js( __( 'Invalid API key.', 'pressprimer-quiz' ) ); ?>');
-							}
-						}.bind(this),
-						error: function() {
-							this.setLoading('#ppq-validate-key', false);
-							this.showResult('error', '<?php echo esc_js( __( 'An error occurred. Please try again.', 'pressprimer-quiz' ) ); ?>');
-						}.bind(this)
-					});
-				},
-
-				clearKey: function() {
-					if (!confirm('<?php echo esc_js( __( 'Are you sure you want to remove your API key? You will not be able to use AI generation until you add a new key.', 'pressprimer-quiz' ) ); ?>')) {
-						return;
-					}
-
-					this.setLoading('#ppq-clear-key', true);
-
-					$.ajax({
-						url: ajaxurl,
-						type: 'POST',
-						data: {
-							action: 'ppq_clear_user_api_key',
-							nonce: '<?php echo esc_js( wp_create_nonce( 'ppq_api_key_nonce' ) ); ?>'
-						},
-						success: function(response) {
-							this.setLoading('#ppq-clear-key', false);
-
-							if (response.success) {
-								this.showResult('success', response.data.message);
-								setTimeout(function() {
-									location.reload();
-								}, 1500);
-							} else {
-								this.showResult('error', response.data.message || '<?php echo esc_js( __( 'Failed to clear API key.', 'pressprimer-quiz' ) ); ?>');
-							}
-						}.bind(this),
-						error: function() {
-							this.setLoading('#ppq-clear-key', false);
-							this.showResult('error', '<?php echo esc_js( __( 'An error occurred. Please try again.', 'pressprimer-quiz' ) ); ?>');
-						}.bind(this)
-					});
-				},
-
-				toggleVisibility: function() {
-					var input = $('#ppq-api-key-input');
-					var icon = $('#ppq-toggle-key-visibility .dashicons');
-
-					if (input.attr('type') === 'password') {
-						input.attr('type', 'text');
-						icon.removeClass('dashicons-visibility').addClass('dashicons-hidden');
-					} else {
-						input.attr('type', 'password');
-						icon.removeClass('dashicons-hidden').addClass('dashicons-visibility');
-					}
-				},
-
-				saveModelPreference: function() {
-					var model = $('#ppq-api-model').val();
-
-					$.ajax({
-						url: ajaxurl,
-						type: 'POST',
-						data: {
-							action: 'ppq_save_user_api_key',
-							nonce: '<?php echo esc_js( wp_create_nonce( 'ppq_api_key_nonce' ) ); ?>',
-							model: model
-						},
-						success: function(response) {
-							if (response.success) {
-								this.showResult('success', '<?php echo esc_js( __( 'Model preference saved.', 'pressprimer-quiz' ) ); ?>');
-							}
-						}.bind(this)
-					});
-				},
-
-				refreshModels: function() {
-					this.setLoading('#ppq-refresh-models', true);
-
-					$.ajax({
-						url: ajaxurl,
-						type: 'POST',
-						data: {
-							action: 'ppq_get_api_models',
-							nonce: '<?php echo esc_js( wp_create_nonce( 'ppq_api_key_nonce' ) ); ?>'
-						},
-						success: function(response) {
-							this.setLoading('#ppq-refresh-models', false);
-
-							if (response.success && response.data.models) {
-								var select = $('#ppq-api-model');
-								var currentValue = select.val();
-								select.empty();
-
-								response.data.models.forEach(function(model) {
-									select.append($('<option>', {
-										value: model,
-										text: model,
-										selected: model === currentValue
-									}));
-								});
-
-								this.showResult('success', '<?php echo esc_js( __( 'Models refreshed.', 'pressprimer-quiz' ) ); ?>');
-							} else {
-								this.showResult('error', response.data.message || '<?php echo esc_js( __( 'Failed to fetch models.', 'pressprimer-quiz' ) ); ?>');
-							}
-						}.bind(this),
-						error: function() {
-							this.setLoading('#ppq-refresh-models', false);
-							this.showResult('error', '<?php echo esc_js( __( 'An error occurred. Please try again.', 'pressprimer-quiz' ) ); ?>');
-						}.bind(this)
-					});
-				},
-
-				showResult: function(type, message) {
-					var $result = $('#ppq-validation-result');
-					$result.removeClass('success error').addClass(type).text(message).show();
-
-					// Auto-hide after 5 seconds
-					setTimeout(function() {
-						$result.fadeOut();
-					}, 5000);
-				},
-
-				setLoading: function(selector, loading) {
-					var $btn = $(selector);
-					if (loading) {
-						$btn.prop('disabled', true);
-						if (!$btn.find('.spinner').length) {
-							$btn.append(' <span class="spinner is-active"></span>');
-						}
-					} else {
-						$btn.prop('disabled', false);
-						$btn.find('.spinner').remove();
-					}
-				}
-			};
-
-			PPQ_APIKey.init();
-		});
-		</script>
-		<?php
+		wp_add_inline_script( 'ppq-admin', $inline_script );
 	}
 
 	/**
@@ -1570,7 +1589,7 @@ Good luck with your studies!',
 	 */
 	public function render_page() {
 		// Check capability
-		if ( ! current_user_can( 'ppq_manage_settings' ) ) {
+		if ( ! current_user_can( 'pressprimer_quiz_manage_settings' ) ) {
 			wp_die(
 				esc_html__( 'You do not have permission to access this page.', 'pressprimer-quiz' ),
 				esc_html__( 'Permission Denied', 'pressprimer-quiz' ),
@@ -1599,21 +1618,21 @@ Good luck with your studies!',
 		// Enqueue Ant Design CSS
 		wp_enqueue_style(
 			'antd',
-			PPQ_PLUGIN_URL . 'assets/css/vendor/antd-reset.css',
+			PRESSPRIMER_QUIZ_PLUGIN_URL . 'assets/css/vendor/antd-reset.css',
 			[],
 			'5.12.0'
 		);
 
 		// Enqueue built React app
-		$asset_file = PPQ_PLUGIN_PATH . 'build/settings-panel.asset.php';
+		$asset_file = PRESSPRIMER_QUIZ_PLUGIN_PATH . 'build/settings-panel.asset.php';
 		$asset      = file_exists( $asset_file ) ? require $asset_file : [
 			'dependencies' => [ 'wp-element', 'wp-i18n', 'wp-api-fetch' ],
-			'version'      => PPQ_VERSION,
+			'version'      => PRESSPRIMER_QUIZ_VERSION,
 		];
 
 		wp_enqueue_script(
 			'ppq-settings-panel',
-			PPQ_PLUGIN_URL . 'build/settings-panel.js',
+			PRESSPRIMER_QUIZ_PLUGIN_URL . 'build/settings-panel.js',
 			$asset['dependencies'],
 			$asset['version'],
 			true
@@ -1621,7 +1640,7 @@ Good luck with your studies!',
 
 		wp_enqueue_style(
 			'ppq-settings-panel',
-			PPQ_PLUGIN_URL . 'build/style-settings-panel.css',
+			PRESSPRIMER_QUIZ_PLUGIN_URL . 'build/style-settings-panel.css',
 			[],
 			$asset['version']
 		);
@@ -1632,14 +1651,14 @@ Good luck with your studies!',
 		// Localize script with data
 		wp_localize_script(
 			'ppq-settings-panel',
-			'ppqSettingsData',
+			'pressprimerQuizSettingsData',
 			$settings_data
 		);
 
 		// Also pass admin URL
 		wp_localize_script(
 			'ppq-settings-panel',
-			'ppqAdmin',
+			'pressprimerQuizAdmin',
 			[
 				'adminUrl' => admin_url(),
 				'nonce'    => wp_create_nonce( 'wp_rest' ),
@@ -1705,7 +1724,7 @@ Good luck with your studies!',
 		$settings['remove_data_on_uninstall'] = $remove_data_value ? 1 : 0;
 
 		return [
-			'pluginUrl'      => PPQ_PLUGIN_URL,
+			'pluginUrl'      => PRESSPRIMER_QUIZ_PLUGIN_URL,
 			'settings'       => $settings,
 			'apiKeyStatus'   => $key_status,
 			'apiModels'      => $available_models,
@@ -1726,8 +1745,8 @@ Good luck with your studies!',
 				],
 			],
 			'systemInfo'     => [
-				'pluginVersion'          => PPQ_VERSION,
-				'dbVersion'              => get_option( 'ppq_db_version', 'Not set' ),
+				'pluginVersion'          => PRESSPRIMER_QUIZ_VERSION,
+				'dbVersion'              => get_option( 'pressprimer_quiz_db_version', 'Not set' ),
 				'wpVersion'              => get_bloginfo( 'version' ),
 				'memoryLimit'            => WP_MEMORY_LIMIT,
 				'phpVersion'             => PHP_VERSION,
@@ -1743,7 +1762,7 @@ Good luck with your studies!',
 			],
 			'databaseTables' => $table_status,
 			'nonces'         => [
-				'repairTables' => wp_create_nonce( 'ppq_repair_tables_nonce' ),
+				'repairTables' => wp_create_nonce( 'pressprimer_quiz_repair_tables_nonce' ),
 			],
 			'lmsStatus'      => [
 				'learndash' => [
@@ -1891,12 +1910,12 @@ Good luck with your studies!',
 	 */
 	public function ajax_save_user_api_key() {
 		// Verify nonce
-		if ( ! check_ajax_referer( 'ppq_api_key_nonce', 'nonce', false ) ) {
+		if ( ! check_ajax_referer( 'pressprimer_quiz_api_key_nonce', 'nonce', false ) ) {
 			wp_send_json_error( [ 'message' => __( 'Security check failed.', 'pressprimer-quiz' ) ] );
 		}
 
 		// Check capability
-		if ( ! current_user_can( 'ppq_manage_own' ) ) {
+		if ( ! current_user_can( 'pressprimer_quiz_manage_own' ) ) {
 			wp_send_json_error( [ 'message' => __( 'Permission denied.', 'pressprimer-quiz' ) ] );
 		}
 
@@ -1947,12 +1966,12 @@ Good luck with your studies!',
 	 */
 	public function ajax_validate_api_key() {
 		// Verify nonce
-		if ( ! check_ajax_referer( 'ppq_api_key_nonce', 'nonce', false ) ) {
+		if ( ! check_ajax_referer( 'pressprimer_quiz_api_key_nonce', 'nonce', false ) ) {
 			wp_send_json_error( [ 'message' => __( 'Security check failed.', 'pressprimer-quiz' ) ] );
 		}
 
 		// Check capability
-		if ( ! current_user_can( 'ppq_manage_own' ) ) {
+		if ( ! current_user_can( 'pressprimer_quiz_manage_own' ) ) {
 			wp_send_json_error( [ 'message' => __( 'Permission denied.', 'pressprimer-quiz' ) ] );
 		}
 
@@ -1982,12 +2001,12 @@ Good luck with your studies!',
 	 */
 	public function ajax_clear_user_api_key() {
 		// Verify nonce
-		if ( ! check_ajax_referer( 'ppq_api_key_nonce', 'nonce', false ) ) {
+		if ( ! check_ajax_referer( 'pressprimer_quiz_api_key_nonce', 'nonce', false ) ) {
 			wp_send_json_error( [ 'message' => __( 'Security check failed.', 'pressprimer-quiz' ) ] );
 		}
 
 		// Check capability
-		if ( ! current_user_can( 'ppq_manage_own' ) ) {
+		if ( ! current_user_can( 'pressprimer_quiz_manage_own' ) ) {
 			wp_send_json_error( [ 'message' => __( 'Permission denied.', 'pressprimer-quiz' ) ] );
 		}
 
@@ -2012,12 +2031,12 @@ Good luck with your studies!',
 	 */
 	public function ajax_get_api_models() {
 		// Verify nonce
-		if ( ! check_ajax_referer( 'ppq_api_key_nonce', 'nonce', false ) ) {
+		if ( ! check_ajax_referer( 'pressprimer_quiz_api_key_nonce', 'nonce', false ) ) {
 			wp_send_json_error( [ 'message' => __( 'Security check failed.', 'pressprimer-quiz' ) ] );
 		}
 
 		// Check capability
-		if ( ! current_user_can( 'ppq_manage_own' ) ) {
+		if ( ! current_user_can( 'pressprimer_quiz_manage_own' ) ) {
 			wp_send_json_error( [ 'message' => __( 'Permission denied.', 'pressprimer-quiz' ) ] );
 		}
 
@@ -2047,7 +2066,7 @@ Good luck with your studies!',
 	 */
 	public function ajax_repair_database_tables() {
 		// Verify nonce
-		if ( ! check_ajax_referer( 'ppq_repair_tables_nonce', 'nonce', false ) ) {
+		if ( ! check_ajax_referer( 'pressprimer_quiz_repair_tables_nonce', 'nonce', false ) ) {
 			wp_send_json_error( [ 'message' => __( 'Security check failed.', 'pressprimer-quiz' ) ] );
 		}
 
@@ -2100,12 +2119,12 @@ Good luck with your studies!',
 	 */
 	public function ajax_save_site_api_key() {
 		// Verify nonce
-		if ( ! check_ajax_referer( 'ppq_site_api_key', 'nonce', false ) ) {
+		if ( ! check_ajax_referer( 'pressprimer_quiz_site_api_key', 'nonce', false ) ) {
 			wp_send_json_error( [ 'message' => __( 'Security check failed.', 'pressprimer-quiz' ) ] );
 		}
 
 		// Check capability - only admins can set site-wide key
-		if ( ! current_user_can( 'ppq_manage_settings' ) ) {
+		if ( ! current_user_can( 'pressprimer_quiz_manage_settings' ) ) {
 			wp_send_json_error( [ 'message' => __( 'Permission denied. Administrator access required.', 'pressprimer-quiz' ) ] );
 		}
 
@@ -2134,7 +2153,7 @@ Good luck with your studies!',
 			wp_send_json_error( [ 'message' => $encrypted->get_error_message() ] );
 		}
 
-		update_option( 'ppq_site_openai_api_key', $encrypted );
+		update_option( 'pressprimer_quiz_site_openai_api_key', $encrypted );
 
 		wp_send_json_success( [ 'message' => __( 'Site-wide API key saved and validated successfully.', 'pressprimer-quiz' ) ] );
 	}
@@ -2148,16 +2167,16 @@ Good luck with your studies!',
 	 */
 	public function ajax_clear_site_api_key() {
 		// Verify nonce
-		if ( ! check_ajax_referer( 'ppq_site_api_key', 'nonce', false ) ) {
+		if ( ! check_ajax_referer( 'pressprimer_quiz_site_api_key', 'nonce', false ) ) {
 			wp_send_json_error( [ 'message' => __( 'Security check failed.', 'pressprimer-quiz' ) ] );
 		}
 
 		// Check capability - only admins can clear site-wide key
-		if ( ! current_user_can( 'ppq_manage_settings' ) ) {
+		if ( ! current_user_can( 'pressprimer_quiz_manage_settings' ) ) {
 			wp_send_json_error( [ 'message' => __( 'Permission denied. Administrator access required.', 'pressprimer-quiz' ) ] );
 		}
 
-		delete_option( 'ppq_site_openai_api_key' );
+		delete_option( 'pressprimer_quiz_site_openai_api_key' );
 
 		wp_send_json_success( [ 'message' => __( 'Site-wide API key removed successfully.', 'pressprimer-quiz' ) ] );
 	}

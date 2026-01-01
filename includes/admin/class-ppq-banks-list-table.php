@@ -35,7 +35,7 @@ class PressPrimer_Quiz_Banks_List_Table extends WP_List_Table {
 		parent::__construct(
 			[
 				'singular' => 'ppq-bank',
-				'plural'   => 'ppq-banks',
+				'plural'   => 'pressprimer-quiz-banks',
 				'ajax'     => false,
 			]
 		);
@@ -85,7 +85,7 @@ class PressPrimer_Quiz_Banks_List_Table extends WP_List_Table {
 	protected function get_bulk_actions() {
 		$actions = [];
 
-		if ( current_user_can( 'ppq_manage_all' ) ) {
+		if ( current_user_can( 'pressprimer_quiz_manage_all' ) ) {
 			$actions['delete'] = __( 'Delete', 'pressprimer-quiz' );
 		}
 
@@ -110,7 +110,7 @@ class PressPrimer_Quiz_Banks_List_Table extends WP_List_Table {
 		$this->_column_headers = [ $columns, $hidden, $sortable ];
 
 		// Pagination
-		$per_page     = $this->get_items_per_page( 'ppq_banks_per_page', 20 );
+		$per_page     = $this->get_items_per_page( 'pressprimer_quiz_banks_per_page', 20 );
 		$current_page = $this->get_pagenum();
 		$offset       = ( $current_page - 1 ) * $per_page;
 
@@ -131,7 +131,7 @@ class PressPrimer_Quiz_Banks_List_Table extends WP_List_Table {
 
 		// Owner filter (only show user's own if not admin)
 		$get_author = isset( $_REQUEST['author'] ) ? absint( wp_unslash( $_REQUEST['author'] ) ) : 0;
-		if ( ! current_user_can( 'ppq_manage_all' ) ) {
+		if ( ! current_user_can( 'pressprimer_quiz_manage_all' ) ) {
 			$where[]        = 'owner_id = %d';
 			$where_values[] = get_current_user_id();
 		} elseif ( $get_author > 0 ) {
@@ -158,6 +158,10 @@ class PressPrimer_Quiz_Banks_List_Table extends WP_List_Table {
 		// Validate order
 		$order = ( 'ASC' === strtoupper( $order ) ) ? 'ASC' : 'DESC';
 
+		// Build ORDER BY with sanitize_sql_orderby
+		$order_sql = sanitize_sql_orderby( "{$orderby} {$order}" );
+		$order_sql = $order_sql ? "ORDER BY {$order_sql}" : 'ORDER BY created_at DESC';
+
 		// Get total count
 		if ( ! empty( $where_values ) ) {
 			// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Table name safely constructed from $wpdb->prefix
@@ -173,7 +177,7 @@ class PressPrimer_Quiz_Banks_List_Table extends WP_List_Table {
 
 		// Get items
 		// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Table name and validated clauses safely constructed
-		$items_query  = "SELECT * FROM {$table} WHERE {$where_sql} ORDER BY {$orderby} {$order} LIMIT %d OFFSET %d";
+		$items_query  = "SELECT * FROM {$table} WHERE {$where_sql} {$order_sql} LIMIT %d OFFSET %d";
 		$query_values = array_merge( $where_values, [ $per_page, $offset ] );
 
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- List table pagination, not suitable for caching
@@ -214,7 +218,7 @@ class PressPrimer_Quiz_Banks_List_Table extends WP_List_Table {
 		}
 
 		// Check capability
-		if ( ! current_user_can( 'ppq_manage_all' ) ) {
+		if ( ! current_user_can( 'pressprimer_quiz_manage_all' ) ) {
 			return;
 		}
 
@@ -244,7 +248,7 @@ class PressPrimer_Quiz_Banks_List_Table extends WP_List_Table {
 		wp_safe_redirect(
 			add_query_arg(
 				[
-					'page'    => 'ppq-banks',
+					'page'    => 'pressprimer-quiz-banks',
 					'message' => 'banks_deleted',
 				],
 				admin_url( 'admin.php' )
@@ -294,7 +298,7 @@ class PressPrimer_Quiz_Banks_List_Table extends WP_List_Table {
 	protected function column_name( $item ) {
 		$view_url = add_query_arg(
 			[
-				'page'    => 'ppq-banks',
+				'page'    => 'pressprimer-quiz-banks',
 				'action'  => 'view',
 				'bank_id' => $item->id,
 			],
@@ -303,7 +307,7 @@ class PressPrimer_Quiz_Banks_List_Table extends WP_List_Table {
 
 		$edit_url = add_query_arg(
 			[
-				'page'    => 'ppq-banks',
+				'page'    => 'pressprimer-quiz-banks',
 				'action'  => 'edit',
 				'bank_id' => $item->id,
 			],
@@ -313,13 +317,13 @@ class PressPrimer_Quiz_Banks_List_Table extends WP_List_Table {
 		$delete_url = wp_nonce_url(
 			add_query_arg(
 				[
-					'page'    => 'ppq-banks',
+					'page'    => 'pressprimer-quiz-banks',
 					'action'  => 'ppq_delete_bank',
 					'bank_id' => $item->id,
 				],
 				admin_url( 'admin-post.php' )
 			),
-			'ppq_delete_bank_' . $item->id
+			'pressprimer_quiz_delete_bank_' . $item->id
 		);
 
 		$title = '<strong><a href="' . esc_url( $view_url ) . '">' . esc_html( $item->name ) . '</a></strong>';
@@ -329,7 +333,7 @@ class PressPrimer_Quiz_Banks_List_Table extends WP_List_Table {
 		$actions['view'] = '<a href="' . esc_url( $view_url ) . '">' . __( 'Questions', 'pressprimer-quiz' ) . '</a>';
 
 		// Check ownership for edit/delete
-		if ( current_user_can( 'ppq_manage_all' ) || absint( $item->owner_id ) === get_current_user_id() ) {
+		if ( current_user_can( 'pressprimer_quiz_manage_all' ) || absint( $item->owner_id ) === get_current_user_id() ) {
 			$actions['edit']   = '<a href="' . esc_url( $edit_url ) . '">' . __( 'Edit', 'pressprimer-quiz' ) . '</a>';
 			$actions['delete'] = '<a href="' . esc_url( $delete_url ) . '" onclick="return confirm(\'' . esc_js( __( 'Are you sure you want to delete this bank?', 'pressprimer-quiz' ) ) . '\');">' . __( 'Delete', 'pressprimer-quiz' ) . '</a>';
 		}
@@ -368,10 +372,10 @@ class PressPrimer_Quiz_Banks_List_Table extends WP_List_Table {
 		}
 
 		// If admin, make it a filter link
-		if ( current_user_can( 'ppq_manage_all' ) ) {
+		if ( current_user_can( 'pressprimer_quiz_manage_all' ) ) {
 			$filter_url = add_query_arg(
 				[
-					'page'   => 'ppq-banks',
+					'page'   => 'pressprimer-quiz-banks',
 					'author' => $item->owner_id,
 				],
 				admin_url( 'admin.php' )

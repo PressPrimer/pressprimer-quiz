@@ -29,7 +29,7 @@ const getContainer = () => {
  */
 const initOnboarding = () => {
 	// Get the onboarding data from PHP
-	const onboardingData = window.ppqOnboardingData || {};
+	const onboardingData = window.pressprimerQuizOnboardingData || {};
 
 	// Only render if onboarding should be shown
 	if (!onboardingData.state?.should_show) {
@@ -48,12 +48,12 @@ document.addEventListener('DOMContentLoaded', initOnboarding);
  * This resets the tour and starts from step 1
  */
 window.ppqLaunchOnboarding = async () => {
-	const onboardingData = window.ppqOnboardingData || {};
+	const onboardingData = window.pressprimerQuizOnboardingData || {};
 
 	// First reset the state via AJAX
 	try {
 		const formData = new FormData();
-		formData.append('action', 'ppq_onboarding_progress');
+		formData.append('action', 'pressprimer_quiz_onboarding_progress');
 		formData.append('onboarding_action', 'reset');
 		formData.append('nonce', onboardingData.nonce || '');
 

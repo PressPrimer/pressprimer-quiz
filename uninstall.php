@@ -25,8 +25,8 @@ if ( ! defined( 'WP_UNINSTALL_PLUGIN' ) ) {
 }
 
 // Define plugin path constant if not already defined
-if ( ! defined( 'PPQ_PLUGIN_PATH' ) ) {
-	define( 'PPQ_PLUGIN_PATH', plugin_dir_path( __FILE__ ) );
+if ( ! defined( 'PRESSPRIMER_QUIZ_PLUGIN_PATH' ) ) {
+	define( 'PRESSPRIMER_QUIZ_PLUGIN_PATH', plugin_dir_path( __FILE__ ) );
 }
 
 /**
@@ -39,7 +39,7 @@ function pressprimer_quiz_uninstall() {
 	global $wpdb;
 
 	// Get settings - use empty array as default
-	$settings = get_option( 'ppq_settings', [] );
+	$settings = get_option( 'pressprimer_quiz_settings', [] );
 
 	// Check if user has EXPLICITLY opted to remove data on uninstall
 	// Default behavior is to KEEP all data for safety
@@ -145,11 +145,11 @@ function pressprimer_quiz_remove_options() {
 		foreach ( $site_ids as $site_id ) {
 			$prefix = $wpdb->get_blog_prefix( $site_id );
 
-			// Delete all options that start with ppq_ for this site
+			// Delete all options that start with pressprimer_quiz_ for this site
 			$wpdb->query(
 				$wpdb->prepare(
 					"DELETE FROM {$prefix}options WHERE option_name LIKE %s", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-					$wpdb->esc_like( 'ppq_' ) . '%'
+					$wpdb->esc_like( 'pressprimer_quiz_' ) . '%'
 				)
 			);
 		}
@@ -159,16 +159,16 @@ function pressprimer_quiz_remove_options() {
 			$wpdb->prepare(
 				"DELETE FROM {$wpdb->sitemeta}
 				WHERE meta_key LIKE %s",
-				$wpdb->esc_like( 'ppq_' ) . '%'
+				$wpdb->esc_like( 'pressprimer_quiz_' ) . '%'
 			)
 		);
 	} else {
-		// Single site - delete all options that start with ppq_
+		// Single site - delete all options that start with pressprimer_quiz_
 		$wpdb->query(
 			$wpdb->prepare(
 				"DELETE FROM {$wpdb->options}
 				WHERE option_name LIKE %s",
-				$wpdb->esc_like( 'ppq_' ) . '%'
+				$wpdb->esc_like( 'pressprimer_quiz_' ) . '%'
 			)
 		);
 	}
@@ -182,12 +182,12 @@ function pressprimer_quiz_remove_options() {
 function pressprimer_quiz_remove_user_meta() {
 	global $wpdb;
 
-	// Delete all user meta that starts with ppq_
+	// Delete all user meta that starts with pressprimer_quiz_
 	$wpdb->query(
 		$wpdb->prepare(
 			"DELETE FROM {$wpdb->usermeta}
 			WHERE meta_key LIKE %s",
-			$wpdb->esc_like( 'ppq_' ) . '%'
+			$wpdb->esc_like( 'pressprimer_quiz_' ) . '%'
 		)
 	);
 }
@@ -200,12 +200,12 @@ function pressprimer_quiz_remove_user_meta() {
 function pressprimer_quiz_remove_post_meta() {
 	global $wpdb;
 
-	// Delete all post meta that starts with ppq_
+	// Delete all post meta that starts with pressprimer_quiz_
 	$wpdb->query(
 		$wpdb->prepare(
 			"DELETE FROM {$wpdb->postmeta}
 			WHERE meta_key LIKE %s",
-			$wpdb->esc_like( 'ppq_' ) . '%'
+			$wpdb->esc_like( 'pressprimer_quiz_' ) . '%'
 		)
 	);
 }
@@ -242,22 +242,22 @@ function pressprimer_quiz_remove_site_capabilities() {
 	// Remove capabilities from administrator
 	$admin = get_role( 'administrator' );
 	if ( $admin ) {
-		$admin->remove_cap( 'ppq_manage_all' );
-		$admin->remove_cap( 'ppq_manage_own' );
-		$admin->remove_cap( 'ppq_view_results_all' );
-		$admin->remove_cap( 'ppq_view_results_own' );
-		$admin->remove_cap( 'ppq_take_quiz' );
-		$admin->remove_cap( 'ppq_manage_settings' );
+		$admin->remove_cap( 'pressprimer_quiz_manage_all' );
+		$admin->remove_cap( 'pressprimer_quiz_manage_own' );
+		$admin->remove_cap( 'pressprimer_quiz_view_results_all' );
+		$admin->remove_cap( 'pressprimer_quiz_view_results_own' );
+		$admin->remove_cap( 'pressprimer_quiz_take_quiz' );
+		$admin->remove_cap( 'pressprimer_quiz_manage_settings' );
 	}
 
 	// Remove capabilities from subscriber
 	$subscriber = get_role( 'subscriber' );
 	if ( $subscriber ) {
-		$subscriber->remove_cap( 'ppq_take_quiz' );
+		$subscriber->remove_cap( 'pressprimer_quiz_take_quiz' );
 	}
 
 	// Remove custom teacher role
-	remove_role( 'ppq_teacher' );
+	remove_role( 'pressprimer_quiz_teacher' );
 }
 
 /**
@@ -268,14 +268,14 @@ function pressprimer_quiz_remove_site_capabilities() {
 function pressprimer_quiz_clear_transients() {
 	global $wpdb;
 
-	// Delete all transients that start with ppq_
+	// Delete all transients that start with pressprimer_quiz_
 	$wpdb->query(
 		$wpdb->prepare(
 			"DELETE FROM {$wpdb->options}
 			WHERE option_name LIKE %s
 			OR option_name LIKE %s",
-			$wpdb->esc_like( '_transient_ppq_' ) . '%',
-			$wpdb->esc_like( '_transient_timeout_ppq_' ) . '%'
+			$wpdb->esc_like( '_transient_pressprimer_quiz_' ) . '%',
+			$wpdb->esc_like( '_transient_timeout_pressprimer_quiz_' ) . '%'
 		)
 	);
 
@@ -286,8 +286,8 @@ function pressprimer_quiz_clear_transients() {
 				"DELETE FROM {$wpdb->sitemeta}
 				WHERE meta_key LIKE %s
 				OR meta_key LIKE %s",
-				$wpdb->esc_like( '_site_transient_ppq_' ) . '%',
-				$wpdb->esc_like( '_site_transient_timeout_ppq_' ) . '%'
+				$wpdb->esc_like( '_site_transient_pressprimer_quiz_' ) . '%',
+				$wpdb->esc_like( '_site_transient_timeout_pressprimer_quiz_' ) . '%'
 			)
 		);
 	}

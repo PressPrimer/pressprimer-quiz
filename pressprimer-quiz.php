@@ -50,6 +50,7 @@ add_action( 'wp_initialize_site', [ 'PressPrimer_Quiz_Activator', 'activate_new_
  * Initialize plugin
  *
  * Initializes the main plugin class.
+ * Hooked to 'init' to comply with WordPress 6.7+ translation loading requirements.
  *
  * @since 1.0.0
  */
@@ -58,4 +59,4 @@ function pressprimer_quiz_init() {
 	$plugin = PressPrimer_Quiz_Plugin::get_instance();
 	$plugin->run();
 }
-add_action( 'plugins_loaded', 'pressprimer_quiz_init' );
+add_action( 'init', 'pressprimer_quiz_init', 0 );

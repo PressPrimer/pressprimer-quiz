@@ -17,7 +17,7 @@ if ( ! defined( 'ABSPATH' ) ) {
  * Main plugin class
  *
  * Implements singleton pattern to ensure only one instance exists.
- * Initializes all plugin components on plugins_loaded hook.
+ * Initializes all plugin components on init hook (priority 0).
  *
  * @since 1.0.0
  */

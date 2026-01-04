@@ -287,6 +287,22 @@ class PressPrimer_Quiz_Results_Renderer {
 					</div>
 				<?php endif; ?>
 			</div>
+
+			<?php
+			/**
+			 * Fires after the score summary display.
+			 *
+			 * Premium addons can use this to add additional score-related information,
+			 * such as badges, achievements, or comparative analytics.
+			 *
+			 * @since 2.0.0
+			 *
+			 * @param PressPrimer_Quiz_Attempt $attempt The attempt object.
+			 * @param PressPrimer_Quiz_Quiz    $quiz    The quiz object.
+			 * @param array                    $results The calculated results data.
+			 */
+			do_action( 'pressprimer_quiz_results_after_score', $attempt, $quiz, $results );
+			?>
 		</div>
 		<?php
 	}
@@ -671,6 +687,21 @@ class PressPrimer_Quiz_Results_Renderer {
 			<?php foreach ( $items as $index => $item ) : ?>
 				<?php $this->render_single_question_review( $item, $index + 1, count( $items ), $quiz, $show_correct_answers ); ?>
 			<?php endforeach; ?>
+
+			<?php
+			/**
+			 * Fires after the question review section.
+			 *
+			 * Premium addons can use this to add additional review content,
+			 * such as detailed analytics or learning recommendations.
+			 *
+			 * @since 2.0.0
+			 *
+			 * @param PressPrimer_Quiz_Attempt $attempt The attempt object.
+			 * @param PressPrimer_Quiz_Quiz    $quiz    The quiz object.
+			 */
+			do_action( 'pressprimer_quiz_results_after_review', $attempt, $quiz );
+			?>
 		</div>
 		<?php
 		return ob_get_clean();

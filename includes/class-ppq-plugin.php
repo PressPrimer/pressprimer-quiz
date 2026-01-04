@@ -77,6 +77,9 @@ class PressPrimer_Quiz_Plugin {
 			PressPrimer_Quiz_Migrator::maybe_migrate();
 		}
 
+		// Initialize addon manager (allows premium addons to register)
+		$this->init_addon_manager();
+
 		// Initialize components
 		$this->init_admin();
 		$this->init_frontend();
@@ -84,6 +87,21 @@ class PressPrimer_Quiz_Plugin {
 		$this->init_rest_api();
 		$this->init_blocks();
 		$this->init_cron();
+	}
+
+	/**
+	 * Initialize addon manager
+	 *
+	 * Sets up the addon manager and fires the registration hook
+	 * for premium addons to register themselves.
+	 *
+	 * @since 2.0.0
+	 */
+	private function init_addon_manager() {
+		if ( class_exists( 'PressPrimer_Quiz_Addon_Manager' ) ) {
+			$addon_manager = PressPrimer_Quiz_Addon_Manager::get_instance();
+			$addon_manager->init();
+		}
 	}
 
 	/**

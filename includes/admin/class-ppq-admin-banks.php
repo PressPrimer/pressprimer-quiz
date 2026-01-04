@@ -316,7 +316,7 @@ class PressPrimer_Quiz_Admin_Banks {
 		// Localize dynamic data for the inline script.
 		wp_localize_script(
 			'ppq-admin',
-			'ppqBankDetail',
+			'pressPrimerQuizBankDetail',
 			[
 				'bankId'  => absint( $bank_id ),
 				'nonces'  => [
@@ -356,7 +356,7 @@ class PressPrimer_Quiz_Admin_Banks {
 			'var searchSelectedQuestions = [];' .
 			'var currentRecentPage = 1;' .
 			'var currentSearchPage = 1;' .
-			'var config = window.ppqBankDetail || {};' .
+			'var config = window.pressPrimerQuizBankDetail || {};' .
 			'var strings = config.strings || {};' .
 			'function buildPaginationHtml(currentPage, totalPages, totalItems, navClass) {' .
 				'var pagHtml = \'<div class="tablenav-pages">\';' .

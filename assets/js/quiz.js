@@ -125,7 +125,7 @@
 				url.searchParams.set('token', guestToken);
 			}
 			// Remove retake flag - we're now in an active attempt
-			url.searchParams.delete('ppq_retake');
+			url.searchParams.delete('pressprimer_quiz_retake');
 			return url.toString();
 		},
 

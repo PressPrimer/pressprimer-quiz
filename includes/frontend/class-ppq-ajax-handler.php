@@ -557,7 +557,7 @@ class PressPrimer_Quiz_AJAX_Handler {
 		// (e.g., SSL termination proxies, strict cookie policies)
 		if ( ! is_user_logged_in() && $attempt->guest_token ) {
 			// First check cookie
-			$token = isset( $_COOKIE['ppq_guest_token'] ) ? sanitize_text_field( wp_unslash( $_COOKIE['ppq_guest_token'] ) ) : '';
+			$token = isset( $_COOKIE['pressprimer_quiz_guest_token'] ) ? sanitize_text_field( wp_unslash( $_COOKIE['pressprimer_quiz_guest_token'] ) ) : '';
 
 			// Fallback to POST data if cookie not available
 			// phpcs:ignore WordPress.Security.NonceVerification.Missing -- Nonce verified in calling AJAX handler methods
@@ -752,20 +752,21 @@ class PressPrimer_Quiz_AJAX_Handler {
 			);
 		}
 
-		// Get selected answers from POST and sanitize
-		// phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- Array is sanitized element-by-element below
-		$answers_raw = isset( $_POST['answers'] ) ? wp_unslash( $_POST['answers'] ) : [];
-
-		// Ensure answers is an array (single selection comes as scalar)
-		if ( ! is_array( $answers_raw ) ) {
-			$answers_raw = [ $answers_raw ];
+		// Get selected answers from POST and sanitize immediately
+		// Handle both array (multiple choice) and scalar (single choice) inputs
+		if ( isset( $_POST['answers'] ) && is_array( $_POST['answers'] ) ) {
+			$answers_raw = array_map( 'sanitize_text_field', wp_unslash( $_POST['answers'] ) );
+		} elseif ( isset( $_POST['answers'] ) ) {
+			$answers_raw = [ sanitize_text_field( wp_unslash( $_POST['answers'] ) ) ];
+		} else {
+			$answers_raw = [];
 		}
 
-		// Sanitize: filter non-empty values and convert to integers
+		// Convert to integers and filter non-empty values
 		$selected_answers = array_map(
 			'absint',
 			array_filter(
-				array_map( 'sanitize_text_field', $answers_raw ),
+				$answers_raw,
 				function ( $v ) {
 					return '' !== $v && null !== $v;
 				}

@@ -30,7 +30,7 @@ class PressPrimer_Quiz_Statistics_Service {
 	 * @since 1.0.0
 	 * @var string
 	 */
-	const CACHE_GROUP = 'ppq_statistics';
+	const CACHE_GROUP = 'pressprimer_quiz_statistics';
 
 	/**
 	 * Default cache expiration in seconds (5 minutes)
@@ -846,7 +846,7 @@ class PressPrimer_Quiz_Statistics_Service {
 		$args['days'] = min( $args['days'], 730 );
 
 		// Generate cache key
-		$cache_key = 'ppq_activity_chart_' . md5( wp_json_encode( $args ) );
+		$cache_key = 'pressprimer_quiz_activity_chart_' . md5( wp_json_encode( $args ) );
 
 		// Check cache (15 minutes)
 		$cached = get_transient( $cache_key );

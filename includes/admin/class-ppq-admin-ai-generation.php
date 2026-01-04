@@ -477,15 +477,22 @@ class PressPrimer_Quiz_Admin_AI_Generation {
 		}
 
 		// Check if file was uploaded
-		// phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- File array handled by WordPress functions in process_upload
 		if ( empty( $_FILES['file'] ) ) {
 			wp_send_json_error( [ 'message' => __( 'No file uploaded.', 'pressprimer-quiz' ) ] );
 		}
 
-		// Process the file - $_FILES is sanitized by WordPress during wp_handle_upload
+		// Sanitize the $_FILES array elements
+		$file = [
+			'name'     => isset( $_FILES['file']['name'] ) ? sanitize_file_name( wp_unslash( $_FILES['file']['name'] ) ) : '',
+			'type'     => isset( $_FILES['file']['type'] ) ? sanitize_mime_type( wp_unslash( $_FILES['file']['type'] ) ) : '',
+			'tmp_name' => isset( $_FILES['file']['tmp_name'] ) ? sanitize_text_field( $_FILES['file']['tmp_name'] ) : '',
+			'error'    => isset( $_FILES['file']['error'] ) ? absint( $_FILES['file']['error'] ) : UPLOAD_ERR_NO_FILE,
+			'size'     => isset( $_FILES['file']['size'] ) ? absint( $_FILES['file']['size'] ) : 0,
+		];
+
+		// Process the file
 		$processor = new PressPrimer_Quiz_File_Processor();
-		// phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- Sanitization handled in process_upload via wp_handle_upload
-		$result = $processor->process_upload( $_FILES['file'] );
+		$result    = $processor->process_upload( $file );
 
 		if ( is_wp_error( $result ) ) {
 			wp_send_json_error( [ 'message' => $result->get_error_message() ] );
@@ -521,20 +528,21 @@ class PressPrimer_Quiz_Admin_AI_Generation {
 		$bank_id    = isset( $_POST['bank_id'] ) ? absint( wp_unslash( $_POST['bank_id'] ) ) : 0;
 		$categories = isset( $_POST['categories'] ) ? array_map( 'absint', (array) wp_unslash( $_POST['categories'] ) ) : [];
 
-		// Get questions data and decode if JSON string
-		// Note: Individual question fields are sanitized in sanitize_question_data() with appropriate
-		// functions (sanitize_key, sanitize_textarea_field, wp_kses_post) based on field type.
-		// phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- Complex nested structure; each field sanitized appropriately in sanitize_question_data()
-		$questions_raw = isset( $_POST['questions'] ) ? wp_unslash( $_POST['questions'] ) : [];
+		// Get questions data - sanitize the raw input first, then decode if JSON
+		$questions_raw = isset( $_POST['questions'] ) ? sanitize_text_field( wp_unslash( $_POST['questions'] ) ) : '';
 
-		if ( is_string( $questions_raw ) ) {
+		// Decode JSON string to array
+		if ( ! empty( $questions_raw ) ) {
 			$questions = json_decode( $questions_raw, true );
 			if ( json_last_error() !== JSON_ERROR_NONE ) {
 				wp_send_json_error( [ 'message' => __( 'Invalid question data format.', 'pressprimer-quiz' ) ] );
 			}
-		} elseif ( is_array( $questions_raw ) ) {
-			$questions = $questions_raw;
 		} else {
+			$questions = [];
+		}
+
+		// Validate that we have an array
+		if ( ! is_array( $questions ) ) {
 			$questions = [];
 		}
 

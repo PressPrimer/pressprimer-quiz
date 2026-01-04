@@ -804,18 +804,18 @@ class PressPrimer_Quiz_Admin_Quizzes {
 				global $wpdb;
 				$items_table = $wpdb->prefix . 'ppq_quiz_items';
 
-				// Sanitize the entire item_weights array
-				// phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- Array is sanitized element-by-element below
-				$item_weights_raw = wp_unslash( $_POST['item_weights'] );
-				foreach ( $item_weights_raw as $item_id => $weight ) {
-					// Sanitize item_id as integer
+				// Sanitize the entire item_weights array upfront
+				$item_weights_sanitized = array_map( 'sanitize_text_field', wp_unslash( $_POST['item_weights'] ) );
+
+				foreach ( $item_weights_sanitized as $item_id => $weight ) {
+					// Validate and sanitize item_id as integer
 					$item_id = absint( $item_id );
 					if ( ! $item_id ) {
 						continue;
 					}
 
-					// Sanitize and validate weight as float
-					$weight = floatval( sanitize_text_field( $weight ) );
+					// Convert sanitized weight to float
+					$weight = floatval( $weight );
 
 					// Validate weight range (0-100)
 					if ( $weight < 0 || $weight > 100 ) {

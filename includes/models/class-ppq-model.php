@@ -314,27 +314,33 @@ abstract class PressPrimer_Quiz_Model {
 					continue;
 				}
 
+				// Escape field name for safe SQL inclusion
+				$safe_field = esc_sql( $field );
+
 				if ( null === $value ) {
 					// Use IS NULL for null values
-					$where_clauses[] = "`{$field}` IS NULL";
+					$where_clauses[] = "`{$safe_field}` IS NULL";
 				} else {
-					$where_clauses[] = "`{$field}` = %s";
+					$where_clauses[] = "`{$safe_field}` = %s";
 					$where_values[]  = $value;
 				}
 			}
 		}
 
-		$where_sql = ! empty( $where_clauses )
-			? 'WHERE ' . implode( ' AND ', $where_clauses )
-			: '';
+		// Build WHERE clause - fields are whitelisted and escaped above
+		$where_sql = '';
+		if ( ! empty( $where_clauses ) ) {
+			$where_sql = 'WHERE ' . implode( ' AND ', $where_clauses );
+		}
 
-		// Build ORDER BY clause with field validation
+		// Build ORDER BY clause with field validation and escaping
 		$order_by_field = $args['order_by'];
 		if ( ! in_array( $order_by_field, $queryable_fields, true ) ) {
 			$order_by_field = 'id'; // Default to safe field
 		}
-		$order_by  = sanitize_sql_orderby( "{$order_by_field} {$args['order']}" );
-		$order_sql = $order_by ? "ORDER BY {$order_by}" : '';
+		$order_by_field = esc_sql( $order_by_field );
+		$order_by       = sanitize_sql_orderby( "{$order_by_field} {$args['order']}" );
+		$order_sql      = $order_by ? "ORDER BY {$order_by}" : '';
 
 		// Build LIMIT clause
 		$limit_sql = '';
@@ -356,10 +362,13 @@ abstract class PressPrimer_Quiz_Model {
 
 		// Prepare and execute - always prepare if we have any values (WHERE or LIMIT)
 		if ( ! empty( $where_values ) ) {
-			$query = $wpdb->prepare( $query, $where_values ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- Query built with placeholders
+			// Field names are whitelisted via get_queryable_fields() and escaped with esc_sql(), values use placeholders
+			// phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- Dynamic query with whitelisted/escaped fields and prepared values
+			$query = $wpdb->prepare( $query, $where_values );
 		}
 
-		$rows = $wpdb->get_results( $query ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared,WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Custom table queries with dynamic conditions
+		// phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- Query prepared above with whitelisted/escaped field names
+		$rows = $wpdb->get_results( $query );
 
 		// Convert rows to model instances
 		$results = [];
@@ -387,7 +396,7 @@ abstract class PressPrimer_Quiz_Model {
 
 		$table = static::get_full_table_name();
 
-		// Build WHERE clause with field validation
+		// Build WHERE clause with field validation and escaping
 		$where_clauses    = [];
 		$where_values     = [];
 		$queryable_fields = static::get_queryable_fields();
@@ -399,24 +408,31 @@ abstract class PressPrimer_Quiz_Model {
 					continue;
 				}
 
-				$where_clauses[] = "`{$field}` = %s";
+				// Escape field name for safe SQL inclusion
+				$safe_field      = esc_sql( $field );
+				$where_clauses[] = "`{$safe_field}` = %s";
 				$where_values[]  = $value;
 			}
 		}
 
-		$where_sql = ! empty( $where_clauses )
-			? 'WHERE ' . implode( ' AND ', $where_clauses )
-			: '';
+		// Build WHERE clause - fields are whitelisted and escaped above
+		$where_sql = '';
+		if ( ! empty( $where_clauses ) ) {
+			$where_sql = 'WHERE ' . implode( ' AND ', $where_clauses );
+		}
 
 		// Build query
 		$query = "SELECT COUNT(*) FROM {$table} {$where_sql}";
 
 		// Prepare and execute
 		if ( ! empty( $where_values ) ) {
-			$query = $wpdb->prepare( $query, $where_values ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
+			// Field names are whitelisted via get_queryable_fields() and escaped with esc_sql(), values use placeholders
+			// phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- Dynamic query with whitelisted/escaped fields and prepared values
+			$query = $wpdb->prepare( $query, $where_values );
 		}
 
-		return (int) $wpdb->get_var( $query ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared,WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Custom table count queries
+		// phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- Query prepared above with whitelisted/escaped field names
+		return (int) $wpdb->get_var( $query );
 	}
 
 	/**

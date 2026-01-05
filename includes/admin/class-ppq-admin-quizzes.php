@@ -48,6 +48,9 @@ class PressPrimer_Quiz_Admin_Quizzes {
 		// Add screen options on the right hook
 		add_action( 'current_screen', [ $this, 'maybe_add_screen_options' ] );
 
+		// Save screen options
+		add_filter( 'set_screen_option_pressprimer_quiz_quizzes_per_page', [ $this, 'set_screen_option' ], 10, 3 );
+
 		// Register AJAX handlers
 		add_action( 'wp_ajax_pressprimer_quiz_get_available_questions', [ $this, 'ajax_get_available_questions' ] );
 		add_action( 'wp_ajax_pressprimer_quiz_add_quiz_questions', [ $this, 'ajax_add_quiz_questions' ] );

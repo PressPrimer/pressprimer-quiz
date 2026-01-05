@@ -45,6 +45,9 @@ class PressPrimer_Quiz_Admin_Banks {
 
 		// Add screen options on the right hook
 		add_action( 'current_screen', [ $this, 'maybe_add_screen_options' ] );
+
+		// Save screen options
+		add_filter( 'set_screen_option_pressprimer_quiz_banks_per_page', [ $this, 'set_screen_option' ], 10, 3 );
 	}
 
 	/**

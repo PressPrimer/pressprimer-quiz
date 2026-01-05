@@ -56,7 +56,7 @@ class PressPrimer_Quiz_Admin_Banks {
 		$screen = get_current_screen();
 
 		// Only add screen options on the banks list page
-		if ( $screen && 'pressprimer-quiz_page_ppq-banks' === $screen->id ) {
+		if ( $screen && 'pressprimer-quiz_page_pressprimer-quiz-banks' === $screen->id ) {
 			$this->screen_options();
 		}
 	}
@@ -184,7 +184,7 @@ class PressPrimer_Quiz_Admin_Banks {
 			<hr class="wp-header-end">
 
 			<form method="get">
-				<input type="hidden" name="page" value="ppq-banks">
+				<input type="hidden" name="page" value="pressprimer-quiz-banks">
 				<?php
 				$this->list_table->search_box( __( 'Search Banks', 'pressprimer-quiz' ), 'pressprimer-quiz-banks' );
 				$this->list_table->display();
@@ -903,7 +903,7 @@ class PressPrimer_Quiz_Admin_Banks {
 				<h2><?php esc_html_e( 'Questions in Bank', 'pressprimer-quiz' ); ?></h2>
 
 				<form method="get" action="<?php echo esc_url( admin_url( 'admin.php' ) ); ?>#questions-in-bank" class="ppq-filter-form">
-					<input type="hidden" name="page" value="ppq-banks">
+					<input type="hidden" name="page" value="pressprimer-quiz-banks">
 					<input type="hidden" name="action" value="view">
 					<input type="hidden" name="bank_id" value="<?php echo esc_attr( $bank_id ); ?>">
 

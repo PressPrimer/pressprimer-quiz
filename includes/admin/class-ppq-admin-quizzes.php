@@ -63,7 +63,7 @@ class PressPrimer_Quiz_Admin_Quizzes {
 		$screen = get_current_screen();
 
 		// Only add screen options on the quizzes list page
-		if ( $screen && 'pressprimer-quiz_page_ppq-quizzes' === $screen->id ) {
+		if ( $screen && 'pressprimer-quiz_page_pressprimer-quiz-quizzes' === $screen->id ) {
 			$this->screen_options();
 		}
 	}
@@ -300,7 +300,7 @@ class PressPrimer_Quiz_Admin_Quizzes {
 			<hr class="wp-header-end">
 
 			<form method="get">
-				<input type="hidden" name="page" value="ppq-quizzes">
+				<input type="hidden" name="page" value="pressprimer-quiz-quizzes">
 				<?php
 				$this->list_table->search_box( __( 'Search Quizzes', 'pressprimer-quiz' ), 'ppq-quiz' );
 				$this->list_table->display();
@@ -1340,7 +1340,7 @@ class PressPrimer_Quiz_Quizzes_List_Table extends WP_List_Table {
 	 */
 	public function get_hidden_columns() {
 		// Get user's hidden columns preference
-		$hidden = get_user_option( 'managepressprimer-quiz_page_ppq-quizzescolumnshidden' );
+		$hidden = get_user_option( 'managepressprimer-quiz_page_pressprimer-quiz-quizzescolumnshidden' );
 
 		// If not set, return default hidden columns (none hidden by default)
 		if ( false === $hidden ) {

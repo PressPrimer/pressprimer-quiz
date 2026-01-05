@@ -594,8 +594,10 @@ class PressPrimer_Quiz_Quiz_Renderer {
 			<div class="ppq-questions-container" id="ppq-questions-container" role="region" aria-label="<?php esc_attr_e( 'Quiz questions', 'pressprimer-quiz' ); ?>">
 				<?php foreach ( $items as $index => $item ) : ?>
 					<?php
-					// render_question() builds HTML with proper escaping internally; wp_kses_post for late escaping
-					echo wp_kses_post( $this->render_question( $item, $index, count( $items ) ) );
+					// render_question() builds complete question HTML with proper escaping internally
+					// (esc_attr for attributes, esc_html for text, wp_kses_post for user content)
+					// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Method escapes internally
+					echo $this->render_question( $item, $index, count( $items ) );
 					?>
 				<?php endforeach; ?>
 			</div>

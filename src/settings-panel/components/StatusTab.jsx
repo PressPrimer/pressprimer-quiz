@@ -89,7 +89,7 @@ const StatusTab = ({ settingsData }) => {
 	/**
 	 * Format PHP version with requirement check
 	 */
-	const formatVersionWithCheck = (current, required, label) => {
+	const formatVersionWithCheck = (current, required) => {
 		const meetsRequirement = compareVersions(current, required) >= 0;
 		return (
 			<Space>

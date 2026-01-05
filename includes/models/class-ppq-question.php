@@ -752,65 +752,62 @@ class PressPrimer_Quiz_Question extends PressPrimer_Quiz_Model {
 		$table            = static::get_full_table_name();
 		$queryable_fields = static::get_queryable_fields();
 
-		// Build WHERE clause with field validation and escaping
-		$where_clauses = [ 'deleted_at IS NULL' ];
-		$where_values  = [];
+		// Build WHERE clause with field validation using %i placeholder for identifiers.
+		// Start with deleted_at IS NULL (no placeholder needed for this static clause).
+		$where_clauses  = [ 'deleted_at IS NULL' ];
+		$prepare_values = [];
 
 		foreach ( $where as $field => $value ) {
-			// Validate field name against whitelist to prevent SQL injection
+			// Validate field name against whitelist to prevent SQL injection.
 			if ( ! in_array( $field, $queryable_fields, true ) ) {
 				continue;
 			}
 
-			// Escape field name for safe SQL inclusion
-			$safe_field      = esc_sql( $field );
-			$where_clauses[] = "`{$safe_field}` = %s";
-			$where_values[]  = $value;
+			// Use %i for field name (identifier) and %s for value.
+			$where_clauses[]  = '%i = %s';
+			$prepare_values[] = $field;
+			$prepare_values[] = $value;
 		}
 
-		// Build WHERE clause - fields are whitelisted and escaped above
-		$where_sql = 'WHERE ' . implode( ' AND ', $where_clauses );
-
-		// Build ORDER BY with validation and escaping
+		// Build ORDER BY clause with field validation using %i placeholder.
 		$order_by_field = sanitize_key( $args['order_by'] ?? 'id' );
 		if ( ! in_array( $order_by_field, $queryable_fields, true ) ) {
-			$order_by_field = 'id'; // Default to safe field
+			$order_by_field = 'id'; // Default to safe field.
 		}
-		$order_by_field = esc_sql( $order_by_field );
-		$order_dir      = strtoupper( $args['order'] ?? 'DESC' );
-		$order_dir      = in_array( $order_dir, [ 'ASC', 'DESC' ], true ) ? $order_dir : 'DESC';
-		$order_sql      = sanitize_sql_orderby( "{$order_by_field} {$order_dir}" );
-		$order_sql      = $order_sql ? "ORDER BY {$order_sql}" : '';
+		$order_dir = strtoupper( $args['order'] ?? 'DESC' );
+		$order_dir = in_array( $order_dir, [ 'ASC', 'DESC' ], true ) ? $order_dir : 'DESC';
 
-		// Build LIMIT with placeholders
-		$limit_sql = '';
+		// Build LIMIT clause.
+		$limit_sql    = '';
+		$limit_values = [];
 		if ( isset( $args['limit'] ) ) {
 			$limit  = absint( $args['limit'] );
 			$offset = absint( $args['offset'] ?? 0 );
 			if ( $offset > 0 ) {
 				$limit_sql      = 'LIMIT %d, %d';
-				$where_values[] = $offset;
-				$where_values[] = $limit;
+				$limit_values[] = $offset;
+				$limit_values[] = $limit;
 			} else {
 				$limit_sql      = 'LIMIT %d';
-				$where_values[] = $limit;
+				$limit_values[] = $limit;
 			}
 		}
 
-		// Build final query
-		$query = "SELECT * FROM {$table} {$where_sql} {$order_sql} {$limit_sql}";
+		// Build WHERE clause.
+		$where_sql = 'WHERE ' . implode( ' AND ', $where_clauses );
 
-		// Prepare and execute - always prepare if we have any values
-		if ( ! empty( $where_values ) ) {
-			// Field names are whitelisted via get_queryable_fields() and escaped with esc_sql(), values use placeholders
-			// phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- Dynamic query with whitelisted/escaped fields and prepared values
-			$query = $wpdb->prepare( $query, $where_values );
-		}
+		// Build and prepare the query.
+		$query = "SELECT * FROM {$table} {$where_sql} ORDER BY %i {$order_dir} {$limit_sql}";
 
-		// phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- Query prepared above with whitelisted/escaped field names
-		$rows = $wpdb->get_results( $query );
+		// Add order_by field to prepare values.
+		$prepare_values[] = $order_by_field;
+		// Add limit values.
+		$prepare_values = array_merge( $prepare_values, $limit_values );
 
-		// Convert to model instances
+		$query = $wpdb->prepare( $query, $prepare_values );
+		$rows  = $wpdb->get_results( $query );
+
+		// Convert to model instances.
 		$results = [];
 		if ( $rows ) {
 			foreach ( $rows as $row ) {

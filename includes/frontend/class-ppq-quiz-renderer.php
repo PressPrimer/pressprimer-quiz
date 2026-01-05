@@ -82,13 +82,23 @@ class PressPrimer_Quiz_Quiz_Renderer {
 			'tabindex' => true,
 		];
 
-		// Ensure div and span have data attributes.
-		$allowed['div']['data-*']    = true;
-		$allowed['div']['aria-*']    = true;
-		$allowed['div']['tabindex']  = true;
+		// Ensure div and span have data attributes and style.
+		// Note: We add to existing arrays to preserve defaults from wp_kses_allowed_html('post').
+		if ( ! isset( $allowed['div'] ) ) {
+			$allowed['div'] = [];
+		}
+		$allowed['div']['data-*']   = true;
+		$allowed['div']['aria-*']   = true;
+		$allowed['div']['tabindex'] = true;
+		$allowed['div']['style']    = true;
+
+		if ( ! isset( $allowed['span'] ) ) {
+			$allowed['span'] = [];
+		}
 		$allowed['span']['data-*']   = true;
 		$allowed['span']['aria-*']   = true;
 		$allowed['span']['tabindex'] = true;
+		$allowed['span']['style']    = true;
 
 		return $allowed;
 	}

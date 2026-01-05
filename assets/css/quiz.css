@@ -597,6 +597,11 @@
 	border: 0;
 }
 
+/* Hidden utility class - used instead of inline style to avoid wp_kses filtering */
+.ppq-hidden {
+	display: none !important;
+}
+
 /* Skip link - visually hidden until focused */
 .ppq-skip-link {
 	position: absolute;

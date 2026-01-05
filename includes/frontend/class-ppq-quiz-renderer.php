@@ -849,14 +849,14 @@ class PressPrimer_Quiz_Quiz_Renderer {
 			<?php endif; ?>
 
 			<!-- Check Answer button for tutorial mode (hidden in timed mode) -->
-			<div class="ppq-check-answer-container" style="display: none;">
+			<div class="ppq-check-answer-container ppq-hidden">
 				<button type="button" class="ppq-button ppq-button-primary ppq-check-answer-button">
 					<?php esc_html_e( 'Check Answer', 'pressprimer-quiz' ); ?>
 				</button>
 			</div>
 
 			<!-- Feedback container for tutorial mode (hidden until answer checked) -->
-			<div class="ppq-feedback" style="display: none;">
+			<div class="ppq-feedback ppq-hidden">
 				<div class="ppq-feedback-result"></div>
 				<div class="ppq-feedback-text"></div>
 				<button type="button" class="ppq-button ppq-button-primary ppq-continue-button">

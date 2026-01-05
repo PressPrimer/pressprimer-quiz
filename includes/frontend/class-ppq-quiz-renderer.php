@@ -32,6 +32,68 @@ class PressPrimer_Quiz_Quiz_Renderer {
 	private $current_quiz = null;
 
 	/**
+	 * Get allowed HTML tags for quiz question output.
+	 *
+	 * Returns an array of allowed HTML tags and attributes for use with wp_kses().
+	 * Extends wp_kses_post allowed tags to include form elements required for quizzes.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @return array Allowed HTML tags and attributes.
+	 */
+	private function get_question_allowed_html() {
+		// Start with post kses allowed tags.
+		$allowed = wp_kses_allowed_html( 'post' );
+
+		// Add form elements required for quiz functionality.
+		$allowed['input'] = [
+			'type'     => true,
+			'id'       => true,
+			'name'     => true,
+			'value'    => true,
+			'class'    => true,
+			'checked'  => true,
+			'data-*'   => true,
+			'aria-*'   => true,
+			'disabled' => true,
+			'readonly' => true,
+			'required' => true,
+			'tabindex' => true,
+		];
+
+		$allowed['label'] = [
+			'for'      => true,
+			'class'    => true,
+			'id'       => true,
+			'data-*'   => true,
+			'aria-*'   => true,
+			'tabindex' => true,
+		];
+
+		$allowed['button'] = [
+			'type'     => true,
+			'class'    => true,
+			'id'       => true,
+			'name'     => true,
+			'value'    => true,
+			'disabled' => true,
+			'data-*'   => true,
+			'aria-*'   => true,
+			'tabindex' => true,
+		];
+
+		// Ensure div and span have data attributes.
+		$allowed['div']['data-*']    = true;
+		$allowed['div']['aria-*']    = true;
+		$allowed['div']['tabindex']  = true;
+		$allowed['span']['data-*']   = true;
+		$allowed['span']['aria-*']   = true;
+		$allowed['span']['tabindex'] = true;
+
+		return $allowed;
+	}
+
+	/**
 	 * Render quiz landing page
 	 *
 	 * Displays quiz information, previous attempts, and start/resume buttons.
@@ -594,14 +656,9 @@ class PressPrimer_Quiz_Quiz_Renderer {
 			<div class="ppq-questions-container" id="ppq-questions-container" role="region" aria-label="<?php esc_attr_e( 'Quiz questions', 'pressprimer-quiz' ); ?>">
 				<?php foreach ( $items as $index => $item ) : ?>
 					<?php
-					// render_question() builds quiz form HTML with proper escaping internally:
-					// - esc_attr() for all HTML attributes
-					// - esc_html() for text content
-					// - wp_kses_post() for user-generated content (question stems, answer text)
-					// Cannot use wp_kses_post() wrapper here because it strips <input>, <label>,
-					// and <button> elements which are required for the quiz form to function.
-					// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
-					echo $this->render_question( $item, $index, count( $items ) );
+					// Use wp_kses with custom allowed tags that include form elements.
+					// wp_kses_post cannot be used because it strips <input>, <label>, and <button>.
+					echo wp_kses( $this->render_question( $item, $index, count( $items ) ), $this->get_question_allowed_html() );
 					?>
 				<?php endforeach; ?>
 			</div>

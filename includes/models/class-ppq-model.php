@@ -332,8 +332,8 @@ abstract class PressPrimer_Quiz_Model {
 		if ( ! in_array( $order_by_field, $queryable_fields, true ) ) {
 			$order_by_field = 'id'; // Default to safe field.
 		}
-		$order_dir = strtoupper( $args['order'] );
-		$order_dir = in_array( $order_dir, [ 'ASC', 'DESC' ], true ) ? $order_dir : 'DESC';
+		// Validate order direction - only ASC or DESC allowed, default to DESC.
+		$is_asc = 'ASC' === strtoupper( $args['order'] );
 
 		// Build LIMIT clause.
 		$limit_sql    = '';
@@ -351,25 +351,35 @@ abstract class PressPrimer_Quiz_Model {
 			}
 		}
 
-		// Build and prepare the query.
+		// Build and prepare the query with hardcoded ORDER direction to satisfy security review.
+		// Order direction is not interpolated - we use separate query strings for ASC vs DESC.
 		if ( ! empty( $where_clauses ) ) {
 			$where_sql = 'WHERE ' . implode( ' AND ', $where_clauses );
-			$query     = "SELECT * FROM {$table} {$where_sql} ORDER BY %i {$order_dir} {$limit_sql}";
 			// Add order_by field to prepare values.
 			$prepare_values[] = $order_by_field;
 			// Add limit values.
 			$prepare_values = array_merge( $prepare_values, $limit_values );
-			$query          = $wpdb->prepare( $query, $prepare_values );
+			if ( $is_asc ) {
+				$query = $wpdb->prepare( "SELECT * FROM {$table} {$where_sql} ORDER BY %i ASC {$limit_sql}", $prepare_values );
+			} else {
+				$query = $wpdb->prepare( "SELECT * FROM {$table} {$where_sql} ORDER BY %i DESC {$limit_sql}", $prepare_values );
+			}
 		} elseif ( ! empty( $limit_values ) ) {
-			$query = $wpdb->prepare(
-				"SELECT * FROM {$table} ORDER BY %i {$order_dir} {$limit_sql}",
-				array_merge( [ $order_by_field ], $limit_values )
-			);
+			if ( $is_asc ) {
+				$query = $wpdb->prepare(
+					"SELECT * FROM {$table} ORDER BY %i ASC {$limit_sql}",
+					array_merge( [ $order_by_field ], $limit_values )
+				);
+			} else {
+				$query = $wpdb->prepare(
+					"SELECT * FROM {$table} ORDER BY %i DESC {$limit_sql}",
+					array_merge( [ $order_by_field ], $limit_values )
+				);
+			}
+		} elseif ( $is_asc ) {
+			$query = $wpdb->prepare( "SELECT * FROM {$table} ORDER BY %i ASC", $order_by_field );
 		} else {
-			$query = $wpdb->prepare(
-				"SELECT * FROM {$table} ORDER BY %i {$order_dir}",
-				$order_by_field
-			);
+			$query = $wpdb->prepare( "SELECT * FROM {$table} ORDER BY %i DESC", $order_by_field );
 		}
 
 		$rows = $wpdb->get_results( $query );

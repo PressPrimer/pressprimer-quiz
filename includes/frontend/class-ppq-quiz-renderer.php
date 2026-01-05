@@ -594,9 +594,13 @@ class PressPrimer_Quiz_Quiz_Renderer {
 			<div class="ppq-questions-container" id="ppq-questions-container" role="region" aria-label="<?php esc_attr_e( 'Quiz questions', 'pressprimer-quiz' ); ?>">
 				<?php foreach ( $items as $index => $item ) : ?>
 					<?php
-					// render_question() builds complete question HTML with proper escaping internally
-					// (esc_attr for attributes, esc_html for text, wp_kses_post for user content)
-					// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Method escapes internally
+					// render_question() builds quiz form HTML with proper escaping internally:
+					// - esc_attr() for all HTML attributes
+					// - esc_html() for text content
+					// - wp_kses_post() for user-generated content (question stems, answer text)
+					// Cannot use wp_kses_post() wrapper here because it strips <input>, <label>,
+					// and <button> elements which are required for the quiz form to function.
+					// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
 					echo $this->render_question( $item, $index, count( $items ) );
 					?>
 				<?php endforeach; ?>

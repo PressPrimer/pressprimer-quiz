@@ -262,6 +262,8 @@ class PressPrimer_Quiz_Schema {
 			theme_settings_json TEXT DEFAULT NULL,
 			band_feedback_json TEXT DEFAULT NULL,
 			generation_mode ENUM('fixed', 'dynamic') NOT NULL DEFAULT 'fixed',
+			access_mode VARCHAR(20) NOT NULL DEFAULT 'default',
+			login_message TEXT DEFAULT NULL,
 			created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
 			updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
 			PRIMARY KEY  (id),

@@ -399,6 +399,44 @@ This creates `dist/pressprimer-quiz.zip`
 
 ---
 
+## Commit Message Conventions
+
+Use these prefixes for commit messages. They map to changelog entries:
+
+| Prefix | Changelog Shows As | Example |
+|--------|-------------------|---------|
+| `feat:` | **Added** | `feat: add user groups` |
+| `fix:` | **Fixed** | `fix: correct score display` |
+| `perf:` | **Improved** | `perf: speed up results loading` |
+| `refactor:` | **Changed** | `refactor: simplify scoring logic` |
+
+For work-in-progress commits that should NOT appear in changelog:
+
+| Prefix | Purpose |
+|--------|---------|
+| `wip:` | Work in progress, not ready for release |
+
+### Examples
+
+```bash
+# Feature addition
+git commit -m "feat: add require login option for quizzes"
+
+# Bug fix
+git commit -m "fix: prevent duplicate quiz submissions"
+
+# Performance improvement
+git commit -m "perf: cache quiz statistics queries"
+
+# Refactoring (no new functionality)
+git commit -m "refactor: extract scoring logic to service class"
+
+# Work in progress
+git commit -m "wip: branching logic - question routing incomplete"
+```
+
+---
+
 ## Pre-Release Checklist
 
 Before creating a release ZIP:

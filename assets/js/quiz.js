@@ -47,18 +47,32 @@
 			}
 
 			// Check if user is guest and get email
+			const $emailForm = $('.ppq-guest-email-form');
 			const $emailInput = $('#ppq-guest-email');
 			let guestEmail = '';
+			const emailRequired = $emailForm.length && $emailForm.data('email-required') === 1;
 
 			if ($emailInput.length) {
 				guestEmail = $emailInput.val().trim();
 
-				// Validate email if provided
+				// Check if email is required
+				if (emailRequired && !guestEmail) {
+					this.showError(ppqQuiz.strings.emailRequired);
+					$emailInput.focus();
+					$emailInput.addClass('ppq-input-error');
+					return;
+				}
+
+				// Validate email format if provided
 				if (guestEmail && !this.isValidEmail(guestEmail)) {
 					this.showError(pressprimerQuiz.strings.emailRequired);
 					$emailInput.focus();
+					$emailInput.addClass('ppq-input-error');
 					return;
 				}
+
+				// Clear error state
+				$emailInput.removeClass('ppq-input-error');
 			}
 
 			// Disable button and show loading state

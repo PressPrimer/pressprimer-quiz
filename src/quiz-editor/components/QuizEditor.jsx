@@ -76,6 +76,8 @@ const QuizEditor = ({ quizData = {} }) => {
 				max_attempts: quizData.max_attempts || null,
 				attempt_delay_minutes: quizData.attempt_delay_minutes || 0,
 				generation_mode: quizData.generation_mode || 'fixed',
+				access_mode: quizData.access_mode || 'default',
+				login_message: quizData.login_message || '',
 			});
 
 			if (quizData.generation_mode) {
@@ -269,6 +271,8 @@ const QuizEditor = ({ quizData = {} }) => {
 						theme: 'default',
 						generation_mode: 'fixed',
 						attempt_delay_minutes: 0,
+						access_mode: 'default',
+						login_message: '',
 					}}
 				>
 					{/* Header */}

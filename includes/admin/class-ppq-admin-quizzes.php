@@ -694,6 +694,8 @@ class PressPrimer_Quiz_Admin_Quizzes {
 					'attempt_delay_minutes' => $quiz->attempt_delay_minutes,
 					'generation_mode'       => $quiz->generation_mode,
 					'band_feedback_json'    => $quiz->band_feedback_json,
+					'access_mode'           => $quiz->access_mode,
+					'login_message'         => $quiz->login_message,
 				];
 			}
 		} else {
@@ -1154,9 +1156,9 @@ class PressPrimer_Quiz_Admin_Quizzes {
 
 		// Exclude questions already in quiz
 		if ( $quiz_id ) {
-			$items_table = $wpdb->prefix . 'ppq_quiz_items';
-			$query      .= $wpdb->prepare(
-				" AND q.id NOT IN (SELECT question_id FROM {$items_table} WHERE quiz_id = %d)",
+			$query .= $wpdb->prepare(
+				' AND q.id NOT IN (SELECT question_id FROM %i WHERE quiz_id = %d)',
+				$wpdb->prefix . 'ppq_quiz_items',
 				$quiz_id
 			);
 		}

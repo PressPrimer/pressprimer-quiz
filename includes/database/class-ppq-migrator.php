@@ -108,18 +108,66 @@ class PressPrimer_Quiz_Migrator {
 	 * @param string $to_version   Version migrating to.
 	 */
 	private static function run_data_migrations( $from_version, $to_version ) {
-		// Example: If upgrading from version before 1.1.0
-		// if ( version_compare( $from_version, '1.1.0', '<' ) ) {
-		// self::migrate_to_1_1_0();
-		// }
+		// Version 2.0.1: Add access_mode and login_message columns
+		if ( version_compare( $from_version, '2.0.1', '<' ) ) {
+			self::migrate_to_2_0_1();
+		}
+	}
 
-		// Example: If upgrading from version before 1.2.0
-		// if ( version_compare( $from_version, '1.2.0', '<' ) ) {
-		// self::migrate_to_1_2_0();
-		// }
+	/**
+	 * Migration to version 2.0.1
+	 *
+	 * Adds access_mode and login_message columns to quizzes table.
+	 *
+	 * @since 2.0.1
+	 */
+	private static function migrate_to_2_0_1() {
+		global $wpdb;
 
-		// For version 1.0.0, no data migrations needed
-		// Data migrations will be added in future versions
+		$table_name = $wpdb->prefix . 'ppq_quizzes';
+
+		// Check if access_mode column exists
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching
+		$column_exists = $wpdb->get_results(
+			$wpdb->prepare(
+				'SHOW COLUMNS FROM %i LIKE %s',
+				$table_name,
+				'access_mode'
+			)
+		);
+
+		if ( empty( $column_exists ) ) {
+			// Add access_mode column
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.DirectDatabaseQuery.SchemaChange
+			$wpdb->query(
+				$wpdb->prepare(
+					'ALTER TABLE %i ADD COLUMN access_mode VARCHAR(20) NOT NULL DEFAULT %s',
+					$table_name,
+					'default'
+				)
+			);
+		}
+
+		// Check if login_message column exists
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching
+		$column_exists = $wpdb->get_results(
+			$wpdb->prepare(
+				'SHOW COLUMNS FROM %i LIKE %s',
+				$table_name,
+				'login_message'
+			)
+		);
+
+		if ( empty( $column_exists ) ) {
+			// Add login_message column
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.DirectDatabaseQuery.SchemaChange
+			$wpdb->query(
+				$wpdb->prepare(
+					'ALTER TABLE %i ADD COLUMN login_message TEXT DEFAULT NULL',
+					$table_name
+				)
+			);
+		}
 	}
 
 	/**

@@ -1156,9 +1156,9 @@ class PressPrimer_Quiz_Admin_Quizzes {
 
 		// Exclude questions already in quiz
 		if ( $quiz_id ) {
-			$items_table = $wpdb->prefix . 'ppq_quiz_items';
-			$query      .= $wpdb->prepare(
-				" AND q.id NOT IN (SELECT question_id FROM {$items_table} WHERE quiz_id = %d)",
+			$query .= $wpdb->prepare(
+				' AND q.id NOT IN (SELECT question_id FROM %i WHERE quiz_id = %d)',
+				$wpdb->prefix . 'ppq_quiz_items',
 				$quiz_id
 			);
 		}

@@ -480,7 +480,7 @@ class PressPrimer_Quiz_Attempt extends PressPrimer_Quiz_Model {
 		$existing_in_progress = null;
 
 		// Check cookie for existing token
-		$cookie_token = isset( $_COOKIE['ppq_guest_token'] ) ? sanitize_text_field( wp_unslash( $_COOKIE['ppq_guest_token'] ) ) : '';
+		$cookie_token = isset( $_COOKIE['pressprimer_quiz_guest_token'] ) ? sanitize_text_field( wp_unslash( $_COOKIE['pressprimer_quiz_guest_token'] ) ) : '';
 
 		if ( $cookie_token ) {
 			$token_attempt = static::get_by_token( $cookie_token );
@@ -531,7 +531,7 @@ class PressPrimer_Quiz_Attempt extends PressPrimer_Quiz_Model {
 				// Set cookie for returning guest so they can access their attempt
 				if ( $existing_in_progress->guest_token ) {
 					setcookie(
-						'ppq_guest_token',
+						'pressprimer_quiz_guest_token',
 						$existing_in_progress->guest_token,
 						[
 							'expires'  => time() + WEEK_IN_SECONDS,
@@ -655,7 +655,7 @@ class PressPrimer_Quiz_Attempt extends PressPrimer_Quiz_Model {
 
 		// Set guest token cookie (7 days)
 		setcookie(
-			'ppq_guest_token',
+			'pressprimer_quiz_guest_token',
 			$token,
 			[
 				'expires'  => time() + WEEK_IN_SECONDS,

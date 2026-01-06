@@ -1127,7 +1127,7 @@ class PressPrimer_Quiz_Results_Renderer {
 	private function get_retake_url( $quiz ) {
 		// Remove attempt/token parameters and add retake flag
 		$url = remove_query_arg( [ 'attempt', 'token', 'timed_out' ] );
-		return add_query_arg( 'ppq_retake', '1', $url );
+		return add_query_arg( 'pressprimer_quiz_retake', '1', $url );
 	}
 
 	/**

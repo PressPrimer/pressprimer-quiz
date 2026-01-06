@@ -220,7 +220,7 @@ class PressPrimer_Quiz_TutorLMS {
 		// Localize script with nonces and translatable strings.
 		wp_localize_script(
 			'ppq-admin',
-			'ppqTutorLMSMetaBox',
+			'pressPrimerQuizTutorLMSMetaBox',
 			[
 				'nonce'   => wp_create_nonce( 'pressprimer_quiz_tutorlms_search' ),
 				'strings' => [
@@ -297,7 +297,7 @@ class PressPrimer_Quiz_TutorLMS {
 
 		// Inline JavaScript for meta box functionality.
 		$inline_script = 'jQuery(document).ready(function($) {' .
-			'var config = window.ppqTutorLMSMetaBox || {};' .
+			'var config = window.pressPrimerQuizTutorLMSMetaBox || {};' .
 			'var searchTimeout;' .
 			'var $search = $("#ppq_quiz_search");' .
 			'var $results = $("#ppq_quiz_results");' .

@@ -48,6 +48,9 @@ class PressPrimer_Quiz_Admin_Quizzes {
 		// Add screen options on the right hook
 		add_action( 'current_screen', [ $this, 'maybe_add_screen_options' ] );
 
+		// Save screen options
+		add_filter( 'set_screen_option_pressprimer_quiz_quizzes_per_page', [ $this, 'set_screen_option' ], 10, 3 );
+
 		// Register AJAX handlers
 		add_action( 'wp_ajax_pressprimer_quiz_get_available_questions', [ $this, 'ajax_get_available_questions' ] );
 		add_action( 'wp_ajax_pressprimer_quiz_add_quiz_questions', [ $this, 'ajax_add_quiz_questions' ] );
@@ -63,7 +66,7 @@ class PressPrimer_Quiz_Admin_Quizzes {
 		$screen = get_current_screen();
 
 		// Only add screen options on the quizzes list page
-		if ( $screen && 'pressprimer-quiz_page_ppq-quizzes' === $screen->id ) {
+		if ( $screen && 'pressprimer-quiz_page_pressprimer-quiz-quizzes' === $screen->id ) {
 			$this->screen_options();
 		}
 	}
@@ -300,7 +303,7 @@ class PressPrimer_Quiz_Admin_Quizzes {
 			<hr class="wp-header-end">
 
 			<form method="get">
-				<input type="hidden" name="page" value="ppq-quizzes">
+				<input type="hidden" name="page" value="pressprimer-quiz-quizzes">
 				<?php
 				$this->list_table->search_box( __( 'Search Quizzes', 'pressprimer-quiz' ), 'ppq-quiz' );
 				$this->list_table->display();
@@ -804,18 +807,18 @@ class PressPrimer_Quiz_Admin_Quizzes {
 				global $wpdb;
 				$items_table = $wpdb->prefix . 'ppq_quiz_items';
 
-				// Sanitize the entire item_weights array
-				// phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- Array is sanitized element-by-element below
-				$item_weights_raw = wp_unslash( $_POST['item_weights'] );
-				foreach ( $item_weights_raw as $item_id => $weight ) {
-					// Sanitize item_id as integer
+				// Sanitize the entire item_weights array upfront
+				$item_weights_sanitized = array_map( 'sanitize_text_field', wp_unslash( $_POST['item_weights'] ) );
+
+				foreach ( $item_weights_sanitized as $item_id => $weight ) {
+					// Validate and sanitize item_id as integer
 					$item_id = absint( $item_id );
 					if ( ! $item_id ) {
 						continue;
 					}
 
-					// Sanitize and validate weight as float
-					$weight = floatval( sanitize_text_field( $weight ) );
+					// Convert sanitized weight to float
+					$weight = floatval( $weight );
 
 					// Validate weight range (0-100)
 					if ( $weight < 0 || $weight > 100 ) {
@@ -1340,7 +1343,7 @@ class PressPrimer_Quiz_Quizzes_List_Table extends WP_List_Table {
 	 */
 	public function get_hidden_columns() {
 		// Get user's hidden columns preference
-		$hidden = get_user_option( 'managepressprimer-quiz_page_ppq-quizzescolumnshidden' );
+		$hidden = get_user_option( 'managepressprimer-quiz_page_pressprimer-quiz-quizzescolumnshidden' );
 
 		// If not set, return default hidden columns (none hidden by default)
 		if ( false === $hidden ) {

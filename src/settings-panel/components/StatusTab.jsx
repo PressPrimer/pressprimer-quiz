@@ -51,7 +51,7 @@ const StatusTab = ({ settingsData }) => {
 
 		try {
 			const formData = new FormData();
-			formData.append('action', 'ppq_repair_database_tables');
+			formData.append('action', 'pressprimer_quiz_repair_database_tables');
 			formData.append('nonce', nonces.repairTables);
 
 			const response = await fetch(window.ajaxurl, {
@@ -89,7 +89,7 @@ const StatusTab = ({ settingsData }) => {
 	/**
 	 * Format PHP version with requirement check
 	 */
-	const formatVersionWithCheck = (current, required, label) => {
+	const formatVersionWithCheck = (current, required) => {
 		const meetsRequirement = compareVersions(current, required) >= 0;
 		return (
 			<Space>

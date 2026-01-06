@@ -32,6 +32,78 @@ class PressPrimer_Quiz_Quiz_Renderer {
 	private $current_quiz = null;
 
 	/**
+	 * Get allowed HTML tags for quiz question output.
+	 *
+	 * Returns an array of allowed HTML tags and attributes for use with wp_kses().
+	 * Extends wp_kses_post allowed tags to include form elements required for quizzes.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @return array Allowed HTML tags and attributes.
+	 */
+	private function get_question_allowed_html() {
+		// Start with post kses allowed tags.
+		$allowed = wp_kses_allowed_html( 'post' );
+
+		// Add form elements required for quiz functionality.
+		$allowed['input'] = [
+			'type'     => true,
+			'id'       => true,
+			'name'     => true,
+			'value'    => true,
+			'class'    => true,
+			'checked'  => true,
+			'data-*'   => true,
+			'aria-*'   => true,
+			'disabled' => true,
+			'readonly' => true,
+			'required' => true,
+			'tabindex' => true,
+		];
+
+		$allowed['label'] = [
+			'for'      => true,
+			'class'    => true,
+			'id'       => true,
+			'data-*'   => true,
+			'aria-*'   => true,
+			'tabindex' => true,
+		];
+
+		$allowed['button'] = [
+			'type'     => true,
+			'class'    => true,
+			'id'       => true,
+			'name'     => true,
+			'value'    => true,
+			'disabled' => true,
+			'data-*'   => true,
+			'aria-*'   => true,
+			'tabindex' => true,
+		];
+
+		// Ensure div and span have data attributes and style.
+		// Note: We add to existing arrays to preserve defaults from wp_kses_allowed_html('post').
+		if ( ! isset( $allowed['div'] ) ) {
+			$allowed['div'] = [];
+		}
+		$allowed['div']['data-*']   = true;
+		$allowed['div']['aria-*']   = true;
+		$allowed['div']['tabindex'] = true;
+		$allowed['div']['style']    = true;
+
+		if ( ! isset( $allowed['span'] ) ) {
+			$allowed['span'] = [];
+		}
+		$allowed['span']['data-*']   = true;
+		$allowed['span']['aria-*']   = true;
+		$allowed['span']['tabindex'] = true;
+		$allowed['span']['style']    = true;
+
+		return $allowed;
+	}
+
+	/**
 	 * Render quiz landing page
 	 *
 	 * Displays quiz information, previous attempts, and start/resume buttons.
@@ -594,8 +666,9 @@ class PressPrimer_Quiz_Quiz_Renderer {
 			<div class="ppq-questions-container" id="ppq-questions-container" role="region" aria-label="<?php esc_attr_e( 'Quiz questions', 'pressprimer-quiz' ); ?>">
 				<?php foreach ( $items as $index => $item ) : ?>
 					<?php
-					// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- render_question() returns trusted HTML with properly escaped values
-					echo $this->render_question( $item, $index, count( $items ) );
+					// Use wp_kses with custom allowed tags that include form elements.
+					// wp_kses_post cannot be used because it strips <input>, <label>, and <button>.
+					echo wp_kses( $this->render_question( $item, $index, count( $items ) ), $this->get_question_allowed_html() );
 					?>
 				<?php endforeach; ?>
 			</div>
@@ -776,14 +849,14 @@ class PressPrimer_Quiz_Quiz_Renderer {
 			<?php endif; ?>
 
 			<!-- Check Answer button for tutorial mode (hidden in timed mode) -->
-			<div class="ppq-check-answer-container" style="display: none;">
+			<div class="ppq-check-answer-container ppq-hidden">
 				<button type="button" class="ppq-button ppq-button-primary ppq-check-answer-button">
 					<?php esc_html_e( 'Check Answer', 'pressprimer-quiz' ); ?>
 				</button>
 			</div>
 
 			<!-- Feedback container for tutorial mode (hidden until answer checked) -->
-			<div class="ppq-feedback" style="display: none;">
+			<div class="ppq-feedback ppq-hidden">
 				<div class="ppq-feedback-result"></div>
 				<div class="ppq-feedback-text"></div>
 				<button type="button" class="ppq-button ppq-button-primary ppq-continue-button">

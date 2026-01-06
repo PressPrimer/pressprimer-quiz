@@ -302,64 +302,87 @@ abstract class PressPrimer_Quiz_Model {
 		$args  = wp_parse_args( $args, $defaults );
 		$table = static::get_full_table_name();
 
-		// Build WHERE clause with field validation
+		// Build WHERE clause with field validation using %i placeholder for identifiers
 		$where_clauses    = [];
-		$where_values     = [];
+		$prepare_values   = [];
 		$queryable_fields = static::get_queryable_fields();
 
 		if ( ! empty( $args['where'] ) ) {
 			foreach ( $args['where'] as $field => $value ) {
-				// Validate field name against whitelist to prevent SQL injection
+				// Validate field name against whitelist to prevent SQL injection.
 				if ( ! in_array( $field, $queryable_fields, true ) ) {
 					continue;
 				}
 
 				if ( null === $value ) {
-					// Use IS NULL for null values
-					$where_clauses[] = "`{$field}` IS NULL";
+					// Use IS NULL for null values - field uses %i placeholder.
+					$where_clauses[]  = '%i IS NULL';
+					$prepare_values[] = $field;
 				} else {
-					$where_clauses[] = "`{$field}` = %s";
-					$where_values[]  = $value;
+					// Use %i for field name (identifier) and %s for value.
+					$where_clauses[]  = '%i = %s';
+					$prepare_values[] = $field;
+					$prepare_values[] = $value;
 				}
 			}
 		}
 
-		$where_sql = ! empty( $where_clauses )
-			? 'WHERE ' . implode( ' AND ', $where_clauses )
-			: '';
-
-		// Build ORDER BY clause with field validation
+		// Build ORDER BY clause with field validation using %i placeholder.
 		$order_by_field = $args['order_by'];
 		if ( ! in_array( $order_by_field, $queryable_fields, true ) ) {
-			$order_by_field = 'id'; // Default to safe field
+			$order_by_field = 'id'; // Default to safe field.
 		}
-		$order_by  = sanitize_sql_orderby( "{$order_by_field} {$args['order']}" );
-		$order_sql = $order_by ? "ORDER BY {$order_by}" : '';
+		// Validate order direction - only ASC or DESC allowed, default to DESC.
+		$is_asc = 'ASC' === strtoupper( $args['order'] );
 
-		// Build LIMIT clause
-		$limit_sql = '';
+		// Build LIMIT clause.
+		$limit_sql    = '';
+		$limit_values = [];
 		if ( null !== $args['limit'] ) {
 			$limit  = absint( $args['limit'] );
 			$offset = absint( $args['offset'] ?? 0 );
 			if ( $offset > 0 ) {
 				$limit_sql      = 'LIMIT %d, %d';
-				$where_values[] = $offset;
-				$where_values[] = $limit;
+				$limit_values[] = $offset;
+				$limit_values[] = $limit;
 			} else {
 				$limit_sql      = 'LIMIT %d';
-				$where_values[] = $limit;
+				$limit_values[] = $limit;
 			}
 		}
 
-		// Build final query
-		$query = "SELECT * FROM {$table} {$where_sql} {$order_sql} {$limit_sql}";
-
-		// Prepare and execute - always prepare if we have any values (WHERE or LIMIT)
-		if ( ! empty( $where_values ) ) {
-			$query = $wpdb->prepare( $query, $where_values ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- Query built with placeholders
+		// Build and prepare the query with hardcoded ORDER direction to satisfy security review.
+		// Order direction is not interpolated - we use separate query strings for ASC vs DESC.
+		if ( ! empty( $where_clauses ) ) {
+			$where_sql = 'WHERE ' . implode( ' AND ', $where_clauses );
+			// Add order_by field to prepare values.
+			$prepare_values[] = $order_by_field;
+			// Add limit values.
+			$prepare_values = array_merge( $prepare_values, $limit_values );
+			if ( $is_asc ) {
+				$query = $wpdb->prepare( "SELECT * FROM {$table} {$where_sql} ORDER BY %i ASC {$limit_sql}", $prepare_values );
+			} else {
+				$query = $wpdb->prepare( "SELECT * FROM {$table} {$where_sql} ORDER BY %i DESC {$limit_sql}", $prepare_values );
+			}
+		} elseif ( ! empty( $limit_values ) ) {
+			if ( $is_asc ) {
+				$query = $wpdb->prepare(
+					"SELECT * FROM {$table} ORDER BY %i ASC {$limit_sql}",
+					array_merge( [ $order_by_field ], $limit_values )
+				);
+			} else {
+				$query = $wpdb->prepare(
+					"SELECT * FROM {$table} ORDER BY %i DESC {$limit_sql}",
+					array_merge( [ $order_by_field ], $limit_values )
+				);
+			}
+		} elseif ( $is_asc ) {
+			$query = $wpdb->prepare( "SELECT * FROM {$table} ORDER BY %i ASC", $order_by_field );
+		} else {
+			$query = $wpdb->prepare( "SELECT * FROM {$table} ORDER BY %i DESC", $order_by_field );
 		}
 
-		$rows = $wpdb->get_results( $query ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared,WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Custom table queries with dynamic conditions
+		$rows = $wpdb->get_results( $query );
 
 		// Convert rows to model instances
 		$results = [];
@@ -387,36 +410,38 @@ abstract class PressPrimer_Quiz_Model {
 
 		$table = static::get_full_table_name();
 
-		// Build WHERE clause with field validation
+		// Build WHERE clause with field validation using %i placeholder for identifiers.
 		$where_clauses    = [];
-		$where_values     = [];
+		$prepare_values   = [];
 		$queryable_fields = static::get_queryable_fields();
 
 		if ( ! empty( $where ) ) {
 			foreach ( $where as $field => $value ) {
-				// Validate field name against whitelist to prevent SQL injection
+				// Validate field name against whitelist to prevent SQL injection.
 				if ( ! in_array( $field, $queryable_fields, true ) ) {
 					continue;
 				}
 
-				$where_clauses[] = "`{$field}` = %s";
-				$where_values[]  = $value;
+				// Use %i for field name (identifier) and %s for value.
+				$where_clauses[]  = '%i = %s';
+				$prepare_values[] = $field;
+				$prepare_values[] = $value;
 			}
 		}
 
-		$where_sql = ! empty( $where_clauses )
-			? 'WHERE ' . implode( ' AND ', $where_clauses )
-			: '';
-
-		// Build query
-		$query = "SELECT COUNT(*) FROM {$table} {$where_sql}";
-
-		// Prepare and execute
-		if ( ! empty( $where_values ) ) {
-			$query = $wpdb->prepare( $query, $where_values ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
+		// Build and prepare query.
+		if ( ! empty( $where_clauses ) ) {
+			$where_sql = 'WHERE ' . implode( ' AND ', $where_clauses );
+			$query     = $wpdb->prepare(
+				"SELECT COUNT(*) FROM {$table} {$where_sql}",
+				$prepare_values
+			);
+		} else {
+			// No WHERE clause, no preparation needed.
+			$query = "SELECT COUNT(*) FROM {$table}";
 		}
 
-		return (int) $wpdb->get_var( $query ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared,WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Custom table count queries
+		return (int) $wpdb->get_var( $query );
 	}
 
 	/**

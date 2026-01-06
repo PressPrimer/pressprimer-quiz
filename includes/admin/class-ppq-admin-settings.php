@@ -627,7 +627,7 @@ Good luck with your studies!',
 		// Localize dynamic data for the inline script.
 		wp_localize_script(
 			'ppq-admin',
-			'ppqSiteApiKey',
+			'pressPrimerQuizSiteApiKey',
 			[
 				'nonce'   => wp_create_nonce( 'pressprimer_quiz_site_api_key' ),
 				'strings' => [
@@ -643,7 +643,7 @@ Good luck with your studies!',
 		);
 
 		$inline_script = 'jQuery(document).ready(function($) {' .
-			'var config = window.ppqSiteApiKey || {};' .
+			'var config = window.pressPrimerQuizSiteApiKey || {};' .
 			'var strings = config.strings || {};' .
 			'var nonce = config.nonce || "";' .
 			'$("#ppq-save-site-key").on("click", function() {' .
@@ -1029,7 +1029,7 @@ Good luck with your studies!',
 		// Localize dynamic data for the inline script.
 		wp_localize_script(
 			'ppq-admin',
-			'ppqApiKeySettings',
+			'pressPrimerQuizApiKeySettings',
 			[
 				'nonce'   => wp_create_nonce( 'pressprimer_quiz_api_key_nonce' ),
 				'strings' => [
@@ -1048,7 +1048,7 @@ Good luck with your studies!',
 		);
 
 		$inline_script = 'jQuery(document).ready(function($) {' .
-			'var config = window.ppqApiKeySettings || {};' .
+			'var config = window.pressPrimerQuizApiKeySettings || {};' .
 			'var strings = config.strings || {};' .
 			'var nonce = config.nonce || "";' .
 			'var PPQ_APIKey = {' .
@@ -1247,7 +1247,7 @@ Good luck with your studies!',
 	 * @return array|false Usage data or false if no data.
 	 */
 	private function get_user_usage_data( $user_id ) {
-		$key           = 'ppq_ai_requests_' . $user_id;
+		$key           = 'pressprimer_quiz_ai_requests_' . $user_id;
 		$requests      = (int) get_transient( $key );
 		$rate_limit    = PressPrimer_Quiz_AI_Service::RATE_LIMIT_PER_HOUR;
 		$remaining     = max( 0, $rate_limit - $requests );

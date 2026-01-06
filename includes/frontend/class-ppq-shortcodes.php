@@ -110,7 +110,7 @@ class PressPrimer_Quiz_Shortcodes {
 
 		// Check if user wants to retake - ignore attempt parameter if retake is requested
 		// phpcs:disable WordPress.Security.NonceVerification.Recommended -- Read-only URL parameters for quiz display
-		$is_retake = isset( $_GET['ppq_retake'] ) && '1' === sanitize_text_field( wp_unslash( $_GET['ppq_retake'] ) );
+		$is_retake = isset( $_GET['pressprimer_quiz_retake'] ) && '1' === sanitize_text_field( wp_unslash( $_GET['pressprimer_quiz_retake'] ) );
 
 		// Check if user is viewing an in-progress or submitted attempt
 		$attempt_id = isset( $_GET['attempt'] ) ? absint( wp_unslash( $_GET['attempt'] ) ) : 0;
@@ -166,7 +166,7 @@ class PressPrimer_Quiz_Shortcodes {
 			// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only token for guest access verification
 			$token = isset( $_GET['token'] ) ? sanitize_text_field( wp_unslash( $_GET['token'] ) ) : '';
 			if ( ! $token ) {
-				$token = isset( $_COOKIE['ppq_guest_token'] ) ? sanitize_text_field( wp_unslash( $_COOKIE['ppq_guest_token'] ) ) : '';
+				$token = isset( $_COOKIE['pressprimer_quiz_guest_token'] ) ? sanitize_text_field( wp_unslash( $_COOKIE['pressprimer_quiz_guest_token'] ) ) : '';
 			}
 
 			if ( $token === $attempt->guest_token ) {
@@ -321,8 +321,8 @@ class PressPrimer_Quiz_Shortcodes {
 		$filter_to     = isset( $_GET['filter_to'] ) ? sanitize_text_field( wp_unslash( $_GET['filter_to'] ) ) : '';
 		$sort_by       = isset( $_GET['sort_by'] ) ? sanitize_text_field( wp_unslash( $_GET['sort_by'] ) ) : 'date';
 		$sort_order    = isset( $_GET['sort_order'] ) ? sanitize_text_field( wp_unslash( $_GET['sort_order'] ) ) : 'desc';
-		// Use ppq_paged to avoid conflict with WordPress's internal 'paged' parameter
-		$paged = isset( $_GET['ppq_paged'] ) ? absint( wp_unslash( $_GET['ppq_paged'] ) ) : 1;
+		// Use pressprimer_quiz_paged to avoid conflict with WordPress's internal 'paged' parameter
+		$paged = isset( $_GET['pressprimer_quiz_paged'] ) ? absint( wp_unslash( $_GET['pressprimer_quiz_paged'] ) ) : 1;
 		// phpcs:enable WordPress.Security.NonceVerification.Recommended
 
 		// Build query
@@ -514,22 +514,22 @@ class PressPrimer_Quiz_Shortcodes {
 				<?php if ( $total_pages > 1 ) : ?>
 					<div class="ppq-pagination">
 						<?php
-						$base_url = remove_query_arg( 'ppq_paged' );
+						$base_url = remove_query_arg( 'pressprimer_quiz_paged' );
 
 						// Previous
 						if ( $paged > 1 ) {
-							echo '<a href="' . esc_url( add_query_arg( 'ppq_paged', $paged - 1, $base_url ) ) . '" class="ppq-page-link ppq-prev">&laquo; ' . esc_html__( 'Previous', 'pressprimer-quiz' ) . '</a>';
+							echo '<a href="' . esc_url( add_query_arg( 'pressprimer_quiz_paged', $paged - 1, $base_url ) ) . '" class="ppq-page-link ppq-prev">&laquo; ' . esc_html__( 'Previous', 'pressprimer-quiz' ) . '</a>';
 						}
 
 						// Page numbers
 						for ( $i = 1; $i <= $total_pages; $i++ ) {
 							$class = $i === $paged ? 'ppq-page-link ppq-current' : 'ppq-page-link';
-							echo '<a href="' . esc_url( add_query_arg( 'ppq_paged', $i, $base_url ) ) . '" class="' . esc_attr( $class ) . '">' . esc_html( $i ) . '</a>';
+							echo '<a href="' . esc_url( add_query_arg( 'pressprimer_quiz_paged', $i, $base_url ) ) . '" class="' . esc_attr( $class ) . '">' . esc_html( $i ) . '</a>';
 						}
 
 						// Next
 						if ( $paged < $total_pages ) {
-							echo '<a href="' . esc_url( add_query_arg( 'ppq_paged', $paged + 1, $base_url ) ) . '" class="ppq-page-link ppq-next">' . esc_html__( 'Next', 'pressprimer-quiz' ) . ' &raquo;</a>';
+							echo '<a href="' . esc_url( add_query_arg( 'pressprimer_quiz_paged', $paged + 1, $base_url ) ) . '" class="ppq-page-link ppq-next">' . esc_html__( 'Next', 'pressprimer-quiz' ) . ' &raquo;</a>';
 						}
 						?>
 					</div>
@@ -613,7 +613,7 @@ class PressPrimer_Quiz_Shortcodes {
 							<?php esc_html_e( 'View Results', 'pressprimer-quiz' ); ?>
 						</a>
 						<?php if ( $this->can_retake_quiz( $quiz, $attempt ) ) : ?>
-							<?php $retake_url = add_query_arg( 'ppq_retake', '1', $quiz_page_url ); ?>
+							<?php $retake_url = add_query_arg( 'pressprimer_quiz_retake', '1', $quiz_page_url ); ?>
 							<a href="<?php echo esc_url( $retake_url ); ?>" class="ppq-button ppq-button-small ppq-button-secondary">
 								<?php esc_html_e( 'Retake', 'pressprimer-quiz' ); ?>
 							</a>
@@ -739,7 +739,7 @@ class PressPrimer_Quiz_Shortcodes {
 	 */
 	private function get_quiz_page_url( $quiz_id ) {
 		// Check transient cache first
-		$cache_key = 'ppq_quiz_page_url_' . $quiz_id;
+		$cache_key = 'pressprimer_quiz_page_url_' . $quiz_id;
 		$cached    = get_transient( $cache_key );
 
 		if ( false !== $cached ) {

@@ -125,7 +125,7 @@
 				url.searchParams.set('token', guestToken);
 			}
 			// Remove retake flag - we're now in an active attempt
-			url.searchParams.delete('ppq_retake');
+			url.searchParams.delete('pressprimer_quiz_retake');
 			return url.toString();
 		},
 
@@ -978,7 +978,7 @@
 				const hasAnswer = $question.find('.ppq-answer-input:checked').length > 0;
 
 				if (hasAnswer) {
-					$checkContainer.slideDown(200);
+					$checkContainer.removeClass('ppq-hidden').slideDown(200);
 				} else {
 					$checkContainer.slideUp(200);
 				}
@@ -1113,8 +1113,8 @@
 				$feedbackText.hide();
 			}
 
-			// Show feedback container
-			$feedback.slideDown(300);
+			// Show feedback container (remove ppq-hidden class first due to !important)
+			$feedback.removeClass('ppq-hidden').slideDown(300);
 
 			// Hide navigation buttons while feedback is shown
 			$('#ppq-next-button, #ppq-prev-button, #ppq-submit-button').hide();

@@ -90,6 +90,13 @@ postcss.config.js
 phpunit.xml
 phpunit.xml.dist
 
+# Playwright / E2E Testing
+/e2e
+playwright.config.ts
+/test-results
+/playwright-report
+/blob-report
+
 # Code Quality
 phpcs.xml
 phpcs.xml.dist

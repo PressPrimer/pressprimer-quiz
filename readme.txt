@@ -1,6 +1,5 @@
 === PressPrimer Quiz ===
 Contributors: pressprimer
-Donate link: https://pressprimer.com/
 Tags: quiz, learndash, assessment, lms, elearning
 Requires at least: 6.4
 Tested up to: 6.9

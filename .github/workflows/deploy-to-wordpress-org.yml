@@ -3,6 +3,12 @@ name: Deploy to WordPress.org
 on:
   release:
     types: [published]
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version tag to deploy (e.g., v1.0.0)'
+        required: true
+        type: string
 
 jobs:
   deploy:
@@ -11,6 +17,8 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.release.tag_name || inputs.version }}
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -39,5 +47,5 @@ jobs:
           SVN_USERNAME: ${{ secrets.SVN_USERNAME }}
           SVN_PASSWORD: ${{ secrets.SVN_PASSWORD }}
           SLUG: pressprimer-quiz
-          VERSION: ${{ github.event.release.tag_name }}
+          VERSION: ${{ github.event.release.tag_name || inputs.version }}
           ASSETS_DIR: .wordpress-org

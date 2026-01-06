@@ -20,16 +20,6 @@
         "squizlabs/php_codesniffer": "*",
         "wp-coding-standards/wpcs": "*"
     },
-    "autoload": {
-        "psr-4": {
-            "PressPrimer\\Quiz\\": "includes/"
-        }
-    },
-    "autoload-dev": {
-        "psr-4": {
-            "PressPrimer\\Quiz\\Tests\\": "tests/"
-        }
-    },
     "config": {
         "optimize-autoloader": true,
         "sort-packages": true,

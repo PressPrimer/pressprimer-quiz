@@ -202,6 +202,14 @@ class PressPrimer_Quiz_Plugin {
 			}
 		}
 
+		// LearnPress integration
+		if ( defined( 'LEARNPRESS_VERSION' ) ) {
+			if ( class_exists( 'PressPrimer_Quiz_LearnPress' ) ) {
+				$learnpress = new PressPrimer_Quiz_LearnPress();
+				$learnpress->init();
+			}
+		}
+
 		// Uncanny Automator integration
 		if ( class_exists( 'Uncanny_Automator\Automator_Functions' ) ) {
 			require_once PRESSPRIMER_QUIZ_PLUGIN_PATH . 'includes/integrations/uncanny-automator/class-ppq-automator-loader.php';

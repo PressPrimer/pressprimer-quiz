@@ -41,11 +41,17 @@ jobs:
       - name: Install Composer dependencies (production only)
         run: composer install --no-dev --optimize-autoloader
 
+      - name: Get version without v prefix
+        id: version
+        run: |
+          VERSION="${{ github.event.release.tag_name || inputs.version }}"
+          echo "number=${VERSION#v}" >> $GITHUB_OUTPUT
+
       - name: WordPress Plugin Deploy
         uses: 10up/action-wordpress-plugin-deploy@stable
         env:
           SVN_USERNAME: ${{ secrets.SVN_USERNAME }}
           SVN_PASSWORD: ${{ secrets.SVN_PASSWORD }}
           SLUG: pressprimer-quiz
-          VERSION: ${{ github.event.release.tag_name || inputs.version }}
+          VERSION: ${{ steps.version.outputs.number }}
           ASSETS_DIR: .wordpress-org

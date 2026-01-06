@@ -233,6 +233,14 @@ class PressPrimer_Quiz_Quiz extends PressPrimer_Quiz_Model {
 	public $login_message;
 
 	/**
+	 * Display density
+	 *
+	 * @since 2.0.0
+	 * @var string default|standard|condensed
+	 */
+	public $display_density = 'default';
+
+	/**
 	 * Created timestamp
 	 *
 	 * @since 1.0.0
@@ -310,6 +318,7 @@ class PressPrimer_Quiz_Quiz extends PressPrimer_Quiz_Model {
 			'generation_mode',
 			'access_mode',
 			'login_message',
+			'display_density',
 		];
 	}
 
@@ -701,6 +710,7 @@ class PressPrimer_Quiz_Quiz extends PressPrimer_Quiz_Model {
 				'generation_mode'       => $this->generation_mode,
 				'access_mode'           => $this->access_mode,
 				'login_message'         => $this->login_message,
+				'display_density'       => $this->display_density,
 			];
 
 			$new_quiz_id = self::create( $new_quiz_data );
@@ -880,5 +890,27 @@ class PressPrimer_Quiz_Quiz extends PressPrimer_Quiz_Model {
 		$access_mode = $this->get_effective_access_mode();
 
 		return 'guest_required' === $access_mode;
+	}
+
+	/**
+	 * Get effective display density for this quiz
+	 *
+	 * Returns the display density to use, accounting for per-quiz override
+	 * and global default setting.
+	 *
+	 * @since 2.0.0
+	 *
+	 * @return string Display density: 'standard' or 'condensed'.
+	 */
+	public function get_effective_display_density() {
+		// If quiz has specific setting (not 'default'), use it
+		if ( $this->display_density && 'default' !== $this->display_density ) {
+			return $this->display_density;
+		}
+
+		// Fall back to global setting
+		$settings = get_option( 'pressprimer_quiz_settings', [] );
+
+		return isset( $settings['display_density'] ) ? $settings['display_density'] : 'standard';
 	}
 }

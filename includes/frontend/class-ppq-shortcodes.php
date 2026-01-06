@@ -221,6 +221,22 @@ class PressPrimer_Quiz_Shortcodes {
 				PRESSPRIMER_QUIZ_VERSION
 			);
 
+			// Enqueue condensed mode CSS
+			wp_enqueue_style(
+				'ppq-condensed',
+				PRESSPRIMER_QUIZ_PLUGIN_URL . 'assets/css/condensed.css',
+				[ 'ppq-results' ],
+				PRESSPRIMER_QUIZ_VERSION
+			);
+
+			// Enqueue condensed mode CSS
+			wp_enqueue_style(
+				'ppq-condensed',
+				PPQ_PLUGIN_URL . 'assets/css/condensed.css',
+				[ 'ppq-results' ],
+				PPQ_VERSION
+			);
+
 			// Enqueue theme CSS
 			if ( $quiz ) {
 				PressPrimer_Quiz_Theme_Loader::enqueue_quiz_theme( $quiz );
@@ -763,15 +779,16 @@ class PressPrimer_Quiz_Shortcodes {
 
 		$where = implode( ' OR ', $where_clauses );
 
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Custom shortcode search with transient caching
+		// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Custom shortcode search with transient caching; $where is built from prepare() calls above
 		$post_id = $wpdb->get_var(
 			"SELECT ID FROM {$wpdb->posts}
 			WHERE post_status = 'publish'
 			AND post_type IN ('post', 'page')
 			AND ({$where})
 			ORDER BY post_type = 'page' DESC, ID ASC
-			LIMIT 1" // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- $where is built with prepare() above
+			LIMIT 1"
 		);
+		// phpcs:enable WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 
 		$url = $post_id ? get_permalink( $post_id ) : '';
 

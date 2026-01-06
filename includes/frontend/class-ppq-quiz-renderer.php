@@ -226,11 +226,15 @@ class PressPrimer_Quiz_Quiz_Renderer {
 		// Get theme class
 		$theme_class = PressPrimer_Quiz_Theme_Loader::get_theme_class( PressPrimer_Quiz_Theme_Loader::get_quiz_theme( $quiz ) );
 
+		// Get display density class
+		$density       = $quiz->get_effective_display_density();
+		$density_class = 'condensed' === $density ? 'ppq-quiz--condensed' : '';
+
 		// Start output buffering
 		ob_start();
 
 		?>
-		<div class="ppq-quiz-landing <?php echo esc_attr( $theme_class ); ?>" data-quiz-id="<?php echo esc_attr( $quiz->id ); ?>">
+		<div class="ppq-quiz-landing <?php echo esc_attr( $theme_class ); ?> <?php echo esc_attr( $density_class ); ?>" data-quiz-id="<?php echo esc_attr( $quiz->id ); ?>" data-density="<?php echo esc_attr( $density ); ?>">
 
 			<?php if ( $quiz->featured_image_id ) : ?>
 				<div class="ppq-quiz-header-image">
@@ -632,6 +636,10 @@ class PressPrimer_Quiz_Quiz_Renderer {
 		// Get theme class
 		$theme_class = PressPrimer_Quiz_Theme_Loader::get_theme_class( PressPrimer_Quiz_Theme_Loader::get_quiz_theme( $quiz ) );
 
+		// Get display density class
+		$density       = $quiz->get_effective_display_density();
+		$density_class = 'condensed' === $density ? 'ppq-quiz--condensed' : '';
+
 		// Find first unanswered question (for resume functionality)
 		$first_unanswered = 0;
 		foreach ( $items as $index => $item ) {
@@ -663,7 +671,7 @@ class PressPrimer_Quiz_Quiz_Renderer {
 		<!-- Skip link for keyboard users -->
 		<a href="#ppq-questions-container" class="ppq-skip-link"><?php esc_html_e( 'Skip to questions', 'pressprimer-quiz' ); ?></a>
 
-		<div class="ppq-quiz-interface <?php echo esc_attr( $theme_class ); ?>"
+		<div class="ppq-quiz-interface <?php echo esc_attr( $theme_class ); ?> <?php echo esc_attr( $density_class ); ?>"
 			role="main"
 			aria-label="<?php esc_attr_e( 'Quiz', 'pressprimer-quiz' ); ?>"
 			data-attempt-id="<?php echo esc_attr( $attempt->id ); ?>"
@@ -676,7 +684,8 @@ class PressPrimer_Quiz_Quiz_Renderer {
 			data-time-limit="<?php echo esc_attr( $time_limit ); ?>"
 			data-time-remaining="<?php echo esc_attr( $time_remaining ); ?>"
 			data-start-question="<?php echo esc_attr( $first_unanswered ); ?>"
-			data-active-elapsed-ms="<?php echo esc_attr( $attempt->active_elapsed_ms ?? 0 ); ?>">
+			data-active-elapsed-ms="<?php echo esc_attr( $attempt->active_elapsed_ms ?? 0 ); ?>"
+			data-density="<?php echo esc_attr( $density ); ?>">
 
 			<?php
 			/**
@@ -983,6 +992,22 @@ class PressPrimer_Quiz_Quiz_Renderer {
 			PRESSPRIMER_QUIZ_PLUGIN_URL . 'assets/css/quiz.css',
 			[],
 			PRESSPRIMER_QUIZ_VERSION
+		);
+
+		// Enqueue condensed mode CSS (loaded but only applied via .ppq-quiz--condensed class)
+		wp_enqueue_style(
+			'ppq-condensed',
+			PRESSPRIMER_QUIZ_PLUGIN_URL . 'assets/css/condensed.css',
+			[ 'ppq-quiz' ],
+			PRESSPRIMER_QUIZ_VERSION
+		);
+
+		// Enqueue condensed mode CSS (loaded but only applied via .ppq-quiz--condensed class)
+		wp_enqueue_style(
+			'ppq-condensed',
+			PPQ_PLUGIN_URL . 'assets/css/condensed.css',
+			[ 'ppq-quiz' ],
+			PPQ_VERSION
 		);
 
 		// Enqueue theme CSS

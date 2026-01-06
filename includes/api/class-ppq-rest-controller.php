@@ -1419,6 +1419,7 @@ class PressPrimer_Quiz_REST_Controller {
 					'show_answers'          => sanitize_key( $data['show_answers'] ?? 'after_submit' ),
 					'enable_confidence'     => ! empty( $data['enable_confidence'] ),
 					'theme'                 => sanitize_key( $data['theme'] ?? 'default' ),
+					'display_density'       => sanitize_key( $data['display_density'] ?? 'default' ),
 					'theme_settings_json'   => $data['theme_settings_json'] ?? null,
 					'band_feedback_json'    => $data['band_feedback_json'] ?? null,
 					'generation_mode'       => sanitize_key( $data['generation_mode'] ?? 'fixed' ),
@@ -1493,6 +1494,7 @@ class PressPrimer_Quiz_REST_Controller {
 			$quiz->show_answers          = sanitize_key( $data['show_answers'] ?? 'after_submit' );
 			$quiz->enable_confidence     = ! empty( $data['enable_confidence'] );
 			$quiz->theme                 = sanitize_key( $data['theme'] ?? 'default' );
+			$quiz->display_density       = sanitize_key( $data['display_density'] ?? 'default' );
 			$quiz->theme_settings_json   = $data['theme_settings_json'] ?? null;
 			$quiz->band_feedback_json    = $data['band_feedback_json'] ?? null;
 			$quiz->generation_mode       = sanitize_key( $data['generation_mode'] ?? 'fixed' );
@@ -1979,6 +1981,11 @@ class PressPrimer_Quiz_REST_Controller {
 		if ( isset( $data['appearance_border_radius'] ) ) {
 			$radius                                = $data['appearance_border_radius'];
 			$sanitized['appearance_border_radius'] = ( '' !== $radius && null !== $radius ) ? absint( $radius ) : '';
+		}
+
+		if ( isset( $data['display_density'] ) ) {
+			$density                      = sanitize_key( $data['display_density'] );
+			$sanitized['display_density'] = in_array( $density, [ 'standard', 'condensed' ], true ) ? $density : 'standard';
 		}
 
 		// Merge with existing settings

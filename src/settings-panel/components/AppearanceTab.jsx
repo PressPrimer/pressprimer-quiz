@@ -520,6 +520,29 @@ const AppearanceTab = ({ settings, updateSetting, settingsData }) => {
 
 				<div className="ppq-settings-field">
 					<Form.Item
+						label={__('Display Density', 'pressprimer-quiz')}
+						help={__('Controls spacing and visual density of quiz interfaces. Condensed mode reduces padding while maintaining accessibility.', 'pressprimer-quiz')}
+					>
+						<Select
+							value={settings.display_density || 'standard'}
+							onChange={(value) => updateSetting('display_density', value)}
+							style={{ width: 350 }}
+							options={[
+								{
+									value: 'standard',
+									label: __('Standard', 'pressprimer-quiz'),
+								},
+								{
+									value: 'condensed',
+									label: __('Condensed', 'pressprimer-quiz'),
+								},
+							]}
+						/>
+					</Form.Item>
+				</div>
+
+				<div className="ppq-settings-field">
+					<Form.Item
 						label={__('Border Radius', 'pressprimer-quiz')}
 						help={__('Roundness of corners. Set to 0 for sharp corners, higher values for more rounded. Leave empty for theme default.', 'pressprimer-quiz')}
 					>

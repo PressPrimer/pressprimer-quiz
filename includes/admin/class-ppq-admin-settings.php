@@ -1590,6 +1590,15 @@ Good luck with your studies!',
 			$sanitized['appearance_border_radius'] = ( '' !== $radius && null !== $radius ) ? absint( $radius ) : '';
 		}
 
+		// Sanitize display density
+		if ( isset( $input['display_density'] ) ) {
+			$density = sanitize_key( $input['display_density'] );
+			if ( ! in_array( $density, [ 'standard', 'condensed' ], true ) ) {
+				$density = 'standard';
+			}
+			$sanitized['display_density'] = $density;
+		}
+
 		// Merge with existing settings to preserve any not in the form
 		return array_merge( $existing, $sanitized );
 	}

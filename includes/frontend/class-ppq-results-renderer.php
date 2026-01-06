@@ -65,6 +65,10 @@ class PressPrimer_Quiz_Results_Renderer {
 		// Get theme class
 		$theme_class = PressPrimer_Quiz_Theme_Loader::get_theme_class( PressPrimer_Quiz_Theme_Loader::get_quiz_theme( $quiz ) );
 
+		// Get display density class
+		$density       = $quiz->get_effective_display_density();
+		$density_class = 'condensed' === $density ? 'ppq-quiz--condensed' : '';
+
 		/**
 		 * Filter which sections are displayed on the results page.
 		 *
@@ -97,7 +101,7 @@ class PressPrimer_Quiz_Results_Renderer {
 		// Build output
 		ob_start();
 		?>
-		<div class="ppq-results-container <?php echo esc_attr( $theme_class ); ?>">
+		<div class="ppq-results-container <?php echo esc_attr( $theme_class ); ?> <?php echo esc_attr( $density_class ); ?>">
 			<?php
 			/**
 			 * Fires before the results content is rendered.
@@ -678,10 +682,14 @@ class PressPrimer_Quiz_Results_Renderer {
 		// Get theme class
 		$theme_class = PressPrimer_Quiz_Theme_Loader::get_theme_class( PressPrimer_Quiz_Theme_Loader::get_quiz_theme( $quiz ) );
 
+		// Get display density class
+		$density       = $quiz->get_effective_display_density();
+		$density_class = 'condensed' === $density ? 'ppq-quiz--condensed' : '';
+
 		// Build output
 		ob_start();
 		?>
-		<div id="ppq-question-review" class="ppq-question-review-container <?php echo esc_attr( $theme_class ); ?>">
+		<div id="ppq-question-review" class="ppq-question-review-container <?php echo esc_attr( $theme_class ); ?> <?php echo esc_attr( $density_class ); ?>">
 			<h2 class="ppq-review-title"><?php esc_html_e( 'Question Review', 'pressprimer-quiz' ); ?></h2>
 
 			<?php foreach ( $items as $index => $item ) : ?>

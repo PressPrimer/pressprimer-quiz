@@ -495,7 +495,7 @@ class PressPrimer_Quiz_AI_Service {
 	 */
 	public static function check_rate_limit( $user_id ) {
 		$user_id = absint( $user_id );
-		$key     = 'ppq_ai_requests_' . $user_id;
+		$key     = 'pressprimer_quiz_ai_requests_' . $user_id;
 		$count   = (int) get_transient( $key );
 
 		if ( $count >= self::RATE_LIMIT_PER_HOUR ) {
@@ -521,7 +521,7 @@ class PressPrimer_Quiz_AI_Service {
 	 */
 	private static function increment_rate_limit( $user_id ) {
 		$user_id = absint( $user_id );
-		$key     = 'ppq_ai_requests_' . $user_id;
+		$key     = 'pressprimer_quiz_ai_requests_' . $user_id;
 		$count   = (int) get_transient( $key );
 
 		set_transient( $key, $count + 1, HOUR_IN_SECONDS );

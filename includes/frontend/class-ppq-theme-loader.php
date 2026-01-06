@@ -299,9 +299,16 @@ class PressPrimer_Quiz_Theme_Loader {
 		$css = $global_css . $quiz_css;
 
 		if ( ! empty( $css ) ) {
-			// Sanitize CSS - strip any HTML/script tags that shouldn't be in CSS
+			// Escape CSS for safe output - strip HTML tags
 			$css = wp_strip_all_tags( $css );
-			wp_add_inline_style( 'ppq-theme-' . $theme_id, $css );
+			// Remove potential script injection attempts in CSS (IE-specific exploits and script URIs)
+			// Note: url() is safe and needed for background-image, @font-face, etc.
+			$css = preg_replace( '/(expression|behavior|vbscript)/i', '', $css );
+			// Remove javascript: protocol from any url() values
+			$css = preg_replace( '/javascript\s*:/i', '', $css );
+			// Use wp_kses with no allowed HTML to ensure no HTML entities slip through
+			$css = wp_kses( $css, [] );
+			wp_add_inline_style( 'ppq-theme-' . esc_attr( $theme_id ), $css );
 		}
 	}
 

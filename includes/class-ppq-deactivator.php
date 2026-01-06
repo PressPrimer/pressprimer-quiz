@@ -66,15 +66,15 @@ class PressPrimer_Quiz_Deactivator {
 	private static function clear_plugin_transients() {
 		global $wpdb;
 
-		// Delete all transients that start with ppq_
+		// Delete all transients that start with pressprimer_quiz_ (current prefix)
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Transient cleanup during deactivation
 		$wpdb->query(
 			$wpdb->prepare(
 				"DELETE FROM {$wpdb->options}
 				WHERE option_name LIKE %s
 				OR option_name LIKE %s", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- WordPress core table name
-				$wpdb->esc_like( '_transient_ppq_' ) . '%',
-				$wpdb->esc_like( '_transient_timeout_ppq_' ) . '%'
+				$wpdb->esc_like( '_transient_pressprimer_quiz_' ) . '%',
+				$wpdb->esc_like( '_transient_timeout_pressprimer_quiz_' ) . '%'
 			)
 		);
 
@@ -86,8 +86,8 @@ class PressPrimer_Quiz_Deactivator {
 					"DELETE FROM {$wpdb->sitemeta}
 					WHERE meta_key LIKE %s
 					OR meta_key LIKE %s", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- WordPress core table name
-					$wpdb->esc_like( '_site_transient_ppq_' ) . '%',
-					$wpdb->esc_like( '_site_transient_timeout_ppq_' ) . '%'
+					$wpdb->esc_like( '_site_transient_pressprimer_quiz_' ) . '%',
+					$wpdb->esc_like( '_site_transient_timeout_pressprimer_quiz_' ) . '%'
 				)
 			);
 		}

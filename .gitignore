@@ -47,3 +47,12 @@ Thumbs.db
 
 # Internal documentation (kept locally, not pushed to public repo)
 /docs/
+
+# Playwright / E2E Testing
+/e2e/
+playwright.config.ts
+/test-results/
+/playwright-report/
+/blob-report/
+/playwright/.cache/
+/playwright/.auth/

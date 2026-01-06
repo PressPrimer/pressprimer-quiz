@@ -47,6 +47,9 @@ class PressPrimer_Quiz_Admin_Questions {
 
 		// Add screen options on the right hook
 		add_action( 'current_screen', [ $this, 'maybe_add_screen_options' ] );
+
+		// Save screen options
+		add_filter( 'set_screen_option_pressprimer_quiz_questions_per_page', [ $this, 'set_screen_option' ], 10, 3 );
 	}
 
 	/**
@@ -58,7 +61,7 @@ class PressPrimer_Quiz_Admin_Questions {
 		$screen = get_current_screen();
 
 		// Only add screen options on the questions list page
-		if ( $screen && $screen->id === 'pressprimer-quiz_page_ppq-questions' ) {
+		if ( $screen && $screen->id === 'pressprimer-quiz_page_pressprimer-quiz-questions' ) {
 			$this->screen_options();
 		}
 	}
@@ -221,7 +224,7 @@ class PressPrimer_Quiz_Admin_Questions {
 			<?php $this->list_table->views(); ?>
 
 			<form method="get">
-				<input type="hidden" name="page" value="ppq-questions">
+				<input type="hidden" name="page" value="pressprimer-quiz-questions">
 				<?php
 				$this->list_table->search_box( __( 'Search Questions', 'pressprimer-quiz' ), 'ppq-question' );
 				$this->list_table->display();
@@ -746,7 +749,7 @@ class PressPrimer_Quiz_Questions_List_Table extends WP_List_Table {
 	 */
 	public function get_hidden_columns() {
 		// Get user's hidden columns preference
-		$hidden = get_user_option( 'managepressprimer-quiz_page_ppq-questionscolumnshidden' );
+		$hidden = get_user_option( 'managepressprimer-quiz_page_pressprimer-quiz-questionscolumnshidden' );
 
 		// If not set, return default hidden columns (none hidden by default)
 		if ( false === $hidden ) {

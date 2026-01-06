@@ -45,6 +45,9 @@ class PressPrimer_Quiz_Admin_Banks {
 
 		// Add screen options on the right hook
 		add_action( 'current_screen', [ $this, 'maybe_add_screen_options' ] );
+
+		// Save screen options
+		add_filter( 'set_screen_option_pressprimer_quiz_banks_per_page', [ $this, 'set_screen_option' ], 10, 3 );
 	}
 
 	/**
@@ -56,7 +59,7 @@ class PressPrimer_Quiz_Admin_Banks {
 		$screen = get_current_screen();
 
 		// Only add screen options on the banks list page
-		if ( $screen && 'pressprimer-quiz_page_ppq-banks' === $screen->id ) {
+		if ( $screen && 'pressprimer-quiz_page_pressprimer-quiz-banks' === $screen->id ) {
 			$this->screen_options();
 		}
 	}
@@ -184,7 +187,7 @@ class PressPrimer_Quiz_Admin_Banks {
 			<hr class="wp-header-end">
 
 			<form method="get">
-				<input type="hidden" name="page" value="ppq-banks">
+				<input type="hidden" name="page" value="pressprimer-quiz-banks">
 				<?php
 				$this->list_table->search_box( __( 'Search Banks', 'pressprimer-quiz' ), 'pressprimer-quiz-banks' );
 				$this->list_table->display();
@@ -316,7 +319,7 @@ class PressPrimer_Quiz_Admin_Banks {
 		// Localize dynamic data for the inline script.
 		wp_localize_script(
 			'ppq-admin',
-			'ppqBankDetail',
+			'pressPrimerQuizBankDetail',
 			[
 				'bankId'  => absint( $bank_id ),
 				'nonces'  => [
@@ -356,7 +359,7 @@ class PressPrimer_Quiz_Admin_Banks {
 			'var searchSelectedQuestions = [];' .
 			'var currentRecentPage = 1;' .
 			'var currentSearchPage = 1;' .
-			'var config = window.ppqBankDetail || {};' .
+			'var config = window.pressPrimerQuizBankDetail || {};' .
 			'var strings = config.strings || {};' .
 			'function buildPaginationHtml(currentPage, totalPages, totalItems, navClass) {' .
 				'var pagHtml = \'<div class="tablenav-pages">\';' .
@@ -903,7 +906,7 @@ class PressPrimer_Quiz_Admin_Banks {
 				<h2><?php esc_html_e( 'Questions in Bank', 'pressprimer-quiz' ); ?></h2>
 
 				<form method="get" action="<?php echo esc_url( admin_url( 'admin.php' ) ); ?>#questions-in-bank" class="ppq-filter-form">
-					<input type="hidden" name="page" value="ppq-banks">
+					<input type="hidden" name="page" value="pressprimer-quiz-banks">
 					<input type="hidden" name="action" value="view">
 					<input type="hidden" name="bank_id" value="<?php echo esc_attr( $bank_id ); ?>">
 

@@ -72,7 +72,7 @@ const Dashboard = ({ initialData = {} }) => {
 		try {
 			// Call reset action first
 			const formData = new FormData();
-			formData.append('action', 'ppq_onboarding_progress');
+			formData.append('action', 'pressprimer_quiz_onboarding_progress');
 			formData.append('onboarding_action', 'reset');
 			formData.append('nonce', onboardingData.nonce || '');
 

@@ -749,52 +749,68 @@ class PressPrimer_Quiz_Question extends PressPrimer_Quiz_Model {
 	private static function find_with_deleted_filter( array $where, array $args ) {
 		global $wpdb;
 
-		$table = static::get_full_table_name();
+		$table            = static::get_full_table_name();
+		$queryable_fields = static::get_queryable_fields();
 
-		// Build WHERE clause
-		$where_clauses = [ 'deleted_at IS NULL' ];
-		$where_values  = [];
+		// Build WHERE clause with field validation using %i placeholder for identifiers.
+		// Start with deleted_at IS NULL (no placeholder needed for this static clause).
+		$where_clauses  = [ 'deleted_at IS NULL' ];
+		$prepare_values = [];
 
 		foreach ( $where as $field => $value ) {
-			$where_clauses[] = "`{$field}` = %s";
-			$where_values[]  = $value;
+			// Validate field name against whitelist to prevent SQL injection.
+			if ( ! in_array( $field, $queryable_fields, true ) ) {
+				continue;
+			}
+
+			// Use %i for field name (identifier) and %s for value.
+			$where_clauses[]  = '%i = %s';
+			$prepare_values[] = $field;
+			$prepare_values[] = $value;
 		}
 
-		$where_sql = 'WHERE ' . implode( ' AND ', $where_clauses );
-
-		// Build ORDER BY with validation
+		// Build ORDER BY clause with field validation using %i placeholder.
 		$order_by_field = sanitize_key( $args['order_by'] ?? 'id' );
-		$order_dir      = strtoupper( $args['order'] ?? 'DESC' );
-		$order_dir      = in_array( $order_dir, [ 'ASC', 'DESC' ], true ) ? $order_dir : 'DESC';
-		$order_sql      = sanitize_sql_orderby( "{$order_by_field} {$order_dir}" );
-		$order_sql      = $order_sql ? "ORDER BY {$order_sql}" : '';
+		if ( ! in_array( $order_by_field, $queryable_fields, true ) ) {
+			$order_by_field = 'id'; // Default to safe field.
+		}
+		// Validate order direction - only ASC or DESC allowed, default to DESC.
+		$is_asc = 'ASC' === strtoupper( $args['order'] ?? 'DESC' );
 
-		// Build LIMIT with placeholders
-		$limit_sql = '';
+		// Build LIMIT clause.
+		$limit_sql    = '';
+		$limit_values = [];
 		if ( isset( $args['limit'] ) ) {
 			$limit  = absint( $args['limit'] );
 			$offset = absint( $args['offset'] ?? 0 );
 			if ( $offset > 0 ) {
 				$limit_sql      = 'LIMIT %d, %d';
-				$where_values[] = $offset;
-				$where_values[] = $limit;
+				$limit_values[] = $offset;
+				$limit_values[] = $limit;
 			} else {
 				$limit_sql      = 'LIMIT %d';
-				$where_values[] = $limit;
+				$limit_values[] = $limit;
 			}
 		}
 
-		// Build final query
-		$query = "SELECT * FROM {$table} {$where_sql} {$order_sql} {$limit_sql}";
+		// Build WHERE clause.
+		$where_sql = 'WHERE ' . implode( ' AND ', $where_clauses );
 
-		// Prepare and execute - always prepare if we have any values
-		if ( ! empty( $where_values ) ) {
-			$query = $wpdb->prepare( $query, $where_values ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- Query built with placeholders
+		// Add order_by field to prepare values.
+		$prepare_values[] = $order_by_field;
+		// Add limit values.
+		$prepare_values = array_merge( $prepare_values, $limit_values );
+
+		// Build and prepare the query with hardcoded ORDER direction to satisfy security review.
+		// Order direction is not interpolated - we use separate query strings for ASC vs DESC.
+		if ( $is_asc ) {
+			$query = $wpdb->prepare( "SELECT * FROM {$table} {$where_sql} ORDER BY %i ASC {$limit_sql}", $prepare_values );
+		} else {
+			$query = $wpdb->prepare( "SELECT * FROM {$table} {$where_sql} ORDER BY %i DESC {$limit_sql}", $prepare_values );
 		}
+		$rows = $wpdb->get_results( $query );
 
-		$rows = $wpdb->get_results( $query ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
-
-		// Convert to model instances
+		// Convert to model instances.
 		$results = [];
 		if ( $rows ) {
 			foreach ( $rows as $row ) {

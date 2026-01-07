@@ -1988,6 +1988,18 @@ class PressPrimer_Quiz_REST_Controller {
 			$sanitized['display_density'] = in_array( $density, [ 'standard', 'condensed' ], true ) ? $density : 'standard';
 		}
 
+		/**
+		 * Filter the sanitized settings before saving.
+		 *
+		 * Allows addons to add their own settings to be saved via the core REST API.
+		 *
+		 * @since 2.0.0
+		 *
+		 * @param array $sanitized Already sanitized settings from core plugin.
+		 * @param array $data      Raw input data from the REST request.
+		 */
+		$sanitized = apply_filters( 'pressprimer_quiz_sanitize_settings', $sanitized, $data );
+
 		// Merge with existing settings
 		$merged = array_merge( $existing, $sanitized );
 

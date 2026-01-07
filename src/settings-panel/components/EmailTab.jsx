@@ -88,10 +88,13 @@ const TokenItem = ({ token, description }) => {
  * @param {Object} props.settingsData Full settings data
  */
 const EmailTab = ({ settings, updateSetting, settingsData }) => {
-	const [testEmail, setTestEmail] = useState(settingsData.defaults?.adminEmail || '');
-	const [sendingTest, setSendingTest] = useState(false);
+	const [resultsTestEmail, setResultsTestEmail] = useState(settingsData.defaults?.adminEmail || '');
+	const [sendingResultsTest, setSendingResultsTest] = useState(false);
+	const [welcomeTestEmail, setWelcomeTestEmail] = useState(settingsData.defaults?.adminEmail || '');
+	const [sendingWelcomeTest, setSendingWelcomeTest] = useState(false);
 
-	const defaultEmailBody = `{results_summary}
+	const defaultResultsSubject = __('Your results for {quiz_title}', 'pressprimer-quiz');
+	const defaultResultsBody = `{results_summary}
 
 Hi {first_name},
 
@@ -105,6 +108,22 @@ Here are your results:
 Good luck with your studies!
 
 {results_url}`;
+
+	const defaultWelcomeSubject = __('Welcome to {site_name}', 'pressprimer-quiz');
+	const defaultWelcomeBody = settingsData.educatorDefaults?.welcomeEmailBody || `Hello {student_name},
+
+{teacher_name} has added you to the group "{group_name}".
+
+If you're a new user, or don't remember your current password, you can set a password by clicking the link below:
+
+{reset_link}
+
+After setting your password, you can log in to access your quizzes and assignments. Use this link to log in:
+
+{login_url}
+
+Best regards,
+The {site_name} Team`;
 
 	/**
 	 * Open media library to select logo
@@ -135,31 +154,60 @@ Good luck with your studies!
 	};
 
 	/**
-	 * Send test email
+	 * Send test results email
 	 */
-	const handleSendTestEmail = async () => {
-		if (!testEmail || !testEmail.includes('@')) {
+	const handleSendResultsTestEmail = async () => {
+		if (!resultsTestEmail || !resultsTestEmail.includes('@')) {
 			message.error(__('Please enter a valid email address', 'pressprimer-quiz'));
 			return;
 		}
 
-		setSendingTest(true);
+		setSendingResultsTest(true);
 		try {
 			const response = await apiFetch({
 				path: '/ppq/v1/email/test',
 				method: 'POST',
-				data: { email: testEmail },
+				data: { email: resultsTestEmail, type: 'results' },
 			});
 
 			if (response.success) {
-				message.success(__('Test email sent successfully!', 'pressprimer-quiz'));
+				message.success(__('Test results email sent successfully!', 'pressprimer-quiz'));
 			} else {
 				message.error(response.message || __('Failed to send test email', 'pressprimer-quiz'));
 			}
 		} catch (err) {
 			message.error(err.message || __('Failed to send test email', 'pressprimer-quiz'));
 		} finally {
-			setSendingTest(false);
+			setSendingResultsTest(false);
+		}
+	};
+
+	/**
+	 * Send test welcome email
+	 */
+	const handleSendWelcomeTestEmail = async () => {
+		if (!welcomeTestEmail || !welcomeTestEmail.includes('@')) {
+			message.error(__('Please enter a valid email address', 'pressprimer-quiz'));
+			return;
+		}
+
+		setSendingWelcomeTest(true);
+		try {
+			const response = await apiFetch({
+				path: '/ppq/v1/email/test',
+				method: 'POST',
+				data: { email: welcomeTestEmail, type: 'welcome' },
+			});
+
+			if (response.success) {
+				message.success(__('Test welcome email sent successfully!', 'pressprimer-quiz'));
+			} else {
+				message.error(response.message || __('Failed to send test email', 'pressprimer-quiz'));
+			}
+		} catch (err) {
+			message.error(err.message || __('Failed to send test email', 'pressprimer-quiz'));
+		} finally {
+			setSendingWelcomeTest(false);
 		}
 	};
 
@@ -257,7 +305,7 @@ Good luck with your studies!
 				</div>
 			</div>
 
-			{/* Email Templates Section */}
+			{/* Results Email Template Section */}
 			<div className="ppq-settings-section">
 				<Title level={4} className="ppq-settings-section-title">
 					{__('Results Email Template', 'pressprimer-quiz')}
@@ -271,7 +319,7 @@ Good luck with your studies!
 						label={__('Subject Line', 'pressprimer-quiz')}
 					>
 						<Input
-							value={settings.email_results_subject || __('Your results for {quiz_title}', 'pressprimer-quiz')}
+							value={settings.email_results_subject ?? defaultResultsSubject}
 							onChange={(e) => updateSetting('email_results_subject', e.target.value)}
 							style={{ maxWidth: 500 }}
 						/>
@@ -283,7 +331,7 @@ Good luck with your studies!
 						label={__('Email Body', 'pressprimer-quiz')}
 					>
 						<TextArea
-							value={settings.email_results_body || defaultEmailBody}
+							value={settings.email_results_body ?? defaultResultsBody}
 							onChange={(e) => updateSetting('email_results_body', e.target.value)}
 							rows={12}
 							style={{ fontFamily: 'monospace' }}
@@ -336,46 +384,142 @@ Good luck with your studies!
 						/>
 					</div>
 				</div>
-			</div>
 
-			{/* Test Email Section */}
-			<div className="ppq-settings-section">
-				<Title level={4} className="ppq-settings-section-title">
-					{__('Test Email', 'pressprimer-quiz')}
-				</Title>
-				<Paragraph className="ppq-settings-section-description">
-					{__('Send a test email to verify your email settings are working correctly.', 'pressprimer-quiz')}
-				</Paragraph>
-
-				<div className="ppq-settings-field">
+				{/* Test Results Email */}
+				<div className="ppq-settings-field" style={{ marginTop: 24, paddingTop: 16, borderTop: '1px solid #f0f0f0' }}>
 					<Form.Item
-						label={__('Send Test Email To', 'pressprimer-quiz')}
+						label={__('Send Test Email', 'pressprimer-quiz')}
 					>
 						<Space.Compact style={{ maxWidth: 400 }}>
 							<Input
 								type="email"
-								value={testEmail}
-								onChange={(e) => setTestEmail(e.target.value)}
+								value={resultsTestEmail}
+								onChange={(e) => setResultsTestEmail(e.target.value)}
 								placeholder={__('Enter email address', 'pressprimer-quiz')}
 								style={{ width: 280 }}
 							/>
 							<Button
 								type="primary"
 								icon={<SendOutlined />}
-								onClick={handleSendTestEmail}
-								loading={sendingTest}
+								onClick={handleSendResultsTestEmail}
+								loading={sendingResultsTest}
 							>
 								{__('Send Test', 'pressprimer-quiz')}
 							</Button>
 						</Space.Compact>
 						<div style={{ marginTop: 8 }}>
 							<Text type="secondary">
-								{__('A sample email will be sent using your current template settings.', 'pressprimer-quiz')}
+								{__('Send a sample results email using the template above.', 'pressprimer-quiz')}
 							</Text>
 						</div>
 					</Form.Item>
 				</div>
 			</div>
+
+			{/* Student Welcome Email Template Section - Educator Addon */}
+			{settingsData.educatorActive && (
+				<div className="ppq-settings-section">
+					<Title level={4} className="ppq-settings-section-title">
+						{__('Student Welcome Email Template', 'pressprimer-quiz')}
+					</Title>
+					<Paragraph className="ppq-settings-section-description">
+						{__('Customize the welcome email sent to students when they are added to a group.', 'pressprimer-quiz')}
+					</Paragraph>
+
+					<div className="ppq-settings-field">
+						<Form.Item
+							label={__('Subject Line', 'pressprimer-quiz')}
+						>
+							<Input
+								value={settings.educator_welcome_email_subject ?? defaultWelcomeSubject}
+								onChange={(e) => updateSetting('educator_welcome_email_subject', e.target.value)}
+								style={{ maxWidth: 500 }}
+							/>
+						</Form.Item>
+					</div>
+
+					<div className="ppq-settings-field">
+						<Form.Item
+							label={__('Email Body', 'pressprimer-quiz')}
+						>
+							<TextArea
+								value={settings.educator_welcome_email_body ?? defaultWelcomeBody}
+								onChange={(e) => updateSetting('educator_welcome_email_body', e.target.value)}
+								rows={12}
+								style={{ fontFamily: 'monospace' }}
+							/>
+						</Form.Item>
+					</div>
+
+					{/* Available Tokens for Welcome Email */}
+					<div className="ppq-token-list">
+						<Text strong>{__('Available Tokens:', 'pressprimer-quiz')}</Text>
+						<Text type="secondary" style={{ marginLeft: 8 }}>
+							{__('(click to copy)', 'pressprimer-quiz')}
+						</Text>
+						<div style={{ marginTop: 8 }}>
+							<TokenItem
+								token="{student_name}"
+								description={__("Student's first name or display name", 'pressprimer-quiz')}
+							/>
+							<TokenItem
+								token="{student_email}"
+								description={__("Student's email address", 'pressprimer-quiz')}
+							/>
+							<TokenItem
+								token="{teacher_name}"
+								description={__('Name of the teacher adding the student', 'pressprimer-quiz')}
+							/>
+							<TokenItem
+								token="{group_name}"
+								description={__('Name of the group', 'pressprimer-quiz')}
+							/>
+							<TokenItem
+								token="{site_name}"
+								description={__('Your site name', 'pressprimer-quiz')}
+							/>
+							<TokenItem
+								token="{reset_link}"
+								description={__('Password reset link (required for new users)', 'pressprimer-quiz')}
+							/>
+							<TokenItem
+								token="{login_url}"
+								description={__('Login page URL', 'pressprimer-quiz')}
+							/>
+						</div>
+					</div>
+
+					{/* Test Welcome Email */}
+					<div className="ppq-settings-field" style={{ marginTop: 24, paddingTop: 16, borderTop: '1px solid #f0f0f0' }}>
+						<Form.Item
+							label={__('Send Test Email', 'pressprimer-quiz')}
+						>
+							<Space.Compact style={{ maxWidth: 400 }}>
+								<Input
+									type="email"
+									value={welcomeTestEmail}
+									onChange={(e) => setWelcomeTestEmail(e.target.value)}
+									placeholder={__('Enter email address', 'pressprimer-quiz')}
+									style={{ width: 280 }}
+								/>
+								<Button
+									type="primary"
+									icon={<SendOutlined />}
+									onClick={handleSendWelcomeTestEmail}
+									loading={sendingWelcomeTest}
+								>
+									{__('Send Test', 'pressprimer-quiz')}
+								</Button>
+							</Space.Compact>
+							<div style={{ marginTop: 8 }}>
+								<Text type="secondary">
+									{__('Send a sample welcome email using the template above.', 'pressprimer-quiz')}
+								</Text>
+							</div>
+						</Form.Item>
+					</div>
+				</div>
+			)}
 		</div>
 	);
 };

@@ -666,6 +666,11 @@ class PressPrimer_Quiz_Bank extends PressPrimer_Quiz_Model {
 	/**
 	 * Check if user can access this bank
 	 *
+	 * In the free plugin, users can only access their own banks or banks
+	 * they have admin privileges for. The "shared" visibility setting
+	 * doesn't grant access by itself - it's a flag that addons (like Educator)
+	 * can use to enable group-based sharing.
+	 *
 	 * @since 1.0.0
 	 *
 	 * @param int $user_id User ID to check.
@@ -678,21 +683,28 @@ class PressPrimer_Quiz_Bank extends PressPrimer_Quiz_Model {
 
 		$user_id = absint( $user_id );
 
-		// Owner can always access
+		// Owner can always access.
 		if ( $user_id === absint( $this->owner_id ) ) {
 			return true;
 		}
 
-		// Admins can access all banks
+		// Admins can access all banks.
 		if ( user_can( $user_id, 'pressprimer_quiz_manage_all' ) ) {
 			return true;
 		}
 
-		// Shared banks can be accessed by other teachers (future feature)
-		if ( 'shared' === $this->visibility && user_can( $user_id, 'pressprimer_quiz_manage_own' ) ) {
-			return true;
-		}
-
-		return false;
+		/**
+		 * Filter whether user can access a bank.
+		 *
+		 * Allows addons to grant access to shared banks based on group membership
+		 * or other criteria. The free plugin returns false by default for non-owners.
+		 *
+		 * @since 2.0.0
+		 *
+		 * @param bool              $can_access Whether user can access. Default false.
+		 * @param PressPrimer_Quiz_Bank $bank   The bank being checked.
+		 * @param int               $user_id    User ID being checked.
+		 */
+		return apply_filters( 'pressprimer_quiz_can_access_bank', false, $this, $user_id );
 	}
 }

@@ -88,6 +88,127 @@ const AttemptDetailModal = ({ visible, attempt, onClose }) => {
 	const totalQuestions = attempt.total_questions || details?.items?.length || 0;
 	const correctQuestions = attempt.correct_questions || details?.items?.filter(item => item.is_correct).length || 0;
 
+	/**
+	 * Render questions section content based on state
+	 */
+	const renderQuestionsContent = () => {
+		if (!details?.items) {
+			return (
+				<div className="ppq-attempt-questions-empty">
+					<Spin size="small" />
+					<span>{__('Loading question data...', 'pressprimer-quiz')}</span>
+				</div>
+			);
+		}
+
+		if (showQuestionDetails) {
+			return (
+				<>
+					<div className="ppq-attempt-questions-detailed">
+						{details.items
+							.slice((questionPage - 1) * QUESTIONS_PER_PAGE, questionPage * QUESTIONS_PER_PAGE)
+							.map((item, index) => {
+								const actualIndex = (questionPage - 1) * QUESTIONS_PER_PAGE + index;
+								return (
+									<div
+										key={item.id}
+										className={`ppq-attempt-question-card ${item.is_correct ? 'ppq-attempt-question-card--correct' : 'ppq-attempt-question-card--incorrect'}`}
+									>
+										<div className="ppq-attempt-question-header">
+											<span className="ppq-attempt-question-number">
+												{__('Question', 'pressprimer-quiz')} {actualIndex + 1}
+											</span>
+											{item.is_correct ? (
+												<Tag color="success" className="ppq-attempt-question-tag">
+													<CheckCircleOutlined /> {__('Correct', 'pressprimer-quiz')}
+												</Tag>
+											) : (
+												<Tag color="error" className="ppq-attempt-question-tag">
+													<CloseCircleOutlined /> {__('Incorrect', 'pressprimer-quiz')}
+												</Tag>
+											)}
+										</div>
+										<div className="ppq-attempt-question-stem-full">
+											{item.stem || __('Question', 'pressprimer-quiz')}
+										</div>
+										{item.answers?.length > 0 && (
+											<div className="ppq-attempt-answers-list">
+												{item.answers.map((answer, ansIdx) => (
+													<div
+														key={ansIdx}
+														className={`ppq-attempt-answer ${answer.was_selected ? 'ppq-attempt-answer--selected' : ''} ${answer.is_correct ? 'ppq-attempt-answer--correct' : ''}`}
+													>
+														<span className="ppq-attempt-answer-indicator">
+															{answer.was_selected && answer.is_correct && <CheckCircleOutlined style={{ color: '#52c41a' }} />}
+															{answer.was_selected && !answer.is_correct && <CloseCircleOutlined style={{ color: '#ff4d4f' }} />}
+															{!answer.was_selected && answer.is_correct && <CheckCircleOutlined style={{ color: '#52c41a', opacity: 0.5 }} />}
+														</span>
+														<span className="ppq-attempt-answer-text">{answer.text}</span>
+													</div>
+												))}
+											</div>
+										)}
+										{item.time_spent_ms > 0 && (
+											<div className="ppq-attempt-question-footer">
+												<span className="ppq-attempt-question-time">
+													<ClockCircleOutlined style={{ marginRight: 4 }} />
+													{formatTime(item.time_spent_ms)}
+												</span>
+											</div>
+										)}
+									</div>
+								);
+							})}
+					</div>
+					{details.items.length > QUESTIONS_PER_PAGE && (
+						<div className="ppq-attempt-questions-pagination">
+							<Pagination
+								current={questionPage}
+								pageSize={QUESTIONS_PER_PAGE}
+								total={details.items.length}
+								onChange={(page) => setQuestionPage(page)}
+								size="small"
+								showSizeChanger={false}
+								showTotal={(total, range) => `${range[0]}-${range[1]} of ${total}`}
+							/>
+						</div>
+					)}
+				</>
+			);
+		}
+
+		return (
+			<List
+				size="small"
+				dataSource={details.items}
+				className="ppq-attempt-questions-list"
+				renderItem={(item, index) => (
+					<List.Item className={`ppq-attempt-question-item ${item.is_correct ? 'ppq-attempt-question-item--correct' : 'ppq-attempt-question-item--incorrect'}`}>
+						<div className="ppq-attempt-question-content">
+							<span className="ppq-attempt-question-number">
+								{index + 1}.
+							</span>
+							<span className="ppq-attempt-question-stem">
+								{item.stem || __('Question', 'pressprimer-quiz')}
+							</span>
+						</div>
+						<div className="ppq-attempt-question-meta">
+							{item.is_correct ? (
+								<Tag color="success" className="ppq-attempt-question-tag">
+									<CheckCircleOutlined /> {__('Correct', 'pressprimer-quiz')}
+								</Tag>
+							) : (
+								<Tag color="error" className="ppq-attempt-question-tag">
+									<CloseCircleOutlined /> {__('Incorrect', 'pressprimer-quiz')}
+								</Tag>
+							)}
+						</div>
+					</List.Item>
+				)}
+			/>
+		);
+	};
+
 	return (
 		<Modal
 			title={
@@ -339,113 +460,7 @@ const AttemptDetailModal = ({ visible, attempt, onClose }) => {
 								)}
 							</div>
 
-							{!details?.items ? (
-								<div className="ppq-attempt-questions-empty">
-									<Spin size="small" />
-									<span>{__('Loading question data...', 'pressprimer-quiz')}</span>
-								</div>
-							) : showQuestionDetails ? (
-								<>
-									<div className="ppq-attempt-questions-detailed">
-										{details.items
-											.slice((questionPage - 1) * QUESTIONS_PER_PAGE, questionPage * QUESTIONS_PER_PAGE)
-											.map((item, index) => {
-												const actualIndex = (questionPage - 1) * QUESTIONS_PER_PAGE + index;
-												return (
-													<div
-														key={item.id}
-														className={`ppq-attempt-question-card ${item.is_correct ? 'ppq-attempt-question-card--correct' : 'ppq-attempt-question-card--incorrect'}`}
-													>
-														<div className="ppq-attempt-question-header">
-															<span className="ppq-attempt-question-number">
-																{__('Question', 'pressprimer-quiz')} {actualIndex + 1}
-															</span>
-															{item.is_correct ? (
-																<Tag color="success" className="ppq-attempt-question-tag">
-																	<CheckCircleOutlined /> {__('Correct', 'pressprimer-quiz')}
-																</Tag>
-															) : (
-																<Tag color="error" className="ppq-attempt-question-tag">
-																	<CloseCircleOutlined /> {__('Incorrect', 'pressprimer-quiz')}
-																</Tag>
-															)}
-														</div>
-														<div className="ppq-attempt-question-stem-full">
-															{item.stem || __('Question', 'pressprimer-quiz')}
-														</div>
-														{item.answers?.length > 0 && (
-															<div className="ppq-attempt-answers-list">
-																{item.answers.map((answer, ansIdx) => (
-																	<div
-																		key={ansIdx}
-																		className={`ppq-attempt-answer ${answer.was_selected ? 'ppq-attempt-answer--selected' : ''} ${answer.is_correct ? 'ppq-attempt-answer--correct' : ''}`}
-																	>
-																		<span className="ppq-attempt-answer-indicator">
-																			{answer.was_selected && answer.is_correct && <CheckCircleOutlined style={{ color: '#52c41a' }} />}
-																			{answer.was_selected && !answer.is_correct && <CloseCircleOutlined style={{ color: '#ff4d4f' }} />}
-																			{!answer.was_selected && answer.is_correct && <CheckCircleOutlined style={{ color: '#52c41a', opacity: 0.5 }} />}
-																		</span>
-																		<span className="ppq-attempt-answer-text">{answer.text}</span>
-																	</div>
-																))}
-															</div>
-														)}
-														{item.time_spent_ms > 0 && (
-															<div className="ppq-attempt-question-footer">
-																<span className="ppq-attempt-question-time">
-																	<ClockCircleOutlined style={{ marginRight: 4 }} />
-																	{formatTime(item.time_spent_ms)}
-																</span>
-															</div>
-														)}
-													</div>
-												);
-											})}
-									</div>
-									{details.items.length > QUESTIONS_PER_PAGE && (
-										<div className="ppq-attempt-questions-pagination">
-											<Pagination
-												current={questionPage}
-												pageSize={QUESTIONS_PER_PAGE}
-												total={details.items.length}
-												onChange={(page) => setQuestionPage(page)}
-												size="small"
-												showSizeChanger={false}
-												showTotal={(total, range) => `${range[0]}-${range[1]} of ${total}`}
-											/>
-										</div>
-									)}
-								</>
-							) : (
-								<List
-									size="small"
-									dataSource={details.items}
-									className="ppq-attempt-questions-list"
-									renderItem={(item, index) => (
-										<List.Item className={`ppq-attempt-question-item ${item.is_correct ? 'ppq-attempt-question-item--correct' : 'ppq-attempt-question-item--incorrect'}`}>
-											<div className="ppq-attempt-question-content">
-												<span className="ppq-attempt-question-number">
-													{index + 1}.
-												</span>
-												<span className="ppq-attempt-question-stem">
-													{item.stem || __('Question', 'pressprimer-quiz')}
-												</span>
-											</div>
-											<div className="ppq-attempt-question-meta">
-												{item.is_correct ? (
-													<Tag color="success" className="ppq-attempt-question-tag">
-														<CheckCircleOutlined /> {__('Correct', 'pressprimer-quiz')}
-													</Tag>
-												) : (
-													<Tag color="error" className="ppq-attempt-question-tag">
-														<CloseCircleOutlined /> {__('Incorrect', 'pressprimer-quiz')}
-													</Tag>
-												)}
-											</div>
-										</List.Item>
-									)}
-								/>
-							)}
+							{renderQuestionsContent()}
 						</div>
 					</>
 				)}

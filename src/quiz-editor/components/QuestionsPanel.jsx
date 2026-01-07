@@ -699,13 +699,11 @@ const QuestionsPanel = ({ quizId, generationMode }) => {
 					<Alert
 						type="info"
 						showIcon
-						message={
+						message={sprintf(
 							/* translators: %d: number of selected questions */
-							sprintf(
-								_n('%d question selected', '%d questions selected', selectedQuestionIds.length, 'pressprimer-quiz'),
-								selectedQuestionIds.length
-							)
-						}
+							_n('%d question selected', '%d questions selected', selectedQuestionIds.length, 'pressprimer-quiz'),
+							selectedQuestionIds.length
+						)}
 						style={{ marginBottom: 16 }}
 					/>
 				)}

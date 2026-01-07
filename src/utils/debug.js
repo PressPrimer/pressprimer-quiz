@@ -23,6 +23,7 @@ export const isDebugMode = () => {
  */
 export const debugLog = (...args) => {
 	if (isDebugMode()) {
+		// eslint-disable-next-line no-console
 		console.log('[PPQ]', ...args);
 	}
 };
@@ -34,6 +35,7 @@ export const debugLog = (...args) => {
  */
 export const debugError = (...args) => {
 	if (isDebugMode()) {
+		// eslint-disable-next-line no-console
 		console.error('[PPQ]', ...args);
 	}
 };
@@ -45,6 +47,7 @@ export const debugError = (...args) => {
  */
 export const debugWarn = (...args) => {
 	if (isDebugMode()) {
+		// eslint-disable-next-line no-console
 		console.warn('[PPQ]', ...args);
 	}
 };

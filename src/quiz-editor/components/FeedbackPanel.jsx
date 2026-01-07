@@ -6,7 +6,7 @@
  */
 
 import { useState, useEffect } from '@wordpress/element';
-import { __ } from '@wordpress/i18n';
+import { __, sprintf } from '@wordpress/i18n';
 import {
 	Card,
 	Button,
@@ -178,17 +178,21 @@ const FeedbackPanel = ({ onChange, value = [] }) => {
 
 		// Check each band
 		bands.forEach((band, index) => {
+			const bandNum = index + 1;
 			// Min must be < max
 			if (band.min >= band.max) {
-				errors.push(__(`Band ${index + 1}: Minimum must be less than maximum.`, 'pressprimer-quiz'));
+				/* translators: %d is the band number */
+				errors.push(sprintf(__('Band %d: Minimum must be less than maximum.', 'pressprimer-quiz'), bandNum));
 			}
 
 			// Min/max must be 0-100
 			if (band.min < 0 || band.min > 100) {
-				errors.push(__(`Band ${index + 1}: Minimum must be between 0 and 100.`, 'pressprimer-quiz'));
+				/* translators: %d is the band number */
+				errors.push(sprintf(__('Band %d: Minimum must be between 0 and 100.', 'pressprimer-quiz'), bandNum));
 			}
 			if (band.max < 0 || band.max > 100) {
-				errors.push(__(`Band ${index + 1}: Maximum must be between 0 and 100.`, 'pressprimer-quiz'));
+				/* translators: %d is the band number */
+				errors.push(sprintf(__('Band %d: Maximum must be between 0 and 100.', 'pressprimer-quiz'), bandNum));
 			}
 
 			// Check for overlaps with other bands
@@ -202,7 +206,8 @@ const FeedbackPanel = ({ onChange, value = [] }) => {
 						(band.max > otherBand.min && band.min < otherBand.max)
 					);
 					if (overlap) {
-						errors.push(__(`Band ${index + 1} overlaps with Band ${otherIndex + 1}.`, 'pressprimer-quiz'));
+						/* translators: %1$d is the first band number, %2$d is the second band number */
+						errors.push(sprintf(__('Band %1$d overlaps with Band %2$d.', 'pressprimer-quiz'), bandNum, otherIndex + 1));
 					}
 				}
 			});
@@ -230,7 +235,8 @@ const FeedbackPanel = ({ onChange, value = [] }) => {
 
 			// Gap exists if next band doesn't start immediately after current band ends
 			if (currentBand.max + 1 < nextBand.min) {
-				warnings.push(__(`Gap between ${currentBand.max}% and ${nextBand.min}%. Scores in this range won't have feedback.`, 'pressprimer-quiz'));
+				/* translators: %1$d is the end of the first band, %2$d is the start of the next band */
+				warnings.push(sprintf(__('Gap between %1$d%% and %2$d%%. Scores in this range won\'t have feedback.', 'pressprimer-quiz'), currentBand.max, nextBand.min));
 			}
 		}
 
@@ -407,8 +413,9 @@ const FeedbackPanel = ({ onChange, value = [] }) => {
 							<Space direction="vertical" size="small">
 								<Text strong>{__('About Score-Banded Feedback', 'pressprimer-quiz')}</Text>
 								<Text style={{ fontSize: 13 }}>
-									{__('Score-banded feedback is optional. When enabled, you can provide different feedback messages based on how well students perform. For example, students scoring 0-59% might see "Keep practicing" while those scoring 80-100% see "Excellent work!"', 'pressprimer-quiz')}
-								</Text>
+								{/* eslint-disable-next-line @wordpress/i18n-translator-comments -- %% is escaped literal percent sign, not a placeholder */}
+								{__('Score-banded feedback is optional. When enabled, you can provide different feedback messages based on how well students perform. For example, students scoring 0-59%% might see "Keep practicing" while those scoring 80-100%% see "Excellent work!"', 'pressprimer-quiz')}
+							</Text>
 								<Text type="secondary" style={{ fontSize: 12 }}>
 									{__('Toggle the switch above to enable this feature and configure your feedback bands.', 'pressprimer-quiz')}
 								</Text>

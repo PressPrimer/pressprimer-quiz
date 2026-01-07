@@ -25,148 +25,169 @@ const quizIcon = (
 );
 
 /**
- * Register Quiz block
+ * Edit component for Quiz block
+ *
+ * @param {Object} props Block props.
+ * @return {JSX.Element} Block edit component.
  */
-registerBlockType('pressprimer-quiz/quiz', {
-	icon: quizIcon,
+function Edit( props ) {
+	const { attributes, setAttributes } = props;
+	const { quizId } = attributes;
+	const blockProps = useBlockProps();
 
-	edit: (props) => {
-		const { attributes, setAttributes } = props;
-		const { quizId } = attributes;
-		const blockProps = useBlockProps();
+	const [ quizzes, setQuizzes ] = useState( [] );
+	const [ loading, setLoading ] = useState( true );
+	const [ selectedQuiz, setSelectedQuiz ] = useState( null );
 
-		const [quizzes, setQuizzes] = useState([]);
-		const [loading, setLoading] = useState(true);
-		const [selectedQuiz, setSelectedQuiz] = useState(null);
+	// Fetch available quizzes
+	useEffect( () => {
+		setLoading( true );
+		apiFetch( { path: '/ppq/v1/quizzes/published' } )
+			.then( ( response ) => {
+				setQuizzes( response || [] );
+				setLoading( false );
+			} )
+			.catch( () => {
+				setQuizzes( [] );
+				setLoading( false );
+			} );
+	}, [] );
 
-		// Fetch available quizzes
-		useEffect(() => {
-			setLoading(true);
-			apiFetch({ path: '/ppq/v1/quizzes/published' })
-				.then((response) => {
-					setQuizzes(response || []);
-					setLoading(false);
-				})
-				.catch(() => {
-					setQuizzes([]);
-					setLoading(false);
-				});
-		}, []);
+	// Find selected quiz from loaded quizzes
+	useEffect( () => {
+		if ( quizId && quizId > 0 && quizzes.length > 0 ) {
+			const quiz = quizzes.find( ( q ) => parseInt( q.id, 10 ) === parseInt( quizId, 10 ) );
+			setSelectedQuiz( quiz || null );
+		} else {
+			setSelectedQuiz( null );
+		}
+	}, [ quizId, quizzes ] );
 
-		// Find selected quiz from loaded quizzes
-		useEffect(() => {
-			if (quizId && quizId > 0 && quizzes.length > 0) {
-				// Use == for comparison to handle potential type mismatches
-				const quiz = quizzes.find((q) => parseInt(q.id, 10) === parseInt(quizId, 10));
-				setSelectedQuiz(quiz || null);
-			} else {
-				setSelectedQuiz(null);
-			}
-		}, [quizId, quizzes]);
+	// Build options for select
+	const quizOptions = [
+		{ value: 0, label: __( '— Select a Quiz —', 'pressprimer-quiz' ) },
+		...quizzes.map( ( quiz ) => ( {
+			value: quiz.id,
+			label: quiz.title,
+		} ) ),
+	];
 
-		// Build options for select
-		const quizOptions = [
-			{ value: 0, label: __('— Select a Quiz —', 'pressprimer-quiz') },
-			...quizzes.map((quiz) => ({
-				value: quiz.id,
-				label: quiz.title,
-			})),
-		];
+	// Render loading placeholder
+	const renderLoading = () => (
+		<Placeholder icon={ quizIcon } label={ __( 'PPQ Quiz', 'pressprimer-quiz' ) }>
+			<p>
+				<Spinner /> { __( 'Loading quizzes...', 'pressprimer-quiz' ) }
+			</p>
+		</Placeholder>
+	);
 
-		return (
-			<div {...blockProps}>
-				<InspectorControls>
-					<PanelBody title={__('Quiz Settings', 'pressprimer-quiz')} initialOpen={true}>
-						{loading ? (
-							<p><Spinner /> {__('Loading quizzes...', 'pressprimer-quiz')}</p>
-						) : (
-							<SelectControl
-								__next40pxDefaultSize
-								__nextHasNoMarginBottom
-								label={__('Select Quiz', 'pressprimer-quiz')}
-								value={quizId}
-								options={quizOptions}
-								onChange={(value) => setAttributes({ quizId: parseInt(value, 10) })}
-								help={__('Choose the quiz to display on this page.', 'pressprimer-quiz')}
-							/>
-						)}
-					</PanelBody>
-				</InspectorControls>
+	// Render quiz selector placeholder
+	const renderSelector = () => (
+		<Placeholder
+			icon={ quizIcon }
+			label={ __( 'PPQ Quiz', 'pressprimer-quiz' ) }
+			instructions={ __( 'Select a quiz to display from the dropdown below or in the sidebar settings.', 'pressprimer-quiz' ) }
+		>
+			<SelectControl
+				__next40pxDefaultSize
+				__nextHasNoMarginBottom
+				value={ quizId }
+				options={ quizOptions }
+				onChange={ ( value ) => setAttributes( { quizId: parseInt( value, 10 ) } ) }
+			/>
+		</Placeholder>
+	);
 
-				{loading ? (
-					<Placeholder
-						icon={quizIcon}
-						label={__('PPQ Quiz', 'pressprimer-quiz')}
-					>
-						<p><Spinner /> {__('Loading quizzes...', 'pressprimer-quiz')}</p>
-					</Placeholder>
-				) : !quizId || quizId === 0 ? (
-					<Placeholder
-						icon={quizIcon}
-						label={__('PPQ Quiz', 'pressprimer-quiz')}
-						instructions={__('Select a quiz to display from the dropdown below or in the sidebar settings.', 'pressprimer-quiz')}
-					>
+	// Render quiz preview
+	const renderPreview = () => (
+		<div className="ppq-quiz-block-preview">
+			<div className="ppq-quiz-block-preview-header">
+				<span className="ppq-quiz-block-preview-icon">{ quizIcon }</span>
+				<span className="ppq-quiz-block-preview-label">{ __( 'PPQ Quiz', 'pressprimer-quiz' ) }</span>
+			</div>
+			<div className="ppq-quiz-block-preview-content">
+				{ selectedQuiz ? (
+					<>
+						<h3 className="ppq-quiz-block-preview-title">{ selectedQuiz.title }</h3>
+						<div className="ppq-quiz-block-preview-meta">
+							{ selectedQuiz.question_count !== undefined && (
+								<span className="ppq-quiz-block-preview-meta-item">
+									<strong>{ selectedQuiz.question_count }</strong> { __( 'questions', 'pressprimer-quiz' ) }
+								</span>
+							) }
+							{ selectedQuiz.time_limit_minutes > 0 && (
+								<span className="ppq-quiz-block-preview-meta-item">
+									<strong>{ selectedQuiz.time_limit_minutes }</strong> { __( 'min time limit', 'pressprimer-quiz' ) }
+								</span>
+							) }
+							{ selectedQuiz.passing_score !== undefined && (
+								<span className="ppq-quiz-block-preview-meta-item">
+									<strong>{ selectedQuiz.passing_score }%</strong> { __( 'to pass', 'pressprimer-quiz' ) }
+								</span>
+							) }
+						</div>
+						{ selectedQuiz.description && (
+							<p className="ppq-quiz-block-preview-description">
+								{ selectedQuiz.description.substring( 0, 150 ) }
+								{ selectedQuiz.description.length > 150 ? '...' : '' }
+							</p>
+						) }
+					</>
+				) : (
+					<p>{ __( 'Loading quiz details...', 'pressprimer-quiz' ) }</p>
+				) }
+			</div>
+			<div className="ppq-quiz-block-preview-footer">
+				<p className="ppq-quiz-block-preview-note">
+					{ __( 'The full quiz will be displayed on the frontend.', 'pressprimer-quiz' ) }
+				</p>
+			</div>
+		</div>
+	);
+
+	// Determine what to render
+	const renderContent = () => {
+		if ( loading ) {
+			return renderLoading();
+		}
+		if ( ! quizId || quizId === 0 ) {
+			return renderSelector();
+		}
+		return renderPreview();
+	};
+
+	return (
+		<div { ...blockProps }>
+			<InspectorControls>
+				<PanelBody title={ __( 'Quiz Settings', 'pressprimer-quiz' ) } initialOpen={ true }>
+					{ loading ? (
+						<p>
+							<Spinner /> { __( 'Loading quizzes...', 'pressprimer-quiz' ) }
+						</p>
+					) : (
 						<SelectControl
 							__next40pxDefaultSize
 							__nextHasNoMarginBottom
-							value={quizId}
-							options={quizOptions}
-							onChange={(value) => setAttributes({ quizId: parseInt(value, 10) })}
+							label={ __( 'Select Quiz', 'pressprimer-quiz' ) }
+							value={ quizId }
+							options={ quizOptions }
+							onChange={ ( value ) => setAttributes( { quizId: parseInt( value, 10 ) } ) }
+							help={ __( 'Choose the quiz to display on this page.', 'pressprimer-quiz' ) }
 						/>
-					</Placeholder>
-				) : (
-					<div className="ppq-quiz-block-preview">
-						<div className="ppq-quiz-block-preview-header">
-							<span className="ppq-quiz-block-preview-icon">{quizIcon}</span>
-							<span className="ppq-quiz-block-preview-label">{__('PPQ Quiz', 'pressprimer-quiz')}</span>
-						</div>
-						<div className="ppq-quiz-block-preview-content">
-							{selectedQuiz ? (
-								<>
-									<h3 className="ppq-quiz-block-preview-title">
-										{selectedQuiz.title}
-									</h3>
-									<div className="ppq-quiz-block-preview-meta">
-										{selectedQuiz.question_count !== undefined && (
-											<span className="ppq-quiz-block-preview-meta-item">
-												<strong>{selectedQuiz.question_count}</strong> {__('questions', 'pressprimer-quiz')}
-											</span>
-										)}
-										{selectedQuiz.time_limit_minutes > 0 && (
-											<span className="ppq-quiz-block-preview-meta-item">
-												<strong>{selectedQuiz.time_limit_minutes}</strong> {__('min time limit', 'pressprimer-quiz')}
-											</span>
-										)}
-										{selectedQuiz.passing_score !== undefined && (
-											<span className="ppq-quiz-block-preview-meta-item">
-												<strong>{selectedQuiz.passing_score}%</strong> {__('to pass', 'pressprimer-quiz')}
-											</span>
-										)}
-									</div>
-									{selectedQuiz.description && (
-										<p className="ppq-quiz-block-preview-description">
-											{selectedQuiz.description.substring(0, 150)}
-											{selectedQuiz.description.length > 150 ? '...' : ''}
-										</p>
-									)}
-								</>
-							) : (
-								<p>{__('Loading quiz details...', 'pressprimer-quiz')}</p>
-							)}
-						</div>
-						<div className="ppq-quiz-block-preview-footer">
-							<p className="ppq-quiz-block-preview-note">
-								{__('The full quiz will be displayed on the frontend.', 'pressprimer-quiz')}
-							</p>
-						</div>
-					</div>
-				)}
-			</div>
-		);
-	},
+					) }
+				</PanelBody>
+			</InspectorControls>
 
-	save: () => {
-		// Dynamic block - rendered via PHP
-		return null;
-	},
-});
+			{ renderContent() }
+		</div>
+	);
+}
+
+/**
+ * Register Quiz block
+ */
+registerBlockType( 'pressprimer-quiz/quiz', {
+	icon: quizIcon,
+	edit: Edit,
+	save: () => null,
+} );

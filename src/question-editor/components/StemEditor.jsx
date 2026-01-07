@@ -112,7 +112,16 @@ const StemEditor = ({ value, onChange }) => {
 	}, [value, isInitialized]);
 
 	const percentUsed = (charCount / maxChars) * 100;
-	const strokeColor = percentUsed > 90 ? '#ff4d4f' : percentUsed > 75 ? '#faad14' : '#52c41a';
+	const getStrokeColor = () => {
+		if (percentUsed > 90) {
+			return '#ff4d4f';
+		}
+		if (percentUsed > 75) {
+			return '#faad14';
+		}
+		return '#52c41a';
+	};
+	const strokeColor = getStrokeColor();
 
 	return (
 		<Card

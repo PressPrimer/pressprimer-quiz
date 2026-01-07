@@ -7,8 +7,7 @@
  * @since 1.0.0
  */
 
-import { useState, useEffect, useCallback, useRef } from '@wordpress/element';
-import { createPortal } from '@wordpress/element';
+import { useState, useEffect, useCallback, useRef, createPortal } from '@wordpress/element';
 
 /**
  * Spotlight Component

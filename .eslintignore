@@ -1,0 +1,11 @@
+# Build output
+build/
+dist/
+
+# Dependencies
+node_modules/
+vendor/
+
+# Playwright e2e tests (dev dependency)
+e2e/
+playwright.config.ts

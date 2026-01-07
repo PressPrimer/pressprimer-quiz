@@ -79,7 +79,15 @@ const BankSelector = ({ value, onChange }) => {
 				{displayName}
 				{closable && (
 					<span
+						role="button"
+						tabIndex={0}
 						onClick={onClose}
+						onKeyDown={(e) => {
+							if (e.key === 'Enter' || e.key === ' ') {
+								e.preventDefault();
+								onClose(e);
+							}
+						}}
 						style={{ marginLeft: 4, cursor: 'pointer', color: '#999' }}
 					>
 						×

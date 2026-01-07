@@ -11,7 +11,7 @@ import { useEffect, useCallback, useState } from '@wordpress/element';
 import { __ } from '@wordpress/i18n';
 
 import useOnboarding from '../hooks/useOnboarding';
-import { tourSteps, getStep, getStepUrl, isOnCorrectPage, STEP_TYPE, getTotalSteps } from '../tourSteps';
+import { getStep, getStepUrl, isOnCorrectPage, STEP_TYPE, getTotalSteps } from '../tourSteps';
 import WelcomeModal from './WelcomeModal';
 import CompletionModal from './CompletionModal';
 import SpotlightTooltip from './SpotlightTooltip';
@@ -48,7 +48,6 @@ const findValidSelector = (step) => {
  */
 const Onboarding = ({ initialData = {} }) => {
 	const {
-		isLoading,
 		isActive,
 		currentStep,
 		totalSteps,
@@ -77,9 +76,8 @@ const Onboarding = ({ initialData = {} }) => {
 			}, 100);
 
 			return () => clearTimeout(timer);
-		} else {
-			setActiveSelector(null);
 		}
+		setActiveSelector(null);
 	}, [step]);
 
 	/**

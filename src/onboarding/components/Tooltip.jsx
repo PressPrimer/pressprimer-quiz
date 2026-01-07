@@ -18,7 +18,7 @@ import { LeftOutlined, RightOutlined, CloseOutlined } from '@ant-design/icons';
  * @param {Object} tooltipRect Tooltip element bounding rect
  * @param {string} preferredPosition Preferred position (top, bottom, left, right)
  * @param {number} offset Distance from target element
- * @returns {Object} Position object with top, left, and actual position
+ * @return {Object} Position object with top, left, and actual position
  */
 const calculatePosition = (targetRect, tooltipRect, preferredPosition = 'bottom', offset = 16) => {
 	const viewport = {

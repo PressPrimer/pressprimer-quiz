@@ -13,7 +13,7 @@ import { useState, useCallback } from '@wordpress/element';
  * useOnboarding Hook
  *
  * @param {Object} initialData Initial data from PHP (pressprimerQuizOnboardingData)
- * @returns {Object} Onboarding state and actions
+ * @return {Object} Onboarding state and actions
  */
 const useOnboarding = (initialData = {}) => {
 	const [isLoading, setIsLoading] = useState(false);

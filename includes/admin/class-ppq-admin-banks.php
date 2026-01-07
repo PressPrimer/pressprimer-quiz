@@ -184,6 +184,16 @@ class PressPrimer_Quiz_Admin_Banks {
 			<a href="<?php echo esc_url( admin_url( 'admin.php?page=pressprimer-quiz-banks&action=new' ) ); ?>" class="page-title-action">
 				<?php esc_html_e( 'Add New', 'pressprimer-quiz' ); ?>
 			</a>
+			<?php
+			/**
+			 * Fires in the question banks page toolbar.
+			 *
+			 * Premium addons can add buttons here (e.g., Import).
+			 *
+			 * @since 2.0.0
+			 */
+			do_action( 'pressprimer_quiz_banks_toolbar' );
+			?>
 			<hr class="wp-header-end">
 
 			<form method="get">

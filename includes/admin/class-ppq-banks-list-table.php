@@ -371,15 +371,35 @@ class PressPrimer_Quiz_Banks_List_Table extends WP_List_Table {
 
 		$title = '<strong><a href="' . esc_url( $view_url ) . '">' . esc_html( $item->name ) . '</a></strong>';
 
-		// Row actions
+		// Row actions.
 		$actions         = [];
 		$actions['view'] = '<a href="' . esc_url( $view_url ) . '">' . __( 'Questions', 'pressprimer-quiz' ) . '</a>';
 
-		// Check ownership for edit/delete
+		// Check ownership for edit/delete.
 		if ( current_user_can( 'pressprimer_quiz_manage_all' ) || absint( $item->owner_id ) === get_current_user_id() ) {
 			$actions['edit']   = '<a href="' . esc_url( $edit_url ) . '">' . __( 'Edit', 'pressprimer-quiz' ) . '</a>';
 			$actions['delete'] = '<a href="' . esc_url( $delete_url ) . '" onclick="return confirm(\'' . esc_js( __( 'Are you sure you want to delete this bank?', 'pressprimer-quiz' ) ) . '\');">' . __( 'Delete', 'pressprimer-quiz' ) . '</a>';
 		}
+
+		/**
+		 * Filters the row actions displayed for each bank.
+		 *
+		 * Premium addons can add custom actions like Export or Share.
+		 *
+		 * Example usage:
+		 * ```php
+		 * add_filter( 'pressprimer_quiz_bank_row_actions', function( $actions, $bank ) {
+		 *     $actions['export'] = '<a href="...">Export</a>';
+		 *     return $actions;
+		 * }, 10, 2 );
+		 * ```
+		 *
+		 * @since 2.0.0
+		 *
+		 * @param array  $actions Row actions array.
+		 * @param object $bank    Bank object.
+		 */
+		$actions = apply_filters( 'pressprimer_quiz_bank_row_actions', $actions, $item );
 
 		return $title . $this->row_actions( $actions );
 	}

@@ -564,21 +564,22 @@ Good luck with your studies!
 	 * @since 1.0.0
 	 *
 	 * @param string $to_email Recipient email address.
+	 * @param string $type     Email type ('results' or 'welcome'). Default 'results'.
 	 * @return bool True on success, false on failure.
 	 */
-	public static function send_test_email( $to_email ) {
-		// Validate email
+	public static function send_test_email( $to_email, $type = 'results' ) {
+		// Validate email.
 		if ( ! is_email( $to_email ) ) {
 			return false;
 		}
 
-		// Get current user info for test data
+		// Get current user info for test data.
 		$current_user = wp_get_current_user();
 		$first_name   = $current_user->first_name ?: $current_user->display_name;
 		$parts        = explode( ' ', $first_name );
 		$first_name   = $parts[0];
 
-		// Get email settings
+		// Get email settings.
 		$settings   = get_option( 'pressprimer_quiz_settings', [] );
 		$from_name  = isset( $settings['email_from_name'] ) && $settings['email_from_name']
 			? $settings['email_from_name']
@@ -587,52 +588,100 @@ Good luck with your studies!
 			? $settings['email_from_email']
 			: get_bloginfo( 'admin_email' );
 
-		// Get subject and body templates
-		$subject_template = isset( $settings['email_results_subject'] ) && $settings['email_results_subject']
-			? $settings['email_results_subject']
-			: __( 'Your results for {quiz_title}', 'pressprimer-quiz' );
-		$body_template    = isset( $settings['email_results_body'] ) && $settings['email_results_body']
-			? $settings['email_results_body']
-			: self::get_default_body_template();
+		// Get subject and body templates based on type.
+		if ( 'welcome' === $type ) {
+			// Welcome email template.
+			$default_subject  = __( 'Welcome to {site_name}', 'pressprimer-quiz' );
+			$default_body     = self::get_default_welcome_body_template();
+			$subject_template = isset( $settings['educator_welcome_email_subject'] ) && $settings['educator_welcome_email_subject']
+				? $settings['educator_welcome_email_subject']
+				: $default_subject;
+			$body_template    = isset( $settings['educator_welcome_email_body'] ) && $settings['educator_welcome_email_body']
+				? $settings['educator_welcome_email_body']
+				: $default_body;
 
-		// Build sample token replacements
-		$tokens = [
-			'{first_name}'   => $first_name ?: __( 'there', 'pressprimer-quiz' ),
-			'{student_name}' => $current_user->display_name ?: __( 'Test Student', 'pressprimer-quiz' ),
-			'{quiz_title}'   => __( 'Sample Quiz', 'pressprimer-quiz' ),
-			'{score}'        => '85%',
-			'{passed}'       => __( 'Passed', 'pressprimer-quiz' ),
-			'{date}'         => wp_date( get_option( 'date_format' ) . ' ' . get_option( 'time_format' ) ),
-			'{points}'       => '17.00',
-			'{max_points}'   => '20.00',
-			'{site_name}'    => get_bloginfo( 'name' ),
-			'{site_url}'     => home_url(),
-		];
+			// Build sample token replacements for welcome email.
+			$tokens = [
+				'{student_name}'  => $current_user->display_name ?: __( 'Test Student', 'pressprimer-quiz' ),
+				'{student_email}' => $to_email,
+				'{teacher_name}'  => $current_user->display_name ?: __( 'Test Teacher', 'pressprimer-quiz' ),
+				'{group_name}'    => __( 'Sample Group', 'pressprimer-quiz' ),
+				'{site_name}'     => get_bloginfo( 'name' ),
+				'{reset_link}'    => wp_lostpassword_url(),
+				'{login_url}'     => wp_login_url(),
+			];
+		} else {
+			// Results email template (default).
+			$subject_template = isset( $settings['email_results_subject'] ) && $settings['email_results_subject']
+				? $settings['email_results_subject']
+				: __( 'Your results for {quiz_title}', 'pressprimer-quiz' );
+			$body_template    = isset( $settings['email_results_body'] ) && $settings['email_results_body']
+				? $settings['email_results_body']
+				: self::get_default_body_template();
 
-		// Build sample results summary HTML for test email
-		$tokens['{results_summary}'] = self::build_test_results_summary_html();
+			// Build sample token replacements for results email.
+			$tokens = [
+				'{first_name}'   => $first_name ?: __( 'there', 'pressprimer-quiz' ),
+				'{student_name}' => $current_user->display_name ?: __( 'Test Student', 'pressprimer-quiz' ),
+				'{quiz_title}'   => __( 'Sample Quiz', 'pressprimer-quiz' ),
+				'{score}'        => '85%',
+				'{passed}'       => __( 'Passed', 'pressprimer-quiz' ),
+				'{date}'         => wp_date( get_option( 'date_format' ) . ' ' . get_option( 'time_format' ) ),
+				'{points}'       => '17.00',
+				'{max_points}'   => '20.00',
+				'{site_name}'    => get_bloginfo( 'name' ),
+				'{site_url}'     => home_url(),
+			];
 
-		// Build results button HTML for test email
-		$tokens['{results_url}'] = self::build_results_button_html( home_url( '/sample-quiz-results/' ) );
+			// Build sample results summary HTML for test email.
+			$tokens['{results_summary}'] = self::build_test_results_summary_html();
 
-		// Replace tokens in subject
+			// Build results button HTML for test email.
+			$tokens['{results_url}'] = self::build_results_button_html( home_url( '/sample-quiz-results/' ) );
+		}
+
+		// Replace tokens in subject.
 		$subject = str_replace( array_keys( $tokens ), array_values( $tokens ), $subject_template );
 		$subject = '[' . __( 'TEST', 'pressprimer-quiz' ) . '] ' . $subject;
 
-		// Replace tokens in body
+		// Replace tokens in body.
 		$body_text = str_replace( array_keys( $tokens ), array_values( $tokens ), $body_template );
 
-		// Build HTML email
+		// Build HTML email.
 		$html_body = self::build_test_html_email( $body_text, $tokens );
 
-		// Set headers
+		// Set headers.
 		$headers = [
 			'Content-Type: text/html; charset=UTF-8',
 			'From: ' . $from_name . ' <' . $from_email . '>',
 		];
 
-		// Send email
+		// Send email.
 		return wp_mail( $to_email, $subject, $html_body, $headers );
+	}
+
+	/**
+	 * Get default welcome email body template
+	 *
+	 * @since 1.0.0
+	 *
+	 * @return string Default welcome email body.
+	 */
+	private static function get_default_welcome_body_template() {
+		return 'Hello {student_name},
+
+{teacher_name} has added you to the group "{group_name}".
+
+If you\'re a new user, or don\'t remember your current password, you can set a password by clicking the link below:
+
+{reset_link}
+
+After setting your password, you can log in to access your quizzes and assignments. Use this link to log in:
+
+{login_url}
+
+Best regards,
+The {site_name} Team';
 	}
 
 	/**

@@ -510,10 +510,36 @@ class PressPrimer_Quiz_REST_Controller {
 		$where        = [ 'q.deleted_at IS NULL' ];
 		$where_values = [];
 
-		// Filter by owner for users who can only manage their own content
+		// Filter by owner for users who can only manage their own content.
+		// For quiz building, teachers need to see questions from accessible banks too.
 		if ( ! current_user_can( 'pressprimer_quiz_manage_all' ) ) {
-			$where[]        = 'q.owner_id = %d';
-			$where_values[] = get_current_user_id();
+			$user_id = get_current_user_id();
+
+			/**
+			 * Filter additional bank IDs a user can access questions from.
+			 *
+			 * Allows addons (like Educator) to grant access to questions from
+			 * shared banks based on group membership or other criteria.
+			 *
+			 * @since 2.0.0
+			 *
+			 * @param array $accessible_bank_ids Array of bank IDs user can access. Default empty.
+			 * @param int   $user_id             User ID being checked.
+			 */
+			$accessible_bank_ids = apply_filters( 'pressprimer_quiz_accessible_bank_ids', [], $user_id );
+			$accessible_bank_ids = array_filter( array_map( 'absint', $accessible_bank_ids ) );
+
+			if ( ! empty( $accessible_bank_ids ) ) {
+				// User can see their own questions OR questions from accessible banks.
+				$bank_placeholders = implode( ',', array_fill( 0, count( $accessible_bank_ids ), '%d' ) );
+				$where[]           = "(q.author_id = %d OR q.id IN (SELECT question_id FROM {$bank_questions_table} WHERE bank_id IN ({$bank_placeholders})))";
+				$where_values[]    = $user_id;
+				$where_values      = array_merge( $where_values, $accessible_bank_ids );
+			} else {
+				// Default: only show questions authored by user.
+				$where[]        = 'q.author_id = %d';
+				$where_values[] = $user_id;
+			}
 		}
 
 		// Filter by status if provided
@@ -1033,12 +1059,44 @@ class PressPrimer_Quiz_REST_Controller {
 	public function get_banks( $request ) {
 		$user_id = get_current_user_id();
 
-		// Admins can see all banks, others see only their own
+		// Admins can see all banks, others see only their own plus shared banks.
 		if ( current_user_can( 'pressprimer_quiz_manage_all' ) ) {
 			$banks = PressPrimer_Quiz_Bank::get_all();
 		} else {
 			$banks = PressPrimer_Quiz_Bank::get_for_user( $user_id );
+
+			// Allow addons to add additional accessible banks (e.g., shared banks).
+			$additional_bank_ids = apply_filters( 'pressprimer_quiz_accessible_bank_ids', array(), $user_id );
+			$additional_bank_ids = array_filter( array_map( 'absint', $additional_bank_ids ) );
+
+			if ( ! empty( $additional_bank_ids ) ) {
+				// Get IDs of banks we already have.
+				$existing_ids = array_map(
+					function ( $bank ) {
+						return $bank->id;
+					},
+					$banks
+				);
+
+				// Add banks that aren't already in the list.
+				foreach ( $additional_bank_ids as $bank_id ) {
+					if ( ! in_array( $bank_id, $existing_ids, true ) ) {
+						$bank = PressPrimer_Quiz_Bank::get( $bank_id );
+						if ( $bank ) {
+							$banks[] = $bank;
+						}
+					}
+				}
+			}
 		}
+
+		// Sort banks alphabetically by name.
+		usort(
+			$banks,
+			function ( $a, $b ) {
+				return strcasecmp( $a->name, $b->name );
+			}
+		);
 
 		$data = array_map(
 			function ( $bank ) {
@@ -2413,13 +2471,14 @@ class PressPrimer_Quiz_REST_Controller {
 	public function send_test_email( $request ) {
 		$data  = $request->get_json_params();
 		$email = sanitize_email( $data['email'] ?? '' );
+		$type  = isset( $data['type'] ) ? sanitize_key( $data['type'] ) : 'results';
 
 		if ( empty( $email ) || ! is_email( $email ) ) {
 			return new WP_Error( 'invalid_email', __( 'Please provide a valid email address.', 'pressprimer-quiz' ), [ 'status' => 400 ] );
 		}
 
-		// Send test email
-		$sent = PressPrimer_Quiz_Email_Service::send_test_email( $email );
+		// Send test email based on type.
+		$sent = PressPrimer_Quiz_Email_Service::send_test_email( $email, $type );
 
 		if ( $sent ) {
 			return new WP_REST_Response(

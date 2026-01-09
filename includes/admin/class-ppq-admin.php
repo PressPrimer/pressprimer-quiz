@@ -317,12 +317,17 @@ class PressPrimer_Quiz_Admin {
 			$asset['version']
 		);
 
+		// Determine if user is a teacher (has group management but not full admin).
+		$is_teacher = current_user_can( 'pressprimer_quiz_educator_manage_own_groups' )
+			&& ! current_user_can( 'pressprimer_quiz_manage_all' );
+
 		// Localize script with dashboard data
 		wp_localize_script(
 			'ppq-dashboard',
 			'pressprimerQuizDashboardData',
 			[
 				'pluginUrl' => PRESSPRIMER_QUIZ_PLUGIN_URL,
+				'isTeacher' => $is_teacher,
 				'urls'      => [
 					'create_quiz'  => admin_url( 'admin.php?page=pressprimer-quiz-quizzes&action=new' ),
 					'add_question' => admin_url( 'admin.php?page=pressprimer-quiz-questions&action=new' ),

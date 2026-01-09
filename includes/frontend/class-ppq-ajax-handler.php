@@ -547,8 +547,9 @@ class PressPrimer_Quiz_AJAX_Handler {
 	 * @return bool True if user can access.
 	 */
 	private function can_access_attempt( $attempt ) {
-		// Check if user owns this attempt
-		if ( is_user_logged_in() && $attempt->user_id === get_current_user_id() ) {
+		// Check if user owns this attempt.
+		// Cast to int for comparison since database values are strings.
+		if ( is_user_logged_in() && absint( $attempt->user_id ) === get_current_user_id() ) {
 			return true;
 		}
 

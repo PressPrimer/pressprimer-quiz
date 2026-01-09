@@ -91,8 +91,10 @@ const Dashboard = ({ initialData = {} }) => {
 		}
 	}, []);
 
-	// Get the plugin URL from localized data
-	const pluginUrl = window.pressprimerQuizDashboardData?.pluginUrl || '';
+	// Get the plugin URL and teacher flag from localized data
+	const dashboardData = window.pressprimerQuizDashboardData || {};
+	const pluginUrl = dashboardData.pluginUrl || '';
+	const isTeacher = dashboardData.isTeacher || false;
 
 	return (
 		<div className="ppq-dashboard-container">
@@ -123,7 +125,7 @@ const Dashboard = ({ initialData = {} }) => {
 				<div className="ppq-dashboard-content">
 					{/* Top Row: Stats Cards (2 cols) + Quick Actions (1 col) */}
 					<div className="ppq-dashboard-top-row">
-						<StatsCards stats={stats} loading={loading} />
+						<StatsCards stats={stats} loading={loading} isTeacher={isTeacher} />
 						<QuickActions urls={initialData.urls || {}} onLaunchTour={handleLaunchTour} />
 					</div>
 

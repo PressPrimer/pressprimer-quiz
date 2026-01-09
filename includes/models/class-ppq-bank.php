@@ -359,13 +359,14 @@ class PressPrimer_Quiz_Bank extends PressPrimer_Quiz_Model {
 		global $wpdb;
 
 		$defaults = [
-			'type'       => null,
-			'difficulty' => null,
-			'search'     => null,
-			'order_by'   => 'bq.added_at',
-			'order'      => 'DESC',
-			'limit'      => null,
-			'offset'     => 0,
+			'type'        => null,
+			'difficulty'  => null,
+			'category_id' => null,
+			'search'      => null,
+			'order_by'    => 'bq.added_at',
+			'order'       => 'DESC',
+			'limit'       => null,
+			'offset'      => 0,
 		];
 
 		$args = wp_parse_args( $args, $defaults );
@@ -390,6 +391,15 @@ class PressPrimer_Quiz_Bank extends PressPrimer_Quiz_Model {
 		if ( ! empty( $args['difficulty'] ) ) {
 			$where_clauses[] = 'q.difficulty_author = %s';
 			$where_values[]  = $args['difficulty'];
+		}
+
+		// Filter by category
+		$category_join = '';
+		if ( ! empty( $args['category_id'] ) ) {
+			$question_tax_table = $wpdb->prefix . 'ppq_question_tax';
+			$category_join      = "INNER JOIN {$question_tax_table} qt ON q.id = qt.question_id AND qt.taxonomy = 'category'";
+			$where_clauses[]    = 'qt.category_id = %d';
+			$where_values[]     = absint( $args['category_id'] );
 		}
 
 		// Search in stem (join with revisions table)
@@ -427,6 +437,7 @@ class PressPrimer_Quiz_Bank extends PressPrimer_Quiz_Model {
 			SELECT q.*
 			FROM {$bank_questions_table} bq
 			INNER JOIN {$questions_table} q ON bq.question_id = q.id
+			{$category_join}
 			{$revision_join}
 			{$where_sql}
 			{$order_sql}
@@ -463,6 +474,87 @@ class PressPrimer_Quiz_Bank extends PressPrimer_Quiz_Model {
 	}
 
 	/**
+	 * Count questions with filters
+	 *
+	 * Returns count of questions matching the specified filters.
+	 *
+	 * @since 2.0.0
+	 *
+	 * @param array $args Filter arguments (same as get_questions but without limit/offset).
+	 * @return int Question count.
+	 */
+	public function count_questions( array $args = [] ) {
+		if ( empty( $this->id ) ) {
+			return 0;
+		}
+
+		global $wpdb;
+
+		$defaults = [
+			'type'        => null,
+			'difficulty'  => null,
+			'category_id' => null,
+			'search'      => null,
+		];
+
+		$args = wp_parse_args( $args, $defaults );
+
+		$bank_questions_table = $wpdb->prefix . 'ppq_bank_questions';
+		$questions_table      = $wpdb->prefix . 'ppq_questions';
+
+		// Build WHERE clauses.
+		$where_clauses = [ 'bq.bank_id = %d' ];
+		$where_values  = [ $this->id ];
+
+		// Exclude deleted questions.
+		$where_clauses[] = 'q.deleted_at IS NULL';
+
+		// Filter by type.
+		if ( ! empty( $args['type'] ) ) {
+			$where_clauses[] = 'q.type = %s';
+			$where_values[]  = $args['type'];
+		}
+
+		// Filter by difficulty.
+		if ( ! empty( $args['difficulty'] ) ) {
+			$where_clauses[] = 'q.difficulty_author = %s';
+			$where_values[]  = $args['difficulty'];
+		}
+
+		// Filter by category.
+		$category_join = '';
+		if ( ! empty( $args['category_id'] ) ) {
+			$question_tax_table = $wpdb->prefix . 'ppq_question_tax';
+			$category_join      = "INNER JOIN {$question_tax_table} qt ON q.id = qt.question_id AND qt.taxonomy = 'category'";
+			$where_clauses[]    = 'qt.category_id = %d';
+			$where_values[]     = absint( $args['category_id'] );
+		}
+
+		// Search in stem.
+		$revision_join = '';
+		if ( ! empty( $args['search'] ) ) {
+			$revisions_table = $wpdb->prefix . 'ppq_question_revisions';
+			$revision_join   = "LEFT JOIN {$revisions_table} qr ON q.current_revision_id = qr.id";
+			$where_clauses[] = 'qr.stem LIKE %s';
+			$where_values[]  = '%' . $wpdb->esc_like( $args['search'] ) . '%';
+		}
+
+		$where_sql = 'WHERE ' . implode( ' AND ', $where_clauses );
+
+		$query = "
+			SELECT COUNT(*)
+			FROM {$bank_questions_table} bq
+			INNER JOIN {$questions_table} q ON bq.question_id = q.id
+			{$category_join}
+			{$revision_join}
+			{$where_sql}
+		";
+
+		// phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- Query built with placeholders.
+		return (int) $wpdb->get_var( $wpdb->prepare( $query, $where_values ) );
+	}
+
+	/**
 	 * Update question count
 	 *
 	 * Recalculates and updates the question_count field.
@@ -480,15 +572,17 @@ class PressPrimer_Quiz_Bank extends PressPrimer_Quiz_Model {
 
 		$bank_questions_table = $wpdb->prefix . 'ppq_bank_questions';
 		$banks_table          = $wpdb->prefix . 'ppq_banks';
+		$questions_table      = $wpdb->prefix . 'ppq_questions';
 
-		// Update count using subquery for accuracy
+		// Update count using subquery, excluding soft-deleted questions.
 		$result = $wpdb->query(
 			$wpdb->prepare(
 				"UPDATE {$banks_table}
 				SET question_count = (
 					SELECT COUNT(*)
-					FROM {$bank_questions_table}
-					WHERE bank_id = %d
+					FROM {$bank_questions_table} bq
+					INNER JOIN {$questions_table} q ON bq.question_id = q.id
+					WHERE bq.bank_id = %d AND q.deleted_at IS NULL
 				)
 				WHERE id = %d", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 				$this->id,

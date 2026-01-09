@@ -603,7 +603,7 @@ class PressPrimer_Quiz_Admin_Banks {
 					'type: "POST",' .
 					'data: {' .
 						'action: "pressprimer_quiz_remove_question_from_bank",' .
-						'nonce: window.ppqAdmin.nonce,' .
+						'nonce: window.pressprimerQuizAdmin.nonce,' .
 						'bank_id: bankId,' .
 						'question_id: questionId' .
 					'},' .
@@ -675,23 +675,71 @@ class PressPrimer_Quiz_Admin_Banks {
 			);
 		}
 
-		// Get questions in bank
-		$args = [
-			'limit'  => 999,
-			'offset' => 0,
-		];
+		// Determine if user can edit this bank (owner or admin).
+		$current_user_id = get_current_user_id();
+		$is_owner        = absint( $bank->owner_id ) === $current_user_id;
+		$is_admin        = current_user_can( 'pressprimer_quiz_manage_all' );
+		$can_edit        = $is_owner || $is_admin;
 
-		// Add filters from request
+		/**
+		 * Filters whether the current user can edit a bank.
+		 *
+		 * Used by premium addons to restrict edit access for shared banks.
+		 *
+		 * @since 2.0.0
+		 *
+		 * @param bool                  $can_edit Whether user can edit.
+		 * @param PressPrimer_Quiz_Bank $bank     The bank being viewed.
+		 * @param int                   $user_id  Current user ID.
+		 */
+		$can_edit = apply_filters( 'pressprimer_quiz_can_edit_bank', $can_edit, $bank, $current_user_id );
+
+		// Pagination settings - allow customization via filter.
+		$default_per_page = 50;
+
+		/**
+		 * Filters the number of questions per page in the bank view.
+		 *
+		 * @since 2.0.0
+		 *
+		 * @param int $per_page Default number of questions per page.
+		 */
+		$per_page = apply_filters( 'pressprimer_quiz_bank_questions_per_page', $default_per_page );
+		$per_page = max( 1, min( 9999, absint( $per_page ) ) ); // Clamp between 1 and 9999.
+
 		// phpcs:disable WordPress.Security.NonceVerification.Recommended -- Read-only filter parameters for display
-		$filter_type = isset( $_GET['filter_type'] ) ? sanitize_key( wp_unslash( $_GET['filter_type'] ) ) : '';
-		if ( '' !== $filter_type ) {
-			$args['type'] = $filter_type;
-		}
+		$current_page = isset( $_GET['paged'] ) ? max( 1, absint( wp_unslash( $_GET['paged'] ) ) ) : 1;
+
+		// Get filter values from request.
+		$filter_type       = isset( $_GET['filter_type'] ) ? sanitize_key( wp_unslash( $_GET['filter_type'] ) ) : '';
 		$filter_difficulty = isset( $_GET['filter_difficulty'] ) ? sanitize_key( wp_unslash( $_GET['filter_difficulty'] ) ) : '';
-		if ( '' !== $filter_difficulty ) {
-			$args['difficulty'] = $filter_difficulty;
-		}
+		$filter_category   = isset( $_GET['filter_category'] ) ? absint( wp_unslash( $_GET['filter_category'] ) ) : 0;
 		// phpcs:enable WordPress.Security.NonceVerification.Recommended
+
+		// Build filter args for both count and fetch.
+		$filter_args = [];
+		if ( '' !== $filter_type ) {
+			$filter_args['type'] = $filter_type;
+		}
+		if ( '' !== $filter_difficulty ) {
+			$filter_args['difficulty'] = $filter_difficulty;
+		}
+		if ( $filter_category > 0 ) {
+			$filter_args['category_id'] = $filter_category;
+		}
+
+		// Get filtered count for pagination.
+		$filtered_count = $bank->count_questions( $filter_args );
+		$total_pages    = ceil( $filtered_count / $per_page );
+
+		// Get questions with pagination.
+		$args = array_merge(
+			$filter_args,
+			[
+				'limit'  => $per_page,
+				'offset' => ( $current_page - 1 ) * $per_page,
+			]
+		);
 
 		$questions   = $bank->get_questions( $args );
 		$total_count = $bank->question_count;
@@ -700,12 +748,28 @@ class PressPrimer_Quiz_Admin_Banks {
 		<div class="wrap">
 			<h1>
 				<?php echo esc_html( $bank->name ); ?>
-				<a href="<?php echo esc_url( admin_url( 'admin.php?page=pressprimer-quiz-banks&action=edit&bank_id=' . $bank_id ) ); ?>" class="page-title-action">
-					<?php esc_html_e( 'Edit Bank', 'pressprimer-quiz' ); ?>
-				</a>
+				<?php if ( $can_edit ) : ?>
+					<a href="<?php echo esc_url( admin_url( 'admin.php?page=pressprimer-quiz-banks&action=edit&bank_id=' . $bank_id ) ); ?>" class="page-title-action">
+						<?php esc_html_e( 'Edit Bank', 'pressprimer-quiz' ); ?>
+					</a>
+				<?php endif; ?>
 			</h1>
 
 			<hr class="wp-header-end">
+
+			<?php
+			/**
+			 * Fires after the bank detail page header.
+			 *
+			 * Used by premium addons to display notices (e.g., read-only bank notice).
+			 *
+			 * @since 2.0.0
+			 *
+			 * @param PressPrimer_Quiz_Bank $bank     The bank being viewed.
+			 * @param bool                  $can_edit Whether user can edit this bank.
+			 */
+			do_action( 'pressprimer_quiz_bank_detail_after_header', $bank, $can_edit );
+			?>
 
 			<!-- Bank Info Section -->
 			<div class="ppq-form-section">
@@ -737,6 +801,7 @@ class PressPrimer_Quiz_Admin_Banks {
 				</div>
 			</div>
 
+			<?php if ( $can_edit ) : ?>
 			<!-- Add Questions Tabs -->
 			<div class="ppq-bank-add-tabs">
 				<div class="ppq-bank-tabs-nav">
@@ -910,6 +975,7 @@ class PressPrimer_Quiz_Admin_Banks {
 				</form>
 				</div><!-- End Add Existing Questions Tab -->
 			</div><!-- End Tabs Container -->
+			<?php endif; ?>
 
 			<!-- Filter Questions -->
 			<div id="questions-in-bank" class="ppq-form-section" style="margin-top: 20px;">
@@ -949,6 +1015,24 @@ class PressPrimer_Quiz_Admin_Banks {
 							<?php esc_html_e( 'Expert', 'pressprimer-quiz' ); ?>
 						</option>
 					</select>
+
+					<?php
+					// Get all categories for dropdown.
+					$all_categories = [];
+					if ( class_exists( 'PressPrimer_Quiz_Category' ) ) {
+						$all_categories = PressPrimer_Quiz_Category::get_all( 'category' );
+					}
+					if ( ! empty( $all_categories ) ) :
+						?>
+						<select name="filter_category">
+							<option value=""><?php esc_html_e( 'All Categories', 'pressprimer-quiz' ); ?></option>
+							<?php foreach ( $all_categories as $cat ) : ?>
+								<option value="<?php echo esc_attr( $cat->id ); ?>" <?php selected( $filter_category, $cat->id ); ?>>
+									<?php echo esc_html( $cat->name ); ?>
+								</option>
+							<?php endforeach; ?>
+						</select>
+					<?php endif; ?>
 					<?php // phpcs:enable WordPress.Security.NonceVerification.Recommended ?>
 
 					<button type="submit" class="button"><?php esc_html_e( 'Filter', 'pressprimer-quiz' ); ?></button>
@@ -959,7 +1043,7 @@ class PressPrimer_Quiz_Admin_Banks {
 
 				<!-- Questions Table -->
 				<?php
-				$has_filters = ( '' !== $filter_type || '' !== $filter_difficulty );
+				$has_filters = ( '' !== $filter_type || '' !== $filter_difficulty || $filter_category > 0 );
 				if ( empty( $questions ) ) :
 					?>
 					<p><em><?php echo $has_filters ? esc_html__( 'No questions match your filters.', 'pressprimer-quiz' ) : esc_html__( 'No questions in this bank yet.', 'pressprimer-quiz' ); ?></em></p>
@@ -971,7 +1055,9 @@ class PressPrimer_Quiz_Admin_Banks {
 								<th><?php esc_html_e( 'Type', 'pressprimer-quiz' ); ?></th>
 								<th><?php esc_html_e( 'Difficulty', 'pressprimer-quiz' ); ?></th>
 								<th><?php esc_html_e( 'Category', 'pressprimer-quiz' ); ?></th>
-								<th><?php esc_html_e( 'Actions', 'pressprimer-quiz' ); ?></th>
+								<?php if ( $can_edit ) : ?>
+									<th><?php esc_html_e( 'Actions', 'pressprimer-quiz' ); ?></th>
+								<?php endif; ?>
 							</tr>
 						</thead>
 						<tbody>
@@ -1010,31 +1096,102 @@ class PressPrimer_Quiz_Admin_Banks {
 								<tr>
 									<td>
 										<strong><?php echo esc_html( $stem_preview ); ?></strong>
-										<div class="row-actions">
-											<span class="edit">
-												<a href="<?php echo esc_url( admin_url( 'admin.php?page=pressprimer-quiz-questions&action=edit&question=' . $question->id ) ); ?>">
-													<?php esc_html_e( 'Edit', 'pressprimer-quiz' ); ?>
-												</a>
-											</span>
-										</div>
+										<?php if ( $can_edit ) : ?>
+											<div class="row-actions">
+												<span class="edit">
+													<a href="<?php echo esc_url( admin_url( 'admin.php?page=pressprimer-quiz-questions&action=edit&question=' . $question->id ) ); ?>">
+														<?php esc_html_e( 'Edit', 'pressprimer-quiz' ); ?>
+													</a>
+												</span>
+											</div>
+										<?php endif; ?>
 									</td>
 									<td><?php echo esc_html( $type_label ); ?></td>
 									<td><?php echo esc_html( $difficulty_label ); ?></td>
 									<td><?php echo wp_kses_post( $category_display ); ?></td>
-									<td>
-										<button
-											type="button"
-											class="button-link-delete ppq-remove-question-btn"
-											data-bank-id="<?php echo esc_attr( $bank_id ); ?>"
-											data-question-id="<?php echo esc_attr( $question->id ); ?>"
-										>
-											<?php esc_html_e( 'Remove from Bank', 'pressprimer-quiz' ); ?>
-										</button>
-									</td>
+									<?php if ( $can_edit ) : ?>
+										<td>
+											<button
+												type="button"
+												class="button-link-delete ppq-remove-question-btn"
+												data-bank-id="<?php echo esc_attr( $bank_id ); ?>"
+												data-question-id="<?php echo esc_attr( $question->id ); ?>"
+											>
+												<?php esc_html_e( 'Remove from Bank', 'pressprimer-quiz' ); ?>
+											</button>
+										</td>
+									<?php endif; ?>
 								</tr>
 							<?php endforeach; ?>
 						</tbody>
 					</table>
+
+					<?php if ( $total_pages > 1 ) : ?>
+						<!-- Pagination -->
+						<div class="tablenav bottom" style="margin-top: 15px;">
+							<div class="tablenav-pages">
+								<span class="displaying-num">
+									<?php
+									/* translators: %s: Number of items */
+									printf( esc_html( _n( '%s item', '%s items', $filtered_count, 'pressprimer-quiz' ) ), esc_html( number_format_i18n( $filtered_count ) ) );
+									?>
+								</span>
+								<span class="pagination-links">
+									<?php
+									// Build base URL with filters.
+									$base_url = add_query_arg(
+										[
+											'page'        => 'pressprimer-quiz-banks',
+											'action'      => 'view',
+											'bank_id'     => $bank_id,
+											'filter_type' => $filter_type,
+											'filter_difficulty' => $filter_difficulty,
+											'filter_category' => $filter_category,
+										],
+										admin_url( 'admin.php' )
+									);
+
+									// First page link.
+									if ( $current_page > 1 ) :
+										?>
+										<a class="first-page button" href="<?php echo esc_url( add_query_arg( 'paged', 1, $base_url ) ); ?>#questions-in-bank">
+											<span class="screen-reader-text"><?php esc_html_e( 'First page', 'pressprimer-quiz' ); ?></span>
+											<span aria-hidden="true">&laquo;</span>
+										</a>
+										<a class="prev-page button" href="<?php echo esc_url( add_query_arg( 'paged', $current_page - 1, $base_url ) ); ?>#questions-in-bank">
+											<span class="screen-reader-text"><?php esc_html_e( 'Previous page', 'pressprimer-quiz' ); ?></span>
+											<span aria-hidden="true">&lsaquo;</span>
+										</a>
+									<?php else : ?>
+										<span class="tablenav-pages-navspan button disabled" aria-hidden="true">&laquo;</span>
+										<span class="tablenav-pages-navspan button disabled" aria-hidden="true">&lsaquo;</span>
+									<?php endif; ?>
+
+									<span class="paging-input">
+										<span class="tablenav-paging-text">
+											<?php echo esc_html( $current_page ); ?>
+											<?php esc_html_e( 'of', 'pressprimer-quiz' ); ?>
+											<span class="total-pages"><?php echo esc_html( $total_pages ); ?></span>
+										</span>
+									</span>
+
+									<?php if ( $current_page < $total_pages ) : ?>
+										<a class="next-page button" href="<?php echo esc_url( add_query_arg( 'paged', $current_page + 1, $base_url ) ); ?>#questions-in-bank">
+											<span class="screen-reader-text"><?php esc_html_e( 'Next page', 'pressprimer-quiz' ); ?></span>
+											<span aria-hidden="true">&rsaquo;</span>
+										</a>
+										<a class="last-page button" href="<?php echo esc_url( add_query_arg( 'paged', $total_pages, $base_url ) ); ?>#questions-in-bank">
+											<span class="screen-reader-text"><?php esc_html_e( 'Last page', 'pressprimer-quiz' ); ?></span>
+											<span aria-hidden="true">&raquo;</span>
+										</a>
+									<?php else : ?>
+										<span class="tablenav-pages-navspan button disabled" aria-hidden="true">&rsaquo;</span>
+										<span class="tablenav-pages-navspan button disabled" aria-hidden="true">&raquo;</span>
+									<?php endif; ?>
+								</span>
+							</div>
+						</div>
+					<?php endif; ?>
 				<?php endif; ?>
 			</div>
 		</div>

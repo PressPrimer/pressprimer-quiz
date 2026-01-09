@@ -91,10 +91,13 @@ class PressPrimer_Quiz_Statistics_Service {
 		$banks_table     = $wpdb->prefix . 'ppq_banks';
 		$attempts_table  = $wpdb->prefix . 'ppq_attempts';
 
-		// Build owner restriction if needed
-		$owner_where = '';
+		// Build owner restriction if needed.
+		// Note: Questions use 'author_id', quizzes and banks use 'owner_id'.
+		$owner_where  = '';
+		$author_where = '';
 		if ( $owner_id ) {
-			$owner_where = $wpdb->prepare( ' AND owner_id = %d', $owner_id );
+			$owner_where  = $wpdb->prepare( ' AND owner_id = %d', $owner_id );
+			$author_where = $wpdb->prepare( ' AND author_id = %d', $owner_id );
 		}
 
 		// Total published quizzes
@@ -102,9 +105,9 @@ class PressPrimer_Quiz_Statistics_Service {
 			"SELECT COUNT(*) FROM {$quizzes_table} WHERE status = 'published'{$owner_where}" // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared,WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Table name safely constructed; results cached at method level
 		);
 
-		// Total active questions
+		// Total active questions (uses author_id, not owner_id)
 		$stats['total_questions'] = (int) $wpdb->get_var(
-			"SELECT COUNT(*) FROM {$questions_table} WHERE deleted_at IS NULL{$owner_where}" // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared,WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Table name safely constructed; results cached at method level
+			"SELECT COUNT(*) FROM {$questions_table} WHERE deleted_at IS NULL{$author_where}" // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared,WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Table name safely constructed; results cached at method level
 		);
 
 		// Total question banks

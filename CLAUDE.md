@@ -314,6 +314,372 @@ For any `.min.js`, `.min.css`, or build output:
 
 ---
 
+## Admin UI Development (CRITICAL)
+
+**All WordPress admin pages MUST use React with Ant Design for consistency.** Do not use plain PHP forms or vanilla JavaScript for admin interfaces.
+
+### Required Stack for Admin UIs
+
+- **React** - Via `@wordpress/element`
+- **Ant Design** - UI component library (Form, Input, Button, Table, Select, etc.)
+- **@wordpress/i18n** - For translations (`__()`, `sprintf()`)
+- **@wordpress/api-fetch** - For REST API calls
+
+### Admin Page Types and Their React Patterns
+
+| Page Type | Example | Key Components |
+|-----------|---------|----------------|
+| **Editor** (create/edit) | Question Editor, Quiz Editor, Bank Editor | Form, Input, Select, Button, Card |
+| **List + Detail** | Banks list → Bank questions | WP_List_Table (PHP) + React detail view |
+| **Dashboard** | Main dashboard | Cards, Charts, Tables |
+| **Settings** | Settings page | Tabs, Form, Switch, Select |
+| **Wizard** | Import wizard | Steps, Form, Table (preview) |
+| **Reports** | Quiz reports | DatePicker, Table, Charts |
+
+### File Structure for React Components
+
+```
+src/
+├── {feature}/
+│   ├── components/
+│   │   ├── {Feature}Editor.jsx    # Main component
+│   │   ├── {SubComponent}.jsx     # Child components
+│   │   └── index.js               # Exports
+│   ├── hooks/
+│   │   └── use{Feature}.js        # Custom hooks
+│   └── index.js                   # Entry point
+```
+
+### Standard React Component Template
+
+```jsx
+/**
+ * {Feature} Editor - Main Component
+ *
+ * @package PressPrimer_Quiz
+ * @since 1.0.0
+ */
+
+import { useState, useEffect } from '@wordpress/element';
+import { __ } from '@wordpress/i18n';
+import apiFetch from '@wordpress/api-fetch';
+import {
+    Layout,
+    Form,
+    Input,
+    Button,
+    message,
+    Spin,
+    Card,
+} from 'antd';
+import { SaveOutlined, CloseOutlined } from '@ant-design/icons';
+
+const { Content } = Layout;
+
+const FeatureEditor = ({ initialData = {} }) => {
+    const [form] = Form.useForm();
+    const [loading, setLoading] = useState(false);
+    const [saving, setSaving] = useState(false);
+
+    // ... component logic
+
+    return (
+        <Layout className="ppq-feature-editor">
+            <Content style={{ padding: '24px 0' }}>
+                {/* Component JSX */}
+            </Content>
+        </Layout>
+    );
+};
+
+export default FeatureEditor;
+```
+
+### PHP Side: Mounting React Components
+
+```php
+// In admin class - render page with mount point
+public function render_page() {
+    ?>
+    <div class="wrap">
+        <div id="ppq-feature-editor-root"></div>
+    </div>
+    <?php
+}
+
+// Enqueue the built script
+wp_enqueue_script(
+    'ppq-feature-editor',
+    PRESSPRIMER_QUIZ_PLUGIN_URL . 'build/feature-editor.js',
+    array( 'wp-element', 'wp-i18n', 'wp-api-fetch' ),
+    PRESSPRIMER_QUIZ_VERSION,
+    true
+);
+
+// Pass initial data to React
+wp_localize_script(
+    'ppq-feature-editor',
+    'pressprimer_quiz_feature_data',
+    array(
+        'initialData' => $data,
+        'restUrl'     => rest_url( 'ppq/v1/' ),
+        'nonce'       => wp_create_nonce( 'wp_rest' ),
+    )
+);
+```
+
+### Webpack Entry Points
+
+Each admin feature needs an entry in `webpack.config.js`:
+
+```js
+entry: {
+    'question-editor': './src/question-editor/index.js',
+    'quiz-editor': './src/quiz-editor/index.js',
+    'bank-editor': './src/bank-editor/index.js',
+    'dashboard': './src/dashboard/index.js',
+    'settings': './src/settings-panel/index.js',
+    'reports': './src/reports/index.js',
+    // Add new features here
+},
+```
+
+### What NOT to Do
+
+```php
+// WRONG - Plain PHP form
+<form method="post" action="<?php echo admin_url('admin-post.php'); ?>">
+    <input type="text" name="title" />
+    <button type="submit">Save</button>
+</form>
+
+// WRONG - Inline JavaScript
+<script>
+jQuery('#my-button').click(function() { ... });
+</script>
+
+// WRONG - Inline styles in PHP
+<style>.my-class { color: red; }</style>
+```
+
+### When WP_List_Table Is Acceptable
+
+WP_List_Table (PHP) is acceptable for **list views** that:
+- Show tabular data with standard WordPress styling
+- Need bulk actions, pagination, and sorting
+- Link to React-based edit/detail pages
+
+Example: Banks list uses WP_List_Table, but clicking "Edit" opens the React BankEditor.
+
+---
+
+## UI Component Patterns (CRITICAL)
+
+**All addon plugins MUST follow these exact patterns for visual consistency.** These patterns are established in the free plugin and cannot be changed without updating all instances.
+
+### Color Palette
+
+| Use Case | Color | Example |
+|----------|-------|---------|
+| Primary/Active border | `#1890ff` | Selected cards, focused inputs |
+| Primary/Active background | `#e6f7ff` | Selected card background |
+| Default border | `#d9d9d9` | Unselected cards, inputs |
+| Default background | `#fff` | Unselected cards |
+| Success | `#52c41a` | Success messages, completed steps |
+| Warning | `#faad14` | Warning messages |
+| Error/Danger | `#ff4d4f` | Error messages, required asterisks |
+| Secondary text | `#8c8c8c` | Help text, descriptions |
+| WordPress admin blue | `#2271b1` | Links, active menu items |
+
+### Radio Card Selector Pattern
+
+Used for: Question type selection, export format selection, quiz mode selection.
+
+Reference: `src/question-editor/components/QuestionTypeSelector.jsx`
+
+```jsx
+<Card
+    hoverable
+    style={{
+        border: isSelected ? '2px solid #1890ff' : '1px solid #d9d9d9',
+        backgroundColor: isSelected ? '#e6f7ff' : '#fff',
+        cursor: 'pointer',
+    }}
+    onClick={() => onChange(value)}
+>
+    <Radio value={value} style={{ width: '100%' }}>
+        <Space align="center" size={10}>
+            <Icon style={{ fontSize: 24 }} />
+            <div>
+                <div style={{ fontWeight: 600, fontSize: 16 }}>
+                    {label}
+                </div>
+                <Text type="secondary" style={{ fontSize: 14 }}>
+                    {description}
+                </Text>
+            </div>
+        </Space>
+    </Radio>
+</Card>
+```
+
+**Key values:**
+- Selected: `2px solid #1890ff` border, `#e6f7ff` background
+- Unselected: `1px solid #d9d9d9` border, `#fff` background
+- Icon: `fontSize: 24`
+- Label: `fontWeight: 600`, `fontSize: 16`
+- Description: `type="secondary"`, `fontSize: 14`
+
+### Settings Section Pattern
+
+Used for: Settings tabs, form sections, grouped options.
+
+Reference: `src/settings-panel/style.css`
+
+```jsx
+<div className="ppq-settings-section">
+    <Title level={4} className="ppq-settings-section-title">
+        {__('Section Title', 'pressprimer-quiz')}
+    </Title>
+    <Paragraph className="ppq-settings-section-description">
+        {__('Section description text.', 'pressprimer-quiz')}
+    </Paragraph>
+
+    <div className="ppq-settings-field">
+        <Form.Item label={__('Field Label', 'pressprimer-quiz')}>
+            {/* Form control */}
+        </Form.Item>
+    </div>
+</div>
+```
+
+**Key CSS:**
+```css
+.ppq-settings-section { margin-bottom: 32px; }
+.ppq-settings-section-title {
+    font-size: 16px; font-weight: 600; color: #1d2327;
+    padding-bottom: 12px; border-bottom: 1px solid #f0f0f0;
+}
+.ppq-settings-section-description { color: #646970; font-size: 13px; }
+.ppq-settings-field { margin-bottom: 20px; }
+```
+
+### Simple Radio Group (No Cards)
+
+Used for: Settings options where card styling is overkill.
+
+```jsx
+<Radio.Group value={value} onChange={(e) => onChange(e.target.value)}>
+    <Space direction="vertical">
+        <Radio value="option1">{__('Option 1', 'pressprimer-quiz')}</Radio>
+        <Radio value="option2">{__('Option 2', 'pressprimer-quiz')}</Radio>
+    </Space>
+</Radio.Group>
+```
+
+### Card Spacing
+
+| Card Type | marginBottom |
+|-----------|--------------|
+| Major section card | `24px` |
+| Sub-section card | `16px` |
+| List item card | `12px` |
+
+### Typography Hierarchy
+
+| Element | Level | Font Size | Weight |
+|---------|-------|-----------|--------|
+| Page title | `Title level={2}` | 24px | 600 |
+| Section heading | `Title level={4}` | 16px | 600 |
+| Subsection | `Title level={5}` | 14px | 600 |
+| Body text | `Text` | 14px | 400 |
+| Help/description | `Text type="secondary"` | 13px | 400 |
+| Small labels | `Text style={{ fontSize: 12 }}` | 12px | 400 |
+
+### Button Patterns
+
+```jsx
+// Primary action (save, submit, export)
+<Button type="primary" icon={<SaveOutlined />}>
+    {__('Save', 'pressprimer-quiz')}
+</Button>
+
+// Secondary action (cancel, back)
+<Button onClick={handleCancel}>
+    {__('Cancel', 'pressprimer-quiz')}
+</Button>
+
+// Danger action (delete)
+<Button danger onClick={handleDelete}>
+    {__('Delete', 'pressprimer-quiz')}
+</Button>
+
+// Loading state
+<Button type="primary" loading={saving}>
+    {saving ? __('Saving...', 'pressprimer-quiz') : __('Save', 'pressprimer-quiz')}
+</Button>
+```
+
+### Form Field Widths
+
+| Field Type | Width |
+|------------|-------|
+| Short text (name) | `300px` or `style={{ width: 300 }}` |
+| Long text (description) | `500px` or `maxWidth: 500` |
+| Number inputs | `150px` |
+| Select dropdowns | `300px` (match related text inputs) |
+| Full width | `style={{ width: '100%' }}` |
+
+### Alert/Notice Patterns
+
+```jsx
+// Info notice
+<Alert type="info" message="Information" showIcon />
+
+// Warning notice
+<Alert type="warning" message="Warning" showIcon />
+
+// Error notice
+<Alert type="error" message="Error" showIcon />
+
+// Success with description
+<Alert
+    type="success"
+    message="Success Title"
+    description="Additional details here."
+    showIcon
+/>
+```
+
+### Empty States
+
+```jsx
+<Empty
+    description={__('No items found.', 'pressprimer-quiz')}
+/>
+
+// With action
+<Empty description={__('No quizzes yet.', 'pressprimer-quiz')}>
+    <Button type="primary">{__('Create Quiz', 'pressprimer-quiz')}</Button>
+</Empty>
+```
+
+### Loading States
+
+```jsx
+// Full page loading
+<div style={{ textAlign: 'center', padding: '48px' }}>
+    <Spin size="large" />
+</div>
+
+// Inline loading
+<Spin size="small" />
+
+// Button loading (see Button Patterns above)
+```
+
+---
+
 ## File Structure
 
 ```
@@ -335,7 +701,7 @@ pressprimer-quiz/
 │   ├── services/      # Business logic
 │   └── utilities/     # Helper classes
 ├── languages/         # Translation files
-├── src/               # React source files
+├── src/               # React source files (SEE ADMIN UI SECTION)
 ├── vendor/            # Composer dependencies
 └── .wordpress-org/    # WordPress.org assets (banners, icons, screenshots)
 ```

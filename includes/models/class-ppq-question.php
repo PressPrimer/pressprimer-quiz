@@ -413,7 +413,14 @@ class PressPrimer_Quiz_Question extends PressPrimer_Quiz_Model {
 		// Soft delete: set deleted_at timestamp
 		$this->deleted_at = current_time( 'mysql' );
 
-		return $this->save();
+		$result = $this->save();
+
+		// Update question counts for all banks containing this question.
+		if ( true === $result ) {
+			$this->update_bank_counts();
+		}
+
+		return $result;
 	}
 
 	/**
@@ -447,7 +454,14 @@ class PressPrimer_Quiz_Question extends PressPrimer_Quiz_Model {
 
 		$this->deleted_at = null;
 
-		return $this->save();
+		$result = $this->save();
+
+		// Update question counts for all banks containing this question.
+		if ( true === $result ) {
+			$this->update_bank_counts();
+		}
+
+		return $result;
 	}
 
 	/**
@@ -655,6 +669,42 @@ class PressPrimer_Quiz_Question extends PressPrimer_Quiz_Model {
 	 */
 	public function is_deleted() {
 		return ! empty( $this->deleted_at );
+	}
+
+	/**
+	 * Update question counts for all banks containing this question
+	 *
+	 * Called when a question is soft-deleted or restored to keep
+	 * bank question_count values accurate.
+	 *
+	 * @since 2.0.0
+	 *
+	 * @return void
+	 */
+	protected function update_bank_counts() {
+		if ( empty( $this->id ) || ! class_exists( 'PressPrimer_Quiz_Bank' ) ) {
+			return;
+		}
+
+		global $wpdb;
+
+		$bank_questions_table = $wpdb->prefix . 'ppq_bank_questions';
+
+		// Get all banks containing this question.
+		$bank_ids = $wpdb->get_col(
+			$wpdb->prepare(
+				"SELECT DISTINCT bank_id FROM {$bank_questions_table} WHERE question_id = %d", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+				$this->id
+			)
+		);
+
+		// Update each bank's question count.
+		foreach ( $bank_ids as $bank_id ) {
+			$bank = PressPrimer_Quiz_Bank::get( $bank_id );
+			if ( $bank ) {
+				$bank->update_question_count();
+			}
+		}
 	}
 
 	/**

@@ -1322,14 +1322,42 @@ class PressPrimer_Quiz_REST_Controller {
 	/**
 	 * Get quizzes
 	 *
+	 * Returns quizzes the current user can access. Administrators see all quizzes,
+	 * while teachers see only their own quizzes.
+	 *
 	 * @since 1.0.0
+	 * @since 2.0.0 Implemented with owner filtering.
 	 *
 	 * @param WP_REST_Request $request Request object.
 	 * @return WP_REST_Response Response object.
 	 */
 	public function get_quizzes( $request ) {
-		// TODO: Implement listing with pagination/filters
-		return new WP_REST_Response( [], 200 );
+		$user_id = get_current_user_id();
+
+		// Build query args.
+		$args = array(
+			'order_by' => 'title',
+			'order'    => 'ASC',
+			'limit'    => 100,
+		);
+
+		// Non-admins only see their own quizzes.
+		if ( ! current_user_can( 'manage_options' ) ) {
+			$args['where'] = array( 'owner_id' => $user_id );
+		}
+
+		$quizzes = PressPrimer_Quiz_Quiz::find( $args );
+
+		$items = array();
+
+		foreach ( $quizzes as $quiz ) {
+			$items[] = array(
+				'id'    => $quiz->id,
+				'title' => $quiz->title,
+			);
+		}
+
+		return new WP_REST_Response( $items, 200 );
 	}
 
 	/**

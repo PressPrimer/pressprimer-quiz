@@ -5,7 +5,7 @@
  * @since 1.0.0
  */
 
-import { useState, useCallback } from '@wordpress/element';
+import { useState, useCallback, useEffect, useMemo } from '@wordpress/element';
 import { __ } from '@wordpress/i18n';
 import apiFetch from '@wordpress/api-fetch';
 import { debugError } from '../../utils/debug';
@@ -22,6 +22,7 @@ import {
 	ToolOutlined,
 	SaveOutlined,
 	BgColorsOutlined,
+	ExperimentOutlined,
 } from '@ant-design/icons';
 
 import GeneralTab from './GeneralTab';
@@ -32,46 +33,70 @@ import StatusTab from './StatusTab';
 import AdvancedTab from './AdvancedTab';
 
 /**
- * Tab configuration
+ * Icon map for addon tabs
  */
-const TABS = [
+const ADDON_ICONS = {
+	xapi: <ExperimentOutlined />,
+	default: <SettingOutlined />,
+};
+
+/**
+ * Core tab configuration (built into free plugin)
+ * These tabs have React components in this plugin.
+ * Order values match the server-side settingsTabs filter.
+ */
+const CORE_TABS = [
 	{
 		id: 'general',
 		label: __('General', 'pressprimer-quiz'),
 		icon: <SettingOutlined />,
 		component: GeneralTab,
+		order: 10,
 	},
 	{
 		id: 'appearance',
 		label: __('Appearance', 'pressprimer-quiz'),
 		icon: <BgColorsOutlined />,
 		component: AppearanceTab,
-	},
-	{
-		id: 'integrations',
-		label: __('Integrations', 'pressprimer-quiz'),
-		icon: <ApiOutlined />,
-		component: IntegrationsTab,
+		order: 20,
 	},
 	{
 		id: 'email',
 		label: __('Email', 'pressprimer-quiz'),
 		icon: <MailOutlined />,
 		component: EmailTab,
+		order: 30,
+	},
+	{
+		id: 'integrations',
+		label: __('Integrations', 'pressprimer-quiz'),
+		icon: <ApiOutlined />,
+		component: IntegrationsTab,
+		order: 50,
 	},
 	{
 		id: 'status',
 		label: __('Status', 'pressprimer-quiz'),
 		icon: <InfoCircleOutlined />,
 		component: StatusTab,
+		order: 90,
 	},
 	{
 		id: 'advanced',
 		label: __('Advanced', 'pressprimer-quiz'),
 		icon: <ToolOutlined />,
 		component: AdvancedTab,
+		order: 100,
 	},
 ];
+
+/**
+ * Tab IDs that exist in the server-side settingsTabs filter but are
+ * handled by existing core tab components (not addon tabs).
+ * These are tabs like 'ai' and 'integration' that may be in server config
+ * but their content is part of an existing React component.
+ */
+const IGNORED_SERVER_TABS = ['ai', 'integration'];
 
 /**
  * Settings Page Component
@@ -88,6 +113,73 @@ const SettingsPage = ({ settingsData = {} }) => {
 	// Lift API key status state to persist across tab navigation
 	const [apiKeyStatus, setApiKeyStatus] = useState(settingsData.apiKeyStatus || { configured: false });
 	const [apiModels, setApiModels] = useState(settingsData.apiModels || []);
+
+	/**
+	 * Build combined tabs from core tabs and addon tabs from settingsTabs
+	 * Addon tabs are those in settingsTabs that:
+	 * 1. Don't have a matching core component (not in CORE_TABS by id)
+	 * 2. Are not in IGNORED_SERVER_TABS (legacy tabs handled elsewhere)
+	 * 3. Have isAddon: true in their config (explicitly marked as addon tab)
+	 */
+	const allTabs = useMemo(() => {
+		const serverTabs = settingsData.settingsTabs || {};
+		const combined = [];
+
+		// Add core tabs with their components (these are the main tabs)
+		CORE_TABS.forEach(coreTab => {
+			combined.push({
+				...coreTab,
+				isAddon: false,
+			});
+		});
+
+		// Add addon tabs - only those explicitly marked with isAddon: true
+		// This prevents legacy server tabs (ai, integration, educator) from showing as blank
+		const coreIds = CORE_TABS.map(t => t.id);
+		Object.entries(serverTabs).forEach(([id, tabConfig]) => {
+			// Skip if it's a core tab or ignored server tab
+			if (coreIds.includes(id) || IGNORED_SERVER_TABS.includes(id)) {
+				return;
+			}
+
+			// Only add if explicitly marked as addon tab
+			// Addon plugins should set isAddon: true when registering their tab
+			if (tabConfig.isAddon === true) {
+				combined.push({
+					id,
+					label: tabConfig.label || id,
+					icon: ADDON_ICONS[id] || ADDON_ICONS.default,
+					component: null, // Addon tabs render via mount points
+					order: tabConfig.order ?? 50,
+					isAddon: true,
+				});
+			}
+		});
+
+		// Sort by order
+		combined.sort((a, b) => a.order - b.order);
+
+		return combined;
+	}, [settingsData.settingsTabs]);
+
+	/**
+	 * Check if active tab is an addon tab
+	 */
+	const activeTabConfig = allTabs.find(tab => tab.id === activeTab);
+	const isAddonTab = activeTabConfig?.isAddon ?? false;
+
+	/**
+	 * Dispatch custom event when addon tab becomes active
+	 * Addon scripts can listen for this to mount their React components
+	 */
+	useEffect(() => {
+		if (isAddonTab) {
+			const event = new CustomEvent('ppq-settings-addon-tab-active', {
+				detail: { tab: activeTab }
+			});
+			window.dispatchEvent(event);
+		}
+	}, [activeTab, isAddonTab]);
 
 	/**
 	 * Update a setting value
@@ -128,9 +220,9 @@ const SettingsPage = ({ settingsData = {} }) => {
 	};
 
 	/**
-	 * Get the active tab component
+	 * Get the active tab component (for core tabs)
 	 */
-	const ActiveTabComponent = TABS.find(tab => tab.id === activeTab)?.component || GeneralTab;
+	const ActiveTabComponent = activeTabConfig?.component || null;
 
 	// Get the plugin URL from localized data
 	const pluginUrl = window.pressprimerQuizSettingsData?.pluginUrl || '';
@@ -154,7 +246,7 @@ const SettingsPage = ({ settingsData = {} }) => {
 			<div className="ppq-settings-layout">
 				{/* Vertical Tab Navigation */}
 				<nav className="ppq-settings-tabs">
-					{TABS.map(tab => (
+					{allTabs.map(tab => (
 						<button
 							key={tab.id}
 							type="button"
@@ -169,31 +261,44 @@ const SettingsPage = ({ settingsData = {} }) => {
 
 				{/* Tab Content */}
 				<div className="ppq-settings-content">
-					<Spin spinning={saving} tip={__('Saving...', 'pressprimer-quiz')}>
-						<ActiveTabComponent
-							settings={settings}
-							updateSetting={updateSetting}
-							settingsData={settingsData}
-							apiKeyStatus={apiKeyStatus}
-							setApiKeyStatus={setApiKeyStatus}
-							apiModels={apiModels}
-							setApiModels={setApiModels}
-						/>
+					{/* Core tab content */}
+					{!isAddonTab && ActiveTabComponent && (
+						<Spin spinning={saving} tip={__('Saving...', 'pressprimer-quiz')}>
+							<ActiveTabComponent
+								settings={settings}
+								updateSetting={updateSetting}
+								settingsData={settingsData}
+								apiKeyStatus={apiKeyStatus}
+								setApiKeyStatus={setApiKeyStatus}
+								apiModels={apiModels}
+								setApiModels={setApiModels}
+							/>
 
-						{/* Save Button Footer */}
-						<div className="ppq-settings-footer">
-							<Button
-								type="primary"
-								size="large"
-								icon={<SaveOutlined />}
-								onClick={handleSave}
-								loading={saving}
-								disabled={!hasChanges}
-							>
-								{__('Save Settings', 'pressprimer-quiz')}
-							</Button>
-						</div>
-					</Spin>
+							{/* Save Button Footer */}
+							<div className="ppq-settings-footer">
+								<Button
+									type="primary"
+									size="large"
+									icon={<SaveOutlined />}
+									onClick={handleSave}
+									loading={saving}
+									disabled={!hasChanges}
+								>
+									{__('Save Settings', 'pressprimer-quiz')}
+								</Button>
+							</div>
+						</Spin>
+					)}
+
+					{/* Addon tab mount points - addons render their React content here */}
+					{allTabs.filter(t => t.isAddon).map(tab => (
+						<div
+							key={tab.id}
+							id={`ppq-settings-addon-${tab.id}`}
+							className="ppq-settings-addon-content"
+							style={{ display: activeTab === tab.id ? 'block' : 'none' }}
+						/>
+					))}
 				</div>
 			</div>
 		</div>

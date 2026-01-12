@@ -16,9 +16,36 @@ import {
 	TrophyOutlined,
 	ClockCircleOutlined,
 	RocketOutlined,
+	BarChartOutlined,
+	LineChartOutlined,
+	PieChartOutlined,
+	FundOutlined,
+	DashboardOutlined,
+	AuditOutlined,
+	SafetyCertificateOutlined,
+	ExperimentOutlined,
 } from '@ant-design/icons';
 
 import OverviewCards from './OverviewCards';
+
+/**
+ * Map icon type string to component.
+ *
+ * Addons can use these icon types in their report definitions.
+ */
+const ICON_MAP = {
+	TrophyOutlined: <TrophyOutlined />,
+	ClockCircleOutlined: <ClockCircleOutlined />,
+	RocketOutlined: <RocketOutlined />,
+	BarChartOutlined: <BarChartOutlined />,
+	LineChartOutlined: <LineChartOutlined />,
+	PieChartOutlined: <PieChartOutlined />,
+	FundOutlined: <FundOutlined />,
+	DashboardOutlined: <DashboardOutlined />,
+	AuditOutlined: <AuditOutlined />,
+	SafetyCertificateOutlined: <SafetyCertificateOutlined />,
+	ExperimentOutlined: <ExperimentOutlined />,
+};
 
 /**
  * Reports Component
@@ -58,8 +85,8 @@ const Reports = ({ initialData = {} }) => {
 		fetchData();
 	}, []);
 
-	// Available reports
-	const reports = [
+	// Core reports
+	const coreReports = [
 		{
 			key: 'quiz-performance',
 			title: __('Quiz Performance', 'pressprimer-quiz'),
@@ -78,16 +105,28 @@ const Reports = ({ initialData = {} }) => {
 			available: true,
 			href: 'admin.php?page=pressprimer-quiz-reports&report=recent-attempts',
 		},
-		{
-			key: 'coming-soon',
-			title: __('More Reports Coming Soon!', 'pressprimer-quiz'),
-			description: __('We\'re working on additional reports to help you better understand your quiz results.', 'pressprimer-quiz'),
-			icon: <RocketOutlined />,
-			color: '#8c8c8c',
-			available: false,
-			comingSoon: true,
-		},
 	];
+
+	// Addon reports from localized data - map iconType to actual icon components
+	const rawAddonReports = window.pressprimerQuizReportsData?.addonReports || [];
+	const addonReports = rawAddonReports.map((report) => ({
+		...report,
+		icon: ICON_MAP[report.iconType] || <BarChartOutlined />,
+	}));
+
+	// Coming soon placeholder
+	const comingSoonReport = {
+		key: 'coming-soon',
+		title: __('More Reports Coming Soon!', 'pressprimer-quiz'),
+		description: __('We\'re working on additional reports to help you better understand your quiz results.', 'pressprimer-quiz'),
+		icon: <RocketOutlined />,
+		color: '#8c8c8c',
+		available: false,
+		comingSoon: true,
+	};
+
+	// Combine: core reports + addon reports + coming soon
+	const reports = [...coreReports, ...addonReports, comingSoonReport];
 
 	// Get the plugin URL from localized data
 	const pluginUrl = window.pressprimerQuizReportsData?.pluginUrl || '';

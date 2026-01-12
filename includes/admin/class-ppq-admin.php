@@ -369,13 +369,34 @@ class PressPrimer_Quiz_Admin {
 			$asset['version']
 		);
 
+		/**
+		 * Filters the addon reports to display on the Reports index page.
+		 *
+		 * Addons can use this filter to add their own report cards to the
+		 * Reports page grid. Each report should be an array with:
+		 * - key: Unique identifier
+		 * - title: Display title
+		 * - description: Brief description
+		 * - icon: Icon name (e.g., 'BarChartOutlined') - will need to be rendered by addon
+		 * - iconHtml: Pre-rendered icon HTML (alternative to icon)
+		 * - color: Background color for the icon (e.g., '#52c41a')
+		 * - available: Boolean, whether the report is active
+		 * - href: URL to the report page
+		 *
+		 * @since 2.0.0
+		 *
+		 * @param array $addon_reports Array of addon report definitions.
+		 */
+		$addon_reports = apply_filters( 'pressprimer_quiz_reports_addon_reports', [] );
+
 		// Localize script with reports data
 		wp_localize_script(
 			'ppq-reports',
 			'pressprimerQuizReportsData',
 			[
-				'pluginUrl'  => PRESSPRIMER_QUIZ_PLUGIN_URL,
-				'resultsUrl' => home_url( '/quiz-results/' ),
+				'pluginUrl'    => PRESSPRIMER_QUIZ_PLUGIN_URL,
+				'resultsUrl'   => home_url( '/quiz-results/' ),
+				'addonReports' => $addon_reports,
 			]
 		);
 	}

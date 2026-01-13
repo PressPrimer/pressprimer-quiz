@@ -23,6 +23,8 @@ import {
 	SaveOutlined,
 	BgColorsOutlined,
 	ExperimentOutlined,
+	SkinOutlined,
+	AuditOutlined,
 } from '@ant-design/icons';
 
 import GeneralTab from './GeneralTab';
@@ -37,6 +39,8 @@ import AdvancedTab from './AdvancedTab';
  */
 const ADDON_ICONS = {
 	xapi: <ExperimentOutlined />,
+	'white-label': <SkinOutlined />,
+	'audit-log': <AuditOutlined />,
 	default: <SettingOutlined />,
 };
 

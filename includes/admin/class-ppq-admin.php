@@ -451,14 +451,29 @@ class PressPrimer_Quiz_Admin {
 		 */
 		$addon_reports = apply_filters( 'pressprimer_quiz_reports_addon_reports', [] );
 
+		/**
+		 * Filters the reports page header mascot image URL.
+		 *
+		 * Used by Enterprise addon for white-label branding.
+		 *
+		 * @since 2.0.0
+		 *
+		 * @param string $mascot_url Default mascot image URL.
+		 */
+		$reports_mascot = apply_filters(
+			'pressprimer_quiz_reports_header_mascot',
+			PRESSPRIMER_QUIZ_PLUGIN_URL . 'assets/images/reports-mascot.png'
+		);
+
 		// Localize script with reports data
 		wp_localize_script(
 			'ppq-reports',
 			'pressprimerQuizReportsData',
 			[
-				'pluginUrl'    => PRESSPRIMER_QUIZ_PLUGIN_URL,
-				'resultsUrl'   => home_url( '/quiz-results/' ),
-				'addonReports' => $addon_reports,
+				'pluginUrl'     => PRESSPRIMER_QUIZ_PLUGIN_URL,
+				'reportsMascot' => $reports_mascot,
+				'resultsUrl'    => home_url( '/quiz-results/' ),
+				'addonReports'  => $addon_reports,
 			]
 		);
 	}

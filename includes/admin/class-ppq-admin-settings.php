@@ -1797,8 +1797,23 @@ Good luck with your studies!',
 			]
 		);
 
+		/**
+		 * Filters the settings page header mascot image URL.
+		 *
+		 * Used by Enterprise addon for white-label branding.
+		 *
+		 * @since 2.0.0
+		 *
+		 * @param string $mascot_url Default mascot image URL.
+		 */
+		$settings_mascot = apply_filters(
+			'pressprimer_quiz_settings_header_mascot',
+			PRESSPRIMER_QUIZ_PLUGIN_URL . 'assets/images/construction-mascot.png'
+		);
+
 		$data = [
 			'pluginUrl'      => PRESSPRIMER_QUIZ_PLUGIN_URL,
+			'settingsMascot' => $settings_mascot,
 			'settings'       => $settings,
 			'settingsTabs'   => $settings_tabs,
 			'apiKeyStatus'   => $key_status,

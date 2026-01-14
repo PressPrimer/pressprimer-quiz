@@ -132,8 +132,10 @@ const Reports = ({ initialData = {} }) => {
 	// Combine: core reports + addon reports + coming soon
 	const reports = [...coreReports, ...addonReports, comingSoonReport];
 
-	// Get the plugin URL from localized data
+	// Get the plugin URL and mascot from localized data
 	const pluginUrl = window.pressprimerQuizReportsData?.pluginUrl || '';
+	const reportsMascot = window.pressprimerQuizReportsData?.reportsMascot ||
+		`${pluginUrl}assets/images/reports-mascot.png`;
 
 	return (
 		<div className="ppq-reports-container">
@@ -144,7 +146,7 @@ const Reports = ({ initialData = {} }) => {
 					<p>{__('View quiz performance and student results.', 'pressprimer-quiz')}</p>
 				</div>
 				<img
-					src={`${pluginUrl}assets/images/reports-mascot.png`}
+					src={reportsMascot}
 					alt=""
 					className="ppq-reports-header-mascot"
 				/>

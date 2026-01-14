@@ -228,8 +228,10 @@ const SettingsPage = ({ settingsData = {} }) => {
 	 */
 	const ActiveTabComponent = activeTabConfig?.component || null;
 
-	// Get the plugin URL from localized data
+	// Get the plugin URL and mascot from localized data
 	const pluginUrl = window.pressprimerQuizSettingsData?.pluginUrl || '';
+	const settingsMascot = window.pressprimerQuizSettingsData?.settingsMascot ||
+		`${pluginUrl}assets/images/construction-mascot.png`;
 
 	return (
 		<div className="ppq-settings-container">
@@ -240,7 +242,7 @@ const SettingsPage = ({ settingsData = {} }) => {
 					<p>{__('Configure your quiz plugin settings, integrations, and preferences.', 'pressprimer-quiz')}</p>
 				</div>
 				<img
-					src={`${pluginUrl}assets/images/construction-mascot.png`}
+					src={settingsMascot}
 					alt=""
 					className="ppq-settings-header-mascot"
 				/>

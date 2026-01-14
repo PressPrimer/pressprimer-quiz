@@ -261,8 +261,10 @@ const RecentAttemptsReport = () => {
 		},
 	];
 
-	// Get the plugin URL from localized data
+	// Get the plugin URL and mascot from localized data
 	const pluginUrl = window.pressprimerQuizReportsData?.pluginUrl || '';
+	const reportsMascot = window.pressprimerQuizReportsData?.reportsMascot ||
+		`${pluginUrl}assets/images/reports-mascot.png`;
 
 	return (
 		<div className="ppq-reports-container">
@@ -284,7 +286,7 @@ const RecentAttemptsReport = () => {
 					<p>{__('View individual student quiz attempts with scores, status, and detailed breakdowns.', 'pressprimer-quiz')}</p>
 				</div>
 				<img
-					src={`${pluginUrl}assets/images/reports-mascot.png`}
+					src={reportsMascot}
 					alt=""
 					className="ppq-reports-header-mascot"
 				/>

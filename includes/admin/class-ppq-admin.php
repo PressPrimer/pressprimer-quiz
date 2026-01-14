@@ -219,8 +219,17 @@ class PressPrimer_Quiz_Admin {
 	 * @param string $hook Current admin page hook.
 	 */
 	public function enqueue_assets( $hook ) {
-		// Only load on PressPrimer Quiz admin pages
-		if ( false === strpos( $hook, 'pressprimer-quiz' ) ) {
+		// Get current page from URL for robust page detection.
+		// Using $_GET['page'] because hook suffix can change when menu title is filtered.
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only page check.
+		$current_page = isset( $_GET['page'] ) ? sanitize_text_field( wp_unslash( $_GET['page'] ) ) : '';
+
+		// Only load on PressPrimer Quiz admin pages.
+		// Check both hook suffix (for compatibility) and page parameter (for robustness).
+		$is_ppq_page = false !== strpos( $hook, 'pressprimer-quiz' )
+			|| ( ! empty( $current_page ) && 0 === strpos( $current_page, 'pressprimer-quiz' ) );
+
+		if ( ! $is_ppq_page ) {
 			return;
 		}
 
@@ -257,13 +266,13 @@ class PressPrimer_Quiz_Admin {
 			);
 		}
 
-		// Enqueue Dashboard React app on main dashboard page
-		if ( 'toplevel_page_pressprimer-quiz' === $hook ) {
+		// Enqueue Dashboard React app on main dashboard page.
+		if ( 'pressprimer-quiz' === $current_page ) {
 			$this->enqueue_dashboard_assets();
 		}
 
-		// Enqueue Reports React app on reports page
-		if ( 'pressprimer-quiz_page_pressprimer-quiz-reports' === $hook ) {
+		// Enqueue Reports React app on reports page.
+		if ( 'pressprimer-quiz-reports' === $current_page ) {
 			$this->enqueue_reports_assets();
 		}
 
@@ -332,14 +341,56 @@ class PressPrimer_Quiz_Admin {
 		$is_teacher = current_user_can( 'pressprimer_quiz_educator_manage_own_groups' )
 			&& ! current_user_can( 'pressprimer_quiz_manage_all' );
 
+		/**
+		 * Filters the plugin name displayed in the dashboard.
+		 *
+		 * Used by Enterprise addon for white-label branding.
+		 *
+		 * @since 2.0.0
+		 *
+		 * @param string $name Default plugin name.
+		 */
+		$plugin_name = apply_filters( 'pressprimer_quiz_plugin_name', __( 'PressPrimer Quiz', 'pressprimer-quiz' ) );
+
+		/**
+		 * Filters the dashboard logo URL.
+		 *
+		 * Used by Enterprise addon for white-label branding.
+		 *
+		 * @since 2.0.0
+		 *
+		 * @param string $logo_url Default logo URL.
+		 */
+		$dashboard_logo = apply_filters( 'pressprimer_quiz_dashboard_logo', PRESSPRIMER_QUIZ_PLUGIN_URL . 'assets/images/PressPrimer-Logo-White.svg' );
+
+		/**
+		 * Filters the dashboard welcome text.
+		 *
+		 * Used by Enterprise addon for white-label branding.
+		 *
+		 * @since 2.0.0
+		 *
+		 * @param string $text    Default welcome text.
+		 * @param string $name    The plugin name (filtered).
+		 */
+		$welcome_text = apply_filters(
+			'pressprimer_quiz_dashboard_welcome_text',
+			/* translators: %s: plugin name */
+			sprintf( __( 'Welcome to %s! Here\'s an overview of recent quiz activity.', 'pressprimer-quiz' ), $plugin_name ),
+			$plugin_name
+		);
+
 		// Localize script with dashboard data
 		wp_localize_script(
 			'ppq-dashboard',
 			'pressprimerQuizDashboardData',
 			[
-				'pluginUrl' => PRESSPRIMER_QUIZ_PLUGIN_URL,
-				'isTeacher' => $is_teacher,
-				'urls'      => [
+				'pluginUrl'     => PRESSPRIMER_QUIZ_PLUGIN_URL,
+				'isTeacher'     => $is_teacher,
+				'pluginName'    => $plugin_name,
+				'dashboardLogo' => $dashboard_logo,
+				'welcomeText'   => $welcome_text,
+				'urls'          => [
 					'create_quiz'  => admin_url( 'admin.php?page=pressprimer-quiz-quizzes&action=new' ),
 					'add_question' => admin_url( 'admin.php?page=pressprimer-quiz-questions&action=new' ),
 					'create_bank'  => admin_url( 'admin.php?page=pressprimer-quiz-banks&action=new' ),

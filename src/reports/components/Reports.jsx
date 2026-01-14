@@ -109,10 +109,14 @@ const Reports = ({ initialData = {} }) => {
 
 	// Addon reports from localized data - map iconType to actual icon components
 	const rawAddonReports = window.pressprimerQuizReportsData?.addonReports || [];
-	const addonReports = rawAddonReports.map((report) => ({
-		...report,
-		icon: ICON_MAP[report.iconType] || <BarChartOutlined />,
-	}));
+	const addonReports = Array.isArray(rawAddonReports)
+		? rawAddonReports
+			.filter((report) => report && typeof report === 'object')
+			.map((report) => ({
+				...report,
+				icon: ICON_MAP[report.iconType] || <BarChartOutlined />,
+			}))
+		: [];
 
 	// Coming soon placeholder
 	const comingSoonReport = {

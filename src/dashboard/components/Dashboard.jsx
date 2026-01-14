@@ -96,17 +96,22 @@ const Dashboard = ({ initialData = {} }) => {
 	const pluginUrl = dashboardData.pluginUrl || '';
 	const isTeacher = dashboardData.isTeacher || false;
 
+	// White-label branding support
+	const pluginName = dashboardData.pluginName || 'PressPrimer Quiz';
+	const dashboardLogo = dashboardData.dashboardLogo || `${pluginUrl}assets/images/PressPrimer-Logo-White.svg`;
+	const welcomeText = dashboardData.welcomeText || __('Welcome to PressPrimer Quiz! Here\'s an overview of recent quiz activity.', 'pressprimer-quiz');
+
 	return (
 		<div className="ppq-dashboard-container">
 			{/* Header */}
 			<div className="ppq-dashboard-header">
 				<div className="ppq-dashboard-header-content">
 					<img
-						src={`${pluginUrl}assets/images/PressPrimer-Logo-White.svg`}
-						alt="PressPrimer Quiz"
+						src={dashboardLogo}
+						alt={pluginName}
 						className="ppq-dashboard-logo"
 					/>
-					<p>{__('Welcome to PressPrimer Quiz! Here\'s an overview of recent quiz activity.', 'pressprimer-quiz')}</p>
+					<p>{welcomeText}</p>
 				</div>
 			</div>
 

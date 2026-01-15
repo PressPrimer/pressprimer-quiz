@@ -24,6 +24,7 @@ import {
 	AuditOutlined,
 	SafetyCertificateOutlined,
 	ExperimentOutlined,
+	DeleteOutlined,
 } from '@ant-design/icons';
 
 import OverviewCards from './OverviewCards';
@@ -45,6 +46,7 @@ const ICON_MAP = {
 	AuditOutlined: <AuditOutlined />,
 	SafetyCertificateOutlined: <SafetyCertificateOutlined />,
 	ExperimentOutlined: <ExperimentOutlined />,
+	DeleteOutlined: <DeleteOutlined />,
 };
 
 /**

@@ -432,7 +432,21 @@ class PressPrimer_Quiz_Attempt extends PressPrimer_Quiz_Model {
 		}
 
 		// Load and return the attempt object
-		return static::get( $attempt_id );
+		$attempt = static::get( $attempt_id );
+
+		if ( $attempt ) {
+			/**
+			 * Fires after a quiz attempt is started.
+			 *
+			 * @since 2.0.0
+			 *
+			 * @param PressPrimer_Quiz_Attempt $attempt The attempt object.
+			 * @param PressPrimer_Quiz_Quiz    $quiz    The quiz object.
+			 */
+			do_action( 'pressprimer_quiz_attempt_started', $attempt, $quiz );
+		}
+
+		return $attempt;
 	}
 
 	/**
@@ -668,7 +682,21 @@ class PressPrimer_Quiz_Attempt extends PressPrimer_Quiz_Model {
 		);
 
 		// Load and return the attempt object
-		return static::get( $attempt_id );
+		$attempt = static::get( $attempt_id );
+
+		if ( $attempt ) {
+			/**
+			 * Fires after a guest quiz attempt is started.
+			 *
+			 * @since 2.0.0
+			 *
+			 * @param PressPrimer_Quiz_Attempt $attempt The attempt object.
+			 * @param PressPrimer_Quiz_Quiz    $quiz    The quiz object.
+			 */
+			do_action( 'pressprimer_quiz_attempt_started', $attempt, $quiz );
+		}
+
+		return $attempt;
 	}
 
 	/**
@@ -1278,5 +1306,39 @@ class PressPrimer_Quiz_Attempt extends PressPrimer_Quiz_Model {
 		shuffle( $order );
 
 		return wp_json_encode( $order );
+	}
+
+	/**
+	 * Delete attempt
+	 *
+	 * Removes the attempt record with hook for addons.
+	 *
+	 * @since 2.0.0
+	 *
+	 * @return bool|WP_Error True on success, WP_Error on failure.
+	 */
+	public function delete() {
+		// Capture attempt data before deletion for the hook.
+		$attempt_id = $this->id;
+		$quiz_id    = $this->quiz_id;
+		$user_id    = $this->user_id;
+
+		$result = parent::delete();
+
+		// Fire action hook for addons (e.g., audit logging).
+		if ( true === $result ) {
+			/**
+			 * Fires after a quiz attempt is deleted.
+			 *
+			 * @since 2.0.0
+			 *
+			 * @param int $attempt_id The attempt ID.
+			 * @param int $quiz_id    The quiz ID.
+			 * @param int $user_id    The user ID (may be null for guests).
+			 */
+			do_action( 'pressprimer_quiz_attempt_deleted', $attempt_id, $quiz_id, $user_id );
+		}
+
+		return $result;
 	}
 }

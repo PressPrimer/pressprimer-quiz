@@ -224,7 +224,50 @@ class PressPrimer_Quiz_Question extends PressPrimer_Quiz_Model {
 		}
 
 		// Call parent create
-		return parent::create( $data );
+		$question_id = parent::create( $data );
+
+		// Fire action hook for addons (e.g., audit logging).
+		if ( ! is_wp_error( $question_id ) ) {
+			/**
+			 * Fires after a question is created.
+			 *
+			 * @since 2.0.0
+			 *
+			 * @param int   $question_id The question ID.
+			 * @param array $data        The question data.
+			 */
+			do_action( 'pressprimer_quiz_question_created', $question_id, $data );
+		}
+
+		return $question_id;
+	}
+
+	/**
+	 * Save changes to database
+	 *
+	 * Updates the record in the database with hook for addons.
+	 *
+	 * @since 2.0.0
+	 *
+	 * @return bool|WP_Error True on success, WP_Error on failure.
+	 */
+	public function save() {
+		$result = parent::save();
+
+		// Fire action hook for addons (e.g., audit logging).
+		// Only fire if not a soft-delete or restore operation (those have their own hooks).
+		if ( true === $result && null === $this->deleted_at ) {
+			/**
+			 * Fires after a question is updated.
+			 *
+			 * @since 2.0.0
+			 *
+			 * @param PressPrimer_Quiz_Question $question The question instance.
+			 */
+			do_action( 'pressprimer_quiz_question_updated', $this );
+		}
+
+		return $result;
 	}
 
 	/**
@@ -413,11 +456,20 @@ class PressPrimer_Quiz_Question extends PressPrimer_Quiz_Model {
 		// Soft delete: set deleted_at timestamp
 		$this->deleted_at = current_time( 'mysql' );
 
-		$result = $this->save();
+		$result = parent::save(); // Use parent::save() to avoid triggering _updated hook.
 
 		// Update question counts for all banks containing this question.
 		if ( true === $result ) {
 			$this->update_bank_counts();
+
+			/**
+			 * Fires after a question is soft-deleted.
+			 *
+			 * @since 2.0.0
+			 *
+			 * @param PressPrimer_Quiz_Question $question The question instance.
+			 */
+			do_action( 'pressprimer_quiz_question_deleted', $this );
 		}
 
 		return $result;
@@ -454,11 +506,20 @@ class PressPrimer_Quiz_Question extends PressPrimer_Quiz_Model {
 
 		$this->deleted_at = null;
 
-		$result = $this->save();
+		$result = parent::save(); // Use parent::save() to avoid triggering _updated hook.
 
 		// Update question counts for all banks containing this question.
 		if ( true === $result ) {
 			$this->update_bank_counts();
+
+			/**
+			 * Fires after a question is restored from soft-delete.
+			 *
+			 * @since 2.0.0
+			 *
+			 * @param PressPrimer_Quiz_Question $question The question instance.
+			 */
+			do_action( 'pressprimer_quiz_question_restored', $this );
 		}
 
 		return $result;

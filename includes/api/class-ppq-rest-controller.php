@@ -919,10 +919,19 @@ class PressPrimer_Quiz_REST_Controller {
 			);
 
 			// Check if content changed (create new revision if it did)
-			$current_revision = $question->get_current_revision();
-			$new_hash         = PressPrimer_Quiz_Question_Revision::generate_hash( $data['stem'], $answers );
+			$current_revision       = $question->get_current_revision();
+			$new_hash               = PressPrimer_Quiz_Question_Revision::generate_hash( $data['stem'], $answers );
+			$new_feedback_correct   = wp_kses_post( $data['feedbackCorrect'] ?? '' );
+			$new_feedback_incorrect = wp_kses_post( $data['feedbackIncorrect'] ?? '' );
 
-			if ( ! $current_revision || $current_revision->content_hash !== $new_hash ) {
+			// Check if feedback changed (feedback is also part of revision content).
+			$feedback_changed = false;
+			if ( $current_revision ) {
+				$feedback_changed = ( $current_revision->feedback_correct !== $new_feedback_correct )
+					|| ( $current_revision->feedback_incorrect !== $new_feedback_incorrect );
+			}
+
+			if ( ! $current_revision || $current_revision->content_hash !== $new_hash || $feedback_changed ) {
 				// Create new revision
 				$revision                     = new PressPrimer_Quiz_Question_Revision();
 				$revision->question_id        = $question->id;
@@ -930,8 +939,8 @@ class PressPrimer_Quiz_REST_Controller {
 				$revision->stem               = wp_kses_post( $data['stem'] ?? '' );
 				$revision->answers_json       = wp_json_encode( $answers );
 				$revision->settings_json      = wp_json_encode( [] );
-				$revision->feedback_correct   = wp_kses_post( $data['feedbackCorrect'] ?? '' );
-				$revision->feedback_incorrect = wp_kses_post( $data['feedbackIncorrect'] ?? '' );
+				$revision->feedback_correct   = $new_feedback_correct;
+				$revision->feedback_incorrect = $new_feedback_incorrect;
 				$revision->content_hash       = $new_hash;
 				$revision->created_by         = get_current_user_id();
 
@@ -2096,6 +2105,52 @@ class PressPrimer_Quiz_REST_Controller {
 		// This prevents issues with persistent object caching plugins (Redis, Memcached, etc.)
 		wp_cache_delete( PressPrimer_Quiz_Admin_Settings::OPTION_NAME, 'options' );
 		wp_cache_delete( 'alloptions', 'options' );
+
+		// Determine which section was updated based on the keys.
+		$section = 'general';
+		if ( isset( $sanitized['email_from_name'] ) || isset( $sanitized['email_results_auto_send'] ) ) {
+			$section = 'email';
+		} elseif ( isset( $sanitized['social_sharing_twitter'] ) || isset( $sanitized['social_sharing_facebook'] ) ) {
+			$section = 'sharing';
+		} elseif ( isset( $sanitized['appearance_font_family'] ) || isset( $sanitized['appearance_primary_color'] ) ) {
+			$section = 'appearance';
+		} elseif ( isset( $sanitized['remove_data_on_uninstall'] ) && 1 === count( $sanitized ) ) {
+			$section = 'advanced';
+		}
+
+		// Build list of actually changed settings (compare old vs new values).
+		$actual_changes = array();
+		foreach ( $sanitized as $key => $new_value ) {
+			$old_value = isset( $existing[ $key ] ) ? $existing[ $key ] : null;
+			// Use loose comparison to handle type differences (e.g., "1" vs 1).
+			// phpcs:ignore Universal.Operators.StrictComparisons.LooseNotEqual
+			if ( $old_value != $new_value ) {
+				$actual_changes[] = array(
+					'field'  => $key,
+					'before' => $old_value,
+					'after'  => $new_value,
+				);
+			}
+		}
+
+		// Only fire the hook if something actually changed.
+		if ( ! empty( $actual_changes ) ) {
+			/**
+			 * Fires after settings are updated.
+			 *
+			 * @since 2.0.0
+			 *
+			 * @param string $section The settings section that was updated.
+			 * @param array  $data    The changed settings data with before/after values.
+			 */
+			do_action(
+				'pressprimer_quiz_settings_updated',
+				$section,
+				array(
+					'changes' => $actual_changes,
+				)
+			);
+		}
 
 		return new WP_REST_Response(
 			[

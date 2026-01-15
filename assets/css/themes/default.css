@@ -96,6 +96,9 @@
 	--ppq-transition-fast: 0.1s ease;
 	--ppq-transition: 0.2s ease;
 	--ppq-transition-slow: 0.3s ease;
+
+	/* Apply base font family to all quiz elements */
+	font-family: var(--ppq-font-family);
 }
 
 /* ==========================================================================

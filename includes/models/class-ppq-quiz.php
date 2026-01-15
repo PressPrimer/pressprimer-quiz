@@ -521,7 +521,110 @@ class PressPrimer_Quiz_Quiz extends PressPrimer_Quiz_Model {
 			}
 		}
 
-		return parent::create( $data );
+		$quiz_id = parent::create( $data );
+
+		// Fire action hook for addons (e.g., audit logging).
+		if ( ! is_wp_error( $quiz_id ) ) {
+			/**
+			 * Fires after a quiz is created.
+			 *
+			 * @since 2.0.0
+			 *
+			 * @param int   $quiz_id The quiz ID.
+			 * @param array $data    The quiz data.
+			 */
+			do_action( 'pressprimer_quiz_quiz_created', $quiz_id, $data );
+		}
+
+		return $quiz_id;
+	}
+
+	/**
+	 * Save changes to database
+	 *
+	 * Updates the record in the database with hook for addons.
+	 *
+	 * @since 2.0.0
+	 *
+	 * @return bool|WP_Error True on success, WP_Error on failure.
+	 */
+	public function save() {
+		// Track old status before save to detect publish transition.
+		$old_status = null;
+		if ( $this->id ) {
+			$existing = static::get( $this->id );
+			if ( $existing ) {
+				$old_status = $existing->status;
+			}
+		}
+
+		$result = parent::save();
+
+		// Fire action hook for addons (e.g., audit logging).
+		if ( true === $result ) {
+			/**
+			 * Fires after a quiz is updated.
+			 *
+			 * @since 2.0.0
+			 *
+			 * @param PressPrimer_Quiz_Quiz $quiz The quiz instance.
+			 */
+			do_action( 'pressprimer_quiz_quiz_updated', $this );
+
+			// Fire quiz_published if transitioning to published status.
+			if ( 'published' === $this->status && $old_status && 'published' !== $old_status ) {
+				/**
+				 * Fires when a quiz is published.
+				 *
+				 * @since 2.0.0
+				 *
+				 * @param int   $quiz_id The quiz ID.
+				 * @param array $data    Quiz data including old status.
+				 */
+				do_action(
+					'pressprimer_quiz_quiz_published',
+					$this->id,
+					array(
+						'title'      => $this->title,
+						'old_status' => $old_status,
+					)
+				);
+			}
+		}
+
+		return $result;
+	}
+
+	/**
+	 * Delete quiz
+	 *
+	 * Removes the quiz record with hook for addons.
+	 *
+	 * @since 2.0.0
+	 *
+	 * @return bool|WP_Error True on success, WP_Error on failure.
+	 */
+	public function delete() {
+		// Capture quiz data before deletion for the hook.
+		$quiz_id    = $this->id;
+		$quiz_title = $this->title;
+
+		$result = parent::delete();
+
+		// Fire action hook for addons (e.g., audit logging).
+		if ( true === $result ) {
+			/**
+			 * Fires after a quiz is deleted.
+			 *
+			 * @since 2.0.0
+			 *
+			 * @param int    $quiz_id    The quiz ID.
+			 * @param string $quiz_title The quiz title.
+			 */
+			do_action( 'pressprimer_quiz_quiz_deleted', $quiz_id, $quiz_title );
+		}
+
+		return $result;
 	}
 
 	/**

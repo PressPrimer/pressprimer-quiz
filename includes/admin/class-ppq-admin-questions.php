@@ -373,15 +373,44 @@ class PressPrimer_Quiz_Admin_Questions {
 			$question_data
 		);
 
-		// Also pass admin URL
+		// Get question object for filter (only for existing questions).
+		$question = $question_id > 0 ? PressPrimer_Quiz_Question::get( $question_id ) : null;
+
+		/**
+		 * Filters the addon tabs shown in the question editor.
+		 *
+		 * Allows addons to add their own tabs to the question editor.
+		 * Each tab should be an array with 'key' and 'label' keys.
+		 *
+		 * @since 2.0.0
+		 *
+		 * @param array                        $tabs     Array of addon tabs.
+		 * @param PressPrimer_Quiz_Question|null $question Question object, or null for new questions.
+		 */
+		$addon_tabs = apply_filters( 'pressprimer_quiz_question_editor_tabs', array(), $question );
+
+		// Also pass admin URL and addon tabs
 		wp_localize_script(
 			'ppq-question-editor',
 			'pressprimerQuizAdmin',
 			[
-				'adminUrl' => admin_url(),
-				'nonce'    => wp_create_nonce( 'wp_rest' ),
+				'adminUrl'  => admin_url(),
+				'nonce'     => wp_create_nonce( 'wp_rest' ),
+				'addonTabs' => $addon_tabs,
 			]
 		);
+
+		/**
+		 * Fires after question editor scripts are enqueued.
+		 *
+		 * Allows addons to enqueue their own scripts for the question editor.
+		 *
+		 * @since 2.0.0
+		 *
+		 * @param int                            $question_id Question ID (0 for new).
+		 * @param PressPrimer_Quiz_Question|null $question    Question object, or null for new questions.
+		 */
+		do_action( 'pressprimer_quiz_question_editor_enqueue_scripts', $question_id, $question );
 	}
 
 	/**

@@ -19,11 +19,13 @@ import {
 	Typography,
 	Alert,
 	Divider,
+	Tabs,
 } from 'antd';
 import {
 	SaveOutlined,
 	CloseOutlined,
 	QuestionCircleOutlined,
+	EditOutlined,
 } from '@ant-design/icons';
 
 import QuestionTypeSelector from './QuestionTypeSelector';
@@ -53,8 +55,12 @@ const QuestionEditor = ({ questionData = {} }) => {
 		{ id: 'a1', text: '', isCorrect: false, feedback: '', order: 1 },
 		{ id: 'a2', text: '', isCorrect: false, feedback: '', order: 2 },
 	]);
+	const [activeTab, setActiveTab] = useState('editor');
 
 	const isNew = !questionData.id;
+
+	// Get addon tabs from localized data
+	const addonTabs = window.pressprimerQuizAdmin?.addonTabs || [];
 
 	// Initialize form with question data
 	useEffect(() => {
@@ -154,6 +160,30 @@ const QuestionEditor = ({ questionData = {} }) => {
 	};
 
 	/**
+	 * Handle tab change
+	 *
+	 * When switching to an addon tab, dispatch an event so the addon
+	 * can mount its React component into the tab panel.
+	 *
+	 * @param {string} key - The tab key.
+	 */
+	const handleTabChange = (key) => {
+		setActiveTab(key);
+
+		// If switching to an addon tab, dispatch event for the addon to handle
+		if (key !== 'editor') {
+			document.dispatchEvent(
+				new CustomEvent('ppq-question-editor-tab-active', {
+					detail: {
+						tabKey: key,
+						questionId: questionData.id || 0,
+					},
+				})
+			);
+		}
+	};
+
+	/**
 	 * Handle question type change
 	 */
 	const handleTypeChange = (type) => {
@@ -247,99 +277,196 @@ const QuestionEditor = ({ questionData = {} }) => {
 
 					<Divider />
 
-					{/* Main Layout */}
-					<Layout style={{ background: 'transparent' }}>
-						<Content style={{ paddingRight: 24 }}>
-							{/* Question Type Selector */}
-							<QuestionTypeSelector
-								value={questionType}
-								onChange={handleTypeChange}
-							/>
+					{/* Tabs - Only show if there are addon tabs and this is an existing question */}
+					{addonTabs.length > 0 && !isNew ? (
+						<Tabs
+							activeKey={activeTab}
+							onChange={handleTabChange}
+							items={[
+								{
+									key: 'editor',
+									label: (
+										<span>
+											<EditOutlined />
+											{__('Editor', 'pressprimer-quiz')}
+										</span>
+									),
+									children: (
+										<Layout style={{ background: 'transparent' }}>
+											<Content style={{ paddingRight: 24 }}>
+												<QuestionTypeSelector
+													value={questionType}
+													onChange={handleTypeChange}
+												/>
+												<StemEditor
+													value={stem}
+													onChange={(value) => {
+														setStem(value);
+														form.setFieldsValue({ stem: value });
+													}}
+												/>
+												<AnswersList
+													answers={answers}
+													questionType={questionType}
+													onChange={setAnswers}
+												/>
+												<FeedbackFields form={form} />
+											</Content>
+											<Sider
+												width={320}
+												style={{
+													background: '#fff',
+													padding: '24px 24px 12px 24px',
+													borderLeft: '1px solid #f0f0f0',
+												}}
+											>
+												<Space direction="vertical" style={{ width: '100%' }} size="middle">
+													<MetadataPanel form={form} />
+													<Divider style={{ margin: '4px 0' }} />
+													<Form.Item name="categories" noStyle shouldUpdate style={{ marginBottom: 0 }}>
+														<TaxonomySelector type="category" />
+													</Form.Item>
+													<Divider style={{ margin: '4px 0' }} />
+													<Form.Item name="tags" noStyle shouldUpdate style={{ marginBottom: 0 }}>
+														<TaxonomySelector type="tag" />
+													</Form.Item>
+													<Divider style={{ margin: '4px 0' }} />
+													<Form.Item name="banks" noStyle shouldUpdate style={{ marginBottom: 0 }}>
+														<BankSelector />
+													</Form.Item>
+													<Divider style={{ margin: '16px 0' }} />
+													<Space direction="vertical" style={{ width: '100%' }} size="small">
+														<Button
+															type="primary"
+															icon={<SaveOutlined />}
+															htmlType="submit"
+															loading={saving}
+															size="large"
+															block
+														>
+															{__('Save Question', 'pressprimer-quiz')}
+														</Button>
+														<Button
+															icon={<CloseOutlined />}
+															onClick={handleCancel}
+															size="large"
+															block
+														>
+															{__('Cancel', 'pressprimer-quiz')}
+														</Button>
+													</Space>
+												</Space>
+											</Sider>
+										</Layout>
+									),
+								},
+								...addonTabs.map((tab) => ({
+									key: tab.key,
+									label: tab.label,
+									children: (
+										<div
+											id={`ppq-question-editor-addon-${tab.key}`}
+											style={{ minHeight: 300, padding: '16px 0' }}
+										/>
+									),
+								})),
+							]}
+						/>
+					) : (
+						/* Original layout without tabs for new questions or when no addon tabs */
+						<Layout style={{ background: 'transparent' }}>
+							<Content style={{ paddingRight: 24 }}>
+								{/* Question Type Selector */}
+								<QuestionTypeSelector
+									value={questionType}
+									onChange={handleTypeChange}
+								/>
 
-							{/* Question Stem */}
-							<StemEditor
-								value={stem}
-								onChange={(value) => {
-									setStem(value);
-									form.setFieldsValue({ stem: value });
+								{/* Question Stem */}
+								<StemEditor
+									value={stem}
+									onChange={(value) => {
+										setStem(value);
+										form.setFieldsValue({ stem: value });
+									}}
+								/>
+
+								{/* Answers */}
+								<AnswersList
+									answers={answers}
+									questionType={questionType}
+									onChange={setAnswers}
+								/>
+
+								{/* General Feedback */}
+								<FeedbackFields form={form} />
+							</Content>
+
+							{/* Sidebar */}
+							<Sider
+								width={320}
+								style={{
+									background: '#fff',
+									padding: '24px 24px 12px 24px',
+									borderLeft: '1px solid #f0f0f0',
 								}}
-							/>
+							>
+								<Space direction="vertical" style={{ width: '100%' }} size="middle">
+									{/* Metadata */}
+									<MetadataPanel form={form} />
 
-							{/* Answers */}
-							<AnswersList
-								answers={answers}
-								questionType={questionType}
-								onChange={setAnswers}
-							/>
+									<Divider style={{ margin: '4px 0' }} />
 
-							{/* General Feedback */}
-							<FeedbackFields form={form} />
-						</Content>
+									{/* Categories */}
+									<Form.Item name="categories" noStyle shouldUpdate style={{ marginBottom: 0 }}>
+										<TaxonomySelector
+											type="category"
+										/>
+									</Form.Item>
 
-						{/* Sidebar */}
-						<Sider
-							width={320}
-							style={{
-								background: '#fff',
-								padding: '24px 24px 12px 24px',
-								borderLeft: '1px solid #f0f0f0',
-							}}
-						>
-							<Space direction="vertical" style={{ width: '100%' }} size="middle">
-								{/* Metadata */}
-								<MetadataPanel form={form} />
+									<Divider style={{ margin: '4px 0' }} />
 
-								<Divider style={{ margin: '4px 0' }} />
+									{/* Tags */}
+									<Form.Item name="tags" noStyle shouldUpdate style={{ marginBottom: 0 }}>
+										<TaxonomySelector
+											type="tag"
+										/>
+									</Form.Item>
 
-								{/* Categories */}
-								<Form.Item name="categories" noStyle shouldUpdate style={{ marginBottom: 0 }}>
-									<TaxonomySelector
-										type="category"
-									/>
-								</Form.Item>
+									<Divider style={{ margin: '4px 0' }} />
 
-								<Divider style={{ margin: '4px 0' }} />
+									{/* Question Banks */}
+									<Form.Item name="banks" noStyle shouldUpdate style={{ marginBottom: 0 }}>
+										<BankSelector />
+									</Form.Item>
 
-								{/* Tags */}
-								<Form.Item name="tags" noStyle shouldUpdate style={{ marginBottom: 0 }}>
-									<TaxonomySelector
-										type="tag"
-									/>
-								</Form.Item>
+									<Divider style={{ margin: '16px 0' }} />
 
-								<Divider style={{ margin: '4px 0' }} />
-
-								{/* Question Banks */}
-								<Form.Item name="banks" noStyle shouldUpdate style={{ marginBottom: 0 }}>
-									<BankSelector />
-								</Form.Item>
-
-								<Divider style={{ margin: '16px 0' }} />
-
-								{/* Save/Cancel Buttons */}
-								<Space direction="vertical" style={{ width: '100%' }} size="small">
-									<Button
-										type="primary"
-										icon={<SaveOutlined />}
-										htmlType="submit"
-										loading={saving}
-										size="large"
-										block
-									>
-										{__('Save Question', 'pressprimer-quiz')}
-									</Button>
-									<Button
-										icon={<CloseOutlined />}
-										onClick={handleCancel}
-										size="large"
-										block
-									>
-										{__('Cancel', 'pressprimer-quiz')}
-									</Button>
+									{/* Save/Cancel Buttons */}
+									<Space direction="vertical" style={{ width: '100%' }} size="small">
+										<Button
+											type="primary"
+											icon={<SaveOutlined />}
+											htmlType="submit"
+											loading={saving}
+											size="large"
+											block
+										>
+											{__('Save Question', 'pressprimer-quiz')}
+										</Button>
+										<Button
+											icon={<CloseOutlined />}
+											onClick={handleCancel}
+											size="large"
+											block
+										>
+											{__('Cancel', 'pressprimer-quiz')}
+										</Button>
+									</Space>
 								</Space>
-							</Space>
-						</Sider>
-					</Layout>
+							</Sider>
+						</Layout>
+					)}
 				</Form>
 			</Spin>
 		</div>

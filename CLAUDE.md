@@ -4,6 +4,49 @@
 
 PressPrimer Quiz is an enterprise-grade quiz and assessment plugin for WordPress. It was approved by WordPress.org in January 2025 (v1.0.0).
 
+---
+
+## AI Development Workflow (CRITICAL)
+
+When working with AI assistants on this codebase, follow these rules:
+
+### Prompt-Based Development
+
+**STOP after completing each prompt.** When the user provides numbered prompts (e.g., "Prompt 4.1", "Prompt 4.2"), complete ONE prompt at a time and then STOP to allow the user to:
+1. Review and test the implementation
+2. Provide feedback or corrections
+3. Decide whether to proceed to the next prompt
+
+**DO NOT:**
+- Automatically continue to the next prompt
+- Batch multiple prompts together
+- Assume the user wants you to proceed without confirmation
+
+**Example workflow:**
+```
+User: Here is Prompt 4.1: Create the PurgeDialog component...
+AI: [Completes Prompt 4.1, commits code]
+AI: "Prompt 4.1 is complete. The PurgeDialog component has been created and committed. Ready for your feedback before proceeding to Prompt 4.2."
+[STOP and wait for user response]
+```
+
+### Feedback Integration
+
+- Always wait for user feedback after completing a prompt
+- If the user provides corrections, address ALL feedback items before moving to the next prompt
+- Document any changes requested by the user in commit messages
+
+### Code Review Checkpoints
+
+Before marking a prompt as complete:
+1. Run PHP syntax check on any new PHP files
+2. Run PHPCS on modified PHP files
+3. Run `npm run build` if React components were modified
+4. Run `npm run lint:js` if JavaScript was modified
+5. Verify no console errors in browser (if applicable)
+
+---
+
 ## WordPress.org Coding Standards
 
 These rules were established during the WordPress.org plugin review process. **All code must follow these standards.**

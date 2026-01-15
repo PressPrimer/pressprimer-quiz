@@ -31,6 +31,16 @@ document.addEventListener('DOMContentLoaded', () => {
 				Component = RecentAttemptsReport;
 				break;
 			default:
+				// If no report type or unknown type, check if it's an addon report
+				// Addon reports render their own content in ppq-addon-report-root
+				if (reportType) {
+					// Create mount point for addon report and dispatch event
+					root.innerHTML = '<div id="ppq-addon-report-root"></div>';
+					document.dispatchEvent(new CustomEvent('ppq-addon-report-ready', {
+						detail: { reportType },
+					}));
+					return;
+				}
 				Component = Reports;
 		}
 

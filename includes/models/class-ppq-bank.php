@@ -162,7 +162,49 @@ class PressPrimer_Quiz_Bank extends PressPrimer_Quiz_Model {
 		}
 
 		// Call parent create
-		return parent::create( $data );
+		$bank_id = parent::create( $data );
+
+		// Fire action hook for addons (e.g., audit logging).
+		if ( ! is_wp_error( $bank_id ) ) {
+			/**
+			 * Fires after a question bank is created.
+			 *
+			 * @since 2.0.0
+			 *
+			 * @param int   $bank_id The bank ID.
+			 * @param array $data    The bank data.
+			 */
+			do_action( 'pressprimer_quiz_bank_created', $bank_id, $data );
+		}
+
+		return $bank_id;
+	}
+
+	/**
+	 * Save changes to database
+	 *
+	 * Updates the record in the database with hook for addons.
+	 *
+	 * @since 2.0.0
+	 *
+	 * @return bool|WP_Error True on success, WP_Error on failure.
+	 */
+	public function save() {
+		$result = parent::save();
+
+		// Fire action hook for addons (e.g., audit logging).
+		if ( true === $result ) {
+			/**
+			 * Fires after a question bank is updated.
+			 *
+			 * @since 2.0.0
+			 *
+			 * @param PressPrimer_Quiz_Bank $bank The bank instance.
+			 */
+			do_action( 'pressprimer_quiz_bank_updated', $this );
+		}
+
+		return $result;
 	}
 
 	/**
@@ -730,6 +772,10 @@ class PressPrimer_Quiz_Bank extends PressPrimer_Quiz_Model {
 			);
 		}
 
+		// Capture bank info before deletion for the hook.
+		$bank_id   = $this->id;
+		$bank_name = $this->name;
+
 		global $wpdb;
 		$bank_questions_table = $wpdb->prefix . 'ppq_bank_questions';
 
@@ -753,6 +799,16 @@ class PressPrimer_Quiz_Bank extends PressPrimer_Quiz_Model {
 
 		// Commit transaction
 		$wpdb->query( 'COMMIT' );
+
+		/**
+		 * Fires after a bank is deleted.
+		 *
+		 * @since 2.0.0
+		 *
+		 * @param int    $bank_id   The deleted bank's ID.
+		 * @param string $bank_name The deleted bank's name.
+		 */
+		do_action( 'pressprimer_quiz_bank_deleted', $bank_id, $bank_name );
 
 		return true;
 	}

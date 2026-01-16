@@ -1108,12 +1108,30 @@ class PressPrimer_Quiz_AI_Service {
 			);
 		}
 
-		if ( 500 === $code || 502 === $code || 503 === $code || 504 === $code ) {
+		// 502 Bad Gateway is usually a server/proxy timeout, not an OpenAI issue.
+		// This happens when the hosting server (nginx, Apache, load balancer) times out
+		// waiting for the PHP process, which is still waiting for OpenAI.
+		if ( 502 === $code ) {
+			return new WP_Error(
+				'ppq_server_timeout',
+				__( 'Server timeout (502 Bad Gateway). This is not an OpenAI issue — your hosting server closed the connection before the AI response was received. OpenAI can take 1-3 minutes for complex requests, but many hosting servers timeout after 30-60 seconds. To fix this, contact your hosting provider about increasing the proxy timeout (nginx: proxy_read_timeout, Apache: ProxyTimeout). As a workaround, try generating fewer questions at once or using shorter content.', 'pressprimer-quiz' )
+			);
+		}
+
+		// 504 Gateway Timeout is similar to 502 - a proxy/server level timeout.
+		if ( 504 === $code ) {
+			return new WP_Error(
+				'ppq_server_timeout',
+				__( 'Server timeout (504 Gateway Timeout). Your hosting server closed the connection before the AI response was received. OpenAI can take 1-3 minutes for complex requests, but many hosting servers timeout after 30-60 seconds. To fix this, contact your hosting provider about increasing the proxy timeout. As a workaround, try generating fewer questions at once or using shorter content.', 'pressprimer-quiz' )
+			);
+		}
+
+		if ( 500 === $code || 503 === $code ) {
 			return new WP_Error(
 				'ppq_api_server_error',
 				sprintf(
 					/* translators: %d: HTTP status code */
-					__( 'OpenAI server error (HTTP %d). This is usually temporary. Please try again.', 'pressprimer-quiz' ),
+					__( 'OpenAI server error (HTTP %d). This is usually temporary. Please try again in a few moments.', 'pressprimer-quiz' ),
 					$code
 				)
 			);

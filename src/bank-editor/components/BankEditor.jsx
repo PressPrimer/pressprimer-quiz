@@ -229,11 +229,7 @@ const BankEditor = ({ bankData = {} }) => {
 								<Form.Item
 									name="visibility"
 									label={__('Visibility', 'pressprimer-quiz')}
-									extra={
-										isAdmin
-											? __('Private: Only you can access this bank. Shared: All teachers on this site can access this bank.', 'pressprimer-quiz')
-											: __('Private: Only you can access this bank. Shared: Teachers in your groups can access this bank.', 'pressprimer-quiz')
-									}
+									extra={__('Private: Only you can access this bank. Shared: Teachers in your groups can access this bank.', 'pressprimer-quiz')}
 									initialValue="private"
 								>
 									<Select size="large">
@@ -241,10 +237,7 @@ const BankEditor = ({ bankData = {} }) => {
 											{__('Private - Only Me', 'pressprimer-quiz')}
 										</Select.Option>
 										<Select.Option value="shared">
-											{isAdmin
-												? __('Shared - All Teachers', 'pressprimer-quiz')
-												: __('Shared - My Groups', 'pressprimer-quiz')
-											}
+											{__('Shared - My Groups', 'pressprimer-quiz')}
 										</Select.Option>
 									</Select>
 								</Form.Item>

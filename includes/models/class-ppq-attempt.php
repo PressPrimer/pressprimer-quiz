@@ -1070,6 +1070,79 @@ class PressPrimer_Quiz_Attempt extends PressPrimer_Quiz_Model {
 	}
 
 	/**
+	 * Get all meta data for this attempt
+	 *
+	 * @since 2.0.0
+	 *
+	 * @return array Meta data as associative array.
+	 */
+	public function get_all_meta() {
+		if ( empty( $this->meta_json ) ) {
+			return array();
+		}
+
+		$meta = json_decode( $this->meta_json, true );
+		return is_array( $meta ) ? $meta : array();
+	}
+
+	/**
+	 * Get a specific meta value
+	 *
+	 * @since 2.0.0
+	 *
+	 * @param string $key     Meta key.
+	 * @param mixed  $default Default value if key doesn't exist.
+	 * @return mixed Meta value or default.
+	 */
+	public function get_meta( $key, $default = null ) {
+		$meta = $this->get_all_meta();
+		return isset( $meta[ $key ] ) ? $meta[ $key ] : $default;
+	}
+
+	/**
+	 * Set a meta value
+	 *
+	 * Note: This only updates the object. Call save() to persist.
+	 *
+	 * @since 2.0.0
+	 *
+	 * @param string $key   Meta key.
+	 * @param mixed  $value Meta value (must be JSON serializable).
+	 * @return $this For chaining.
+	 */
+	public function set_meta( $key, $value ) {
+		$meta            = $this->get_all_meta();
+		$meta[ $key ]    = $value;
+		$this->meta_json = wp_json_encode( $meta );
+		return $this;
+	}
+
+	/**
+	 * Check if attempt is marked as late
+	 *
+	 * @since 2.0.0
+	 *
+	 * @return bool True if late, false otherwise.
+	 */
+	public function is_late() {
+		return (bool) $this->get_meta( 'is_late', false );
+	}
+
+	/**
+	 * Mark attempt as late
+	 *
+	 * Note: This only updates the object. Call save() to persist.
+	 *
+	 * @since 2.0.0
+	 *
+	 * @param bool $is_late Whether the attempt is late.
+	 * @return $this For chaining.
+	 */
+	public function mark_as_late( $is_late = true ) {
+		return $this->set_meta( 'is_late', $is_late );
+	}
+
+	/**
 	 * Get user's attempts for a quiz
 	 *
 	 * @since 1.0.0

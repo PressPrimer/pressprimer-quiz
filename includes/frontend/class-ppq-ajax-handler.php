@@ -480,6 +480,33 @@ class PressPrimer_Quiz_AJAX_Handler {
 			$attempt->active_elapsed_ms = $active_elapsed_ms;
 		}
 
+		// Check if this is a deadline-triggered submission (from JavaScript).
+		$deadline_submit = isset( $_POST['deadline_submit'] ) && rest_sanitize_boolean( wp_unslash( $_POST['deadline_submit'] ) );
+
+		/**
+		 * Filter to validate and modify attempt before submission.
+		 *
+		 * Addons can use this to:
+		 * 1. Reject late submissions (return WP_Error)
+		 * 2. Mark submissions as late (set meta on attempt)
+		 * 3. Track assignment-specific data
+		 *
+		 * @since 2.0.0
+		 *
+		 * @param PressPrimer_Quiz_Attempt|WP_Error $attempt         Attempt object or WP_Error to reject.
+		 * @param bool                              $deadline_submit Whether this was triggered by deadline.
+		 */
+		$attempt = apply_filters( 'pressprimer_quiz_before_submit', $attempt, $deadline_submit );
+
+		// If filter returned an error, reject the submission.
+		if ( is_wp_error( $attempt ) ) {
+			wp_send_json_error(
+				[
+					'message' => $attempt->get_error_message(),
+				]
+			);
+		}
+
 		// Submit attempt (this handles scoring via PressPrimer_Quiz_Scoring_Service)
 		$result = $attempt->submit();
 

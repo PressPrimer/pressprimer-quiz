@@ -664,6 +664,41 @@ class PressPrimer_Quiz_Quiz_Renderer {
 		 */
 		do_action( 'pressprimer_quiz_before_quiz_interface', $attempt, $quiz );
 
+		/**
+		 * Filter extra data attributes for the quiz interface container.
+		 *
+		 * Allows addons (e.g., Educator) to pass additional data to the quiz JavaScript.
+		 * Keys should be attribute names WITHOUT the 'data-' prefix. Values must be scalar.
+		 *
+		 * Example usage for assignment deadlines:
+		 *   return array(
+		 *       'deadline-timestamp'  => $deadline_timestamp,
+		 *       'allow-late'          => $allow_late ? '1' : '0',
+		 *       'auto-submit-deadline'=> '1',
+		 *   );
+		 *
+		 * @since 2.0.0
+		 *
+		 * @param array                    $extra_data Empty array to add attributes to.
+		 * @param PressPrimer_Quiz_Attempt $attempt    The current attempt object.
+		 * @param PressPrimer_Quiz_Quiz    $quiz       The quiz object.
+		 */
+		$extra_data_attributes = apply_filters( 'pressprimer_quiz_interface_data_attributes', array(), $attempt, $quiz );
+
+		// Build extra data attributes string.
+		$extra_attrs_html = '';
+		if ( is_array( $extra_data_attributes ) ) {
+			foreach ( $extra_data_attributes as $key => $value ) {
+				// Skip non-scalar values.
+				if ( ! is_scalar( $value ) ) {
+					continue;
+				}
+				// Sanitize key (letters, numbers, hyphens only).
+				$key               = preg_replace( '/[^a-z0-9-]/', '', strtolower( $key ) );
+				$extra_attrs_html .= ' data-' . esc_attr( $key ) . '="' . esc_attr( $value ) . '"';
+			}
+		}
+
 		// Start output buffering
 		ob_start();
 
@@ -685,7 +720,8 @@ class PressPrimer_Quiz_Quiz_Renderer {
 			data-time-remaining="<?php echo esc_attr( $time_remaining ); ?>"
 			data-start-question="<?php echo esc_attr( $first_unanswered ); ?>"
 			data-active-elapsed-ms="<?php echo esc_attr( $attempt->active_elapsed_ms ?? 0 ); ?>"
-			data-density="<?php echo esc_attr( $density ); ?>">
+			data-density="<?php echo esc_attr( $density ); ?>"
+			<?php echo $extra_attrs_html; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- All attributes escaped in loop above. ?>>
 
 			<?php
 			/**
@@ -1020,47 +1056,63 @@ class PressPrimer_Quiz_Quiz_Renderer {
 			true
 		);
 
-		// Localize script with data
+		// Build strings array with core strings.
+		$strings = [
+			'startingQuiz'              => __( 'Starting quiz...', 'pressprimer-quiz' ),
+			'error'                     => __( 'An error occurred. Please try again.', 'pressprimer-quiz' ),
+			'emailRequired'             => __( 'Please enter a valid email address.', 'pressprimer-quiz' ),
+			'submittingQuiz'            => __( 'Submitting quiz...', 'pressprimer-quiz' ),
+			'confirmSubmit'             => __( 'Are you sure you want to submit your quiz? You cannot change your answers after submitting.', 'pressprimer-quiz' ),
+			'timeExpired'               => __( 'Time has expired. Your quiz is being submitted automatically.', 'pressprimer-quiz' ),
+			'deadlineExpired'           => __( 'The submission deadline has passed. Your quiz is being submitted automatically.', 'pressprimer-quiz' ),
+			'saved'                     => __( 'Saved', 'pressprimer-quiz' ),
+			'saving'                    => __( 'Saving...', 'pressprimer-quiz' ),
+			'saveFailed'                => __( 'Save failed', 'pressprimer-quiz' ),
+			'unansweredTitle'           => __( 'Unanswered Questions', 'pressprimer-quiz' ),
+			'unansweredSingle'          => __( 'Question {question} has not been answered.', 'pressprimer-quiz' ),
+			'unansweredMultiple'        => __( 'Questions {questions} have not been answered.', 'pressprimer-quiz' ),
+			'unansweredMany'            => __( 'You have {count} unanswered questions.', 'pressprimer-quiz' ),
+			'goToQuestion'              => __( 'Go to Question {question}', 'pressprimer-quiz' ),
+			'submitAnyway'              => __( 'Submit Anyway', 'pressprimer-quiz' ),
+			'skipNotAllowedTooltip'     => __( 'You must answer this question to proceed.', 'pressprimer-quiz' ),
+			'skipNotAllowedTooltipPage' => __( 'You must answer all questions on this page to proceed.', 'pressprimer-quiz' ),
+			'pageOf'                    => __( 'Page {current} of {total}', 'pressprimer-quiz' ),
+			'backwardNotAllowed'        => __( 'You cannot go back to previous questions in this quiz.', 'pressprimer-quiz' ),
+			'correct'                   => __( 'Correct!', 'pressprimer-quiz' ),
+			// Accessibility strings for screen readers.
+			'fiveMinuteWarning'         => __( 'Warning: Five minutes remaining!', 'pressprimer-quiz' ),
+			'oneMinuteWarning'          => __( 'Warning: One minute remaining!', 'pressprimer-quiz' ),
+			'deadlineWarning'           => __( 'Warning: The submission deadline is approaching!', 'pressprimer-quiz' ),
+			/* translators: %1$s: current question number, %2$s: total questions */
+			'questionOf'                => __( 'Question {current} of {total}', 'pressprimer-quiz' ),
+			'incorrect'                 => __( 'Incorrect', 'pressprimer-quiz' ),
+			'checkAnswer'               => __( 'Check Answer', 'pressprimer-quiz' ),
+			'checking'                  => __( 'Checking...', 'pressprimer-quiz' ),
+			// Browser confirmation dialogs.
+			'unsavedChanges'            => __( 'You have unsaved answers. Are you sure you want to leave?', 'pressprimer-quiz' ),
+			'confirmLeave'              => __( 'Are you sure you want to leave this quiz? Your progress is saved, but you can only resume if the time limit allows.', 'pressprimer-quiz' ),
+			'offlineMessage'            => __( 'You are offline. Answers will be saved when connection is restored.', 'pressprimer-quiz' ),
+		];
+
+		/**
+		 * Filter the strings passed to the quiz JavaScript.
+		 *
+		 * Allows addons to add or modify localized strings.
+		 *
+		 * @since 2.0.0
+		 *
+		 * @param array $strings Localized strings.
+		 */
+		$strings = apply_filters( 'pressprimer_quiz_localize_strings', $strings );
+
+		// Localize script with data.
 		wp_localize_script(
 			'ppq-quiz',
 			'pressprimerQuiz',
 			[
 				'ajaxUrl' => admin_url( 'admin-ajax.php' ),
 				'nonce'   => wp_create_nonce( 'pressprimer_quiz_nonce' ),
-				'strings' => [
-					'startingQuiz'              => __( 'Starting quiz...', 'pressprimer-quiz' ),
-					'error'                     => __( 'An error occurred. Please try again.', 'pressprimer-quiz' ),
-					'emailRequired'             => __( 'Please enter a valid email address.', 'pressprimer-quiz' ),
-					'submittingQuiz'            => __( 'Submitting quiz...', 'pressprimer-quiz' ),
-					'confirmSubmit'             => __( 'Are you sure you want to submit your quiz? You cannot change your answers after submitting.', 'pressprimer-quiz' ),
-					'timeExpired'               => __( 'Time has expired. Your quiz is being submitted automatically.', 'pressprimer-quiz' ),
-					'saved'                     => __( 'Saved', 'pressprimer-quiz' ),
-					'saving'                    => __( 'Saving...', 'pressprimer-quiz' ),
-					'saveFailed'                => __( 'Save failed', 'pressprimer-quiz' ),
-					'unansweredTitle'           => __( 'Unanswered Questions', 'pressprimer-quiz' ),
-					'unansweredSingle'          => __( 'Question {question} has not been answered.', 'pressprimer-quiz' ),
-					'unansweredMultiple'        => __( 'Questions {questions} have not been answered.', 'pressprimer-quiz' ),
-					'unansweredMany'            => __( 'You have {count} unanswered questions.', 'pressprimer-quiz' ),
-					'goToQuestion'              => __( 'Go to Question {question}', 'pressprimer-quiz' ),
-					'submitAnyway'              => __( 'Submit Anyway', 'pressprimer-quiz' ),
-					'skipNotAllowedTooltip'     => __( 'You must answer this question to proceed.', 'pressprimer-quiz' ),
-					'skipNotAllowedTooltipPage' => __( 'You must answer all questions on this page to proceed.', 'pressprimer-quiz' ),
-					'pageOf'                    => __( 'Page {current} of {total}', 'pressprimer-quiz' ),
-					'backwardNotAllowed'        => __( 'You cannot go back to previous questions in this quiz.', 'pressprimer-quiz' ),
-					'correct'                   => __( 'Correct!', 'pressprimer-quiz' ),
-					// Accessibility strings for screen readers
-					'fiveMinuteWarning'         => __( 'Warning: Five minutes remaining!', 'pressprimer-quiz' ),
-					'oneMinuteWarning'          => __( 'Warning: One minute remaining!', 'pressprimer-quiz' ),
-					/* translators: %1$s: current question number, %2$s: total questions */
-					'questionOf'                => __( 'Question {current} of {total}', 'pressprimer-quiz' ),
-					'incorrect'                 => __( 'Incorrect', 'pressprimer-quiz' ),
-					'checkAnswer'               => __( 'Check Answer', 'pressprimer-quiz' ),
-					'checking'                  => __( 'Checking...', 'pressprimer-quiz' ),
-					// Browser confirmation dialogs
-					'unsavedChanges'            => __( 'You have unsaved answers. Are you sure you want to leave?', 'pressprimer-quiz' ),
-					'confirmLeave'              => __( 'Are you sure you want to leave this quiz? Your progress is saved, but you can only resume if the time limit allows.', 'pressprimer-quiz' ),
-					'offlineMessage'            => __( 'You are offline. Answers will be saved when connection is restored.', 'pressprimer-quiz' ),
-				],
+				'strings' => $strings,
 			]
 		);
 	}

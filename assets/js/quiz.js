@@ -230,6 +230,15 @@
 		fiveMinuteWarningAnnounced: false,
 		oneMinuteWarningAnnounced: false,
 
+		// Assignment deadline tracking
+		deadlineTimestamp: null,      // Unix timestamp when submission deadline passes
+		allowLate: false,             // Whether late submissions are allowed
+		autoSubmitDeadline: false,    // Whether to auto-submit when deadline passes
+		deadlineRemaining: null,      // Seconds until deadline
+		deadlineInterval: null,       // Interval for deadline countdown
+		deadlineWarningAnnounced: false,
+		isDeadlineSubmit: false,      // Track if submission was triggered by deadline
+
 		/**
 		 * Initialize quiz interface
 		 */
@@ -282,12 +291,22 @@
 			this.updateProgress();
 			this.updateNavButtons();
 
+			// Assignment deadline tracking (set by Educator addon via data attributes)
+			this.deadlineTimestamp = parseInt(this.$container.data('deadline-timestamp'), 10) || null;
+			this.allowLate = this.$container.data('allow-late') === 1 || this.$container.data('allow-late') === '1';
+			this.autoSubmitDeadline = this.$container.data('auto-submit-deadline') === 1 || this.$container.data('auto-submit-deadline') === '1';
+
 			// Start active time tracking
 			this.startActiveTimeTracking();
 
 			// Start timer if timed quiz
 			if (this.timeLimit && this.timeRemaining) {
 				this.startTimer();
+			}
+
+			// Start deadline timer if within 1 hour of deadline and no time limit timer already running
+			if (this.deadlineTimestamp && !this.timeLimit) {
+				this.initDeadlineTimer();
 			}
 
 			// Show starting question (first unanswered on resume, or first question)
@@ -1389,6 +1408,146 @@
 		},
 
 		/**
+		 * Initialize deadline timer
+		 *
+		 * Shows a countdown timer if within 1 hour of deadline.
+		 * Auto-submits when deadline passes (if late not allowed).
+		 */
+		initDeadlineTimer: function() {
+			if (!this.deadlineTimestamp) {
+				return;
+			}
+
+			// Calculate seconds until deadline
+			const now = Math.floor(Date.now() / 1000);
+			this.deadlineRemaining = this.deadlineTimestamp - now;
+
+			// If deadline already passed
+			if (this.deadlineRemaining <= 0) {
+				if (this.autoSubmitDeadline && !this.allowLate) {
+					// Auto-submit immediately
+					this.handleDeadlineExpired();
+				}
+				// If late allowed, just let them continue
+				return;
+			}
+
+			// Only show timer if within 1 hour (3600 seconds)
+			const ONE_HOUR = 3600;
+			if (this.deadlineRemaining <= ONE_HOUR) {
+				this.startDeadlineTimer();
+			} else {
+				// Schedule to start showing timer when within 1 hour
+				const self = this;
+				const delayMs = (this.deadlineRemaining - ONE_HOUR) * 1000;
+				setTimeout(function() {
+					self.deadlineRemaining = ONE_HOUR;
+					self.startDeadlineTimer();
+				}, delayMs);
+
+				// Also set up a hidden interval to check for deadline
+				this.startDeadlineChecker();
+			}
+		},
+
+		/**
+		 * Start deadline countdown timer display
+		 */
+		startDeadlineTimer: function() {
+			const self = this;
+			const $timer = $('#ppq-timer');
+
+			// Show timer element if hidden (for quizzes without time limit)
+			if (!this.timeLimit) {
+				$timer.show();
+			}
+
+			// Clear any existing interval
+			if (this.deadlineInterval) {
+				clearInterval(this.deadlineInterval);
+			}
+
+			// Update display immediately
+			this.updateDeadlineDisplay();
+
+			// Start countdown
+			this.deadlineInterval = setInterval(function() {
+				self.deadlineRemaining--;
+
+				// Update display
+				self.updateDeadlineDisplay();
+
+				// Warning announcements
+				if (self.deadlineRemaining <= 300 && !self.deadlineWarningAnnounced) {
+					self.deadlineWarningAnnounced = true;
+					self.announceToScreenReader(
+						pressprimerQuiz.strings.deadlineWarning || 'Warning: The submission deadline is approaching!',
+						'polite'
+					);
+				}
+
+				// Deadline reached
+				if (self.deadlineRemaining <= 0) {
+					clearInterval(self.deadlineInterval);
+					self.handleDeadlineExpired();
+				}
+			}, 1000);
+		},
+
+		/**
+		 * Start a hidden checker for deadline (when more than 1 hour away)
+		 */
+		startDeadlineChecker: function() {
+			const self = this;
+
+			// Check every minute
+			this.deadlineInterval = setInterval(function() {
+				const now = Math.floor(Date.now() / 1000);
+				const remaining = self.deadlineTimestamp - now;
+
+				if (remaining <= 0) {
+					clearInterval(self.deadlineInterval);
+					self.handleDeadlineExpired();
+				}
+			}, 60000);
+		},
+
+		/**
+		 * Update deadline timer display
+		 */
+		updateDeadlineDisplay: function() {
+			const $timer = $('#ppq-timer');
+			const minutes = Math.floor(this.deadlineRemaining / 60);
+			const seconds = this.deadlineRemaining % 60;
+			const timeString = this.padZero(minutes) + ':' + this.padZero(seconds);
+			$timer.text(timeString);
+
+			// Apply warning styles
+			if (this.deadlineRemaining <= 60) {
+				$timer.removeClass('ppq-timer-warning').addClass('ppq-timer-danger');
+			} else if (this.deadlineRemaining <= 300) {
+				$timer.addClass('ppq-timer-warning').removeClass('ppq-timer-danger');
+			}
+		},
+
+		/**
+		 * Handle deadline expiration
+		 */
+		handleDeadlineExpired: function() {
+			// If late submissions are allowed, don't auto-submit
+			if (this.allowLate) {
+				// User can continue, will be marked as late on server
+				return;
+			}
+
+			// Mark this as a deadline-triggered submission
+			this.isDeadlineSubmit = true;
+
+			// Auto-submit quiz
+			this.submitQuiz(true);
+		},
+
+		/**
 		 * Submit quiz
 		 *
 		 * @param {boolean} autoSubmit Whether this is an auto-submit due to timeout
@@ -1422,6 +1581,11 @@
 			// Stop timer if running
 			if (this.timerInterval) {
 				clearInterval(this.timerInterval);
+			}
+
+			// Stop deadline timer if running
+			if (this.deadlineInterval) {
+				clearInterval(this.deadlineInterval);
 			}
 
 			// Wait for any pending saves to complete
@@ -1461,6 +1625,7 @@
 					nonce: pressprimerQuiz.nonce,
 					attempt_id: this.attemptId,
 					timed_out: this.isAutoSubmit,
+					deadline_submit: this.isDeadlineSubmit,
 					current_url: window.location.href,
 					active_elapsed_ms: finalActiveElapsedMs,
 					guest_token: this.guestToken
@@ -1479,10 +1644,21 @@
 						// Re-enable submit button
 						$submitButton.prop('disabled', false).removeClass('ppq-loading');
 						self.isSubmitting = false;
+						self.isDeadlineSubmit = false;
 
 						// Restart timer if needed
 						if (self.timeLimit && self.timeRemaining > 0) {
 							self.startTimer();
+						}
+
+						// Restart deadline tracking if deadline hasn't passed
+						if (self.deadlineTimestamp && !self.timeLimit) {
+							const now = Math.floor(Date.now() / 1000);
+							const remaining = self.deadlineTimestamp - now;
+							if (remaining > 0) {
+								self.deadlineRemaining = remaining;
+								self.startDeadlineTimer();
+							}
 						}
 					}
 				},
@@ -1490,10 +1666,21 @@
 					alert(pressprimerQuiz.strings.error);
 					$submitButton.prop('disabled', false).removeClass('ppq-loading');
 					self.isSubmitting = false;
+					self.isDeadlineSubmit = false;
 
 					// Restart timer if needed
 					if (self.timeLimit && self.timeRemaining > 0) {
 						self.startTimer();
+					}
+
+					// Restart deadline tracking if deadline hasn't passed
+					if (self.deadlineTimestamp && !self.timeLimit) {
+						const now = Math.floor(Date.now() / 1000);
+						const remaining = self.deadlineTimestamp - now;
+						if (remaining > 0) {
+							self.deadlineRemaining = remaining;
+							self.startDeadlineTimer();
+						}
 					}
 				}
 			});

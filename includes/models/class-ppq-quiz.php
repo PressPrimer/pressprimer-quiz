@@ -931,7 +931,7 @@ class PressPrimer_Quiz_Quiz extends PressPrimer_Quiz_Model {
 			return $this->access_mode;
 		}
 
-		$settings = get_option( 'ppq_settings', array() );
+		$settings = get_option( 'pressprimer_quiz_settings', array() );
 
 		return isset( $settings['default_access_mode'] )
 			? $settings['default_access_mode']
@@ -953,7 +953,7 @@ class PressPrimer_Quiz_Quiz extends PressPrimer_Quiz_Model {
 			return $this->login_message;
 		}
 
-		$settings = get_option( 'ppq_settings', array() );
+		$settings = get_option( 'pressprimer_quiz_settings', array() );
 
 		return isset( $settings['login_message_default'] )
 			? $settings['login_message_default']

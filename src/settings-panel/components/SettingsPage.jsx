@@ -109,7 +109,13 @@ const IGNORED_SERVER_TABS = ['ai', 'integration'];
  * @param {Object} props.settingsData Initial settings data
  */
 const SettingsPage = ({ settingsData = {} }) => {
-	const [activeTab, setActiveTab] = useState('general');
+	// Get initial tab from URL query parameter, default to 'general'
+	const getInitialTab = () => {
+		const params = new URLSearchParams(window.location.search);
+		return params.get('tab') || 'general';
+	};
+
+	const [activeTab, setActiveTab] = useState(getInitialTab);
 	const [settings, setSettings] = useState(settingsData.settings || {});
 	const [saving, setSaving] = useState(false);
 	const [hasChanges, setHasChanges] = useState(false);

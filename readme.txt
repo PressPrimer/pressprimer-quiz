@@ -3,7 +3,7 @@ Contributors: pressprimer
 Tags: quiz, learndash, assessment, lms, elearning
 Requires at least: 6.4
 Tested up to: 6.9
-Stable tag: 1.0.0
+Stable tag: 2.0.0
 Requires PHP: 7.4
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -25,7 +25,7 @@ Most WordPress quiz plugins were built for BuzzFeed-style trivia and basic scori
 PressPrimer Quiz delivers enterprise-grade assessment and includes all of the critical features you normally expect in premium plugins at no cost:
 
 * **AI-Powered Question Generation** – Use your own OpenAI API key to generate questions from text, PDFs, or Word documents. No credits to buy, no middleware fees, no limits.
-* **Deep LMS Integration** – Native integration with popular WordPress LMS plugins, including LearnDash, Tutor LMS, and LifterLMS. Quizzes appear in lessons or topics, trigger completions, and respect enrollment—automatically.
+* **Deep LMS Integration** – Native integration with popular WordPress LMS plugins, including LearnDash, Tutor LMS, LifterLMS, and LearnPress. Quizzes appear in lessons or topics, trigger completions, and respect enrollment—automatically.
 * **Modern, Beautiful Design** – Three professional themes that rival SaaS products. Your quizzes won't look like forms from 2005.
 * **Real Reporting** – Score distribution, category breakdowns, time analytics, confidence reporting, and attempt history. Data captured now powers future psychometric features.
 * **Built to Prevent Cheating** – Server-side answer validation means correct answers are never exposed in page source. You can also limit attempts and force delays between retries.
@@ -37,15 +37,17 @@ PressPrimer Quiz includes features in the free version that competitors charge f
 
 * **Unlimited quizzes and questions** – No artificial limits
 * **AI question generation** – Bring your own OpenAI API key
-* **LMS integrations** – LearnDash, Tutor LMS & LifterLMS, with more coming
+* **LMS integrations** – LearnDash, Tutor LMS, LifterLMS & LearnPress
 * **Question banks** – Organize and reuse questions across quizzes
 * **Dynamic quiz generation** – Pull random questions based on category, difficulty, and question bank
 * **Server-side save and resume** – Students can pause and continue later from any device
 * **Guest support** – Optional email capture for non-registered users
+* **Quiz access controls** – Require login, allow guests, or let the quiz settings decide
 * **Score-banded feedback** – Different messages based on performance
 * **Per-question and per-answer feedback** – Explain correct and incorrect answers
 * **Confidence ratings** – Optional checkbox for students to indicate certainty
 * **Three professional themes** – Default, Modern, and Minimal
+* **Condensed Mode** – Tighter sections and reduced vertical spacing for streamlined quizzes that require less scrolling
 * **Uncanny Automator integration** – Triggers for quiz completion, pass, and fail, with a comprehensive set of tokens for use in automations
 
 = Perfect For =
@@ -69,24 +71,26 @@ PressPrimer Quiz automatically detects and integrates with popular WordPress LMS
 
 **Tutor LMS:** Add quizzes directly in the course builder.
 
-**LifterLMS:** Meta box on lessons with completion triggers. 
+**LifterLMS:** Meta box on lessons with completion triggers.
+
+**LearnPress:** Meta box on lessons with completion triggers.
 
 **Uncanny Automator:** Three triggers available: User completes a quiz, user passes a quiz, user fails a quiz. 
 
 All integrations are bundled in the free version.
 
-= Coming Soon =
+= Premium Features =
 
-We're actively developing new features for upcoming premium addons:
+Unlock additional premium features at [pressprimer.com](https://pressprimer.com/):
 
-* **Quiz assignment system** – Assign specific quizzes to users and groups with due dates
-* **Group management** – Create and manage student groups for class-based instruction (including full LearnDash group and Group Leader integration)
-* **Front-end quiz creation** – Allow teachers *and students* to build quizzes without admin access
-* **Advanced reports and charts** – From question analysis to pre and post-test comparisons to group trends over time, there will be a report for everything that educators need
-* **Import/Export** – Get questions and reporting data into and out of PressPrimer Quiz
-* **xAPI/LRS output** – Learning analytics for enterprise deployments
-* **LaTeX math support** – Mathematical notation for STEM assessments
-* **More AI integration** - Generate distractors and feedback for your own questions, proofread imported content, and more
+* **Groups & Assignments** – Organize students into groups, assign quizzes with due dates, and view reports of group progress
+* **Import/Export** – Move questions between sites or migrate from other platforms with CSV, JSON, and XML support
+* **Question Quality Analytics** – Identify problem questions with difficulty indexes, discrimination analysis, and distractor effectiveness reports
+* **Deleted Question Recovery** – Restore accidentally deleted questions or permanently remove them when ready
+* **Question Version History** – Track every change to a question and restore previous versions with one click
+* **xAPI/LRS Integration** – Send learning data to your Learning Record Store for compliance and analytics
+* **White-Label Branding** – Remove all PressPrimer branding and customize with your own logos and colors
+* **Audit Logging** – Track every quiz, question, and attempt change for compliance and accountability
 
 = Scale-Ready Architecture =
 
@@ -195,6 +199,18 @@ This plugin offers optional AI-powered question generation using the OpenAI API.
 
 == Changelog ==
 
+= 2.0.0 =
+* Added: LearnPress LMS integration with lesson embedding and completion triggers
+* Added: Condensed Mode for streamlined quizzes with reduced vertical spacing
+* Added: Quiz access controls—require login, allow guests, or use global defaults
+* Added: Premium addon support with extensibility hooks for Groups, Assignments, Import/Export, Question Analytics, xAPI, White-Label, and Audit Logging
+* Fixed: Settings page now respects tab query parameter in URL
+* Fixed: Global access mode setting now uses correct option name
+* Fixed: Bank visibility description clarified for shared banks
+* Fixed: Improved error messaging for AI generation timeouts (502/504 errors)
+* Fixed: Reports page loading when addon tabs are active
+* Improved: WordPress 6.7+ compatibility for translation loading
+
 = 1.0.0 =
 * Initial release
 * Three question types: Multiple Choice, Multiple Answer, True/False
@@ -217,6 +233,9 @@ This plugin offers optional AI-powered question generation using the OpenAI API.
 * Full internationalization support
 
 == Upgrade Notice ==
+
+= 2.0.0 =
+New: LearnPress integration, Condensed Mode, quiz access controls, and premium addon support.
 
 = 1.0.0 =
 Initial release of PressPrimer Quiz. Enterprise-grade quizzes with AI generation and LMS integration—free forever.

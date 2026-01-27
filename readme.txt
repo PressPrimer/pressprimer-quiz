@@ -202,7 +202,7 @@ This plugin offers optional AI-powered question generation using the OpenAI API.
 = 2.0.0 =
 * Added: LearnPress LMS integration with lesson embedding and completion triggers
 * Added: Condensed Mode for streamlined quizzes with reduced vertical spacing
-* Added: Quiz access controls—require login, allow guests, or use global defaults
+* Added: Quiz access controls: require login, allow guests, or use global defaults
 * Added: Premium addon support with extensibility hooks for Groups, Assignments, Import/Export, Question Analytics, xAPI, White-Label, and Audit Logging
 * Fixed: Settings page now respects tab query parameter in URL
 * Fixed: Global access mode setting now uses correct option name

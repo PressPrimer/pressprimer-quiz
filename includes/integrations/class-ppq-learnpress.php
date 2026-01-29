@@ -68,7 +68,7 @@ class PressPrimer_Quiz_LearnPress {
 		add_action( 'save_post_lp_lesson', array( $this, 'save_lesson_meta' ), 10, 2 );
 
 		// AJAX handler for classic editor quiz search.
-		add_action( 'wp_ajax_ppq_search_quizzes_learnpress', array( $this, 'ajax_search_quizzes' ) );
+		add_action( 'wp_ajax_pressprimer_quiz_search_quizzes_learnpress', array( $this, 'ajax_search_quizzes' ) );
 
 		// Register meta fields for REST API / Gutenberg support.
 		add_action( 'init', array( $this, 'register_meta_fields' ) );
@@ -230,7 +230,7 @@ class PressPrimer_Quiz_LearnPress {
 					url: ajaxurl,
 					type: 'POST',
 					data: {
-						action: 'ppq_search_quizzes_learnpress',
+						action: 'pressprimer_quiz_search_quizzes_learnpress',
 						nonce: '<?php echo esc_js( wp_create_nonce( 'ppq_learnpress_search' ) ); ?>',
 						recent: 1
 					},
@@ -263,7 +263,7 @@ class PressPrimer_Quiz_LearnPress {
 						url: ajaxurl,
 						type: 'POST',
 						data: {
-							action: 'ppq_search_quizzes_learnpress',
+							action: 'pressprimer_quiz_search_quizzes_learnpress',
 							nonce: '<?php echo esc_js( wp_create_nonce( 'ppq_learnpress_search' ) ); ?>',
 							search: query
 						},

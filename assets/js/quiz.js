@@ -238,6 +238,7 @@
 		deadlineInterval: null,       // Interval for deadline countdown
 		deadlineWarningAnnounced: false,
 		isDeadlineSubmit: false,      // Track if submission was triggered by deadline
+		isUsingDeadlineAsTimer: false, // Track if main timer is using deadline instead of time limit
 
 		/**
 		 * Initialize quiz interface
@@ -299,15 +300,8 @@
 			// Start active time tracking
 			this.startActiveTimeTracking();
 
-			// Start timer if timed quiz
-			if (this.timeLimit && this.timeRemaining) {
-				this.startTimer();
-			}
-
-			// Start deadline timer if within 1 hour of deadline and no time limit timer already running
-			if (this.deadlineTimestamp && !this.timeLimit) {
-				this.initDeadlineTimer();
-			}
+			// Determine effective time remaining considering both quiz time limit and assignment deadline
+			this.initEffectiveTimer();
 
 			// Show starting question (first unanswered on resume, or first question)
 			this.showQuestion(startQuestion);
@@ -1353,6 +1347,7 @@
 		startTimer: function() {
 			const self = this;
 			const $timer = $('#ppq-timer');
+			const $timerContainer = $timer.closest('.ppq-timer-container');
 
 			// Update timer every second
 			this.timerInterval = setInterval(function() {
@@ -1365,9 +1360,11 @@
 				$timer.text(timeString);
 
 				// Update timer styling and announce warnings
+				// Add classes to both timer and container (for theme compatibility)
 				if (self.timeRemaining <= 60) {
 					// Last minute - danger (red, fast pulse)
 					$timer.removeClass('ppq-timer-warning').addClass('ppq-timer-danger');
+					$timerContainer.removeClass('ppq-timer-warning').addClass('ppq-timer-danger');
 
 					// Announce one minute warning to screen readers (once)
 					if (!self.oneMinuteWarningAnnounced) {
@@ -1380,6 +1377,7 @@
 				} else if (self.timeRemaining <= 300) {
 					// Last 5 minutes - warning (orange, slow pulse)
 					$timer.addClass('ppq-timer-warning').removeClass('ppq-timer-danger');
+					$timerContainer.addClass('ppq-timer-warning').removeClass('ppq-timer-danger');
 
 					// Announce five minute warning to screen readers (once)
 					if (!self.fiveMinuteWarningAnnounced) {
@@ -1403,8 +1401,64 @@
 		 * Handle time expiration
 		 */
 		handleTimeExpired: function() {
+			// If the timer was actually the assignment deadline, mark it as such
+			if (this.isUsingDeadlineAsTimer) {
+				this.isDeadlineSubmit = true;
+			}
 			// Auto-submit quiz (no alert - will redirect to results with timeout message)
 			this.submitQuiz(true);
+		},
+
+		/**
+		 * Initialize effective timer
+		 *
+		 * Determines whether to use quiz time limit, assignment deadline, or both.
+		 * When both exist, uses whichever expires first.
+		 */
+		initEffectiveTimer: function() {
+			const hasTimeLimit = this.timeLimit && this.timeRemaining;
+			const hasDeadline = this.deadlineTimestamp;
+
+			if (!hasTimeLimit && !hasDeadline) {
+				// No timer needed
+				return;
+			}
+
+			if (hasTimeLimit && hasDeadline) {
+				// Both exist - determine which expires first
+				const now = Math.floor(Date.now() / 1000);
+				const deadlineRemaining = this.deadlineTimestamp - now;
+
+				if (deadlineRemaining <= 0) {
+					// Deadline already passed
+					if (this.autoSubmitDeadline && !this.allowLate) {
+						this.handleDeadlineExpired();
+						return;
+					}
+					// Late allowed, just use time limit
+					this.startTimer();
+					return;
+				}
+
+				// Use whichever is shorter
+				if (deadlineRemaining < this.timeRemaining) {
+					// Deadline is sooner than time limit - use deadline as effective timer
+					this.timeRemaining = deadlineRemaining;
+					this.isUsingDeadlineAsTimer = true;
+					this.startTimer();
+				} else {
+					// Time limit is sooner - use time limit, but also track deadline
+					this.startTimer();
+					// Set up deadline checker in background (deadline might matter for late policy)
+					this.startDeadlineChecker();
+				}
+			} else if (hasTimeLimit) {
+				// Only time limit, use standard timer
+				this.startTimer();
+			} else if (hasDeadline) {
+				// Only deadline, use deadline timer
+				this.initDeadlineTimer();
+			}
 		},
 
 		/**
@@ -1517,16 +1571,19 @@
 		 */
 		updateDeadlineDisplay: function() {
 			const $timer = $('#ppq-timer');
+			const $timerContainer = $timer.closest('.ppq-timer-container');
 			const minutes = Math.floor(this.deadlineRemaining / 60);
 			const seconds = this.deadlineRemaining % 60;
 			const timeString = this.padZero(minutes) + ':' + this.padZero(seconds);
 			$timer.text(timeString);
 
-			// Apply warning styles
+			// Apply warning styles to both timer and container (for theme compatibility)
 			if (this.deadlineRemaining <= 60) {
 				$timer.removeClass('ppq-timer-warning').addClass('ppq-timer-danger');
+				$timerContainer.removeClass('ppq-timer-warning').addClass('ppq-timer-danger');
 			} else if (this.deadlineRemaining <= 300) {
 				$timer.addClass('ppq-timer-warning').removeClass('ppq-timer-danger');
+				$timerContainer.addClass('ppq-timer-warning').removeClass('ppq-timer-danger');
 			}
 		},
 

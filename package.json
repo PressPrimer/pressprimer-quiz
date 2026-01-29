@@ -11,9 +11,19 @@
     "lint:js": "wp-scripts lint-js",
     "format": "wp-scripts format",
     "packages-update": "wp-scripts packages-update",
-    "plugin-zip": "wp-scripts build && cd /Users/Ryan/Development/wordpress-plugins/pressprimer/pressprimer-quiz && /Applications/Local.app/Contents/Resources/extraResources/lightning-services/php-8.2.27+1/bin/darwin-arm64/bin/php composer.phar install --no-dev --optimize-autoloader && rm -rf dist && mkdir -p dist/pressprimer-quiz && rsync -av --exclude-from='.distignore' ./ dist/pressprimer-quiz/ && cd dist && zip -r pressprimer-quiz.zip pressprimer-quiz && rm -rf pressprimer-quiz && cd /Users/Ryan/Development/wordpress-plugins/pressprimer/pressprimer-quiz && /Applications/Local.app/Contents/Resources/extraResources/lightning-services/php-8.2.27+1/bin/darwin-arm64/bin/php composer.phar install && echo 'Created dist/pressprimer-quiz.zip'"
+    "plugin-zip": "wp-scripts build && cd /Users/Ryan/Development/wordpress-plugins/pressprimer/pressprimer-quiz && /Applications/Local.app/Contents/Resources/extraResources/lightning-services/php-8.2.27+1/bin/darwin-arm64/bin/php composer.phar install --no-dev --optimize-autoloader && rm -rf dist && mkdir -p dist/pressprimer-quiz && rsync -av --exclude-from='.distignore' ./ dist/pressprimer-quiz/ && cd dist && zip -r pressprimer-quiz.zip pressprimer-quiz && rm -rf pressprimer-quiz && cd /Users/Ryan/Development/wordpress-plugins/pressprimer/pressprimer-quiz && /Applications/Local.app/Contents/Resources/extraResources/lightning-services/php-8.2.27+1/bin/darwin-arm64/bin/php composer.phar install && echo 'Created dist/pressprimer-quiz.zip'",
+    "test:e2e": "playwright test",
+    "test:e2e:php74": "playwright test --project=php74",
+    "test:e2e:php84": "playwright test --project=php84",
+    "test:e2e:headed": "playwright test --headed",
+    "test:e2e:debug": "playwright test --debug",
+    "test:e2e:record": "playwright codegen",
+    "test:e2e:record:php74": "playwright codegen http://clean-74.local/wp-admin/",
+    "test:e2e:record:php84": "playwright codegen http://clean-84.local/wp-admin/",
+    "test:e2e:report": "playwright show-report"
   },
   "devDependencies": {
+    "@playwright/test": "^1.48.0",
     "@wordpress/scripts": "^27.0.0"
   },
   "dependencies": {

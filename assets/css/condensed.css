@@ -154,9 +154,30 @@
 	margin-top: 3px !important;
 }
 
+/* Radio button dot for single answer questions */
 .ppq-quiz-interface.ppq-quiz--condensed .ppq-answer-option.ppq-selected .ppq-answer-radio-check::after {
 	width: 10px !important;
 	height: 10px !important;
+}
+
+/* Checkbox square shape for multiple answer questions */
+.ppq-quiz-interface.ppq-quiz--condensed .ppq-question[data-question-type="multiple_answer"] .ppq-answer-radio-check,
+.ppq-quiz-interface.ppq-quiz--condensed .ppq-question[data-question-type="ma"] .ppq-answer-radio-check {
+	border-radius: 3px !important;
+}
+
+/* Checkbox checkmark for multiple answer questions */
+.ppq-quiz-interface.ppq-quiz--condensed .ppq-question[data-question-type="multiple_answer"] .ppq-answer-option.ppq-selected .ppq-answer-radio-check::after,
+.ppq-quiz-interface.ppq-quiz--condensed .ppq-question[data-question-type="ma"] .ppq-answer-option.ppq-selected .ppq-answer-radio-check::after {
+	width: 5px !important;
+	height: 9px !important;
+	background: none !important;
+	border: solid #fff !important;
+	border-width: 0 2px 2px 0 !important;
+	border-radius: 0 !important;
+	transform: rotate(45deg) !important;
+	top: 1px !important;
+	left: 5px !important;
 }
 
 .ppq-quiz-interface.ppq-quiz--condensed .ppq-answer-text {

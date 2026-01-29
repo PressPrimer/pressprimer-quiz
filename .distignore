@@ -96,6 +96,11 @@ playwright.config.ts
 /test-results
 /playwright-report
 /blob-report
+/.playwright
+PLAYWRIGHT-SETUP.md
+package-additions.json
+gitignore-additions.txt
+/scripts
 
 # Code Quality
 phpcs.xml

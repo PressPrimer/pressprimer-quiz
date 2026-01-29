@@ -2,13 +2,37 @@
 
 ## Project Overview
 
-PressPrimer Quiz is an enterprise-grade quiz and assessment plugin for WordPress. It was approved by WordPress.org in January 2025 (v1.0.0).
+PressPrimer Quiz is an enterprise-grade quiz and assessment plugin for WordPress. It was approved by WordPress.org in January 2025 (v1.0.0) and version 2.0.0 was released in January 2026.
+
+**This plugin is live and in the hands of users. All changes must be made carefully.**
 
 ---
 
 ## AI Development Workflow (CRITICAL)
 
-When working with AI assistants on this codebase, follow these rules:
+These rules govern how AI assistants work on this codebase.
+
+### Branching Strategy
+
+**Work directly on the `develop` branch.** Feature branches are not required for solo development.
+
+- `main` - Release branch, tagged versions, deploys to WordPress.org
+- `develop` - Active development branch (DEFAULT)
+
+### Commit Approval Required
+
+**Do NOT commit changes without user approval.** Before committing:
+1. Show the user what changes will be committed
+2. Wait for explicit approval to commit
+3. Only then run `git commit`
+
+### Cross-Plugin Changes Require Approval
+
+**WARN before modifying other plugins.** If working on an addon (Educator, School, Enterprise) and a change to the free plugin is needed:
+1. STOP and notify the user
+2. Explain what change is needed in the free plugin and why
+3. Wait for approval before making changes to the free plugin
+4. Coordinate releases - both plugins may need to be released together
 
 ### Prompt-Based Development
 
@@ -22,28 +46,105 @@ When working with AI assistants on this codebase, follow these rules:
 - Batch multiple prompts together
 - Assume the user wants you to proceed without confirmation
 
-**Example workflow:**
-```
-User: Here is Prompt 4.1: Create the PurgeDialog component...
-AI: [Completes Prompt 4.1, commits code]
-AI: "Prompt 4.1 is complete. The PurgeDialog component has been created and committed. Ready for your feedback before proceeding to Prompt 4.2."
-[STOP and wait for user response]
-```
+### Mandatory Code Quality Checks
 
-### Feedback Integration
+**Run these checks on ALL code changes before requesting commit approval:**
 
-- Always wait for user feedback after completing a prompt
-- If the user provides corrections, address ALL feedback items before moving to the next prompt
-- Document any changes requested by the user in commit messages
+1. **PHP Syntax Check** - On any new or modified PHP files:
+   ```bash
+   "/Applications/Local.app/Contents/Resources/extraResources/lightning-services/php-8.2.27+1/bin/darwin-arm64/bin/php" -l path/to/file.php
+   ```
 
-### Code Review Checkpoints
+2. **PHPCS (WordPress Coding Standards)** - On modified PHP files:
+   ```bash
+   "/Applications/Local.app/Contents/Resources/extraResources/lightning-services/php-8.2.27+1/bin/darwin-arm64/bin/php" ./vendor/bin/phpcs --standard=phpcs.xml.dist --report=full path/to/file.php
+   ```
 
-Before marking a prompt as complete:
-1. Run PHP syntax check on any new PHP files
-2. Run PHPCS on modified PHP files
-3. Run `npm run build` if React components were modified
-4. Run `npm run lint:js` if JavaScript was modified
-5. Verify no console errors in browser (if applicable)
+3. **Security-Specific Checks** - On files handling user input, database queries, or output:
+   ```bash
+   "/Applications/Local.app/Contents/Resources/extraResources/lightning-services/php-8.2.27+1/bin/darwin-arm64/bin/php" ./vendor/bin/phpcs --standard=WordPress-Extra --sniffs=WordPress.Security.EscapeOutput,WordPress.Security.ValidatedSanitizedInput,WordPress.Security.NonceVerification,WordPress.DB.PreparedSQL --report=full path/to/file.php
+   ```
+
+4. **PHP Compatibility (7.4 - 8.4)** - On new PHP files:
+   ```bash
+   "/Applications/Local.app/Contents/Resources/extraResources/lightning-services/php-8.2.27+1/bin/darwin-arm64/bin/php" ./vendor/bin/phpcs --standard=PHPCompatibilityWP --runtime-set testVersion 7.4-8.4 --extensions=php path/to/file.php
+   ```
+
+5. **JavaScript Lint** - If JavaScript was modified:
+   ```bash
+   npm run lint:js
+   ```
+
+6. **Build Check** - If React components were modified:
+   ```bash
+   npm run build
+   ```
+
+**If any check fails, fix the issues before requesting commit approval.**
+
+### Database Migrations
+
+**Database changes require extra care.** When modifying database schema:
+
+1. **Backward compatibility** - Old versions of the plugin should not break with new schema
+2. **Migration path** - Include migration code in `class-ppq-migrator.php`
+3. **Test both directions** - New plugin with old data, and ensure clean installs work
+4. **Document changes** - Note schema changes in commit message and changelog
+
+### Deprecation Warnings
+
+**Features should not be removed without warning.** Before removing a feature:
+
+1. Add deprecation notice in one version (e.g., "Feature X is deprecated and will be removed in version Y")
+2. Log deprecation warnings with `_deprecated_function()` or `_deprecated_argument()`
+3. Actually remove the feature in the next major version
+4. Document the removal in the changelog
+
+### Version Compatibility
+
+**Addons must be compatible with the free plugin version they require.** When making changes:
+
+1. Check if the change affects addon compatibility
+2. If addons depend on a function/hook being changed, consider the impact
+3. Update `MIN_CORE_VERSION` constants in addons if breaking changes are made
+4. Coordinate releases when free plugin changes require addon updates
+
+### Changelog Discipline
+
+**Only certain commit types appear in public changelogs:**
+
+| Prefix | In Changelog? | Description |
+|--------|---------------|-------------|
+| `feat:` | Yes | New features |
+| `fix:` | Yes | Bug fixes |
+| `perf:` | Yes | Performance improvements |
+| `refactor:` | Yes | Code changes (if user-facing) |
+| `docs:` | No | Documentation only |
+| `chore:` | No | Build, tooling, maintenance |
+| `wip:` | No | Work in progress |
+| `test:` | No | Tests only |
+| `style:` | No | Code style/formatting |
+
+**Changelog entries need to be copy/paste friendly** for Knowledge Base articles. Write them as user-facing descriptions, not technical implementation notes.
+
+### Testing After Merges
+
+**After merging to main, verify the release works:**
+
+1. Build a fresh zip from main branch
+2. Test installation on a clean WordPress site
+3. Test upgrade from previous version
+4. Verify all features work as expected
+
+### Coordinated Releases
+
+**When changes span multiple plugins:**
+
+1. Make changes to free plugin first
+2. Test that addon still works with updated free plugin
+3. Release free plugin
+4. Then release addon updates
+5. Document in both changelogs that versions are coordinated
 
 ---
 
@@ -801,16 +902,17 @@ This creates `dist/pressprimer-quiz.zip`
 ## Branching Strategy
 
 - `main` - Release branch, tagged versions, deploys to WordPress.org
-- `develop` - Default branch, receives merges from feature branches
-- `release/X.X.X` - Release preparation branches (e.g., `release/2.0.0`)
-- `feature/*` - Feature branches (merge into release branch)
-- `fix/*` - Bug fix branches (merge into main, then main into develop)
+- `develop` - Default branch for active development (work directly here)
+
+**Note:** Feature branches (`feature/*`, `release/*`) are optional and typically not needed for solo development. Work directly on `develop` and merge to `main` when ready to release.
 
 ---
 
 ## Commit Message Conventions
 
-Use these prefixes for commit messages. They map to changelog entries:
+Use these prefixes for commit messages:
+
+### Changelog-Worthy (User-Facing Changes)
 
 | Prefix | Changelog Shows As | Example |
 |--------|-------------------|---------|
@@ -819,28 +921,49 @@ Use these prefixes for commit messages. They map to changelog entries:
 | `perf:` | **Improved** | `perf: speed up results loading` |
 | `refactor:` | **Changed** | `refactor: simplify scoring logic` |
 
-For work-in-progress commits that should NOT appear in changelog:
+### Non-Changelog (Internal/Maintenance)
 
-| Prefix | Purpose |
-|--------|---------|
-| `wip:` | Work in progress, not ready for release |
+| Prefix | Purpose | Example |
+|--------|---------|---------|
+| `docs:` | Documentation changes | `docs: update readme installation steps` |
+| `chore:` | Build, tooling, maintenance | `chore: bump version to 2.0.1` |
+| `wip:` | Work in progress | `wip: branching logic - incomplete` |
+| `test:` | Test changes only | `test: add unit tests for scoring` |
+| `style:` | Code formatting only | `style: fix indentation in quiz.js` |
+
+### Writing Good Changelog Entries
+
+Changelog entries will be copied to Knowledge Base articles. Write them as **user-facing descriptions**:
+
+```bash
+# GOOD - User understands the benefit
+git commit -m "feat: add option to require login before taking quizzes"
+git commit -m "fix: timer now correctly shows warning colors at 5 and 1 minute"
+
+# BAD - Too technical, not user-friendly
+git commit -m "feat: add pressprimer_quiz_require_login option"
+git commit -m "fix: apply warning/danger classes to timer container"
+```
 
 ### Examples
 
 ```bash
-# Feature addition
+# Feature addition (appears in changelog)
 git commit -m "feat: add require login option for quizzes"
 
-# Bug fix
+# Bug fix (appears in changelog)
 git commit -m "fix: prevent duplicate quiz submissions"
 
-# Performance improvement
+# Performance improvement (appears in changelog)
 git commit -m "perf: cache quiz statistics queries"
 
-# Refactoring (no new functionality)
-git commit -m "refactor: extract scoring logic to service class"
+# Documentation (does NOT appear in changelog)
+git commit -m "docs: update installation instructions"
 
-# Work in progress
+# Version bump (does NOT appear in changelog)
+git commit -m "chore: bump version to 2.0.1"
+
+# Work in progress (does NOT appear in changelog)
 git commit -m "wip: branching logic - question routing incomplete"
 ```
 

@@ -313,6 +313,16 @@ class PressPrimer_Quiz_REST_Controller {
 
 		register_rest_route(
 			'ppq/v1',
+			'/settings/api-key/clear',
+			[
+				'methods'             => WP_REST_Server::CREATABLE,
+				'callback'            => [ $this, 'delete_api_key' ],
+				'permission_callback' => [ $this, 'check_permission' ],
+			]
+		);
+
+		register_rest_route(
+			'ppq/v1',
 			'/settings/api-models',
 			[
 				'methods'             => WP_REST_Server::READABLE,

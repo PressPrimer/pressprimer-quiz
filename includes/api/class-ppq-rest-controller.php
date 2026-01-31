@@ -1465,6 +1465,7 @@ class PressPrimer_Quiz_REST_Controller {
 			'show_answers'          => $quiz->show_answers,
 			'enable_confidence'     => $quiz->enable_confidence,
 			'theme'                 => $quiz->theme,
+			'display_density'       => $quiz->display_density,
 			'theme_settings_json'   => $quiz->theme_settings_json,
 			'band_feedback_json'    => $quiz->band_feedback_json,
 			'generation_mode'       => $quiz->generation_mode,

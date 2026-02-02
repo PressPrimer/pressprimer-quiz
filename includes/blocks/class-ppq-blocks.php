@@ -143,9 +143,59 @@ class PressPrimer_Quiz_Blocks {
 				'style'           => 'pressprimer-quiz-quiz-block-style',
 				'render_callback' => [ $this, 'render_quiz_block' ],
 				'attributes'      => [
-					'quizId' => [
+					'quizId'                => [
 						'type'    => 'number',
 						'default' => 0,
+					],
+					// Start page display options.
+					'showDescription'       => [
+						'type'    => 'boolean',
+						'default' => true,
+					],
+					'showQuestionCount'     => [
+						'type'    => 'boolean',
+						'default' => true,
+					],
+					'showQuizType'          => [
+						'type'    => 'boolean',
+						'default' => true,
+					],
+					'showTimeLimit'         => [
+						'type'    => 'boolean',
+						'default' => true,
+					],
+					'showPassPercentage'    => [
+						'type'    => 'boolean',
+						'default' => true,
+					],
+					'showAttemptHistory'    => [
+						'type'    => 'boolean',
+						'default' => true,
+					],
+					// Results page display options.
+					'showScore'             => [
+						'type'    => 'boolean',
+						'default' => true,
+					],
+					'showPassFail'          => [
+						'type'    => 'boolean',
+						'default' => true,
+					],
+					'showTimeSpent'         => [
+						'type'    => 'boolean',
+						'default' => true,
+					],
+					'showCategoryBreakdown' => [
+						'type'    => 'boolean',
+						'default' => true,
+					],
+					'showQuestionReview'    => [
+						'type'    => 'boolean',
+						'default' => true,
+					],
+					'showRetakeButton'      => [
+						'type'    => 'boolean',
+						'default' => true,
 					],
 				],
 			]
@@ -156,36 +206,51 @@ class PressPrimer_Quiz_Blocks {
 	 * Render Quiz block
 	 *
 	 * @since 1.0.0
+	 * @since 2.1.0 Added display options support.
 	 *
 	 * @param array $attributes Block attributes.
 	 * @return string Rendered block HTML.
 	 */
 	public function render_quiz_block( $attributes ) {
-		// Get quiz ID from attributes
+		// Get quiz ID from attributes.
 		$quiz_id = isset( $attributes['quizId'] ) ? absint( $attributes['quizId'] ) : 0;
 
-		// If no quiz selected, show placeholder
+		// If no quiz selected, show placeholder.
 		if ( ! $quiz_id ) {
 			return '<div class="wp-block-pressprimer-quiz-quiz ppq-block-placeholder">' .
 				'<p>' . esc_html__( 'Please select a quiz to display.', 'pressprimer-quiz' ) . '</p>' .
 				'</div>';
 		}
 
-		// Use the shortcode handler to render
+		// Use the shortcode handler to render.
 		if ( ! class_exists( 'PressPrimer_Quiz_Shortcodes' ) ) {
 			return '<div class="ppq-error">' . esc_html__( 'Quiz renderer not available.', 'pressprimer-quiz' ) . '</div>';
 		}
 
-		// Build shortcode attributes
+		// Build shortcode attributes including display options.
 		$shortcode_atts = [
-			'id' => $quiz_id,
+			'id'                      => $quiz_id,
+			// Start page display options (convert camelCase to snake_case).
+			'show_description'        => isset( $attributes['showDescription'] ) ? ( $attributes['showDescription'] ? 'true' : 'false' ) : 'true',
+			'show_question_count'     => isset( $attributes['showQuestionCount'] ) ? ( $attributes['showQuestionCount'] ? 'true' : 'false' ) : 'true',
+			'show_quiz_type'          => isset( $attributes['showQuizType'] ) ? ( $attributes['showQuizType'] ? 'true' : 'false' ) : 'true',
+			'show_time_limit'         => isset( $attributes['showTimeLimit'] ) ? ( $attributes['showTimeLimit'] ? 'true' : 'false' ) : 'true',
+			'show_pass_percentage'    => isset( $attributes['showPassPercentage'] ) ? ( $attributes['showPassPercentage'] ? 'true' : 'false' ) : 'true',
+			'show_attempt_history'    => isset( $attributes['showAttemptHistory'] ) ? ( $attributes['showAttemptHistory'] ? 'true' : 'false' ) : 'true',
+			// Results page display options.
+			'show_score'              => isset( $attributes['showScore'] ) ? ( $attributes['showScore'] ? 'true' : 'false' ) : 'true',
+			'show_pass_fail'          => isset( $attributes['showPassFail'] ) ? ( $attributes['showPassFail'] ? 'true' : 'false' ) : 'true',
+			'show_time_spent'         => isset( $attributes['showTimeSpent'] ) ? ( $attributes['showTimeSpent'] ? 'true' : 'false' ) : 'true',
+			'show_category_breakdown' => isset( $attributes['showCategoryBreakdown'] ) ? ( $attributes['showCategoryBreakdown'] ? 'true' : 'false' ) : 'true',
+			'show_question_review'    => isset( $attributes['showQuestionReview'] ) ? ( $attributes['showQuestionReview'] ? 'true' : 'false' ) : 'true',
+			'show_retake_button'      => isset( $attributes['showRetakeButton'] ) ? ( $attributes['showRetakeButton'] ? 'true' : 'false' ) : 'true',
 		];
 
-		// Call the shortcode handler
+		// Call the shortcode handler.
 		$shortcodes = new PressPrimer_Quiz_Shortcodes();
 		$output     = $shortcodes->render_quiz( $shortcode_atts );
 
-		// Wrap in block div
+		// Wrap in block div.
 		return '<div class="wp-block-pressprimer-quiz-quiz">' . $output . '</div>';
 	}
 

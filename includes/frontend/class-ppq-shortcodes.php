@@ -46,30 +46,46 @@ class PressPrimer_Quiz_Shortcodes {
 	}
 
 	/**
-	 * Render quiz shortcode
+	 * Parse quiz shortcode attributes
 	 *
-	 * Displays a quiz landing page or quiz interface.
+	 * Parses all shortcode attributes including display options.
 	 *
-	 * Usage: [pressprimer_quiz id="123"]
-	 * Usage with context: [pressprimer_quiz id="123" context="base64_encoded_json"]
+	 * @since 2.1.0
 	 *
-	 * @since 1.0.0
-	 *
-	 * @param array $atts Shortcode attributes.
-	 * @return string Rendered quiz HTML.
+	 * @param array $atts Raw shortcode attributes.
+	 * @return array Parsed attributes with quiz_id, context, and display options.
 	 */
-	public function render_quiz( $atts ) {
-		// Parse attributes
-		$atts = shortcode_atts(
-			[
-				'id'      => 0,
-				'context' => '', // Base64 encoded JSON for integration context (e.g., LearnDash)
-			],
-			$atts,
-			'pressprimer_quiz'
-		);
+	public function parse_quiz_attributes( $atts ) {
+		$defaults = [
+			'id'                      => 0,
+			'context'                 => '', // Base64 encoded JSON for integration context (e.g., LearnDash)
+			// Start page display options.
+			'show_description'        => 'true',
+			'show_question_count'     => 'true',
+			'show_quiz_type'          => 'true',
+			'show_time_limit'         => 'true',
+			'show_pass_percentage'    => 'true',
+			'show_attempt_history'    => 'true',
+			// Results page display options.
+			'show_score'              => 'true',
+			'show_pass_fail'          => 'true',
+			'show_time_spent'         => 'true',
+			'show_category_breakdown' => 'true',
+			'show_question_review'    => 'true',
+			'show_retake_button'      => 'true',
+		];
 
-		// Decode context if provided (used by LMS integrations)
+		$atts = shortcode_atts( $defaults, $atts, 'pressprimer_quiz' );
+
+		// Build display options array with boolean values.
+		$display = [];
+		foreach ( $atts as $key => $value ) {
+			if ( strpos( $key, 'show_' ) === 0 ) {
+				$display[ $key ] = $this->parse_boolean( $value );
+			}
+		}
+
+		// Decode context if provided (used by LMS integrations).
 		$context = [];
 		if ( ! empty( $atts['context'] ) ) {
 			$decoded = base64_decode( $atts['context'] );
@@ -81,63 +97,121 @@ class PressPrimer_Quiz_Shortcodes {
 			}
 		}
 
-		// Store context in a global for the attempt creation to pick up
-		if ( ! empty( $context ) ) {
-			$GLOBALS['pressprimer_quiz_context'] = $context;
+		return [
+			'quiz_id' => absint( $atts['id'] ),
+			'context' => $context,
+			'display' => $display,
+		];
+	}
+
+	/**
+	 * Parse a string boolean value
+	 *
+	 * Handles various boolean representations from shortcode attributes.
+	 *
+	 * @since 2.1.0
+	 *
+	 * @param mixed $value Value to parse.
+	 * @return bool Parsed boolean value.
+	 */
+	private function parse_boolean( $value ) {
+		// Handle actual booleans.
+		if ( is_bool( $value ) ) {
+			return $value;
 		}
 
-		$quiz_id = absint( $atts['id'] );
+		// Handle strings.
+		if ( is_string( $value ) ) {
+			$value = strtolower( trim( $value ) );
 
-		// Validate quiz ID
+			// Explicit false values.
+			if ( in_array( $value, [ 'false', '0', 'no', 'off', '' ], true ) ) {
+				return false;
+			}
+		}
+
+		// Everything else is true (including "true", "1", "yes", etc.).
+		return true;
+	}
+
+	/**
+	 * Render quiz shortcode
+	 *
+	 * Displays a quiz landing page or quiz interface.
+	 *
+	 * Usage: [pressprimer_quiz id="123"]
+	 * Usage with context: [pressprimer_quiz id="123" context="base64_encoded_json"]
+	 * Usage with display options: [pressprimer_quiz id="123" show_description="false"]
+	 *
+	 * @since 1.0.0
+	 * @since 2.1.0 Added display options support.
+	 *
+	 * @param array $atts Shortcode attributes.
+	 * @return string Rendered quiz HTML.
+	 */
+	public function render_quiz( $atts ) {
+		// Parse attributes including display options.
+		$parsed = $this->parse_quiz_attributes( $atts );
+
+		// Store context in a global for the attempt creation to pick up.
+		if ( ! empty( $parsed['context'] ) ) {
+			$GLOBALS['pressprimer_quiz_context'] = $parsed['context'];
+		}
+
+		$quiz_id = $parsed['quiz_id'];
+
+		// Validate quiz ID.
 		if ( ! $quiz_id ) {
 			return $this->render_error( __( 'Please provide a valid quiz ID.', 'pressprimer-quiz' ) );
 		}
 
-		// Load quiz
+		// Load quiz.
 		$quiz = PressPrimer_Quiz_Quiz::get( $quiz_id );
 
 		if ( ! $quiz ) {
 			return $this->render_error( __( 'Quiz not found.', 'pressprimer-quiz' ) );
 		}
 
-		// Check if quiz is published
+		// Check if quiz is published.
 		if ( 'published' !== $quiz->status && ! current_user_can( 'pressprimer_quiz_manage_all' ) ) {
-			// Allow quiz owners to preview their own draft quizzes
+			// Allow quiz owners to preview their own draft quizzes.
 			if ( ! ( $quiz->owner_id && get_current_user_id() === absint( $quiz->owner_id ) ) ) {
 				return $this->render_error( __( 'This quiz is not available.', 'pressprimer-quiz' ) );
 			}
 		}
 
-		// Check if user wants to retake - ignore attempt parameter if retake is requested
+		// Check if user wants to retake - ignore attempt parameter if retake is requested.
 		// phpcs:disable WordPress.Security.NonceVerification.Recommended -- Read-only URL parameters for quiz display
 		$is_retake = isset( $_GET['pressprimer_quiz_retake'] ) && '1' === sanitize_text_field( wp_unslash( $_GET['pressprimer_quiz_retake'] ) );
 
-		// Check if user is viewing an in-progress or submitted attempt
+		// Check if user is viewing an in-progress or submitted attempt.
 		$attempt_id = isset( $_GET['attempt'] ) ? absint( wp_unslash( $_GET['attempt'] ) ) : 0;
 		// phpcs:enable WordPress.Security.NonceVerification.Recommended
 
 		if ( $attempt_id && ! $is_retake ) {
-			return $this->render_quiz_attempt( $attempt_id );
+			return $this->render_quiz_attempt( $attempt_id, $parsed['display'] );
 		}
 
-		// Render quiz landing page
+		// Render quiz landing page.
 		if ( ! class_exists( 'PressPrimer_Quiz_Quiz_Renderer' ) ) {
 			return $this->render_error( __( 'Quiz renderer not available.', 'pressprimer-quiz' ) );
 		}
 
 		$renderer = new PressPrimer_Quiz_Quiz_Renderer();
-		return $renderer->render_landing( $quiz, $is_retake );
+		return $renderer->render_landing( $quiz, $is_retake, $parsed['display'] );
 	}
 
 	/**
 	 * Render quiz attempt (in progress or submitted)
 	 *
 	 * @since 1.0.0
+	 * @since 2.1.0 Added display options parameter.
 	 *
-	 * @param int $attempt_id Attempt ID.
+	 * @param int   $attempt_id Attempt ID.
+	 * @param array $display    Display options for results page.
 	 * @return string Rendered HTML.
 	 */
-	private function render_quiz_attempt( $attempt_id ) {
+	private function render_quiz_attempt( $attempt_id, $display = [] ) {
 		// Send no-cache headers for attempt pages to prevent Varnish/CDN caching
 		// This ensures users always see their current attempt state
 		if ( ! headers_sent() ) {
@@ -261,8 +335,8 @@ class PressPrimer_Quiz_Shortcodes {
 			);
 
 			$results_renderer = new PressPrimer_Quiz_Results_Renderer();
-			$output           = $results_renderer->render_results( $attempt );
-			$output          .= $results_renderer->render_question_review( $attempt );
+			$output           = $results_renderer->render_results( $attempt, $display );
+			$output          .= $results_renderer->render_question_review( $attempt, $display );
 
 			return $output;
 		}

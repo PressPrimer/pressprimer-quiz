@@ -146,6 +146,12 @@ class PressPrimer_Quiz_Plugin {
 		if ( class_exists( 'PressPrimer_Quiz_Onboarding' ) ) {
 			PressPrimer_Quiz_Onboarding::get_instance();
 		}
+
+		// Initialize review notice (100 attempts celebration).
+		if ( class_exists( 'PressPrimer_Quiz_Review_Notice' ) ) {
+			$review_notice = new PressPrimer_Quiz_Review_Notice();
+			$review_notice->init();
+		}
 	}
 
 	/**

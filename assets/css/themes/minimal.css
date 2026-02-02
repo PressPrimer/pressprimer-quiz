@@ -90,8 +90,13 @@
 	--ppq-font-size-xl: 1.25rem;
 	--ppq-font-size-2xl: 1.5rem;
 	--ppq-font-size-3xl: 1.875rem;
-	--ppq-line-height: 1.7;
+	--ppq-line-height: 1.5;
 	--ppq-line-height-tight: 1.4;
+
+	/* Spacing Controls (customizable via Settings) */
+	--ppq-option-padding: 12px;
+	--ppq-question-margin: 24px;
+	--ppq-max-width: 800px;
 
 	/* Transitions - Subtle */
 	--ppq-transition-fast: 0.1s ease;
@@ -380,7 +385,7 @@
 .ppq-quiz-theme-minimal .ppq-answers {
 	display: flex;
 	flex-direction: column;
-	gap: var(--ppq-space-sm);
+	gap: var(--ppq-option-padding);
 }
 
 .ppq-quiz-theme-minimal .ppq-answer-option {
@@ -388,7 +393,7 @@
 	display: flex;
 	align-items: flex-start;
 	gap: var(--ppq-space-md);
-	padding: var(--ppq-space-md) var(--ppq-space-lg);
+	padding: var(--ppq-option-padding);
 	background: transparent;
 	border: 1px solid #d1d5db;
 	border-radius: var(--ppq-radius-sm);

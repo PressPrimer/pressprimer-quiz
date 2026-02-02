@@ -2094,6 +2094,48 @@ class PressPrimer_Quiz_REST_Controller {
 			$sanitized['display_density'] = in_array( $density, [ 'standard', 'condensed' ], true ) ? $density : 'standard';
 		}
 
+		// New spacing settings (v2.1).
+		if ( isset( $data['appearance_line_height'] ) ) {
+			$value                               = floatval( $data['appearance_line_height'] );
+			$sanitized['appearance_line_height'] = max( 1.2, min( 1.8, $value ) );
+		}
+
+		if ( isset( $data['appearance_answer_spacing'] ) ) {
+			$value                                  = absint( $data['appearance_answer_spacing'] );
+			$sanitized['appearance_answer_spacing'] = max( 4, min( 24, $value ) );
+		}
+
+		if ( isset( $data['appearance_question_spacing'] ) ) {
+			$value                                    = absint( $data['appearance_question_spacing'] );
+			$sanitized['appearance_question_spacing'] = max( 8, min( 48, $value ) );
+		}
+
+		if ( isset( $data['appearance_max_width'] ) ) {
+			$value                             = absint( $data['appearance_max_width'] );
+			$sanitized['appearance_max_width'] = max( 400, min( 1200, $value ) );
+		}
+
+		// Condensed mode spacing settings (v2.1).
+		if ( isset( $data['appearance_condensed_line_height'] ) ) {
+			$value = floatval( $data['appearance_condensed_line_height'] );
+			$sanitized['appearance_condensed_line_height'] = max( 1.2, min( 1.8, $value ) );
+		}
+
+		if ( isset( $data['appearance_condensed_answer_spacing'] ) ) {
+			$value = absint( $data['appearance_condensed_answer_spacing'] );
+			$sanitized['appearance_condensed_answer_spacing'] = max( 4, min( 24, $value ) );
+		}
+
+		if ( isset( $data['appearance_condensed_question_spacing'] ) ) {
+			$value = absint( $data['appearance_condensed_question_spacing'] );
+			$sanitized['appearance_condensed_question_spacing'] = max( 8, min( 48, $value ) );
+		}
+
+		if ( isset( $data['appearance_condensed_max_width'] ) ) {
+			$value                                       = absint( $data['appearance_condensed_max_width'] );
+			$sanitized['appearance_condensed_max_width'] = max( 400, min( 1200, $value ) );
+		}
+
 		/**
 		 * Filter the sanitized settings before saving.
 		 *
@@ -2123,7 +2165,7 @@ class PressPrimer_Quiz_REST_Controller {
 			$section = 'email';
 		} elseif ( isset( $sanitized['social_sharing_twitter'] ) || isset( $sanitized['social_sharing_facebook'] ) ) {
 			$section = 'sharing';
-		} elseif ( isset( $sanitized['appearance_font_family'] ) || isset( $sanitized['appearance_primary_color'] ) ) {
+		} elseif ( isset( $sanitized['appearance_font_family'] ) || isset( $sanitized['appearance_primary_color'] ) || isset( $sanitized['appearance_line_height'] ) || isset( $sanitized['appearance_answer_spacing'] ) || isset( $sanitized['appearance_condensed_line_height'] ) || isset( $sanitized['appearance_condensed_answer_spacing'] ) ) {
 			$section = 'appearance';
 		} elseif ( isset( $sanitized['remove_data_on_uninstall'] ) && 1 === count( $sanitized ) ) {
 			$section = 'advanced';

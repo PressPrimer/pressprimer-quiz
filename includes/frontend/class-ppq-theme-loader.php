@@ -407,29 +407,98 @@ class PressPrimer_Quiz_Theme_Loader {
 			$css_vars['--ppq-radius-xl'] = round( $radius * 2 ) . 'px';
 		}
 
+		// Spacing settings (v2.1).
+		if ( isset( $settings['appearance_line_height'] ) && '' !== $settings['appearance_line_height'] ) {
+			$line_height                   = floatval( $settings['appearance_line_height'] );
+			$css_vars['--ppq-line-height'] = $line_height;
+		}
+
+		if ( isset( $settings['appearance_answer_spacing'] ) && '' !== $settings['appearance_answer_spacing'] ) {
+			$answer_spacing                   = absint( $settings['appearance_answer_spacing'] );
+			$css_vars['--ppq-option-padding'] = $answer_spacing . 'px';
+		}
+
+		if ( isset( $settings['appearance_question_spacing'] ) && '' !== $settings['appearance_question_spacing'] ) {
+			$question_spacing                  = absint( $settings['appearance_question_spacing'] );
+			$css_vars['--ppq-question-margin'] = $question_spacing . 'px';
+		}
+
+		if ( isset( $settings['appearance_max_width'] ) && '' !== $settings['appearance_max_width'] ) {
+			$max_width                   = absint( $settings['appearance_max_width'] );
+			$css_vars['--ppq-max-width'] = $max_width . 'px';
+		}
+
+		// Condensed mode spacing settings (v2.1).
+		$condensed_css_vars = [];
+
+		if ( isset( $settings['appearance_condensed_line_height'] ) && '' !== $settings['appearance_condensed_line_height'] ) {
+			$line_height                             = floatval( $settings['appearance_condensed_line_height'] );
+			$condensed_css_vars['--ppq-line-height'] = $line_height;
+		}
+
+		if ( isset( $settings['appearance_condensed_answer_spacing'] ) && '' !== $settings['appearance_condensed_answer_spacing'] ) {
+			$answer_spacing                             = absint( $settings['appearance_condensed_answer_spacing'] );
+			$condensed_css_vars['--ppq-option-padding'] = $answer_spacing . 'px';
+		}
+
+		if ( isset( $settings['appearance_condensed_question_spacing'] ) && '' !== $settings['appearance_condensed_question_spacing'] ) {
+			$question_spacing                            = absint( $settings['appearance_condensed_question_spacing'] );
+			$condensed_css_vars['--ppq-question-margin'] = $question_spacing . 'px';
+		}
+
+		if ( isset( $settings['appearance_condensed_max_width'] ) && '' !== $settings['appearance_condensed_max_width'] ) {
+			$max_width                             = absint( $settings['appearance_condensed_max_width'] );
+			$condensed_css_vars['--ppq-max-width'] = $max_width . 'px';
+		}
+
 		// Build CSS output if we have any overrides
-		if ( empty( $css_vars ) ) {
+		if ( empty( $css_vars ) && empty( $condensed_css_vars ) ) {
 			return '';
 		}
 
-		// Apply to all theme class selectors
-		$themes    = self::get_available_themes();
-		$selectors = [];
+		$css = '';
 
-		foreach ( array_keys( $themes ) as $theme_id ) {
-			$class       = self::get_theme_class( $theme_id );
-			$selectors[] = ".{$class}";
-			$selectors[] = ".ppq-quiz-landing.{$class}";
-			$selectors[] = ".ppq-quiz-interface.{$class}";
-			$selectors[] = ".ppq-results-container.{$class}";
-			$selectors[] = ".ppq-question-review-container.{$class}";
+		// Apply standard mode variables to all theme class selectors.
+		if ( ! empty( $css_vars ) ) {
+			$themes    = self::get_available_themes();
+			$selectors = [];
+
+			foreach ( array_keys( $themes ) as $theme_id ) {
+				$class       = self::get_theme_class( $theme_id );
+				$selectors[] = ".{$class}";
+				$selectors[] = ".ppq-quiz-landing.{$class}";
+				$selectors[] = ".ppq-quiz-interface.{$class}";
+				$selectors[] = ".ppq-results-container.{$class}";
+				$selectors[] = ".ppq-question-review-container.{$class}";
+			}
+
+			$css .= implode( ",\n", $selectors ) . " {\n";
+			foreach ( $css_vars as $property => $value ) {
+				$css .= "\t{$property}: {$value};\n";
+			}
+			$css .= "}\n";
 		}
 
-		$css = implode( ",\n", $selectors ) . " {\n";
-		foreach ( $css_vars as $property => $value ) {
-			$css .= "\t{$property}: {$value};\n";
+		// Apply condensed mode variables to condensed selectors.
+		if ( ! empty( $condensed_css_vars ) ) {
+			$themes              = self::get_available_themes();
+			$condensed_selectors = [];
+
+			foreach ( array_keys( $themes ) as $theme_id ) {
+				$class                 = self::get_theme_class( $theme_id );
+				$condensed_selectors[] = ".ppq-quiz--condensed.{$class}";
+				$condensed_selectors[] = ".ppq-quiz-landing.ppq-quiz--condensed.{$class}";
+				$condensed_selectors[] = ".ppq-quiz-interface.ppq-quiz--condensed.{$class}";
+				$condensed_selectors[] = ".ppq-results-container.ppq-quiz--condensed.{$class}";
+				$condensed_selectors[] = ".ppq-question-review-container.ppq-quiz--condensed.{$class}";
+			}
+
+			$css .= implode( ",\n", $condensed_selectors ) . " {\n";
+			foreach ( $condensed_css_vars as $property => $value ) {
+				$css .= "\t{$property}: {$value};\n";
+			}
+			$css .= "}\n";
 		}
-		$css .= "}\n";
 
 		/**
 		 * Filter global appearance CSS output.

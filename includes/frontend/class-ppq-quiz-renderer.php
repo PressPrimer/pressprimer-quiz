@@ -117,6 +117,7 @@ class PressPrimer_Quiz_Quiz_Renderer {
 			'show_quiz_type'       => true,
 			'show_time_limit'      => true,
 			'show_pass_percentage' => true,
+			'show_attempt_count'   => true,
 			'show_attempt_history' => true,
 		];
 	}
@@ -154,8 +155,8 @@ class PressPrimer_Quiz_Quiz_Renderer {
 			return true;
 		}
 
-		// Also check max_attempts which is always shown when set.
-		if ( $quiz->max_attempts > 0 ) {
+		// Show meta if attempt count should display and quiz has max attempts set.
+		if ( $display['show_attempt_count'] && $quiz->max_attempts > 0 ) {
 			return true;
 		}
 
@@ -396,7 +397,7 @@ class PressPrimer_Quiz_Quiz_Renderer {
 						</div>
 						<?php endif; ?>
 
-						<?php if ( $quiz->max_attempts ) : ?>
+						<?php if ( $display['show_attempt_count'] && $quiz->max_attempts ) : ?>
 							<div class="ppq-meta-item">
 								<span class="ppq-meta-icon" aria-hidden="true">✓</span>
 								<div class="ppq-meta-content">

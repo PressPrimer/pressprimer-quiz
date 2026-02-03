@@ -44,6 +44,7 @@ class PressPrimer_Quiz_Results_Renderer {
 			'show_score'              => true,
 			'show_pass_fail'          => true,
 			'show_time_spent'         => true,
+			'show_average'            => true,
 			'show_category_breakdown' => true,
 			'show_question_review'    => true,
 			'show_retake_button'      => true,
@@ -144,8 +145,8 @@ class PressPrimer_Quiz_Results_Renderer {
 		// Build sections array based on display options.
 		$default_sections = [ 'header', 'guest_notice', 'email_notice', 'feedback' ];
 
-		// Add score_summary if score or pass_fail should be shown.
-		if ( $display['show_score'] || $display['show_pass_fail'] || $display['show_time_spent'] ) {
+		// Add score_summary if any of its sub-elements should be shown.
+		if ( $display['show_score'] || $display['show_pass_fail'] || $display['show_time_spent'] || $display['show_average'] ) {
 			$default_sections[] = 'score_summary';
 		}
 
@@ -359,24 +360,28 @@ class PressPrimer_Quiz_Results_Renderer {
 			</div>
 			<?php endif; ?>
 
-			<?php if ( $this->display['show_time_spent'] ) : ?>
+			<?php if ( $this->display['show_time_spent'] || $this->display['show_average'] ) : ?>
 			<div class="ppq-results-meta">
+				<?php if ( $this->display['show_time_spent'] ) : ?>
 				<div class="ppq-meta-item">
 					<span class="ppq-meta-icon">⏱️</span>
 					<span class="ppq-meta-label"><?php esc_html_e( 'Time:', 'pressprimer-quiz' ); ?></span>
 					<span class="ppq-meta-value"><?php echo esc_html( $this->format_duration( $this->get_display_time( $attempt ) ) ); ?></span>
 				</div>
+				<?php endif; ?>
 
 				<?php
-				// Show average comparison if available
-				$average = $this->get_quiz_average( $quiz->id );
-				if ( null !== $average ) :
-					?>
+				// Show average comparison if available and enabled.
+				if ( $this->display['show_average'] ) :
+					$average = $this->get_quiz_average( $quiz->id );
+					if ( null !== $average ) :
+						?>
 					<div class="ppq-meta-item">
 						<span class="ppq-meta-icon">📊</span>
 						<span class="ppq-meta-label"><?php esc_html_e( 'Average:', 'pressprimer-quiz' ); ?></span>
 						<span class="ppq-meta-value"><?php echo esc_html( round( $average, 1 ) ); ?>%</span>
 					</div>
+					<?php endif; ?>
 				<?php endif; ?>
 			</div>
 			<?php endif; ?>

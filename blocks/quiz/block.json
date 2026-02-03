@@ -36,6 +36,10 @@
 			"type": "boolean",
 			"default": true
 		},
+		"showAttemptCount": {
+			"type": "boolean",
+			"default": true
+		},
 		"showAttemptHistory": {
 			"type": "boolean",
 			"default": true
@@ -49,6 +53,10 @@
 			"default": true
 		},
 		"showTimeSpent": {
+			"type": "boolean",
+			"default": true
+		},
+		"showAverage": {
 			"type": "boolean",
 			"default": true
 		},

@@ -212,9 +212,21 @@ class PressPrimer_Quiz_Review_Notice {
 
 			var nonce = notice.data('nonce');
 
+			// Handle button clicks.
 			notice.on('click', '[data-action]', function(e) {
 				e.preventDefault();
 				var action = $(this).data('action');
+				handleAction(action);
+			});
+
+			// Handle Escape key to dismiss notice (accessibility enhancement).
+			$(document).on('keydown', function(e) {
+				if (e.key === 'Escape' && notice.is(':visible')) {
+					handleAction('dismiss');
+				}
+			});
+
+			function handleAction(action) {
 				var ajaxAction = 'pressprimer_quiz_celebration_' + action;
 
 				$.post(ajaxurl, {
@@ -231,7 +243,7 @@ class PressPrimer_Quiz_Review_Notice {
 						}
 					}
 				});
-			});
+			}
 		});
 		";
 	}

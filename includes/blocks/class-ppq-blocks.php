@@ -168,6 +168,10 @@ class PressPrimer_Quiz_Blocks {
 						'type'    => 'boolean',
 						'default' => true,
 					],
+					'showAttemptCount'      => [
+						'type'    => 'boolean',
+						'default' => true,
+					],
 					'showAttemptHistory'    => [
 						'type'    => 'boolean',
 						'default' => true,
@@ -182,6 +186,10 @@ class PressPrimer_Quiz_Blocks {
 						'default' => true,
 					],
 					'showTimeSpent'         => [
+						'type'    => 'boolean',
+						'default' => true,
+					],
+					'showAverage'           => [
 						'type'    => 'boolean',
 						'default' => true,
 					],
@@ -236,11 +244,13 @@ class PressPrimer_Quiz_Blocks {
 			'show_quiz_type'          => isset( $attributes['showQuizType'] ) ? ( $attributes['showQuizType'] ? 'true' : 'false' ) : 'true',
 			'show_time_limit'         => isset( $attributes['showTimeLimit'] ) ? ( $attributes['showTimeLimit'] ? 'true' : 'false' ) : 'true',
 			'show_pass_percentage'    => isset( $attributes['showPassPercentage'] ) ? ( $attributes['showPassPercentage'] ? 'true' : 'false' ) : 'true',
+			'show_attempt_count'      => isset( $attributes['showAttemptCount'] ) ? ( $attributes['showAttemptCount'] ? 'true' : 'false' ) : 'true',
 			'show_attempt_history'    => isset( $attributes['showAttemptHistory'] ) ? ( $attributes['showAttemptHistory'] ? 'true' : 'false' ) : 'true',
 			// Results page display options.
 			'show_score'              => isset( $attributes['showScore'] ) ? ( $attributes['showScore'] ? 'true' : 'false' ) : 'true',
 			'show_pass_fail'          => isset( $attributes['showPassFail'] ) ? ( $attributes['showPassFail'] ? 'true' : 'false' ) : 'true',
 			'show_time_spent'         => isset( $attributes['showTimeSpent'] ) ? ( $attributes['showTimeSpent'] ? 'true' : 'false' ) : 'true',
+			'show_average'            => isset( $attributes['showAverage'] ) ? ( $attributes['showAverage'] ? 'true' : 'false' ) : 'true',
 			'show_category_breakdown' => isset( $attributes['showCategoryBreakdown'] ) ? ( $attributes['showCategoryBreakdown'] ? 'true' : 'false' ) : 'true',
 			'show_question_review'    => isset( $attributes['showQuestionReview'] ) ? ( $attributes['showQuestionReview'] ? 'true' : 'false' ) : 'true',
 			'show_retake_button'      => isset( $attributes['showRetakeButton'] ) ? ( $attributes['showRetakeButton'] ? 'true' : 'false' ) : 'true',

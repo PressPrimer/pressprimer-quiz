@@ -382,7 +382,7 @@ const AppearancePreview = ({ settings, spacingMode }) => {
 			<Paragraph type="secondary" style={{ marginBottom: 16 }}>
 				{__('Preview how your custom settings will look on each theme. Switch themes to see the differences.', 'pressprimer-quiz')}
 			</Paragraph>
-			<div style={previewStyles.container}>
+			<div style={previewStyles.container} aria-live="polite" aria-label={__('Live preview of appearance settings', 'pressprimer-quiz')}>
 				<h3 style={previewStyles.questionTitle}>
 					{__('Sample Question', 'pressprimer-quiz')}
 				</h3>

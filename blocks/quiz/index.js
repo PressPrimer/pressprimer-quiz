@@ -45,10 +45,12 @@ function Edit( props ) {
 		showQuizType,
 		showTimeLimit,
 		showPassPercentage,
+		showAttemptCount,
 		showAttemptHistory,
 		showScore,
 		showPassFail,
 		showTimeSpent,
+		showAverage,
 		showCategoryBreakdown,
 		showQuestionReview,
 		showRetakeButton,
@@ -230,6 +232,12 @@ function Edit( props ) {
 					/>
 					<ToggleControl
 						__nextHasNoMarginBottom
+						label={ __( 'Show Attempt Count', 'pressprimer-quiz' ) }
+						checked={ showAttemptCount }
+						onChange={ ( value ) => setAttributes( { showAttemptCount: value } ) }
+					/>
+					<ToggleControl
+						__nextHasNoMarginBottom
 						label={ __( 'Show Attempt History', 'pressprimer-quiz' ) }
 						checked={ showAttemptHistory }
 						onChange={ ( value ) => setAttributes( { showAttemptHistory: value } ) }
@@ -254,6 +262,12 @@ function Edit( props ) {
 						label={ __( 'Show Time Spent', 'pressprimer-quiz' ) }
 						checked={ showTimeSpent }
 						onChange={ ( value ) => setAttributes( { showTimeSpent: value } ) }
+					/>
+					<ToggleControl
+						__nextHasNoMarginBottom
+						label={ __( 'Show Average Score', 'pressprimer-quiz' ) }
+						checked={ showAverage }
+						onChange={ ( value ) => setAttributes( { showAverage: value } ) }
 					/>
 					<ToggleControl
 						__nextHasNoMarginBottom

@@ -65,11 +65,13 @@ class PressPrimer_Quiz_Shortcodes {
 			'show_quiz_type'          => 'true',
 			'show_time_limit'         => 'true',
 			'show_pass_percentage'    => 'true',
+			'show_attempt_count'      => 'true',
 			'show_attempt_history'    => 'true',
 			// Results page display options.
 			'show_score'              => 'true',
 			'show_pass_fail'          => 'true',
 			'show_time_spent'         => 'true',
+			'show_average'            => 'true',
 			'show_category_breakdown' => 'true',
 			'show_question_review'    => 'true',
 			'show_retake_button'      => 'true',

@@ -552,17 +552,24 @@
 				// Add a dummy state
 				window.history.pushState('quiz-active', null, window.location.href);
 
+				// Flag to track intentional navigation
+				var isLeavingQuiz = false;
+
 				// Handle popstate (back button)
 				$(window).on('popstate', function(e) {
-					if (!self.isSubmitting) {
-						// Push state back to prevent navigation
-						window.history.pushState('quiz-active', null, window.location.href);
+					// Skip if we're already leaving or submitting
+					if (isLeavingQuiz || self.isSubmitting) {
+						return;
+					}
 
-						// Confirm if user wants to abandon quiz
-						if (confirm(pressprimerQuiz.strings.confirmLeave || 'Are you sure you want to leave this quiz? Your progress is saved, but you can only resume if the time limit allows.')) {
-							// Allow navigation
-							window.history.back();
-						}
+					// Push state back to prevent navigation
+					window.history.pushState('quiz-active', null, window.location.href);
+
+					// Confirm if user wants to abandon quiz
+					if (confirm(pressprimerQuiz.strings.confirmLeave || 'Are you sure you want to leave this quiz? Your progress is saved, but you can only resume if the time limit allows.')) {
+						// Set flag to prevent loop and allow navigation
+						isLeavingQuiz = true;
+						window.history.back();
 					}
 				});
 			}

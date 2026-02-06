@@ -163,9 +163,8 @@ class PressPrimer_Quiz_Shortcodes {
 		}
 
 		// Store pre_test_id override for the Educator addon's results renderer.
-		if ( ! empty( $parsed['pre_test_id'] ) ) {
-			$GLOBALS['pressprimer_quiz_pre_test_id'] = $parsed['pre_test_id'];
-		}
+		// Always set (even to 0) to prevent state bleeding between multiple shortcodes on one page.
+		$GLOBALS['pressprimer_quiz_pre_test_id'] = $parsed['pre_test_id'];
 
 		$quiz_id = $parsed['quiz_id'];
 

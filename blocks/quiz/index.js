@@ -15,6 +15,7 @@ import {
 	Placeholder,
 	Spinner,
 	ToggleControl,
+	TextControl,
 } from '@wordpress/components';
 import { __ } from '@wordpress/i18n';
 import { useState, useEffect } from '@wordpress/element';
@@ -40,6 +41,7 @@ function Edit( props ) {
 	const { attributes, setAttributes } = props;
 	const {
 		quizId,
+		preTestId,
 		showDescription,
 		showQuestionCount,
 		showQuizType,
@@ -197,6 +199,16 @@ function Edit( props ) {
 							help={ __( 'Choose the quiz to display on this page.', 'pressprimer-quiz' ) }
 						/>
 					) }
+					<TextControl
+						__next40pxDefaultSize
+						__nextHasNoMarginBottom
+						label={ __( 'Pre-Test ID Override', 'pressprimer-quiz' ) }
+						type="number"
+						min={ 0 }
+						value={ preTestId || '' }
+						onChange={ ( value ) => setAttributes( { preTestId: value ? parseInt( value, 10 ) : 0 } ) }
+						help={ __( 'Override the linked pre-test for this quiz instance. Leave empty to use the quiz setting. Requires the Educator addon.', 'pressprimer-quiz' ) }
+					/>
 				</PanelBody>
 
 				<PanelBody title={ __( 'Start Page Display', 'pressprimer-quiz' ) } initialOpen={ false }>

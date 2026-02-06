@@ -5,7 +5,9 @@
  * @since 1.0.0
  */
 
+import { useState, useEffect, useCallback } from '@wordpress/element';
 import { __ } from '@wordpress/i18n';
+import apiFetch from '@wordpress/api-fetch';
 import {
 	Form,
 	Input,
@@ -20,6 +22,8 @@ import {
 	Typography,
 	Tooltip,
 	Divider,
+	Alert,
+	Modal,
 } from 'antd';
 import {
 	QuestionCircleOutlined,
@@ -30,6 +34,7 @@ import {
 	EyeOutlined,
 	ExperimentOutlined,
 	FileTextOutlined,
+	LinkOutlined,
 } from '@ant-design/icons';
 
 const { TextArea } = Input;
@@ -42,10 +47,107 @@ const { Title, Text } = Typography;
  * @param {Object} props.form Ant Design form instance
  * @param {string} props.generationMode Current generation mode
  * @param {Function} props.setGenerationMode Function to update generation mode
+ * @param {Object} props.quizData Initial quiz data (includes educator addon fields)
  */
-const SettingsPanel = ({ form, generationMode, setGenerationMode }) => {
+const SettingsPanel = ({ form, generationMode, setGenerationMode, quizData = {} }) => {
 	// Watch access_mode to show/hide login message field
 	const accessMode = Form.useWatch('access_mode', form);
+
+	// Pre-test selector state (only used when Educator addon is active).
+	const [preTestOptions, setPreTestOptions] = useState([]);
+	const [preTestLoading, setPreTestLoading] = useState(false);
+	const [preTestFetched, setPreTestFetched] = useState(false);
+
+	// Set initial pre-test option if quiz already has one linked.
+	useEffect(() => {
+		if (quizData.pre_test_id && quizData.pre_test_title) {
+			setPreTestOptions([{
+				value: quizData.pre_test_id,
+				label: quizData.pre_test_title,
+			}]);
+		}
+	}, [quizData.pre_test_id, quizData.pre_test_title]);
+
+	/**
+	 * Fetch available pre-tests from the educator REST endpoint
+	 */
+	const fetchPreTests = useCallback(async (search = '') => {
+		if (!quizData.educatorActive) {
+			return;
+		}
+
+		setPreTestLoading(true);
+		try {
+			const params = new URLSearchParams({
+				per_page: '20',
+			});
+
+			if (quizData.id) {
+				params.append('exclude', quizData.id);
+			}
+
+			if (search) {
+				params.append('search', search);
+			}
+
+			const results = await apiFetch({
+				path: `/ppqe/v1/quizzes/available-pretests?${params.toString()}`,
+			});
+
+			const options = results.map((quiz) => ({
+				value: quiz.id,
+				label: quiz.owner_name
+					? `${quiz.title} (${quiz.owner_name})`
+					: quiz.title,
+			}));
+
+			setPreTestOptions(options);
+			setPreTestFetched(true);
+		} catch {
+			// Silently fail - the selector will just show no options.
+		} finally {
+			setPreTestLoading(false);
+		}
+	}, [quizData.educatorActive, quizData.id]);
+
+	/**
+	 * Handle pre-test dropdown open - load initial options
+	 */
+	const handlePreTestDropdownOpen = useCallback((open) => {
+		if (open && !preTestFetched) {
+			fetchPreTests();
+		}
+	}, [preTestFetched, fetchPreTests]);
+
+	/**
+	 * Handle pre-test search with debounce
+	 */
+	const handlePreTestSearch = useCallback((value) => {
+		fetchPreTests(value);
+	}, [fetchPreTests]);
+
+	/**
+	 * Handle pre-test change - confirm before unlinking
+	 */
+	const handlePreTestChange = useCallback((value) => {
+		const currentValue = form.getFieldValue('pre_test_id');
+
+		// If clearing (unlinking) and there was a previous value, confirm.
+		if (!value && currentValue) {
+			Modal.confirm({
+				title: __('Unlink Pre-Test?', 'pressprimer-quiz'),
+				content: __('Are you sure you want to unlink this pre-test? Existing comparison data will still be available, but new attempts will not be linked.', 'pressprimer-quiz'),
+				okText: __('Unlink', 'pressprimer-quiz'),
+				cancelText: __('Cancel', 'pressprimer-quiz'),
+				onOk: () => {
+					form.setFieldsValue({ pre_test_id: null });
+				},
+			});
+			return;
+		}
+
+		form.setFieldsValue({ pre_test_id: value || null });
+	}, [form]);
 	return (
 		<Space direction="vertical" size="large" style={{ width: '100%' }}>
 			{/* Basic Information */}
@@ -661,6 +763,62 @@ const SettingsPanel = ({ form, generationMode, setGenerationMode }) => {
 					</Form.Item>
 				)}
 			</Card>
+
+			{/* Pre/Post Test Linking - Only shown when Educator addon is active */}
+			{quizData.educatorActive && (
+				<Card
+					title={
+						<Space>
+							<Title level={4} style={{ margin: 0 }}>
+								{__('Pre/Post Test Linking', 'pressprimer-quiz')}
+							</Title>
+							<Tooltip title={__('Link this quiz to a pre-test to track student improvement between assessments', 'pressprimer-quiz')}>
+								<QuestionCircleOutlined style={{ color: '#8c8c8c' }} />
+							</Tooltip>
+						</Space>
+					}
+					style={{ marginBottom: 24 }}
+				>
+					<Alert
+						type="info"
+						showIcon
+						message={__('Pre/Post Test Comparison', 'pressprimer-quiz')}
+						description={__('Link a pre-test to this quiz to automatically show students their improvement on the results page. The pre-test should be taken before this quiz.', 'pressprimer-quiz')}
+						style={{ marginBottom: 16 }}
+					/>
+
+					<Form.Item
+						label={
+							<Space>
+								<LinkOutlined />
+								<span>{__('Pre-Test Quiz', 'pressprimer-quiz')}</span>
+								<Tooltip title={__('Select the quiz that serves as the pre-test for this quiz. Students who complete both will see a comparison of their scores.', 'pressprimer-quiz')}>
+									<QuestionCircleOutlined style={{ fontSize: 12, color: '#8c8c8c' }} />
+								</Tooltip>
+							</Space>
+						}
+						name="pre_test_id"
+					>
+						<Select
+							size="small"
+							style={{ width: 300 }}
+							placeholder={__('None (no pre-test linked)', 'pressprimer-quiz')}
+							allowClear
+							showSearch
+							filterOption={false}
+							loading={preTestLoading}
+							options={preTestOptions}
+							onDropdownVisibleChange={handlePreTestDropdownOpen}
+							onSearch={handlePreTestSearch}
+							onChange={handlePreTestChange}
+							notFoundContent={preTestLoading ? __('Loading...', 'pressprimer-quiz') : __('No quizzes found', 'pressprimer-quiz')}
+						/>
+					</Form.Item>
+					<Text type="secondary" style={{ fontSize: 10, display: 'block', marginTop: -8 }}>
+						{__('Select a quiz to use as the pre-test for this quiz', 'pressprimer-quiz')}
+					</Text>
+				</Card>
+			)}
 		</Space>
 	);
 };

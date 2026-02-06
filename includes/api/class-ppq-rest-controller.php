@@ -1538,6 +1538,12 @@ class PressPrimer_Quiz_REST_Controller {
 				throw new Exception( $quiz_id->get_error_message() );
 			}
 
+			/** This action is documented in includes/api/class-ppq-rest-controller.php */
+			$quiz = PressPrimer_Quiz_Quiz::get( $quiz_id );
+			if ( $quiz ) {
+				do_action( 'pressprimer_quiz_rest_quiz_saved', $quiz, $data );
+			}
+
 			$wpdb->query( 'COMMIT' );
 
 			// Clear dashboard stats cache
@@ -1612,6 +1618,19 @@ class PressPrimer_Quiz_REST_Controller {
 			if ( is_wp_error( $result ) ) {
 				throw new Exception( $result->get_error_message() );
 			}
+
+			/**
+			 * Fires after a quiz is saved via REST API
+			 *
+			 * Allows addons to process additional quiz data (e.g., pre_test_id)
+			 * that the core plugin does not handle directly.
+			 *
+			 * @since 2.1.0
+			 *
+			 * @param PressPrimer_Quiz_Quiz $quiz The saved quiz object.
+			 * @param array                 $data The raw request data.
+			 */
+			do_action( 'pressprimer_quiz_rest_quiz_saved', $quiz, $data );
 
 			$wpdb->query( 'COMMIT' );
 

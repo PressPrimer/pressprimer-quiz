@@ -59,6 +59,7 @@ class PressPrimer_Quiz_Shortcodes {
 		$defaults = [
 			'id'                      => 0,
 			'context'                 => '', // Base64 encoded JSON for integration context (e.g., LearnDash)
+			'pre_test_id'             => 0, // Override pre-test linking (used by Educator addon).
 			// Start page display options.
 			'show_description'        => 'true',
 			'show_question_count'     => 'true',
@@ -100,9 +101,10 @@ class PressPrimer_Quiz_Shortcodes {
 		}
 
 		return [
-			'quiz_id' => absint( $atts['id'] ),
-			'context' => $context,
-			'display' => $display,
+			'quiz_id'     => absint( $atts['id'] ),
+			'context'     => $context,
+			'display'     => $display,
+			'pre_test_id' => absint( $atts['pre_test_id'] ),
 		];
 	}
 
@@ -158,6 +160,11 @@ class PressPrimer_Quiz_Shortcodes {
 		// Store context in a global for the attempt creation to pick up.
 		if ( ! empty( $parsed['context'] ) ) {
 			$GLOBALS['pressprimer_quiz_context'] = $parsed['context'];
+		}
+
+		// Store pre_test_id override for the Educator addon's results renderer.
+		if ( ! empty( $parsed['pre_test_id'] ) ) {
+			$GLOBALS['pressprimer_quiz_pre_test_id'] = $parsed['pre_test_id'];
 		}
 
 		$quiz_id = $parsed['quiz_id'];

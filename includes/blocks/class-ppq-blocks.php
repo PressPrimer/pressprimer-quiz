@@ -147,6 +147,10 @@ class PressPrimer_Quiz_Blocks {
 						'type'    => 'number',
 						'default' => 0,
 					],
+					'preTestId'             => [
+						'type'    => 'number',
+						'default' => 0,
+					],
 					// Start page display options.
 					'showDescription'       => [
 						'type'    => 'boolean',
@@ -236,8 +240,10 @@ class PressPrimer_Quiz_Blocks {
 		}
 
 		// Build shortcode attributes including display options.
+		$pre_test_id    = isset( $attributes['preTestId'] ) ? absint( $attributes['preTestId'] ) : 0;
 		$shortcode_atts = [
 			'id'                      => $quiz_id,
+			'pre_test_id'             => $pre_test_id,
 			// Start page display options (convert camelCase to snake_case).
 			'show_description'        => isset( $attributes['showDescription'] ) ? ( $attributes['showDescription'] ? 'true' : 'false' ) : 'true',
 			'show_question_count'     => isset( $attributes['showQuestionCount'] ) ? ( $attributes['showQuestionCount'] ? 'true' : 'false' ) : 'true',

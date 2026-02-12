@@ -35,6 +35,7 @@ import {
 	ExperimentOutlined,
 	FileTextOutlined,
 	LinkOutlined,
+	LockOutlined,
 } from '@ant-design/icons';
 
 const { TextArea } = Input;
@@ -816,6 +817,121 @@ const SettingsPanel = ({ form, generationMode, setGenerationMode, quizData = {} 
 					</Form.Item>
 					<Text type="secondary" style={{ fontSize: 10, display: 'block', marginTop: -8 }}>
 						{__('Select a quiz to use as the pre-test for this quiz', 'pressprimer-quiz')}
+					</Text>
+				</Card>
+			)}
+
+			{/* Proctoring Overrides - Only shown when Enterprise addon is active */}
+			{quizData.enterpriseActive && (
+				<Card
+					title={
+						<Space>
+							<Title level={4} style={{ margin: 0 }}>
+								{__('Proctoring', 'pressprimer-quiz')}
+							</Title>
+							<Tooltip title={__('Override global proctoring settings for this quiz', 'pressprimer-quiz')}>
+								<QuestionCircleOutlined style={{ color: '#8c8c8c' }} />
+							</Tooltip>
+						</Space>
+					}
+					style={{ marginBottom: 24 }}
+				>
+					<Alert
+						type="info"
+						showIcon
+						message={__('Per-Quiz Proctoring Overrides', 'pressprimer-quiz')}
+						description={
+							quizData.proctoring_global_mode === 'off'
+								? __('Global proctoring is currently off. You can enable it for this quiz individually.', 'pressprimer-quiz')
+								: __('These settings override the global proctoring configuration for this quiz only. Use "Use Global Default" to inherit from Settings > Proctoring.', 'pressprimer-quiz')
+						}
+						style={{ marginBottom: 16 }}
+					/>
+
+					<Form.Item
+						label={
+							<Space>
+								<LockOutlined />
+								<span>{__('Proctoring Mode', 'pressprimer-quiz')}</span>
+								<Tooltip title={__('Controls the level of proctoring for this quiz. Monitor logs incidents silently. Strict warns students of violations.', 'pressprimer-quiz')}>
+									<QuestionCircleOutlined style={{ fontSize: 12, color: '#8c8c8c' }} />
+								</Tooltip>
+							</Space>
+						}
+						name="proctoring_mode"
+					>
+						<Select
+							size="small"
+							style={{ width: 300 }}
+							options={[
+								{ value: 'default', label: __('Use Global Default', 'pressprimer-quiz') },
+								{ value: 'off', label: __('Off', 'pressprimer-quiz') },
+								{ value: 'monitor', label: __('Monitor', 'pressprimer-quiz') },
+								{ value: 'strict', label: __('Strict', 'pressprimer-quiz') },
+							]}
+						/>
+					</Form.Item>
+
+					<Form.Item
+						label={
+							<Space>
+								<EyeOutlined />
+								<span>{__('Tab/Focus Monitoring', 'pressprimer-quiz')}</span>
+								<Tooltip title={__('Detect when the student leaves the quiz tab or switches to another application.', 'pressprimer-quiz')}>
+									<QuestionCircleOutlined style={{ fontSize: 12, color: '#8c8c8c' }} />
+								</Tooltip>
+							</Space>
+						}
+						name="proctoring_tab_monitoring"
+					>
+						<Select
+							size="small"
+							style={{ width: 300 }}
+							options={[
+								{ value: 'default', label: __('Use Global Default', 'pressprimer-quiz') },
+								{ value: 'on', label: __('Enabled', 'pressprimer-quiz') },
+								{ value: 'off', label: __('Disabled', 'pressprimer-quiz') },
+							]}
+						/>
+					</Form.Item>
+
+					<Form.Item
+						label={
+							<Space>
+								<CompassOutlined />
+								<span>{__('Full-Screen Mode', 'pressprimer-quiz')}</span>
+								<Tooltip title={__('Require the quiz to be taken in full-screen mode. Exiting full-screen is logged as a proctoring incident.', 'pressprimer-quiz')}>
+									<QuestionCircleOutlined style={{ fontSize: 12, color: '#8c8c8c' }} />
+								</Tooltip>
+							</Space>
+						}
+						name="proctoring_fullscreen"
+					>
+						<Select
+							size="small"
+							style={{ width: 300 }}
+							options={[
+								{ value: 'default', label: __('Use Global Default', 'pressprimer-quiz') },
+								{ value: 'on', label: __('Enabled', 'pressprimer-quiz') },
+								{ value: 'off', label: __('Disabled', 'pressprimer-quiz') },
+							]}
+						/>
+					</Form.Item>
+
+					<Form.Item
+						name="proctoring_require_desktop"
+						valuePropName="checked"
+					>
+						<Space>
+							<Switch size="small" />
+							<span>{__('Require Desktop Browser', 'pressprimer-quiz')}</span>
+							<Tooltip title={__('Block mobile and tablet devices from taking this quiz. Detection is based on user agent strings and may not be 100% accurate.', 'pressprimer-quiz')}>
+								<QuestionCircleOutlined style={{ fontSize: 12, color: '#8c8c8c' }} />
+							</Tooltip>
+						</Space>
+					</Form.Item>
+					<Text type="secondary" style={{ fontSize: 10, display: 'block', marginTop: -8 }}>
+						{__('Mobile devices have limited proctoring support. Enable this to restrict quizzes to desktop browsers only.', 'pressprimer-quiz')}
 					</Text>
 				</Card>
 			)}

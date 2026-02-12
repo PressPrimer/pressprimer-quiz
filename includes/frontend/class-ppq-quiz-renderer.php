@@ -275,6 +275,25 @@ class PressPrimer_Quiz_Quiz_Renderer {
 			}
 		}
 
+		/**
+		 * Filter whether the user can start this quiz.
+		 *
+		 * Allows addons to block quiz start on the landing page. Return true
+		 * to allow, or a WP_Error to block (the error message is displayed
+		 * as a warning notice in place of the start button).
+		 *
+		 * @since 2.1.0
+		 *
+		 * @param true|WP_Error          $can_start_result True if allowed, WP_Error to block.
+		 * @param PressPrimer_Quiz_Quiz   $quiz             The quiz object.
+		 */
+		$can_start_result = apply_filters( 'pressprimer_quiz_can_start', true, $quiz );
+
+		if ( $can_start && is_wp_error( $can_start_result ) ) {
+			$can_start     = false;
+			$limit_message = $can_start_result->get_error_message();
+		}
+
 		// Count questions
 		$question_count = 0;
 		if ( 'fixed' === $quiz->generation_mode ) {

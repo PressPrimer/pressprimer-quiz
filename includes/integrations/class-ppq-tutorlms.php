@@ -85,6 +85,9 @@ class PressPrimer_Quiz_TutorLMS {
 		// Course builder support.
 		add_action( 'admin_enqueue_scripts', [ $this, 'enqueue_course_builder_assets' ] );
 
+		// Map TutorLMS Instructor role to PPQ teacher capabilities.
+		$this->map_instructor_capabilities();
+
 		// Frontend hooks.
 		add_action( 'tutor_lesson/single/after/content', [ $this, 'display_quiz_in_lesson' ] );
 		add_action( 'tutor_course/single/enrolled/after/lesson_list', [ $this, 'display_topic_quizzes' ] );
@@ -825,12 +828,51 @@ class PressPrimer_Quiz_TutorLMS {
 			$require_pass = get_post_meta( $post_id, self::META_KEY_REQUIRE_PASS, true );
 
 			if ( '1' === $require_pass ) {
+				// If the lesson is already marked complete, don't hide the button.
+				if ( function_exists( 'tutor_utils' ) ) {
+					$completed = tutor_utils()->is_completed_lesson( $post_id, get_current_user_id() );
+					if ( false !== $completed ) {
+						return $form;
+					}
+				}
+
+				// If the user has already passed this quiz, don't hide the button.
+				$user_id = get_current_user_id();
+				if ( $user_id && $this->user_has_passed_quiz( (int) $quiz_id, $user_id ) ) {
+					return $form;
+				}
+
 				// Return empty to hide the complete button - user must pass quiz.
 				return '';
 			}
 		}
 
 		return $form;
+	}
+
+	/**
+	 * Check if a user has passed a specific quiz
+	 *
+	 * @since 2.1.0
+	 *
+	 * @param int $quiz_id PPQ Quiz ID.
+	 * @param int $user_id User ID.
+	 * @return bool True if user has at least one passing submitted attempt.
+	 */
+	private function user_has_passed_quiz( int $quiz_id, int $user_id ): bool {
+		global $wpdb;
+		$table = $wpdb->prefix . 'ppq_attempts';
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- One-off check, not suitable for persistent caching.
+		$passed = $wpdb->get_var(
+			$wpdb->prepare(
+				"SELECT COUNT(*) FROM {$table} WHERE quiz_id = %d AND user_id = %d AND status = 'submitted' AND passed = 1", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Table name is constructed from $wpdb->prefix.
+				$quiz_id,
+				$user_id
+			)
+		);
+
+		return $passed > 0;
 	}
 
 	/**
@@ -904,6 +946,38 @@ class PressPrimer_Quiz_TutorLMS {
 			 * @param int $user_id   User ID.
 			 */
 			do_action( 'pressprimer_quiz_tutorlms_lesson_completed', $lesson_id, $user_id );
+
+			// Trigger auto-course-completion if all lessons are now complete.
+			// TutorLMS only checks this on course page load, so we trigger it here
+			// to complete the course immediately after the final lesson finishes.
+			$this->maybe_auto_complete_course( $lesson_id, $user_id );
+		}
+	}
+
+	/**
+	 * Trigger TutorLMS auto-course-completion if all content is done
+	 *
+	 * TutorLMS normally only checks for auto-completion on course page load.
+	 * This method triggers the check immediately after a lesson is programmatically
+	 * marked complete, so the course completes without requiring a page visit.
+	 *
+	 * @since 2.1.0
+	 *
+	 * @param int $lesson_id Lesson post ID.
+	 * @param int $user_id   User ID.
+	 */
+	private function maybe_auto_complete_course( $lesson_id, $user_id ) {
+		if ( ! class_exists( '\Tutor\Models\CourseModel' ) ) {
+			return;
+		}
+
+		$course_id = $this->get_course_id_for_lesson( $lesson_id );
+		if ( ! $course_id ) {
+			return;
+		}
+
+		if ( \Tutor\Models\CourseModel::can_autocomplete_course( $course_id, $user_id ) ) {
+			\Tutor\Models\CourseModel::mark_course_as_completed( $course_id, $user_id );
 		}
 	}
 
@@ -935,28 +1009,77 @@ class PressPrimer_Quiz_TutorLMS {
 	}
 
 	/**
-	 * Check if user is enrolled in a course
+	 * Check if user has access to a course
+	 *
+	 * Checks enrollment, public course status, admin/instructor status,
+	 * and completed course enrollment records.
 	 *
 	 * @since 1.0.0
 	 *
 	 * @param int $user_id   User ID.
 	 * @param int $course_id Course ID.
-	 * @return bool True if enrolled.
+	 * @return bool True if user has access.
 	 */
 	private function is_user_enrolled( $user_id, $course_id ) {
+		// Public courses are accessible to everyone (no enrollment required).
+		$is_public = get_post_meta( $course_id, '_tutor_is_public_course', true );
+		if ( 'yes' === $is_public ) {
+			return true;
+		}
+
+		// Admins and course instructors always have access.
+		if ( current_user_can( 'manage_options' ) ) {
+			return true;
+		}
+
+		if ( function_exists( 'tutor_utils' ) ) {
+			$utils = tutor_utils();
+
+			// Check if user is an instructor for this course.
+			if ( method_exists( $utils, 'is_instructor_of_this_course' ) ) {
+				if ( $utils->is_instructor_of_this_course( $user_id, $course_id ) ) {
+					return true;
+				}
+			}
+
+			// Check enrollment (includes completed courses — enrollment record
+			// keeps post_status='completed' even after course completion).
+			if ( method_exists( $utils, 'is_enrolled' ) ) {
+				if ( $utils->is_enrolled( $course_id, $user_id ) ) {
+					return true;
+				}
+			}
+		}
+
 		if ( ! $user_id ) {
 			return false;
 		}
 
-		// Use TutorLMS function.
-		if ( function_exists( 'tutor_utils' ) ) {
-			$utils = tutor_utils();
-			if ( method_exists( $utils, 'is_enrolled' ) ) {
-				return (bool) $utils->is_enrolled( $course_id, $user_id );
-			}
+		return true; // Default to allowing if we can't check.
+	}
+
+	/**
+	 * Map TutorLMS Instructor role to PPQ teacher capabilities
+	 *
+	 * Grants pressprimer_quiz_manage_own and related capabilities to the
+	 * tutor_instructor role so instructors can create and manage their own
+	 * quizzes, questions, and banks.
+	 *
+	 * @since 2.1.0
+	 */
+	private function map_instructor_capabilities() {
+		$instructor = get_role( 'tutor_instructor' );
+
+		if ( ! $instructor ) {
+			return;
 		}
 
-		return true; // Default to allowing if we can't check.
+		// Only add capabilities if the role doesn't already have them.
+		if ( ! $instructor->has_cap( 'pressprimer_quiz_manage_own' ) ) {
+			$instructor->add_cap( 'pressprimer_quiz_manage_own' );
+			$instructor->add_cap( 'pressprimer_quiz_view_results_own' );
+			$instructor->add_cap( 'pressprimer_quiz_take_quiz' );
+		}
 	}
 
 	/**

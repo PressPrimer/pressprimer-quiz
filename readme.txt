@@ -3,7 +3,7 @@ Contributors: pressprimer
 Tags: quiz, learndash, assessment, lms, elearning
 Requires at least: 6.4
 Tested up to: 6.9.1
-Stable tag: 2.0.0
+Stable tag: 2.1.0
 Requires PHP: 7.4
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -47,7 +47,7 @@ PressPrimer Quiz includes features in the free version that competitors charge f
 * **Per-question and per-answer feedback** – Explain correct and incorrect answers
 * **Confidence ratings** – Optional checkbox for students to indicate certainty
 * **Three professional themes** – Default, Modern, and Minimal
-* **Condensed Mode** – Tighter sections and reduced vertical spacing for streamlined quizzes that require less scrolling
+* **Customizable Appearance** – Adjust line height, answer spacing, question spacing, and container width from Settings. Includes Condensed Mode for streamlined quizzes with reduced vertical spacing.
 * **Uncanny Automator integration** – Triggers for quiz completion, pass, and fail, with a comprehensive set of tokens for use in automations
 
 = Perfect For =
@@ -69,7 +69,7 @@ PressPrimer Quiz automatically detects and integrates with popular WordPress LMS
 
 **LearnDash:** Attach quizzes to lessons and topics via meta box. Passing a quiz can automatically mark the lesson or topic complete. 
 
-**Tutor LMS:** Add quizzes directly in the course builder.
+**Tutor LMS:** Attach quizzes to lessons via the course builder. Passing a quiz can auto-complete the lesson and course. Works with public courses, enrolled students, and instructor roles.
 
 **LifterLMS:** Meta box on lessons with completion triggers.
 
@@ -83,14 +83,18 @@ All integrations are bundled in the free version.
 
 Unlock additional premium features at [pressprimer.com](https://pressprimer.com/):
 
-* **Groups & Assignments** – Organize students into groups, assign quizzes with due dates, and view reports of group progress
-* **Import/Export** – Move questions between sites or migrate from other platforms with CSV, JSON, and XML support
+* **Groups & Assignments** – Organize students into groups, assign quizzes with due dates, and track completion progress
+* **Import/Export** – Move questions between sites or migrate from other quiz plugins with CSV, JSON, and XML support
+* **Pre/Post Test Analysis** – Link quizzes as pre/post pairs and measure learning gain with score and category comparison charts
+* **Quiz Detail Reports** – Per-quiz analytics dashboard with score distribution, category performance, question difficulty analysis, and score trends over time
+* **Group Performance Reports** – Compare groups side by side, drill into individual member results, and track weekly score trends
 * **Question Quality Analytics** – Identify problem questions with difficulty indexes, discrimination analysis, and distractor effectiveness reports
-* **Deleted Question Recovery** – Restore accidentally deleted questions or permanently remove them when ready
-* **Question Version History** – Track every change to a question and restore previous versions with one click
-* **xAPI/LRS Integration** – Send learning data to your Learning Record Store for compliance and analytics
-* **White-Label Branding** – Remove all PressPrimer branding and customize with your own logos and colors
-* **Audit Logging** – Track every quiz, question, and attempt change for compliance and accountability
+* **LearnDash Quiz Import** – Migrate entire LearnDash quizzes with questions into PressPrimer Quiz in batch
+* **Quiz Proctoring** – Monitor tab switches and fullscreen exits during quiz attempts with configurable flag thresholds, incident reports, per-quiz overrides, and desktop-only enforcement
+* **xAPI/LRS Integration** – Send detailed learning data to your Learning Record Store for compliance and analytics
+* **White-Label Branding** – Remove all PressPrimer branding and customize with your own logos, colors, and plugin name
+* **Audit Logging** – Immutable log of every quiz, question, settings, and attempt change for compliance and accountability
+* **Question Recovery & Version History** – Restore deleted questions and track every edit with one-click rollback to previous versions
 
 = Scale-Ready Architecture =
 
@@ -199,6 +203,19 @@ This plugin offers optional AI-powered question generation using the OpenAI API.
 
 == Changelog ==
 
+= 2.1.0 =
+* Added: Display option controls — show or hide individual quiz elements (description, question count, score, pass/fail status, time spent, category breakdown, retake button, and more) via shortcode attributes or block inspector toggles
+* Added: Customizable spacing — adjust line height, answer option spacing, question spacing, and container max width from Settings > Appearance, with separate values for Standard and Condensed modes
+* Added: Pre/post test linking infrastructure for the Educator addon
+* Added: Per-quiz proctoring override settings for the Enterprise addon
+* Added: Tutor LMS instructors can now create and manage their own quizzes
+* Added: Tutor LMS quiz now displays on public courses with no enrollment requirement
+* Added: Tutor LMS lesson auto-completes after passing a required quiz, and course auto-completes when all lessons are done
+* Fixed: Tutor LMS quiz no longer disappears after a student completes a course
+* Fixed: Back button no longer causes an infinite confirm dialog loop during a quiz
+* Fixed: Display density setting now loads correctly when editing a quiz
+* Fixed: Clearing the API key now works on servers that block HTTP DELETE requests
+
 = 2.0.0 =
 * Added: LearnPress LMS integration with lesson embedding and completion triggers
 * Added: Condensed Mode for streamlined quizzes with reduced vertical spacing
@@ -233,6 +250,9 @@ This plugin offers optional AI-powered question generation using the OpenAI API.
 * Full internationalization support
 
 == Upgrade Notice ==
+
+= 2.1.0 =
+New: Display option controls, customizable appearance spacing, Tutor LMS improvements, and support for new premium addon features.
 
 = 2.0.0 =
 New: LearnPress integration, Condensed Mode, quiz access controls, and premium addon support.

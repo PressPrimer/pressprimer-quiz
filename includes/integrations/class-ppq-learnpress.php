@@ -88,6 +88,10 @@ class PressPrimer_Quiz_LearnPress {
 
 		// Enqueue frontend styles.
 		add_action( 'wp_enqueue_scripts', array( $this, 'enqueue_styles' ) );
+
+		// Map LearnPress instructor capabilities.
+		$this->map_instructor_capabilities();
+		add_filter( 'pressprimer_quiz_user_has_teacher_capability', array( $this, 'check_instructor_capability' ), 10, 2 );
 	}
 
 	/**
@@ -541,6 +545,24 @@ class PressPrimer_Quiz_LearnPress {
 
 		// Only hide if quiz is attached AND require_pass is enabled.
 		if ( ! empty( $quiz_id ) && '1' === $require_pass ) {
+			$user_id = get_current_user_id();
+
+			// If the lesson is already marked complete, don't hide the button.
+			if ( $user_id && function_exists( 'learn_press_get_user' ) ) {
+				$user = learn_press_get_user( $user_id );
+				if ( $user && method_exists( $user, 'has_completed_item' ) ) {
+					$course_id = $this->get_lesson_course_id( $lesson_id );
+					if ( $course_id && $user->has_completed_item( $lesson_id, $course_id ) ) {
+						return;
+					}
+				}
+			}
+
+			// If the user has already passed this quiz, don't hide the button.
+			if ( $user_id && $this->user_has_passed_quiz( (int) $quiz_id, $user_id ) ) {
+				return;
+			}
+
 			// Remove LearnPress complete button (added at priority 11).
 			$lp_template = LearnPress::instance()->template( 'course' );
 			if ( $lp_template ) {
@@ -661,6 +683,9 @@ class PressPrimer_Quiz_LearnPress {
 					 * @param int $user_id   User ID.
 					 */
 					do_action( 'pressprimer_quiz_learnpress_lesson_completed', $lesson_id, $course_id, $user_id );
+
+					// Trigger auto-course-completion if all lessons are now complete.
+					$this->maybe_finish_course( $course_id, $user_id );
 				}
 			}
 		}
@@ -697,21 +722,121 @@ class PressPrimer_Quiz_LearnPress {
 	}
 
 	/**
-	 * Check if user is enrolled in a course
+	 * Trigger LearnPress course completion if all lessons are done
 	 *
-	 * Uses LearnPress API: $user->has_enrolled_course($course_id)
+	 * LearnPress does not automatically cascade lesson completion to course
+	 * completion. This method checks if all items in the course are complete
+	 * and, if so, programmatically finishes the course for the user.
+	 *
+	 * @since 2.1.0
+	 *
+	 * @param int $course_id Course post ID.
+	 * @param int $user_id   User ID.
+	 */
+	private function maybe_finish_course( $course_id, $user_id ) {
+		if ( ! function_exists( 'learn_press_get_user' ) || ! function_exists( 'learn_press_get_course' ) ) {
+			return;
+		}
+
+		$user   = learn_press_get_user( $user_id );
+		$course = learn_press_get_course( $course_id );
+
+		if ( ! $user || ! $course ) {
+			return;
+		}
+
+		// Don't re-finish an already-completed course.
+		if ( method_exists( $user, 'has_finished_course' ) && $user->has_finished_course( $course_id ) ) {
+			return;
+		}
+
+		// Get all curriculum items (lessons, LP quizzes, etc.).
+		$items = array();
+		if ( method_exists( $course, 'get_items' ) ) {
+			$items = $course->get_items();
+		}
+
+		if ( empty( $items ) ) {
+			return;
+		}
+
+		// Check if every item is completed.
+		$all_complete = true;
+		foreach ( $items as $item_id ) {
+			if ( method_exists( $user, 'has_completed_item' ) ) {
+				if ( ! $user->has_completed_item( $item_id, $course_id ) ) {
+					$all_complete = false;
+					break;
+				}
+			}
+		}
+
+		if ( ! $all_complete ) {
+			return;
+		}
+
+		// All items complete — finish the course.
+		if ( method_exists( $user, 'finish_course' ) ) {
+			$user->finish_course( $course_id );
+		}
+	}
+
+	/**
+	 * Check if user has access to a LearnPress course
+	 *
+	 * Checks open enrollment setting, admin/instructor status, and enrollment
+	 * (including completed enrollments).
 	 *
 	 * @since 2.0.0
 	 *
 	 * @param int $course_id Course ID.
-	 * @return bool True if enrolled or if enrollment can't be checked.
+	 * @return bool True if user has access or if enrollment can't be checked.
 	 */
 	private function is_user_enrolled( $course_id ) {
 		$user_id = get_current_user_id();
+
+		// Admins always have access.
+		if ( current_user_can( 'manage_options' ) ) {
+			return true;
+		}
+
+		// Check if the course has "No enrollment required" enabled.
+		// Note: Do NOT use $course->is_no_required_enroll() — that method
+		// returns false for logged-in users, which is not what we want here.
+		$no_enroll = get_post_meta( $course_id, '_lp_no_required_enroll', true );
+		if ( 'yes' === $no_enroll ) {
+			return true;
+		}
+
 		if ( ! $user_id ) {
 			return false;
 		}
 
+		// Check if user is an instructor for this course.
+		if ( function_exists( 'learn_press_get_course' ) ) {
+			$course = learn_press_get_course( $course_id );
+			if ( $course && method_exists( $course, 'get_author' ) ) {
+				$author_id = $course->get_author( 'id' );
+				if ( $author_id && (int) $author_id === $user_id ) {
+					return true;
+				}
+			}
+
+			// Check co-instructors if the method exists.
+			if ( $course && method_exists( $course, 'get_instructors' ) ) {
+				$instructors = $course->get_instructors();
+				if ( is_array( $instructors ) ) {
+					foreach ( $instructors as $instructor ) {
+						$inst_id = is_object( $instructor ) && isset( $instructor->ID ) ? $instructor->ID : 0;
+						if ( $inst_id && (int) $inst_id === $user_id ) {
+							return true;
+						}
+					}
+				}
+			}
+		}
+
+		// Check enrollment (includes completed enrollments).
 		if ( function_exists( 'learn_press_get_user' ) ) {
 			$user = learn_press_get_user( $user_id );
 			if ( $user && method_exists( $user, 'has_enrolled_course' ) ) {
@@ -721,6 +846,31 @@ class PressPrimer_Quiz_LearnPress {
 
 		// Default to allowing if we can't check enrollment.
 		return true;
+	}
+
+	/**
+	 * Check if a user has passed a specific quiz
+	 *
+	 * @since 2.1.0
+	 *
+	 * @param int $quiz_id PPQ Quiz ID.
+	 * @param int $user_id User ID.
+	 * @return bool True if user has at least one passing submitted attempt.
+	 */
+	private function user_has_passed_quiz( int $quiz_id, int $user_id ): bool {
+		global $wpdb;
+		$table = $wpdb->prefix . 'ppq_attempts';
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- One-off check, not suitable for persistent caching.
+		$passed = $wpdb->get_var(
+			$wpdb->prepare(
+				"SELECT COUNT(*) FROM {$table} WHERE quiz_id = %d AND user_id = %d AND status = 'submitted' AND passed = 1", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Table name is constructed from $wpdb->prefix.
+				$quiz_id,
+				$user_id
+			)
+		);
+
+		return $passed > 0;
 	}
 
 	/**
@@ -781,6 +931,53 @@ class PressPrimer_Quiz_LearnPress {
 			}
 		'
 		);
+	}
+
+	/**
+	 * Map LearnPress Instructor role to PPQ teacher capabilities
+	 *
+	 * Grants pressprimer_quiz_manage_own and related capabilities to the
+	 * lp_teacher role so instructors can create and manage their own
+	 * quizzes, questions, and banks.
+	 *
+	 * @since 2.1.0
+	 */
+	private function map_instructor_capabilities() {
+		$instructor = get_role( 'lp_teacher' );
+
+		if ( ! $instructor ) {
+			return;
+		}
+
+		// Only add capabilities if the role doesn't already have them.
+		if ( ! $instructor->has_cap( 'pressprimer_quiz_manage_own' ) ) {
+			$instructor->add_cap( 'pressprimer_quiz_manage_own' );
+			$instructor->add_cap( 'pressprimer_quiz_view_results_own' );
+			$instructor->add_cap( 'pressprimer_quiz_take_quiz' );
+		}
+	}
+
+	/**
+	 * Check if user is a LearnPress Instructor
+	 *
+	 * @since 2.1.0
+	 *
+	 * @param bool $has_capability Whether user has teacher capability.
+	 * @param int  $user_id        User ID.
+	 * @return bool Modified capability.
+	 */
+	public function check_instructor_capability( $has_capability, $user_id ) {
+		if ( $has_capability ) {
+			return $has_capability;
+		}
+
+		// Check if user is a LearnPress Instructor.
+		$user = get_userdata( $user_id );
+		if ( $user && in_array( 'lp_teacher', (array) $user->roles, true ) ) {
+			return true;
+		}
+
+		return $has_capability;
 	}
 
 	/**

@@ -67,13 +67,13 @@ PressPrimer Quiz concentrates on multiple choice, multiple answer, and true/fals
 
 PressPrimer Quiz automatically detects and integrates with popular WordPress LMS plugins:
 
-**LearnDash:** Attach quizzes to lessons and topics via meta box. Passing a quiz can automatically mark the lesson or topic complete. 
+**LearnDash:** Attach quizzes to lessons and topics via meta box. Passing a quiz can automatically mark the lesson or topic complete. Works with enrolled students and Group Leader roles.
 
 **Tutor LMS:** Attach quizzes to lessons via the course builder. Passing a quiz can auto-complete the lesson and course. Works with public courses, enrolled students, and instructor roles.
 
 **LifterLMS:** Attach quizzes to lessons via meta box. Passing a quiz can auto-complete the lesson and course. Works with open/free courses, enrolled students, and instructor roles.
 
-**LearnPress:** Meta box on lessons with completion triggers.
+**LearnPress:** Attach quizzes to lessons via the lesson settings panel. Passing a quiz can auto-complete the lesson and course. Works with open courses, enrolled students, and instructor roles.
 
 **Uncanny Automator:** Three triggers available: User completes a quiz, user passes a quiz, user fails a quiz. 
 
@@ -216,6 +216,13 @@ This plugin offers optional AI-powered question generation using the OpenAI API.
 * Added: LifterLMS quiz now displays on open/free courses with no enrollment requirement
 * Added: LifterLMS lesson Complete button reappears correctly after passing a required quiz
 * Fixed: LifterLMS quiz no longer disappears after a student completes a course or for course instructors
+* Added: LearnPress instructors can now create and manage their own quizzes
+* Added: LearnPress quiz now displays on open courses with no enrollment requirement
+* Added: LearnPress lesson auto-completes after passing a required quiz, and course auto-completes when all lessons are done
+* Fixed: LearnPress quiz no longer disappears after a student completes a course or for course instructors
+* Fixed: LearnPress Complete button reappears correctly after passing a required quiz
+* Added: LearnDash Group Leaders can now create and manage their own quizzes
+* Fixed: LearnDash Mark Complete button reappears correctly after passing a required quiz
 * Fixed: Back button no longer causes an infinite confirm dialog loop during a quiz
 * Fixed: Display density setting now loads correctly when editing a quiz
 * Fixed: Clearing the API key now works on servers that block HTTP DELETE requests
@@ -256,7 +263,7 @@ This plugin offers optional AI-powered question generation using the OpenAI API.
 == Upgrade Notice ==
 
 = 2.1.0 =
-New: Display option controls, customizable appearance spacing, Tutor LMS and LifterLMS improvements, and support for new premium addon features.
+New: Display option controls, customizable appearance spacing, LearnDash, Tutor LMS, LifterLMS, and LearnPress improvements, and support for new premium addon features.
 
 = 2.0.0 =
 New: LearnPress integration, Condensed Mode, quiz access controls, and premium addon support.

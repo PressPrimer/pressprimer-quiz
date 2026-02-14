@@ -95,6 +95,10 @@ class PressPrimer_Quiz_LearnDash {
 
 		// Add navigation data to results page
 		add_filter( 'pressprimer_quiz_results_data', [ $this, 'add_navigation_data' ], 10, 2 );
+
+		// Map LearnDash instructor capabilities.
+		$this->map_instructor_capabilities();
+		add_filter( 'pressprimer_quiz_user_has_teacher_capability', [ $this, 'check_instructor_capability' ], 10, 2 );
 	}
 
 	/**
@@ -691,12 +695,19 @@ class PressPrimer_Quiz_LearnDash {
 		// Check if a quiz is mapped
 		$quiz_id = get_post_meta( $post_id, self::META_KEY_QUIZ_ID, true );
 
-		if ( $quiz_id ) {
-			// Return empty string to hide the button
-			return '';
+		if ( ! $quiz_id ) {
+			return $button;
 		}
 
-		return $button;
+		// If the user has already passed the quiz, show the Mark Complete button
+		// so they can manually complete the lesson/topic (or it may already be complete).
+		$user_id = get_current_user_id();
+		if ( $user_id && $this->has_user_passed_quiz( $user_id, $quiz_id ) ) {
+			return $button;
+		}
+
+		// Quiz attached but not yet passed — hide the button
+		return '';
 	}
 
 	/**
@@ -1174,6 +1185,53 @@ class PressPrimer_Quiz_LearnDash {
 		);
 
 		wp_send_json_success( [ 'quizzes' => $quizzes ] );
+	}
+
+	/**
+	 * Map LearnDash Group Leader role to PPQ teacher capabilities
+	 *
+	 * Grants pressprimer_quiz_manage_own and related capabilities to the
+	 * group_leader role so instructors can create and manage their own
+	 * quizzes, questions, and banks.
+	 *
+	 * @since 2.1.0
+	 */
+	private function map_instructor_capabilities() {
+		$group_leader = get_role( 'group_leader' );
+
+		if ( ! $group_leader ) {
+			return;
+		}
+
+		// Only add capabilities if the role doesn't already have them.
+		if ( ! $group_leader->has_cap( 'pressprimer_quiz_manage_own' ) ) {
+			$group_leader->add_cap( 'pressprimer_quiz_manage_own' );
+			$group_leader->add_cap( 'pressprimer_quiz_view_results_own' );
+			$group_leader->add_cap( 'pressprimer_quiz_take_quiz' );
+		}
+	}
+
+	/**
+	 * Check if user is a LearnDash Group Leader
+	 *
+	 * @since 2.1.0
+	 *
+	 * @param bool $has_capability Whether user has teacher capability.
+	 * @param int  $user_id        User ID.
+	 * @return bool Modified capability.
+	 */
+	public function check_instructor_capability( $has_capability, $user_id ) {
+		if ( $has_capability ) {
+			return $has_capability;
+		}
+
+		// Check if user is a LearnDash Group Leader.
+		$user = get_userdata( $user_id );
+		if ( $user && in_array( 'group_leader', (array) $user->roles, true ) ) {
+			return true;
+		}
+
+		return $has_capability;
 	}
 
 	/**

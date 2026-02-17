@@ -52,6 +52,17 @@ class PressPrimer_Quiz_LearnDash {
 	];
 
 	/**
+	 * Whether the quiz has already been rendered via the_content filter.
+	 *
+	 * Prevents double-rendering when the_content fires multiple times
+	 * on the same page load.
+	 *
+	 * @since 2.1.0
+	 * @var bool
+	 */
+	private $quiz_rendered = false;
+
+	/**
 	 * Initialize the integration
 	 *
 	 * @since 1.0.0
@@ -610,12 +621,20 @@ class PressPrimer_Quiz_LearnDash {
 			return $content;
 		}
 
+		// Prevent double-rendering (the_content can fire multiple times).
+		if ( $this->quiz_rendered ) {
+			return $content;
+		}
+
 		$post_id = get_the_ID();
 		$quiz_id = get_post_meta( $post_id, self::META_KEY_QUIZ_ID, true );
 
 		if ( ! $quiz_id ) {
 			return $content;
 		}
+
+		// Mark as rendered before processing.
+		$this->quiz_rendered = true;
 
 		// Check course restriction for course-level quizzes
 		if ( 'sfwd-courses' === get_post_type( $post_id ) ) {

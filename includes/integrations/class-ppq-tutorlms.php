@@ -61,6 +61,17 @@ class PressPrimer_Quiz_TutorLMS {
 	private $supported_post_types = [ 'lesson' ];
 
 	/**
+	 * Whether the lesson quiz has already been rendered via the_content filter.
+	 *
+	 * Prevents double-rendering since Tutor LMS calls the_content() via
+	 * tutor_load_template() outside the standard WordPress loop.
+	 *
+	 * @since 2.1.0
+	 * @var bool
+	 */
+	private $lesson_quiz_rendered = false;
+
+	/**
 	 * Initialize the integration
 	 *
 	 * @since 1.0.0
@@ -87,9 +98,12 @@ class PressPrimer_Quiz_TutorLMS {
 
 		// Map TutorLMS Instructor role to PPQ teacher capabilities.
 		$this->map_instructor_capabilities();
+		add_filter( 'pressprimer_quiz_user_has_teacher_capability', [ $this, 'check_instructor_capability' ], 10, 2 );
 
-		// Frontend hooks.
-		add_action( 'tutor_lesson/single/after/content', [ $this, 'display_quiz_in_lesson' ] );
+		// Frontend hooks — append quiz to lesson content via the_content filter.
+		// Tutor LMS calls the_content() inside tutor_load_template() which does
+		// NOT use the WordPress loop, so in_the_loop()/is_main_query() are false.
+		add_filter( 'the_content', [ $this, 'append_quiz_to_lesson_content' ], 20 );
 		add_action( 'tutor_course/single/enrolled/after/lesson_list', [ $this, 'display_topic_quizzes' ] );
 		add_filter( 'tutor_course/single/enrolled/topic_contents', [ $this, 'inject_topic_quiz_content' ], 10, 2 );
 
@@ -537,7 +551,7 @@ class PressPrimer_Quiz_TutorLMS {
 		wp_enqueue_script(
 			'ppq-tutorlms-course-builder',
 			PRESSPRIMER_QUIZ_PLUGIN_URL . 'assets/js/tutorlms-course-builder.js',
-			[],
+			[ 'wp-element' ],
 			PRESSPRIMER_QUIZ_VERSION,
 			true
 		);
@@ -665,27 +679,48 @@ class PressPrimer_Quiz_TutorLMS {
 	}
 
 	/**
-	 * Display quiz in lesson content
+	 * Append quiz to lesson content via the_content filter.
 	 *
-	 * @since 1.0.0
+	 * Tutor LMS renders lesson text via the_content() inside its own template
+	 * loader (tutor_load_template) which bypasses the WordPress loop. This means
+	 * in_the_loop() and is_main_query() return false, so we guard with
+	 * is_singular('lesson') and a rendered-flag instead.
+	 *
+	 * @since 2.1.0
+	 *
+	 * @param string $content The post content.
+	 * @return string Modified content with quiz appended.
 	 */
-	public function display_quiz_in_lesson() {
+	public function append_quiz_to_lesson_content( $content ) {
+		// Only on singular lesson pages.
+		if ( ! is_singular( 'lesson' ) ) {
+			return $content;
+		}
+
+		// Prevent double-rendering (the_content can fire multiple times).
+		if ( $this->lesson_quiz_rendered ) {
+			return $content;
+		}
+
 		$post_id = get_the_ID();
 		$quiz_id = get_post_meta( $post_id, self::META_KEY_QUIZ_ID, true );
 
 		if ( ! $quiz_id ) {
-			return;
+			return $content;
 		}
+
+		// Mark as rendered before processing.
+		$this->lesson_quiz_rendered = true;
 
 		// Check if user is enrolled in the course.
 		$course_id = $this->get_course_id_for_lesson( $post_id );
 		$user_id   = get_current_user_id();
 
 		if ( $course_id && ! $this->is_user_enrolled( $user_id, $course_id ) ) {
-			echo '<div class="ppq-tutorlms-access-denied">'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Safe HTML
-			echo '<p>' . esc_html__( 'Enroll in this course to access the quiz.', 'pressprimer-quiz' ) . '</p>'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Safe HTML with escaped string
-			echo '</div>'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Safe HTML
-			return;
+			$content .= '<div class="ppq-tutorlms-access-denied">';
+			$content .= '<p>' . esc_html__( 'Enroll in this course to access the quiz.', 'pressprimer-quiz' ) . '</p>';
+			$content .= '</div>';
+			return $content;
 		}
 
 		// Add context data for navigation.
@@ -701,9 +736,11 @@ class PressPrimer_Quiz_TutorLMS {
 			esc_attr( base64_encode( wp_json_encode( $context_data ) ) )
 		);
 
-		echo '<div class="ppq-tutorlms-quiz-wrapper">'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Safe HTML
-		echo do_shortcode( $quiz_shortcode ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Shortcode output
-		echo '</div>'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Safe HTML
+		$content .= '<div class="ppq-tutorlms-quiz-wrapper">';
+		$content .= do_shortcode( $quiz_shortcode );
+		$content .= '</div>';
+
+		return $content;
 	}
 
 	/**
@@ -1083,6 +1120,29 @@ class PressPrimer_Quiz_TutorLMS {
 	}
 
 	/**
+	 * Check if user is a TutorLMS Instructor
+	 *
+	 * @since 2.1.0
+	 *
+	 * @param bool $has_capability Whether user has teacher capability.
+	 * @param int  $user_id        User ID.
+	 * @return bool Modified capability.
+	 */
+	public function check_instructor_capability( $has_capability, $user_id ) {
+		if ( $has_capability ) {
+			return $has_capability;
+		}
+
+		// Check if user is a TutorLMS Instructor.
+		$user = get_userdata( $user_id );
+		if ( $user && in_array( 'tutor_instructor', (array) $user->roles, true ) ) {
+			return true;
+		}
+
+		return $has_capability;
+	}
+
+	/**
 	 * Register REST routes
 	 *
 	 * @since 1.0.0
@@ -1164,14 +1224,22 @@ class PressPrimer_Quiz_TutorLMS {
 		$recent = $request->get_param( 'recent' );
 
 		if ( $recent ) {
-			$user_id = get_current_user_id();
-			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- REST search results, not suitable for caching
-			$quizzes = $wpdb->get_results(
-				$wpdb->prepare(
-					"SELECT id, title FROM {$table} WHERE status = 'published' AND owner_id = %d ORDER BY id DESC LIMIT 50", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-					$user_id
-				)
-			);
+			if ( current_user_can( 'manage_options' ) ) {
+				// Admins see all published quizzes.
+				// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- REST search results, not suitable for caching
+				$quizzes = $wpdb->get_results(
+					"SELECT id, title FROM {$table} WHERE status = 'published' ORDER BY id DESC LIMIT 50" // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+				);
+			} else {
+				$user_id = get_current_user_id();
+				// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- REST search results, not suitable for caching
+				$quizzes = $wpdb->get_results(
+					$wpdb->prepare(
+						"SELECT id, title FROM {$table} WHERE status = 'published' AND owner_id = %d ORDER BY id DESC LIMIT 50", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+						$user_id
+					)
+				);
+			}
 
 			return new WP_REST_Response(
 				[
@@ -1284,7 +1352,15 @@ class PressPrimer_Quiz_TutorLMS {
 		}
 
 		// Check user can edit this lesson.
-		if ( ! PressPrimer_Quiz_Helpers::current_user_can_edit_post( $lesson_id ) ) {
+		// Note: Tutor LMS registers custom capabilities (edit_tutor_lesson) that may not
+		// be in the database if Tutor wasn't properly activated. We check manage_options
+		// (admin) or the Tutor-specific edit_tutor_lesson capability, plus verify the
+		// lesson author matches for non-admins.
+		$can_edit = current_user_can( 'manage_options' )
+			|| current_user_can( 'edit_tutor_lesson' )
+			|| ( (int) $lesson->post_author === get_current_user_id() && current_user_can( 'edit_posts' ) );
+
+		if ( ! $can_edit ) {
 			return new WP_REST_Response(
 				[
 					'success' => false,

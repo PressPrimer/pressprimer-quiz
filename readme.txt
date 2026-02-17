@@ -1,4 +1,4 @@
-=== PressPrimer Quiz ===
+=== PressPrimer Quiz – AI Quiz Maker, Exam Builder & LMS Assessment Plugin ===
 Contributors: pressprimer
 Tags: quiz, learndash, assessment, lms, elearning
 Requires at least: 6.4

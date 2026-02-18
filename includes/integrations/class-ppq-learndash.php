@@ -87,6 +87,7 @@ class PressPrimer_Quiz_LearnDash {
 
 		// Frontend hooks
 		add_filter( 'the_content', [ $this, 'maybe_display_quiz' ], 20 );
+		add_filter( 'learndash_content_tabs', [ $this, 'maybe_add_course_quiz_tab' ], 10, 4 );
 		add_filter( 'learndash_mark_complete_button', [ $this, 'maybe_hide_mark_complete' ], 10, 2 );
 
 		// Completion tracking
@@ -97,6 +98,12 @@ class PressPrimer_Quiz_LearnDash {
 
 		// Prevent course auto-completion when PPQ quiz is attached
 		add_filter( 'learndash_process_mark_complete', [ $this, 'maybe_prevent_course_completion' ], 10, 3 );
+
+		// Undo inline course completion that bypasses the filter above.
+		// LearnDash writes course completion inline during lesson/topic completion
+		// (ld-course-progress.php lines 828-851) without a separate call to
+		// learndash_process_mark_complete(), so the filter cannot intercept it.
+		add_action( 'learndash_course_completed', [ $this, 'maybe_undo_course_completion' ], 1 );
 
 		// Quiz access restriction
 		add_filter( 'pressprimer_quiz_quiz_access_allowed', [ $this, 'check_course_restriction' ], 10, 3 );
@@ -616,8 +623,10 @@ class PressPrimer_Quiz_LearnDash {
 	 * @return string Modified content.
 	 */
 	public function maybe_display_quiz( $content ) {
-		// Only on singular LearnDash content
-		if ( ! is_singular( $this->supported_post_types ) ) {
+		// Only on singular LearnDash lessons and topics.
+		// Courses are handled separately via the learndash_content_tabs filter
+		// because LearnDash replaces the_content entirely at priority 30.
+		if ( ! is_singular( [ 'sfwd-lessons', 'sfwd-topic' ] ) ) {
 			return $content;
 		}
 
@@ -635,25 +644,6 @@ class PressPrimer_Quiz_LearnDash {
 
 		// Mark as rendered before processing.
 		$this->quiz_rendered = true;
-
-		// Check course restriction for course-level quizzes
-		if ( 'sfwd-courses' === get_post_type( $post_id ) ) {
-			$restrict = get_post_meta( $post_id, self::META_KEY_RESTRICT_UNTIL_COMPLETE, true );
-
-			if ( $restrict && ! $this->is_course_content_complete( $post_id ) ) {
-				// Get the quiz for title
-				$quiz       = PressPrimer_Quiz_Quiz::get( $quiz_id );
-				$quiz_title = $quiz ? $quiz->title : __( 'Quiz', 'pressprimer-quiz' );
-
-				// Get custom message or use default
-				$restriction_message = get_option( 'pressprimer_quiz_learndash_restriction_message', '' );
-				if ( empty( $restriction_message ) ) {
-					$restriction_message = __( 'Complete all lessons and topics to unlock this quiz.', 'pressprimer-quiz' );
-				}
-
-				return $content . $this->render_restriction_placeholder( $quiz_title, $restriction_message );
-			}
-		}
 
 		// Check lesson restriction - quiz locked until all topics in the lesson are complete
 		if ( 'sfwd-lessons' === get_post_type( $post_id ) ) {
@@ -687,6 +677,96 @@ class PressPrimer_Quiz_LearnDash {
 		);
 
 		return $content . do_shortcode( $quiz_shortcode );
+	}
+
+	/**
+	 * Add quiz content to LearnDash course tabs.
+	 *
+	 * Hooks into the learndash_content_tabs filter to append quiz content
+	 * to the course content tab. This works with both the modern Views
+	 * rendering path (LD 4.6+) and the legacy template path.
+	 *
+	 * @since 2.1.0
+	 *
+	 * @param array  $tabs      Array of tab data arrays.
+	 * @param string $context   Post type context (e.g. 'course').
+	 * @param int    $course_id Course post ID.
+	 * @param int    $user_id   Current user ID.
+	 * @return array Modified tabs array.
+	 */
+	public function maybe_add_course_quiz_tab( $tabs, $context, $course_id, $user_id ) {
+		// Only apply to courses.
+		if ( 'course' !== $context ) {
+			return $tabs;
+		}
+
+		$quiz_id = get_post_meta( $course_id, self::META_KEY_QUIZ_ID, true );
+
+		if ( ! $quiz_id ) {
+			return $tabs;
+		}
+
+		// Build quiz content.
+		$quiz_content = $this->get_course_quiz_content( $course_id, $quiz_id );
+
+		if ( empty( $quiz_content ) ) {
+			return $tabs;
+		}
+
+		// Append quiz content to the existing content tab.
+		foreach ( $tabs as &$tab ) {
+			if ( isset( $tab['id'] ) && 'content' === $tab['id'] ) {
+				$tab['content'] .= $quiz_content;
+				break;
+			}
+		}
+		unset( $tab );
+
+		return $tabs;
+	}
+
+	/**
+	 * Build the quiz content HTML for a course page.
+	 *
+	 * Returns either the quiz shortcode output or a restriction placeholder,
+	 * depending on whether course content is complete.
+	 *
+	 * @since 2.1.0
+	 *
+	 * @param int $course_id Course post ID.
+	 * @param int $quiz_id   PPQ quiz ID.
+	 * @return string Quiz HTML content.
+	 */
+	private function get_course_quiz_content( $course_id, $quiz_id ) {
+		// Check course restriction.
+		$restrict = get_post_meta( $course_id, self::META_KEY_RESTRICT_UNTIL_COMPLETE, true );
+
+		if ( $restrict && ! $this->is_course_content_complete( $course_id ) ) {
+			$quiz       = PressPrimer_Quiz_Quiz::get( $quiz_id );
+			$quiz_title = $quiz ? $quiz->title : __( 'Quiz', 'pressprimer-quiz' );
+
+			$restriction_message = get_option( 'pressprimer_quiz_learndash_restriction_message', '' );
+			if ( empty( $restriction_message ) ) {
+				$restriction_message = __( 'Complete all lessons and topics to unlock this quiz.', 'pressprimer-quiz' );
+			}
+
+			return $this->render_restriction_placeholder( $quiz_title, $restriction_message );
+		}
+
+		// Build context data.
+		$context_data = [
+			'learndash_post_id'   => $course_id,
+			'learndash_post_type' => 'sfwd-courses',
+			'learndash_course_id' => $course_id,
+		];
+
+		$quiz_shortcode = sprintf(
+			'[pressprimer_quiz id="%d" context="%s"]',
+			absint( $quiz_id ),
+			esc_attr( base64_encode( wp_json_encode( $context_data ) ) )
+		);
+
+		return do_shortcode( $quiz_shortcode );
 	}
 
 	/**
@@ -913,6 +993,82 @@ class PressPrimer_Quiz_LearnDash {
 		}
 
 		return $mark_complete;
+	}
+
+	/**
+	 * Undo inline course completion when a PPQ quiz is required but not passed.
+	 *
+	 * LearnDash marks the course complete inline during lesson/topic completion
+	 * (ld-course-progress.php lines 828-851) when completed >= total, bypassing
+	 * the learndash_process_mark_complete filter. This handler fires on the
+	 * learndash_course_completed action and reverts the completion if the
+	 * course (or any of its lessons/topics) has an unpassed PPQ quiz.
+	 *
+	 * @since 2.1.0
+	 *
+	 * @param array $data Course completion data with 'user', 'course', 'progress' keys.
+	 */
+	public function maybe_undo_course_completion( $data ) {
+		if ( empty( $data['user'] ) || empty( $data['course'] ) ) {
+			return;
+		}
+
+		$user      = $data['user'];
+		$course    = $data['course'];
+		$user_id   = $user->ID;
+		$course_id = $course->ID;
+
+		// Check if this course has a PPQ quiz that hasn't been passed.
+		$course_quiz_id = get_post_meta( $course_id, self::META_KEY_QUIZ_ID, true );
+		$should_undo    = false;
+
+		if ( $course_quiz_id && ! $this->has_user_passed_quiz( $user_id, $course_quiz_id ) ) {
+			$should_undo = true;
+		}
+
+		// Check lessons/topics for unpassed PPQ quizzes.
+		if ( ! $should_undo ) {
+			$lessons_with_quizzes = $this->get_course_content_with_quizzes( $course_id );
+
+			foreach ( $lessons_with_quizzes as $item ) {
+				if ( ! $this->has_user_passed_quiz( $user_id, $item['quiz_id'] ) ) {
+					$should_undo = true;
+					break;
+				}
+			}
+		}
+
+		if ( ! $should_undo ) {
+			return;
+		}
+
+		// Remove course_completed_ user meta.
+		delete_user_meta( $user_id, 'course_completed_' . $course_id );
+
+		// Reset the activity record to incomplete.
+		$activity = learndash_get_user_activity(
+			[
+				'course_id'     => $course_id,
+				'user_id'       => $user_id,
+				'post_id'       => $course_id,
+				'activity_type' => 'course',
+			]
+		);
+
+		if ( ! empty( $activity ) ) {
+			learndash_update_user_activity(
+				[
+					'activity_id'        => $activity->activity_id,
+					'course_id'          => $course_id,
+					'user_id'            => $user_id,
+					'post_id'            => $course_id,
+					'activity_type'      => 'course',
+					'activity_status'    => false,
+					'activity_completed' => 0,
+					'activity_updated'   => time(),
+				]
+			);
+		}
 	}
 
 	/**
@@ -1663,31 +1819,10 @@ class PressPrimer_Quiz_LearnDash {
 		ob_start();
 		?>
 		<div class="ppq-restriction-placeholder">
-			<div class="ppq-restriction-placeholder__blurred">
-				<div class="ppq-restriction-placeholder__header">
-					<div class="ppq-restriction-placeholder__title"><?php echo esc_html( $quiz_title ); ?></div>
-				</div>
-				<div class="ppq-restriction-placeholder__content">
-					<div class="ppq-restriction-placeholder__question">
-						<div class="ppq-restriction-placeholder__question-text"></div>
-						<div class="ppq-restriction-placeholder__options">
-							<div class="ppq-restriction-placeholder__option"></div>
-							<div class="ppq-restriction-placeholder__option"></div>
-							<div class="ppq-restriction-placeholder__option"></div>
-							<div class="ppq-restriction-placeholder__option"></div>
-						</div>
-					</div>
-				</div>
-			</div>
-			<div class="ppq-restriction-placeholder__overlay">
-				<div class="ppq-restriction-placeholder__lock">
-					<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="48" height="48">
-						<path d="M12 1C8.676 1 6 3.676 6 7v2H4c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V11c0-1.1-.9-2-2-2h-2V7c0-3.324-2.676-6-6-6zm0 2c2.276 0 4 1.724 4 4v2H8V7c0-2.276 1.724-4 4-4zm0 10c1.1 0 2 .9 2 2 0 .74-.4 1.38-1 1.72V19h-2v-2.28c-.6-.34-1-.98-1-1.72 0-1.1.9-2 2-2z"/>
-					</svg>
-				</div>
-				<div class="ppq-restriction-placeholder__message">
-					<?php echo esc_html( $restriction_message ); ?>
-				</div>
+			<div class="ppq-restriction-placeholder__icon" aria-hidden="true">&#x1f512;</div>
+			<div class="ppq-restriction-placeholder__title"><?php echo esc_html( $quiz_title ); ?></div>
+			<div class="ppq-restriction-placeholder__message">
+				<?php echo esc_html( $restriction_message ); ?>
 			</div>
 		</div>
 		<?php
@@ -1708,86 +1843,45 @@ class PressPrimer_Quiz_LearnDash {
 
 		$styles_enqueued = true;
 
+		// Register a minimal handle so wp_add_inline_style has something to attach to.
+		// The ppq-quiz stylesheet is only enqueued when a quiz actually renders,
+		// but the restriction placeholder replaces the quiz, so it is not available.
+		wp_register_style( 'ppq-restriction-placeholder', false, [], PRESSPRIMER_QUIZ_VERSION );
+		wp_enqueue_style( 'ppq-restriction-placeholder' );
+
 		$inline_css = '
 			.ppq-restriction-placeholder {
-				position: relative;
-				margin: 24px 0;
-				border-radius: 8px;
-				overflow: hidden;
-				background: #f8f9fa;
-			}
-			.ppq-restriction-placeholder__blurred {
-				filter: blur(6px);
-				opacity: 0.6;
-				pointer-events: none;
-				user-select: none;
-			}
-			.ppq-restriction-placeholder__header {
-				background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-				padding: 24px;
-			}
-			.ppq-restriction-placeholder__title {
-				color: #fff;
-				font-size: 20px;
-				font-weight: 600;
-				background: rgba(255,255,255,0.2);
-				height: 24px;
-				width: 60%;
-				border-radius: 4px;
-			}
-			.ppq-restriction-placeholder__content {
-				padding: 24px;
-			}
-			.ppq-restriction-placeholder__question-text {
-				background: #e9ecef;
-				height: 20px;
-				width: 80%;
-				border-radius: 4px;
-				margin-bottom: 16px;
-			}
-			.ppq-restriction-placeholder__options {
-				display: flex;
-				flex-direction: column;
-				gap: 12px;
-			}
-			.ppq-restriction-placeholder__option {
-				background: #e9ecef;
-				height: 44px;
-				border-radius: 6px;
-			}
-			.ppq-restriction-placeholder__option:nth-child(2) { width: 90%; }
-			.ppq-restriction-placeholder__option:nth-child(3) { width: 85%; }
-			.ppq-restriction-placeholder__option:nth-child(4) { width: 75%; }
-			.ppq-restriction-placeholder__overlay {
-				position: absolute;
-				top: 0;
-				left: 0;
-				right: 0;
-				bottom: 0;
 				display: flex;
 				flex-direction: column;
 				align-items: center;
-				justify-content: center;
-				background: rgba(255,255,255,0.4);
-				backdrop-filter: blur(2px);
+				gap: 1.5rem;
+				padding: 3rem;
+				background: #f9fafb;
+				border: 2px solid #e5e7eb;
+				border-radius: 1rem;
+				text-align: center;
+				width: 100%;
+				max-width: 600px;
+				margin: 24px auto;
+				box-sizing: border-box;
 			}
-			.ppq-restriction-placeholder__lock {
-				color: #6c757d;
-				margin-bottom: 16px;
+			.ppq-restriction-placeholder__icon {
+				font-size: 3rem;
+				line-height: 1;
+				opacity: 0.8;
+			}
+			.ppq-restriction-placeholder__title {
+				font-size: 1.25rem;
+				font-weight: 600;
+				color: #1f2937;
+				line-height: 1.4;
 			}
 			.ppq-restriction-placeholder__message {
-				font-size: 16px;
-				font-weight: 500;
-				color: #495057;
-				text-align: center;
-				padding: 0 24px;
-				max-width: 400px;
-				background: #fff;
-				padding: 16px 24px;
-				border-radius: 8px;
-				box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+				font-size: 1.125rem;
+				color: #1f2937;
+				line-height: 1.7;
 			}
 		';
-		wp_add_inline_style( 'ppq-quiz', $inline_css );
+		wp_add_inline_style( 'ppq-restriction-placeholder', $inline_css );
 	}
 }

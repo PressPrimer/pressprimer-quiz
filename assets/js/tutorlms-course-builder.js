@@ -99,8 +99,11 @@
 	 * system. The LessonModal receives `lessonId` as a prop. By walking up the
 	 * fiber tree from our own DOM element, we can find this prop reliably.
 	 *
+	 * Returns the raw lessonId including temp-* IDs for new unsaved lessons.
+	 * Callers must check for temp IDs themselves.
+	 *
 	 * @param {HTMLElement} el DOM element inside the modal.
-	 * @return {string|null} Lesson ID or null.
+	 * @return {string|null} Lesson ID (may be temp-*) or null.
 	 */
 	function getLessonIdFromOwnFiber(el) {
 		if (!el) {
@@ -130,7 +133,9 @@
 				var props = fiber.memoizedProps || fiber.pendingProps;
 				if (props) {
 					// The LessonModal component receives lessonId as a direct prop.
-					if (props.lessonId && parseInt(props.lessonId) > 0) {
+					// Return it even if it's a temp-* ID so callers can distinguish
+					// "new unsaved lesson" from "fiber not ready yet".
+					if (props.lessonId) {
 						return String(props.lessonId);
 					}
 				}
@@ -165,10 +170,14 @@
 			}
 
 			// Primary: get lesson ID from fiber tree (most reliable).
+			// This now returns temp-* IDs for new unsaved lessons.
 			var lessonId = getLessonIdFromOwnFiber(ref.current);
 
-			// Fallback: use click tracking.
-			if (!lessonId) {
+			// Only fall back to click tracking if fiber lookup truly failed
+			// (null means fiber not ready yet). Do NOT fall back when the fiber
+			// returned a temp-* ID — that means this is a new unsaved lesson
+			// and we must NOT reuse the previous lesson's ID.
+			if (lessonId === null) {
 				lessonId = currentEditingLessonId;
 			}
 
@@ -200,7 +209,7 @@
 				}
 
 				var lessonId = getLessonIdFromOwnFiber(ref.current);
-				if (lessonId && lessonId !== lastBuiltLessonId.current) {
+				if (lessonId !== null && lessonId !== lastBuiltLessonId.current) {
 					currentEditingLessonId = lessonId;
 					lastBuiltLessonId.current = lessonId;
 					buildQuizBox(ref.current);
@@ -379,10 +388,36 @@
 	 * Set up click listeners to capture lesson IDs before modals open.
 	 *
 	 * Uses Tutor's stable data attributes to identify lesson edit actions.
+	 * Also detects "+ Lesson" / "+ Content" button clicks and clears the
+	 * tracked lesson ID so new lesson modals don't inherit state.
 	 */
 	function setupLessonClickTracking() {
 		document.addEventListener('click', function(e) {
 			var target = e.target;
+
+			// Detect clicks on "Add Lesson" / "Add Content" buttons.
+			// These create new lessons with temp IDs. Clear the tracked ID
+			// so the quiz selector doesn't show the previous lesson's quiz.
+			var addEl = target;
+			var addDepth = 5;
+			while (addEl && addDepth > 0) {
+				if (addEl.getAttribute) {
+					var dataCy = addEl.getAttribute('data-cy');
+					if (dataCy === 'add-lesson' || dataCy === 'add-content' || dataCy === 'add-topic-content') {
+						currentEditingLessonId = null;
+						return;
+					}
+					// Also check button text as fallback.
+					var btnText = (addEl.textContent || '').trim().toLowerCase();
+					if (addEl.tagName === 'BUTTON' && (btnText === 'lesson' || btnText === '+ lesson')) {
+						currentEditingLessonId = null;
+						return;
+					}
+				}
+				addEl = addEl.parentElement;
+				addDepth--;
+			}
+
 			var el = target;
 			var maxDepth = 10;
 
@@ -614,7 +649,7 @@
 								<line x1="12" y1="8" x2="12" y2="12"/>\
 								<line x1="12" y1="16" x2="12.01" y2="16"/>\
 							</svg>\
-							Close this modal and click the lesson name again to attach a quiz.\
+							This lesson must be saved before a quiz can be linked to it. Give it a name, save it, then reopen it to attach a PressPrimer Quiz.\
 						</p>\
 					</div>\
 				</div>\

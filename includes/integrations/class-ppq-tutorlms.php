@@ -104,6 +104,11 @@ class PressPrimer_Quiz_TutorLMS {
 		// Tutor LMS calls the_content() inside tutor_load_template() which does
 		// NOT use the WordPress loop, so in_the_loop()/is_main_query() are false.
 		add_filter( 'the_content', [ $this, 'append_quiz_to_lesson_content' ], 20 );
+
+		// Ensure the Overview tab is shown for empty lessons that have a quiz mapped.
+		// Without this, Tutor LMS hides the tab (and never calls the_content) when
+		// the lesson post_content is empty and the user is not an admin.
+		add_filter( 'tutor_has_lesson_content', [ $this, 'force_lesson_content_for_quiz' ], 10, 2 );
 		add_action( 'tutor_course/single/enrolled/after/lesson_list', [ $this, 'display_topic_quizzes' ] );
 		add_filter( 'tutor_course/single/enrolled/topic_contents', [ $this, 'inject_topic_quiz_content' ], 10, 2 );
 
@@ -683,8 +688,10 @@ class PressPrimer_Quiz_TutorLMS {
 	 *
 	 * Tutor LMS renders lesson text via the_content() inside its own template
 	 * loader (tutor_load_template) which bypasses the WordPress loop. This means
-	 * in_the_loop() and is_main_query() return false, so we guard with
-	 * is_singular('lesson') and a rendered-flag instead.
+	 * in_the_loop() and is_main_query() return false. Additionally, Tutor LMS
+	 * spotlight mode loads lesson content via AJAX (tutor_render_lesson_content),
+	 * where is_singular() returns false entirely. We guard with a post_type
+	 * check on the current post instead, which works in both contexts.
 	 *
 	 * @since 2.1.0
 	 *
@@ -692,8 +699,11 @@ class PressPrimer_Quiz_TutorLMS {
 	 * @return string Modified content with quiz appended.
 	 */
 	public function append_quiz_to_lesson_content( $content ) {
-		// Only on singular lesson pages.
-		if ( ! is_singular( 'lesson' ) ) {
+		// Only for Tutor LMS lesson posts. We check $post->post_type instead of
+		// is_singular('lesson') because Tutor's spotlight mode loads lessons via
+		// AJAX where the main WP query is not a singular lesson query.
+		$post = get_post();
+		if ( ! $post || 'lesson' !== $post->post_type ) {
 			return $content;
 		}
 
@@ -741,6 +751,30 @@ class PressPrimer_Quiz_TutorLMS {
 		$content .= '</div>';
 
 		return $content;
+	}
+
+	/**
+	 * Force Tutor LMS to show the Overview tab when a quiz is mapped.
+	 *
+	 * Tutor's Lesson::has_lesson_content() returns false for non-admin users
+	 * when the lesson post_content is empty. This causes the Overview tab
+	 * (and its the_content() call) to be hidden, preventing our quiz from
+	 * rendering. We override it to true when a PPQ quiz is attached.
+	 *
+	 * @since 2.1.0
+	 *
+	 * @param bool $has_content Whether Tutor thinks the lesson has content.
+	 * @param int  $lesson_id   Lesson post ID.
+	 * @return bool True if a quiz is mapped, original value otherwise.
+	 */
+	public function force_lesson_content_for_quiz( $has_content, $lesson_id ) {
+		if ( $has_content ) {
+			return $has_content;
+		}
+
+		$quiz_id = get_post_meta( $lesson_id, self::META_KEY_QUIZ_ID, true );
+
+		return ! empty( $quiz_id );
 	}
 
 	/**

@@ -821,6 +821,14 @@ class PressPrimer_Quiz_LifterLMS {
 			return;
 		}
 
+		// Verify the lesson has a valid parent section. LifterLMS cascades
+		// completion upward (lesson → section → course), so if _llms_parent_section
+		// is missing, the cascade triggers a fatal error.
+		$parent_section = get_post_meta( $lesson_id, '_llms_parent_section', true );
+		if ( empty( $parent_section ) ) {
+			return;
+		}
+
 		// Mark as complete.
 		llms_mark_complete( $user_id, $lesson_id, 'lesson' );
 
@@ -917,28 +925,32 @@ class PressPrimer_Quiz_LifterLMS {
 	 * Map LifterLMS Instructor role to PPQ teacher capabilities
 	 *
 	 * Grants pressprimer_quiz_manage_own and related capabilities to the
-	 * llms_instructor role so instructors can create and manage their own
-	 * quizzes, questions, and banks.
+	 * LifterLMS Instructor and Instructor's Assistant roles so they can
+	 * create and manage their own quizzes, questions, and banks.
 	 *
 	 * @since 2.1.0
 	 */
 	private function map_instructor_capabilities() {
-		$instructor = get_role( 'llms_instructor' );
+		$roles = array( 'instructor', 'instructors_assistant' );
 
-		if ( ! $instructor ) {
-			return;
-		}
+		foreach ( $roles as $role_slug ) {
+			$role = get_role( $role_slug );
 
-		// Only add capabilities if the role doesn't already have them.
-		if ( ! $instructor->has_cap( 'pressprimer_quiz_manage_own' ) ) {
-			$instructor->add_cap( 'pressprimer_quiz_manage_own' );
-			$instructor->add_cap( 'pressprimer_quiz_view_results_own' );
-			$instructor->add_cap( 'pressprimer_quiz_take_quiz' );
+			if ( ! $role ) {
+				continue;
+			}
+
+			// Only add capabilities if the role doesn't already have them.
+			if ( ! $role->has_cap( 'pressprimer_quiz_manage_own' ) ) {
+				$role->add_cap( 'pressprimer_quiz_manage_own' );
+				$role->add_cap( 'pressprimer_quiz_view_results_own' );
+				$role->add_cap( 'pressprimer_quiz_take_quiz' );
+			}
 		}
 	}
 
 	/**
-	 * Check if user is a LifterLMS Instructor
+	 * Check if user is a LifterLMS Instructor or Instructor's Assistant
 	 *
 	 * @since 1.0.0
 	 *
@@ -951,9 +963,9 @@ class PressPrimer_Quiz_LifterLMS {
 			return $has_capability;
 		}
 
-		// Check if user is a LifterLMS Instructor.
+		// Check if user is a LifterLMS Instructor or Instructor's Assistant.
 		$user = get_userdata( $user_id );
-		if ( $user && in_array( 'llms_instructor', (array) $user->roles, true ) ) {
+		if ( $user && ( in_array( 'instructor', (array) $user->roles, true ) || in_array( 'instructors_assistant', (array) $user->roles, true ) ) ) {
 			return true;
 		}
 

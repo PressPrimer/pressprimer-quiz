@@ -129,7 +129,7 @@ class PressPrimer_Quiz_Blocks {
 		register_block_type(
 			'pressprimer-quiz/quiz',
 			[
-				'api_version'     => 2,
+				'api_version'     => 3,
 				'title'           => __( 'PPQ Quiz', 'pressprimer-quiz' ),
 				'description'     => __( 'Display a quiz for users to take.', 'pressprimer-quiz' ),
 				'category'        => 'pressprimer-quiz',
@@ -313,7 +313,7 @@ class PressPrimer_Quiz_Blocks {
 		register_block_type(
 			'pressprimer-quiz/my-attempts',
 			[
-				'api_version'     => 2,
+				'api_version'     => 3,
 				'title'           => __( 'PPQ Quiz Attempts', 'pressprimer-quiz' ),
 				'description'     => __( 'Display a list of the current user\'s quiz attempts.', 'pressprimer-quiz' ),
 				'category'        => 'pressprimer-quiz',

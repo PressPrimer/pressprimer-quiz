@@ -558,7 +558,8 @@ class PressPrimer_Quiz_LearnPress {
 				}
 			}
 
-			// If the user has already passed this quiz, don't hide the button.
+			// If the user has already passed this quiz, show the button so they
+			// can click Complete to mark the lesson done and navigate back.
 			if ( $user_id && $this->user_has_passed_quiz( (int) $quiz_id, $user_id ) ) {
 				return;
 			}
@@ -611,7 +612,14 @@ class PressPrimer_Quiz_LearnPress {
 	 * Handle quiz passed event
 	 *
 	 * Called on pressprimer_quiz_quiz_passed hook.
-	 * Marks the lesson complete when the quiz is passed.
+	 * When require_pass is enabled, the Complete button is hidden until the quiz
+	 * is passed. Once passed, the button reappears so the user can click it to
+	 * complete the lesson and navigate back to the course. We intentionally do NOT
+	 * auto-complete here — the LearnPress Complete button handles both lesson
+	 * completion and navigation in one click.
+	 *
+	 * For lessons without require_pass, handle_quiz_completion() auto-completes
+	 * on any submission.
 	 *
 	 * @since 2.0.0
 	 *
@@ -619,31 +627,9 @@ class PressPrimer_Quiz_LearnPress {
 	 * @param PressPrimer_Quiz_Quiz    $quiz    Quiz object.
 	 */
 	public function handle_quiz_passed( $attempt, $quiz ) {
-		// Only for logged-in users.
-		if ( ! $attempt->user_id ) {
-			return;
-		}
-
-		// Find the lesson with this quiz.
-		$lesson_id = $this->find_lesson_by_quiz( $quiz->id );
-		if ( ! $lesson_id ) {
-			return;
-		}
-
-		// Check if pass is required.
-		$require_pass = get_post_meta( $lesson_id, self::META_KEY_REQUIRE_PASS, true );
-		if ( '1' !== $require_pass ) {
-			// Already handled by handle_quiz_completion.
-			return;
-		}
-
-		// Use quiz's pass status (determined by quiz's passing score).
-		if ( $attempt->passed ) {
-			$course_id = $this->get_lesson_course_id( $lesson_id );
-			if ( $course_id ) {
-				$this->complete_lesson( $lesson_id, $course_id, $attempt->user_id );
-			}
-		}
+		// Intentionally empty — lesson completion is handled by the user clicking
+		// the LearnPress Complete button, which reappears after the quiz is passed
+		// (see maybe_hide_complete_button).
 	}
 
 	/**

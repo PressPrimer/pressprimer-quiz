@@ -226,6 +226,7 @@ This plugin offers optional AI-powered question generation using the OpenAI API.
 * Fixed: Back button no longer causes an infinite confirm dialog loop during a quiz
 * Fixed: Display density setting now loads correctly when editing a quiz
 * Fixed: Clearing the API key now works on servers that block HTTP DELETE requests
+* Fixed: Dashboard activity chart and Reports overview cards now update immediately after quiz attempts instead of serving stale cached data
 
 = 2.0.0 =
 * Added: LearnPress LMS integration with lesson embedding and completion triggers

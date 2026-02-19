@@ -27,7 +27,7 @@ PressPrimer Quiz delivers enterprise-grade assessment and includes all of the cr
 * **AI-Powered Question Generation** – Use your own OpenAI API key to generate questions from text, PDFs, or Word documents. No credits to buy, no middleware fees, no limits.
 * **Deep LMS Integration** – Native integration with popular WordPress LMS plugins, including LearnDash, Tutor LMS, LifterLMS, and LearnPress. Quizzes appear in lessons or topics, trigger completions, and respect enrollment—automatically.
 * **Modern, Beautiful Design** – Three professional themes that rival SaaS products. Your quizzes won't look like forms from 2005.
-* **Real Reporting** – Score distribution, category breakdowns, time analytics, confidence reporting, and attempt history. Data captured now powers future psychometric features.
+* **Real Reporting** – Score distribution, category breakdowns, time analytics, confidence reporting, and attempt history. 
 * **Built to Prevent Cheating** – Server-side answer validation means correct answers are never exposed in page source. You can also limit attempts and force delays between retries.
 * **Server-Side Resume That Works Everywhere** – Every answer is instantly saved to the server. Students can pause on their phone and resume on their laptop without losing a single response.
 
@@ -47,12 +47,12 @@ PressPrimer Quiz includes features in the free version that competitors charge f
 * **Per-question and per-answer feedback** – Explain correct and incorrect answers
 * **Confidence ratings** – Optional checkbox for students to indicate certainty
 * **Three professional themes** – Default, Modern, and Minimal
-* **Customizable Appearance** – Adjust line height, answer spacing, question spacing, and container width from Settings. Includes Condensed Mode for streamlined quizzes with reduced vertical spacing.
+* **Customizable Appearance** – Adjust fonts, colors, spacing, and other visual styles. Includes Condensed Mode for streamlined quizzes with reduced vertical spacing.
 * **Uncanny Automator integration** – Triggers for quiz completion, pass, and fail, with a comprehensive set of tokens for use in automations
 
 = Perfect For =
 
-* **Course creators** using LearnDash, TutorLMS, or LifterLMS who need better quizzes than built-in tools
+* **Course creators** using LearnDash, TutorLMS, LearnPress, or LifterLMS who need better quizzes than built-in tools
 * **Corporate trainers** running compliance assessments at scale
 * **University departments** with thousands of students needing detailed analytics
 * **Test prep programs** requiring support for question pools with thousands of items
@@ -61,19 +61,19 @@ PressPrimer Quiz includes features in the free version that competitors charge f
 
 = Focused on What Matters for Learning =
 
-PressPrimer Quiz concentrates on multiple choice, multiple answer, and true/false question types to deliver the best possible experience for learning and performance assessment. By focusing on these core formats, we deliver enterprise-quality features—massive question banks, sophisticated scoring, detailed analytics, and bulletproof reliability—rather than spreading thin across dozens of mediocre options.
+PressPrimer Quiz concentrates on multiple choice, multiple answer, and true/false question types to deliver the best possible experience for learning and performance assessment. By focusing on these core formats, we deliver enterprise-quality features, including massive question banks, anti-cheat protection, detailed analytics, and bulletproof reliability, rather than spreading thin across dozens of mediocre options.
 
 = Built-in Integrations =
 
 PressPrimer Quiz automatically detects and integrates with popular WordPress LMS plugins:
 
-**LearnDash:** Attach quizzes to lessons and topics via meta box. Passing a quiz can automatically mark the lesson or topic complete. Works with enrolled students and Group Leader roles.
+**LearnDash:** Attach quizzes to courses, lessons or topics. Passing a quiz can automatically mark the lesson or topic complete. Works with enrolled students and Group Leader roles.
 
 **Tutor LMS:** Attach quizzes to lessons via the course builder. Passing a quiz can auto-complete the lesson and course. Works with public courses, enrolled students, and instructor roles.
 
 **LifterLMS:** Attach quizzes to lessons via meta box. Passing a quiz can auto-complete the lesson and course. Works with open/free courses, enrolled students, and instructor roles.
 
-**LearnPress:** Attach quizzes to lessons via the lesson settings panel. Passing a quiz can auto-complete the lesson and course. Works with open courses, enrolled students, and instructor roles.
+**LearnPress:** Attach quizzes to lessons via the lesson settings panel. Link passing a quiz to lesson and course completion. Works with open courses, enrolled students, and instructor roles.
 
 **Uncanny Automator:** Three triggers available: User completes a quiz, user passes a quiz, user fails a quiz. 
 
@@ -89,7 +89,7 @@ Unlock additional premium features at [pressprimer.com](https://pressprimer.com/
 * **Quiz Detail Reports** – Per-quiz analytics dashboard with score distribution, category performance, question difficulty analysis, and score trends over time
 * **Group Performance Reports** – Compare groups side by side, drill into individual member results, and track weekly score trends
 * **Question Quality Analytics** – Identify problem questions with difficulty indexes, discrimination analysis, and distractor effectiveness reports
-* **LearnDash Quiz Import** – Migrate entire LearnDash quizzes with questions into PressPrimer Quiz in batch
+* **LearnDash Quiz Import** – Migrate entire LearnDash quizzes with questions into PressPrimer Quiz individually or in batches
 * **Quiz Proctoring** – Monitor tab switches and fullscreen exits during quiz attempts with configurable flag thresholds, incident reports, per-quiz overrides, and desktop-only enforcement
 * **xAPI/LRS Integration** – Send detailed learning data to your Learning Record Store for compliance and analytics
 * **White-Label Branding** – Remove all PressPrimer branding and customize with your own logos, colors, and plugin name

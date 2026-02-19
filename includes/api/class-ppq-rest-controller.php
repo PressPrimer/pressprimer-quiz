@@ -313,6 +313,16 @@ class PressPrimer_Quiz_REST_Controller {
 
 		register_rest_route(
 			'ppq/v1',
+			'/settings/api-key/clear',
+			[
+				'methods'             => WP_REST_Server::CREATABLE,
+				'callback'            => [ $this, 'delete_api_key' ],
+				'permission_callback' => [ $this, 'check_permission' ],
+			]
+		);
+
+		register_rest_route(
+			'ppq/v1',
 			'/settings/api-models',
 			[
 				'methods'             => WP_REST_Server::READABLE,
@@ -1465,6 +1475,7 @@ class PressPrimer_Quiz_REST_Controller {
 			'show_answers'          => $quiz->show_answers,
 			'enable_confidence'     => $quiz->enable_confidence,
 			'theme'                 => $quiz->theme,
+			'display_density'       => $quiz->display_density,
 			'theme_settings_json'   => $quiz->theme_settings_json,
 			'band_feedback_json'    => $quiz->band_feedback_json,
 			'generation_mode'       => $quiz->generation_mode,
@@ -1525,6 +1536,12 @@ class PressPrimer_Quiz_REST_Controller {
 
 			if ( is_wp_error( $quiz_id ) ) {
 				throw new Exception( $quiz_id->get_error_message() );
+			}
+
+			/** This action is documented in includes/api/class-ppq-rest-controller.php */
+			$quiz = PressPrimer_Quiz_Quiz::get( $quiz_id );
+			if ( $quiz ) {
+				do_action( 'pressprimer_quiz_rest_quiz_saved', $quiz, $data );
 			}
 
 			$wpdb->query( 'COMMIT' );
@@ -1601,6 +1618,19 @@ class PressPrimer_Quiz_REST_Controller {
 			if ( is_wp_error( $result ) ) {
 				throw new Exception( $result->get_error_message() );
 			}
+
+			/**
+			 * Fires after a quiz is saved via REST API
+			 *
+			 * Allows addons to process additional quiz data (e.g., pre_test_id)
+			 * that the core plugin does not handle directly.
+			 *
+			 * @since 2.1.0
+			 *
+			 * @param PressPrimer_Quiz_Quiz $quiz The saved quiz object.
+			 * @param array                 $data The raw request data.
+			 */
+			do_action( 'pressprimer_quiz_rest_quiz_saved', $quiz, $data );
 
 			$wpdb->query( 'COMMIT' );
 
@@ -2083,6 +2113,48 @@ class PressPrimer_Quiz_REST_Controller {
 			$sanitized['display_density'] = in_array( $density, [ 'standard', 'condensed' ], true ) ? $density : 'standard';
 		}
 
+		// New spacing settings (v2.1).
+		if ( isset( $data['appearance_line_height'] ) ) {
+			$value                               = floatval( $data['appearance_line_height'] );
+			$sanitized['appearance_line_height'] = max( 1.2, min( 1.8, $value ) );
+		}
+
+		if ( isset( $data['appearance_answer_spacing'] ) ) {
+			$value                                  = absint( $data['appearance_answer_spacing'] );
+			$sanitized['appearance_answer_spacing'] = max( 4, min( 24, $value ) );
+		}
+
+		if ( isset( $data['appearance_question_spacing'] ) ) {
+			$value                                    = absint( $data['appearance_question_spacing'] );
+			$sanitized['appearance_question_spacing'] = max( 8, min( 48, $value ) );
+		}
+
+		if ( isset( $data['appearance_max_width'] ) ) {
+			$value                             = absint( $data['appearance_max_width'] );
+			$sanitized['appearance_max_width'] = max( 400, min( 1200, $value ) );
+		}
+
+		// Condensed mode spacing settings (v2.1).
+		if ( isset( $data['appearance_condensed_line_height'] ) ) {
+			$value = floatval( $data['appearance_condensed_line_height'] );
+			$sanitized['appearance_condensed_line_height'] = max( 1.2, min( 1.8, $value ) );
+		}
+
+		if ( isset( $data['appearance_condensed_answer_spacing'] ) ) {
+			$value = absint( $data['appearance_condensed_answer_spacing'] );
+			$sanitized['appearance_condensed_answer_spacing'] = max( 4, min( 24, $value ) );
+		}
+
+		if ( isset( $data['appearance_condensed_question_spacing'] ) ) {
+			$value = absint( $data['appearance_condensed_question_spacing'] );
+			$sanitized['appearance_condensed_question_spacing'] = max( 8, min( 48, $value ) );
+		}
+
+		if ( isset( $data['appearance_condensed_max_width'] ) ) {
+			$value                                       = absint( $data['appearance_condensed_max_width'] );
+			$sanitized['appearance_condensed_max_width'] = max( 400, min( 1200, $value ) );
+		}
+
 		/**
 		 * Filter the sanitized settings before saving.
 		 *
@@ -2112,7 +2184,7 @@ class PressPrimer_Quiz_REST_Controller {
 			$section = 'email';
 		} elseif ( isset( $sanitized['social_sharing_twitter'] ) || isset( $sanitized['social_sharing_facebook'] ) ) {
 			$section = 'sharing';
-		} elseif ( isset( $sanitized['appearance_font_family'] ) || isset( $sanitized['appearance_primary_color'] ) ) {
+		} elseif ( isset( $sanitized['appearance_font_family'] ) || isset( $sanitized['appearance_primary_color'] ) || isset( $sanitized['appearance_line_height'] ) || isset( $sanitized['appearance_answer_spacing'] ) || isset( $sanitized['appearance_condensed_line_height'] ) || isset( $sanitized['appearance_condensed_answer_spacing'] ) ) {
 			$section = 'appearance';
 		} elseif ( isset( $sanitized['remove_data_on_uninstall'] ) && 1 === count( $sanitized ) ) {
 			$section = 'advanced';

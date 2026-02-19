@@ -9,7 +9,14 @@
 
 import { registerBlockType } from '@wordpress/blocks';
 import { InspectorControls, useBlockProps } from '@wordpress/block-editor';
-import { PanelBody, SelectControl, Placeholder, Spinner } from '@wordpress/components';
+import {
+	PanelBody,
+	SelectControl,
+	Placeholder,
+	Spinner,
+	ToggleControl,
+	TextControl,
+} from '@wordpress/components';
 import { __ } from '@wordpress/i18n';
 import { useState, useEffect } from '@wordpress/element';
 import apiFetch from '@wordpress/api-fetch';
@@ -32,7 +39,24 @@ const quizIcon = (
  */
 function Edit( props ) {
 	const { attributes, setAttributes } = props;
-	const { quizId } = attributes;
+	const {
+		quizId,
+		preTestId,
+		showDescription,
+		showQuestionCount,
+		showQuizType,
+		showTimeLimit,
+		showPassPercentage,
+		showAttemptCount,
+		showAttemptHistory,
+		showScore,
+		showPassFail,
+		showTimeSpent,
+		showAverage,
+		showCategoryBreakdown,
+		showQuestionReview,
+		showRetakeButton,
+	} = attributes;
 	const blockProps = useBlockProps();
 
 	const [ quizzes, setQuizzes ] = useState( [] );
@@ -175,6 +199,106 @@ function Edit( props ) {
 							help={ __( 'Choose the quiz to display on this page.', 'pressprimer-quiz' ) }
 						/>
 					) }
+					<TextControl
+						__next40pxDefaultSize
+						__nextHasNoMarginBottom
+						label={ __( 'Pre-Test ID Override', 'pressprimer-quiz' ) }
+						type="number"
+						min={ 0 }
+						value={ preTestId || '' }
+						onChange={ ( value ) => setAttributes( { preTestId: value ? parseInt( value, 10 ) : 0 } ) }
+						help={ __( 'Override the linked pre-test for this quiz instance. Leave empty to use the quiz setting. Requires the Educator addon.', 'pressprimer-quiz' ) }
+					/>
+				</PanelBody>
+
+				<PanelBody title={ __( 'Start Page Display', 'pressprimer-quiz' ) } initialOpen={ false }>
+					<ToggleControl
+						__nextHasNoMarginBottom
+						label={ __( 'Show Description', 'pressprimer-quiz' ) }
+						checked={ showDescription }
+						onChange={ ( value ) => setAttributes( { showDescription: value } ) }
+					/>
+					<ToggleControl
+						__nextHasNoMarginBottom
+						label={ __( 'Show Question Count', 'pressprimer-quiz' ) }
+						checked={ showQuestionCount }
+						onChange={ ( value ) => setAttributes( { showQuestionCount: value } ) }
+					/>
+					<ToggleControl
+						__nextHasNoMarginBottom
+						label={ __( 'Show Quiz Type', 'pressprimer-quiz' ) }
+						checked={ showQuizType }
+						onChange={ ( value ) => setAttributes( { showQuizType: value } ) }
+					/>
+					<ToggleControl
+						__nextHasNoMarginBottom
+						label={ __( 'Show Time Limit', 'pressprimer-quiz' ) }
+						checked={ showTimeLimit }
+						onChange={ ( value ) => setAttributes( { showTimeLimit: value } ) }
+					/>
+					<ToggleControl
+						__nextHasNoMarginBottom
+						label={ __( 'Show Pass Percentage', 'pressprimer-quiz' ) }
+						checked={ showPassPercentage }
+						onChange={ ( value ) => setAttributes( { showPassPercentage: value } ) }
+					/>
+					<ToggleControl
+						__nextHasNoMarginBottom
+						label={ __( 'Show Attempt Count', 'pressprimer-quiz' ) }
+						checked={ showAttemptCount }
+						onChange={ ( value ) => setAttributes( { showAttemptCount: value } ) }
+					/>
+					<ToggleControl
+						__nextHasNoMarginBottom
+						label={ __( 'Show Attempt History', 'pressprimer-quiz' ) }
+						checked={ showAttemptHistory }
+						onChange={ ( value ) => setAttributes( { showAttemptHistory: value } ) }
+					/>
+				</PanelBody>
+
+				<PanelBody title={ __( 'Results Page Display', 'pressprimer-quiz' ) } initialOpen={ false }>
+					<ToggleControl
+						__nextHasNoMarginBottom
+						label={ __( 'Show Score', 'pressprimer-quiz' ) }
+						checked={ showScore }
+						onChange={ ( value ) => setAttributes( { showScore: value } ) }
+					/>
+					<ToggleControl
+						__nextHasNoMarginBottom
+						label={ __( 'Show Pass/Fail Status', 'pressprimer-quiz' ) }
+						checked={ showPassFail }
+						onChange={ ( value ) => setAttributes( { showPassFail: value } ) }
+					/>
+					<ToggleControl
+						__nextHasNoMarginBottom
+						label={ __( 'Show Time Spent', 'pressprimer-quiz' ) }
+						checked={ showTimeSpent }
+						onChange={ ( value ) => setAttributes( { showTimeSpent: value } ) }
+					/>
+					<ToggleControl
+						__nextHasNoMarginBottom
+						label={ __( 'Show Average Score', 'pressprimer-quiz' ) }
+						checked={ showAverage }
+						onChange={ ( value ) => setAttributes( { showAverage: value } ) }
+					/>
+					<ToggleControl
+						__nextHasNoMarginBottom
+						label={ __( 'Show Category Breakdown', 'pressprimer-quiz' ) }
+						checked={ showCategoryBreakdown }
+						onChange={ ( value ) => setAttributes( { showCategoryBreakdown: value } ) }
+					/>
+					<ToggleControl
+						__nextHasNoMarginBottom
+						label={ __( 'Show Question Review', 'pressprimer-quiz' ) }
+						checked={ showQuestionReview }
+						onChange={ ( value ) => setAttributes( { showQuestionReview: value } ) }
+					/>
+					<ToggleControl
+						__nextHasNoMarginBottom
+						label={ __( 'Show Retake Button', 'pressprimer-quiz' ) }
+						checked={ showRetakeButton }
+						onChange={ ( value ) => setAttributes( { showRetakeButton: value } ) }
+					/>
 				</PanelBody>
 			</InspectorControls>
 

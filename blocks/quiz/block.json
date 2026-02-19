@@ -2,7 +2,7 @@
 	"$schema": "https://schemas.wp.org/trunk/block.json",
 	"apiVersion": 3,
 	"name": "pressprimer-quiz/quiz",
-	"version": "1.0.0",
+	"version": "2.1.0",
 	"title": "PPQ Quiz",
 	"category": "pressprimer-quiz",
 	"icon": "welcome-learn-more",
@@ -15,6 +15,62 @@
 		"quizId": {
 			"type": "number",
 			"default": 0
+		},
+		"showDescription": {
+			"type": "boolean",
+			"default": true
+		},
+		"showQuestionCount": {
+			"type": "boolean",
+			"default": true
+		},
+		"showQuizType": {
+			"type": "boolean",
+			"default": true
+		},
+		"showTimeLimit": {
+			"type": "boolean",
+			"default": true
+		},
+		"showPassPercentage": {
+			"type": "boolean",
+			"default": true
+		},
+		"showAttemptCount": {
+			"type": "boolean",
+			"default": true
+		},
+		"showAttemptHistory": {
+			"type": "boolean",
+			"default": true
+		},
+		"showScore": {
+			"type": "boolean",
+			"default": true
+		},
+		"showPassFail": {
+			"type": "boolean",
+			"default": true
+		},
+		"showTimeSpent": {
+			"type": "boolean",
+			"default": true
+		},
+		"showAverage": {
+			"type": "boolean",
+			"default": true
+		},
+		"showCategoryBreakdown": {
+			"type": "boolean",
+			"default": true
+		},
+		"showQuestionReview": {
+			"type": "boolean",
+			"default": true
+		},
+		"showRetakeButton": {
+			"type": "boolean",
+			"default": true
 		}
 	},
 	"textdomain": "pressprimer-quiz",

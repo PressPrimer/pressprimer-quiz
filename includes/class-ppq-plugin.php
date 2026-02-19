@@ -146,6 +146,12 @@ class PressPrimer_Quiz_Plugin {
 		if ( class_exists( 'PressPrimer_Quiz_Onboarding' ) ) {
 			PressPrimer_Quiz_Onboarding::get_instance();
 		}
+
+		// Initialize review notice (100 attempts celebration).
+		if ( class_exists( 'PressPrimer_Quiz_Review_Notice' ) ) {
+			$review_notice = new PressPrimer_Quiz_Review_Notice();
+			$review_notice->init();
+		}
 	}
 
 	/**
@@ -263,6 +269,16 @@ class PressPrimer_Quiz_Plugin {
 
 			// Ensure cron is scheduled (handles upgrades where activation hook didn't run)
 			PressPrimer_Quiz_Statistics_Service::schedule_cron();
+
+			// Refresh statistics caches when a new attempt is submitted
+			add_action(
+				'pressprimer_quiz_attempt_submitted',
+				[ 'PressPrimer_Quiz_Statistics_Service', 'clear_activity_chart_cache' ]
+			);
+			add_action(
+				'pressprimer_quiz_attempt_submitted',
+				[ 'PressPrimer_Quiz_Statistics_Service', 'cron_recalculate_stats' ]
+			);
 		}
 	}
 }

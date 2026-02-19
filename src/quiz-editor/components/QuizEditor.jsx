@@ -55,7 +55,7 @@ const QuizEditor = ({ quizData = {} }) => {
 	// Initialize form with quiz data
 	useEffect(() => {
 		if (quizData.id) {
-			form.setFieldsValue({
+			const fieldValues = {
 				title: quizData.title || '',
 				description: quizData.description || '',
 				featured_image_id: quizData.featured_image_id || null,
@@ -79,7 +79,14 @@ const QuizEditor = ({ quizData = {} }) => {
 				generation_mode: quizData.generation_mode || 'fixed',
 				access_mode: quizData.access_mode || 'default',
 				login_message: quizData.login_message || '',
-			});
+			};
+
+			// Add pre_test_id if Educator addon is active.
+			if (quizData.educatorActive) {
+				fieldValues.pre_test_id = quizData.pre_test_id || null;
+			}
+
+			form.setFieldsValue(fieldValues);
 
 			if (quizData.generation_mode) {
 				setGenerationMode(quizData.generation_mode);
@@ -231,7 +238,7 @@ const QuizEditor = ({ quizData = {} }) => {
 		{
 			key: 'settings',
 			label: __('Settings', 'pressprimer-quiz'),
-			children: <SettingsPanel form={form} generationMode={generationMode} setGenerationMode={setGenerationMode} />,
+			children: <SettingsPanel form={form} generationMode={generationMode} setGenerationMode={setGenerationMode} quizData={quizData} />,
 		},
 		{
 			key: 'questions',

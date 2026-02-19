@@ -926,6 +926,26 @@ class PressPrimer_Quiz_Statistics_Service {
 	}
 
 	/**
+	 * Clear activity chart transient cache
+	 *
+	 * Deletes all activity chart transients so the next request
+	 * fetches fresh data from the database. Called when a new
+	 * quiz attempt is submitted.
+	 *
+	 * @since 2.1.0
+	 */
+	public static function clear_activity_chart_cache() {
+		global $wpdb;
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Deleting transients by prefix
+		$wpdb->query(
+			"DELETE FROM {$wpdb->options}
+			 WHERE option_name LIKE '_transient_pressprimer\_quiz\_activity\_chart\_%'
+			    OR option_name LIKE '_transient_timeout_pressprimer\_quiz\_activity\_chart\_%'"
+		);
+	}
+
+	/**
 	 * Get list of quizzes for filter dropdown
 	 *
 	 * Returns a simple list of quizzes for use in report filters.

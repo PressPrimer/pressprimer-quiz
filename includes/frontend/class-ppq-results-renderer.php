@@ -25,16 +25,84 @@ if ( ! defined( 'ABSPATH' ) ) {
 class PressPrimer_Quiz_Results_Renderer {
 
 	/**
+	 * Current display options.
+	 *
+	 * @since 2.1.0
+	 * @var array
+	 */
+	private $display = [];
+
+	/**
+	 * Get default display options for Results page
+	 *
+	 * @since 2.1.0
+	 *
+	 * @return array Default display options.
+	 */
+	private function get_default_results_display_options() {
+		return [
+			'show_score'              => true,
+			'show_pass_fail'          => true,
+			'show_time_spent'         => true,
+			'show_average'            => true,
+			'show_category_breakdown' => true,
+			'show_question_review'    => true,
+			'show_retake_button'      => true,
+		];
+	}
+
+	/**
+	 * Apply conflict rules between display options and quiz settings
+	 *
+	 * Quiz settings take precedence when they restrict functionality.
+	 * Shortcode attributes can hide elements but cannot force-show
+	 * elements that quiz settings explicitly disable.
+	 *
+	 * @since 2.1.0
+	 *
+	 * @param array                    $display Display options.
+	 * @param PressPrimer_Quiz_Quiz    $quiz    Quiz object.
+	 * @param PressPrimer_Quiz_Attempt $attempt Attempt object.
+	 * @return array Modified display options.
+	 */
+	private function apply_conflict_rules( $display, $quiz, $attempt ) {
+		// If quiz has retakes disabled or user cannot retake, never show retake button.
+		if ( ! $this->can_retake( $quiz, $attempt ) ) {
+			$display['show_retake_button'] = false;
+		}
+
+		// If no passing score set (0%), hide pass/fail indicator.
+		if ( $quiz->pass_percent <= 0 ) {
+			$display['show_pass_fail'] = false;
+		}
+
+		/**
+		 * Filter display options after conflict rules applied
+		 *
+		 * Allows addons to modify display options based on their own rules.
+		 *
+		 * @since 2.1.0
+		 *
+		 * @param array                    $display Display options.
+		 * @param PressPrimer_Quiz_Quiz    $quiz    Quiz object.
+		 * @param PressPrimer_Quiz_Attempt $attempt Attempt object.
+		 */
+		return apply_filters( 'pressprimer_quiz_results_display_options', $display, $quiz, $attempt );
+	}
+
+	/**
 	 * Render results page
 	 *
 	 * Displays comprehensive results after quiz submission.
 	 *
 	 * @since 1.0.0
+	 * @since 2.1.0 Added display options parameter.
 	 *
 	 * @param PressPrimer_Quiz_Attempt $attempt Attempt object.
+	 * @param array                    $display Display options for controlling element visibility.
 	 * @return string HTML output.
 	 */
-	public function render_results( $attempt ) {
+	public function render_results( $attempt, $display = [] ) {
 		if ( ! $attempt || 'submitted' !== $attempt->status ) {
 			return '<div class="ppq-error">' . esc_html__( 'Results not available.', 'pressprimer-quiz' ) . '</div>';
 		}
@@ -44,6 +112,11 @@ class PressPrimer_Quiz_Results_Renderer {
 		if ( ! $quiz ) {
 			return '<div class="ppq-error">' . esc_html__( 'Quiz not found.', 'pressprimer-quiz' ) . '</div>';
 		}
+
+		// Merge display options with defaults and apply conflict rules.
+		$display       = wp_parse_args( $display, $this->get_default_results_display_options() );
+		$display       = $this->apply_conflict_rules( $display, $quiz, $attempt );
+		$this->display = $display;
 
 		// Calculate comprehensive results
 		$results = $this->calculate_results( $attempt );
@@ -69,6 +142,25 @@ class PressPrimer_Quiz_Results_Renderer {
 		$density       = $quiz->get_effective_display_density();
 		$density_class = 'condensed' === $density ? 'ppq-quiz--condensed' : '';
 
+		// Build sections array based on display options.
+		$default_sections = [ 'header', 'guest_notice', 'email_notice', 'feedback' ];
+
+		// Add score_summary if any of its sub-elements should be shown.
+		if ( $display['show_score'] || $display['show_pass_fail'] || $display['show_time_spent'] || $display['show_average'] ) {
+			$default_sections[] = 'score_summary';
+		}
+
+		// Add category_breakdown if enabled.
+		if ( $display['show_category_breakdown'] ) {
+			$default_sections[] = 'category_breakdown';
+		}
+
+		// Always include confidence (it has its own internal check for data).
+		$default_sections[] = 'confidence';
+
+		// Always include actions (retake button visibility is controlled within the method).
+		$default_sections[] = 'actions';
+
 		/**
 		 * Filter which sections are displayed on the results page.
 		 *
@@ -84,16 +176,7 @@ class PressPrimer_Quiz_Results_Renderer {
 		 */
 		$sections = apply_filters(
 			'pressprimer_quiz_results_sections',
-			[
-				'header',
-				'guest_notice',
-				'score_summary',
-				'email_notice',
-				'category_breakdown',
-				'confidence',
-				'feedback',
-				'actions',
-			],
+			$default_sections,
 			$attempt,
 			$quiz
 		);
@@ -229,6 +312,7 @@ class PressPrimer_Quiz_Results_Renderer {
 	 * Render score summary
 	 *
 	 * @since 1.0.0
+	 * @since 2.1.0 Added display options support.
 	 *
 	 * @param PressPrimer_Quiz_Attempt $attempt Attempt object.
 	 * @param PressPrimer_Quiz_Quiz    $quiz Quiz object.
@@ -243,6 +327,7 @@ class PressPrimer_Quiz_Results_Renderer {
 
 		?>
 		<div class="ppq-score-summary <?php echo esc_attr( $passed_class ); ?>">
+			<?php if ( $this->display['show_score'] ) : ?>
 			<div class="ppq-score-display">
 				<div class="ppq-score-percentage">
 					<?php echo esc_html( round( (float) $attempt->score_percent, 1 ) ); ?>%
@@ -258,7 +343,9 @@ class PressPrimer_Quiz_Results_Renderer {
 					?>
 				</div>
 			</div>
+			<?php endif; ?>
 
+			<?php if ( $this->display['show_pass_fail'] ) : ?>
 			<div class="ppq-pass-status <?php echo esc_attr( $passed_class ); ?>">
 				<span class="ppq-pass-label"><?php echo esc_html( $passed_text ); ?></span>
 				<span class="ppq-pass-threshold">
@@ -271,26 +358,33 @@ class PressPrimer_Quiz_Results_Renderer {
 					?>
 				</span>
 			</div>
+			<?php endif; ?>
 
+			<?php if ( $this->display['show_time_spent'] || $this->display['show_average'] ) : ?>
 			<div class="ppq-results-meta">
+				<?php if ( $this->display['show_time_spent'] ) : ?>
 				<div class="ppq-meta-item">
 					<span class="ppq-meta-icon">⏱️</span>
 					<span class="ppq-meta-label"><?php esc_html_e( 'Time:', 'pressprimer-quiz' ); ?></span>
 					<span class="ppq-meta-value"><?php echo esc_html( $this->format_duration( $this->get_display_time( $attempt ) ) ); ?></span>
 				</div>
+				<?php endif; ?>
 
 				<?php
-				// Show average comparison if available
-				$average = $this->get_quiz_average( $quiz->id );
-				if ( null !== $average ) :
-					?>
+				// Show average comparison if available and enabled.
+				if ( $this->display['show_average'] ) :
+					$average = $this->get_quiz_average( $quiz->id );
+					if ( null !== $average ) :
+						?>
 					<div class="ppq-meta-item">
 						<span class="ppq-meta-icon">📊</span>
 						<span class="ppq-meta-label"><?php esc_html_e( 'Average:', 'pressprimer-quiz' ); ?></span>
 						<span class="ppq-meta-value"><?php echo esc_html( round( $average, 1 ) ); ?>%</span>
 					</div>
+					<?php endif; ?>
 				<?php endif; ?>
 			</div>
+			<?php endif; ?>
 
 			<?php
 			/**
@@ -522,13 +616,15 @@ class PressPrimer_Quiz_Results_Renderer {
 				</a>
 			<?php endif; ?>
 
+			<?php if ( $this->display['show_question_review'] ) : ?>
 			<a href="#ppq-question-review" class="ppq-button ppq-review-button button">
 				<?php esc_html_e( 'Review Answers', 'pressprimer-quiz' ); ?>
 			</a>
+			<?php endif; ?>
 
 			<?php
-			// Retake button if allowed (and not using LearnDash context where they need to pass)
-			if ( $this->can_retake( $quiz, $attempt ) ) :
+			// Retake button if allowed and display option enabled.
+			if ( $this->display['show_retake_button'] && $this->can_retake( $quiz, $attempt ) ) :
 				?>
 				<a href="<?php echo esc_url( $this->get_retake_url( $quiz ) ); ?>" class="ppq-button ppq-retake-button button">
 					<?php esc_html_e( 'Retake Quiz', 'pressprimer-quiz' ); ?>
@@ -654,11 +750,23 @@ class PressPrimer_Quiz_Results_Renderer {
 	 * Displays detailed review of each question with user's answers.
 	 *
 	 * @since 1.0.0
+	 * @since 2.1.0 Added display options parameter.
 	 *
 	 * @param PressPrimer_Quiz_Attempt $attempt Attempt object.
+	 * @param array                    $display Display options for controlling element visibility.
 	 * @return string HTML output.
 	 */
-	public function render_question_review( $attempt ) {
+	public function render_question_review( $attempt, $display = [] ) {
+		// Merge with defaults if not already set from render_results.
+		if ( empty( $this->display ) ) {
+			$this->display = wp_parse_args( $display, $this->get_default_results_display_options() );
+		}
+
+		// Check if question review should be displayed.
+		if ( ! $this->display['show_question_review'] ) {
+			return '';
+		}
+
 		if ( ! $attempt || 'submitted' !== $attempt->status ) {
 			return '<div class="ppq-error">' . esc_html__( 'Review not available.', 'pressprimer-quiz' ) . '</div>';
 		}

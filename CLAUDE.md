@@ -146,6 +146,70 @@ These rules govern how AI assistants work on this codebase.
 4. Then release addon updates
 5. Document in both changelogs that versions are coordinated
 
+### Cross-Plugin Investigation Required
+
+**Always search ALL 4 plugins** when looking for patterns, implementations, or references. The PressPrimer Quiz ecosystem consists of:
+
+1. `pressprimer-quiz/` — Free plugin (WordPress.org)
+2. `pressprimer-quiz-educator/` — Educator addon ($149/yr)
+3. `pressprimer-quiz-school/` — School addon ($299/yr)
+4. `pressprimer-quiz-enterprise/` — Enterprise addon ($499/yr)
+
+**Before building any new feature:**
+1. Search ALL 4 plugin codebases for similar existing implementations
+2. Study how existing features handle the same concerns (data access, UI patterns, hooks)
+3. Match the established patterns exactly — do not reinvent solutions that already exist
+4. If a pattern exists in one addon, it is the reference implementation for all addons
+
+**Never conclude something "doesn't exist" after checking only 1-2 plugins.** A feature may be implemented in any of the 4 plugins.
+
+### Study Existing Implementations First
+
+**Before building any new page, component, or feature, ALWAYS find and read the closest existing equivalent.** Do not start writing code until you understand the established patterns.
+
+For example:
+- Building a new **report page**? Read the School addon's `ItemAnalysisPage.jsx` AND the free plugin's `Reports.jsx` first
+- Building a new **admin editor**? Read `BankEditor.jsx` or `GroupEditor.jsx` first
+- Building a new **REST endpoint**? Read an existing controller in the same plugin first
+- Building a new **settings panel**? Read the free plugin's `SettingsPanel.jsx` first
+
+**What to study in existing implementations:**
+1. HTML structure and CSS class names (exact wrapper elements)
+2. How data is fetched (API paths, hooks, error handling)
+3. How different user roles are handled (admin vs teacher vs student)
+4. How the feature integrates with other plugins (filters, actions, white-label)
+5. What libraries and components are used (Ant Design vs native HTML)
+6. Loading states, empty states, and error states
+
+### Role-Based Data Access (CRITICAL)
+
+**ALL data output must consider the user's role.** The Educator addon implements a data isolation system where teachers only see data from students in their groups, while admins see everything.
+
+#### How Data Isolation Works
+
+The `Data_Isolation_Service::get_visible_user_ids()` method returns:
+- **Admins** (`manage_all_groups` capability): `null` — no filtering, see all data
+- **Teachers** (`manage_own_groups` capability): `array` of user IDs from managed groups
+- **Students**: `array( $current_user_id )` — only their own data
+
+#### When Building Reports or Data Endpoints
+
+1. **Always call `get_visible_user_ids()`** to determine which users' data to include
+2. **Use `build_user_clause()`** to add appropriate WHERE clauses:
+   - `null` → no clause (admin sees all)
+   - `array(...)` → `AND user_id IN (1, 2, 3)`
+   - Empty array → `AND 1=0` (no access)
+3. **Test with both admin and teacher roles** — verify teachers only see their groups' data
+4. **Aggregate statistics** (averages, distributions) must also respect data isolation — a teacher should not see score distributions that include students outside their groups
+
+#### Checklist for New Reports/Endpoints
+
+- [ ] Does the endpoint call `get_visible_user_ids()`?
+- [ ] Does the SQL query include the user visibility clause?
+- [ ] Does the response data change appropriately for admin vs teacher?
+- [ ] Are aggregate calculations scoped to visible users only?
+- [ ] Are quiz/question lists filtered to only those the user can access?
+
 ---
 
 ## WordPress.org Coding Standards
@@ -614,6 +678,129 @@ WP_List_Table (PHP) is acceptable for **list views** that:
 - Link to React-based edit/detail pages
 
 Example: Banks list uses WP_List_Table, but clicking "Edit" opens the React BankEditor.
+
+### apiFetch Path Convention (CRITICAL)
+
+**Always use relative paths with `apiFetch`.** The `@wordpress/api-fetch` package automatically prepends the site's REST root URL.
+
+```jsx
+// CORRECT — relative path
+apiFetch({ path: '/ppq/v1/quizzes' });
+apiFetch({ path: `/ppq/v1/quizzes/${quizId}` });
+
+// WRONG — full URL from rest_url() (apiFetch will double-prepend the root)
+apiFetch({ path: restUrl + 'quizzes' });      // Results in /wp-json/wp-json/...
+apiFetch({ path: window.myData.restUrl });     // Same problem
+
+// WRONG — using localized restUrl as path
+const { restUrl } = window.pressprimer_quiz_data;
+apiFetch({ path: `${restUrl}endpoint` });      // BROKEN
+```
+
+**REST namespace paths by plugin:**
+- Free plugin: `/ppq/v1/*`
+- Educator addon: `/ppqe/v1/*`
+- School addon: `/ppqs/v1/*` (uses `/ppq/v1/*` for core endpoints)
+- Enterprise addon: `/ppqe/v1/*`
+
+**Do NOT pass `rest_url()` output to React components as an API base URL.** If localized data includes a `restUrl` field, it should only be used for reference/display, never as an `apiFetch` path.
+
+### Report Page Anatomy (CRITICAL)
+
+All report pages across all plugins MUST follow this exact structure. The CSS classes are defined in the free plugin's `src/reports/style.css`.
+
+#### Required HTML Structure
+
+```jsx
+<div className="ppq-reports-container ppqe-your-report-name">
+    {/* Dark header bar */}
+    <div className="ppq-reports-header">
+        <div className="ppq-reports-header-content">
+            <Button
+                type="link"
+                icon={<ArrowLeftOutlined />}
+                href="admin.php?page=pressprimer-quiz-reports"
+                className="ppq-reports-back-link"
+            >
+                {__('All Reports', 'your-text-domain')}
+            </Button>
+            <h1>
+                <SomeIcon style={{ marginRight: 12, color: '#14b8a6' }} />
+                {__('Report Title', 'your-text-domain')}
+            </h1>
+            <p>{__('Report description.', 'your-text-domain')}</p>
+        </div>
+        {reportsMascot && (
+            <img
+                src={reportsMascot}
+                alt=""
+                className="ppq-reports-header-mascot"
+            />
+        )}
+    </div>
+
+    {/* Report content below */}
+</div>
+```
+
+#### Key Rules
+
+1. **Outer wrapper MUST include `ppq-reports-container`** — provides gray `#f0f2f5` background, min-height, padding
+2. **Header uses native `<h1>` and `<p>`** — NOT Ant Design `<Typography.Title>` or `<Typography.Text>` (the header has white text on dark background; Ant Design Typography applies its own dark colors)
+3. **Back link uses Ant Design `<Button type="link">`** with `className="ppq-reports-back-link"` — the CSS provides white-on-dark styling
+4. **Mascot image** comes from PHP via `wp_localize_script` and must be filtered through `pressprimer_quiz_reports_header_mascot` so Enterprise white-label can replace it
+5. **Header icon color** is `#14b8a6` (teal) by convention
+
+#### Addon Report Mounting
+
+Addon reports mount into the free plugin's Reports page via this event system:
+
+```javascript
+// In addon's index.js:
+document.addEventListener('ppq-addon-report-ready', (event) => {
+    if (event.detail?.reportType === 'your-report-type') {
+        const mountPoint = document.getElementById('ppq-addon-report-root');
+        if (!mountPoint || mountPoint.dataset.mounted === 'true') return;
+        const root = createRoot(mountPoint);
+        const initialData = window.your_localized_data || {};
+        root.render(<YourReport initialData={initialData} />);
+        mountPoint.dataset.mounted = 'true';
+    }
+});
+```
+
+The free plugin creates `#ppq-addon-report-root` and dispatches `ppq-addon-report-ready` with `{ reportType }` in the event detail. The addon is responsible for providing its own `.ppq-reports-container` wrapper.
+
+#### PHP Side: Mascot URL With White-Label Support
+
+```php
+// Get mascot URL via filter so Enterprise white-label can override it.
+$mascot_url = defined( 'PRESSPRIMER_QUIZ_PLUGIN_URL' )
+    ? PRESSPRIMER_QUIZ_PLUGIN_URL . 'assets/images/reports-mascot.png'
+    : '';
+$mascot_url = apply_filters( 'pressprimer_quiz_reports_header_mascot', $mascot_url );
+
+wp_localize_script( 'your-script-handle', 'your_localized_data', array(
+    'reportsMascot' => $mascot_url,
+    // ... other data
+) );
+```
+
+#### CSS Key Values (from `src/reports/style.css`)
+
+| Class | Key Properties |
+|-------|---------------|
+| `.ppq-reports-container` | `background: #f0f2f5; min-height: calc(100vh - 32px); padding: 24px` |
+| `.ppq-reports-header` | `background: #334155; border-radius: 12px; color: #fff; display: flex` |
+| `.ppq-reports-header-content` | `flex: 1; padding: 20px 0` |
+| `.ppq-reports-header-mascot` | `height: 130px; width: auto; flex-shrink: 0` |
+| `.ppq-reports-back-link` | `color: rgba(255,255,255,0.75); margin-bottom: 8px` |
+
+#### Enterprise White-Label Compatibility
+
+The Enterprise addon overrides the header background via CSS `!important` and replaces the mascot via the `pressprimer_quiz_reports_header_mascot` filter. No addon-specific code is needed — just:
+1. Use the standard CSS classes above
+2. Pass the mascot URL through the filter in PHP before localizing
 
 ---
 

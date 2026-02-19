@@ -104,17 +104,81 @@ class PressPrimer_Quiz_Quiz_Renderer {
 	}
 
 	/**
+	 * Get default display options for Start page
+	 *
+	 * @since 2.1.0
+	 *
+	 * @return array Default display options.
+	 */
+	private function get_default_start_display_options() {
+		return [
+			'show_description'     => true,
+			'show_question_count'  => true,
+			'show_quiz_type'       => true,
+			'show_time_limit'      => true,
+			'show_pass_percentage' => true,
+			'show_attempt_count'   => true,
+			'show_attempt_history' => true,
+		];
+	}
+
+	/**
+	 * Check if meta section should be shown
+	 *
+	 * Returns true if any meta item should be displayed based on
+	 * display options and quiz settings.
+	 *
+	 * @since 2.1.0
+	 *
+	 * @param PressPrimer_Quiz_Quiz $quiz    Quiz object.
+	 * @param array                 $display Display options.
+	 * @return bool True if meta section should be shown.
+	 */
+	private function should_show_meta( $quiz, $display ) {
+		// Show meta if quiz type should display.
+		if ( $display['show_quiz_type'] ) {
+			return true;
+		}
+
+		// Show meta if question count should display.
+		if ( $display['show_question_count'] ) {
+			return true;
+		}
+
+		// Show meta if time limit should display and quiz has time limit.
+		if ( $display['show_time_limit'] && $quiz->time_limit_seconds > 0 ) {
+			return true;
+		}
+
+		// Show meta if pass percentage should display.
+		if ( $display['show_pass_percentage'] ) {
+			return true;
+		}
+
+		// Show meta if attempt count should display and quiz has max attempts set.
+		if ( $display['show_attempt_count'] && $quiz->max_attempts > 0 ) {
+			return true;
+		}
+
+		return false;
+	}
+
+	/**
 	 * Render quiz landing page
 	 *
 	 * Displays quiz information, previous attempts, and start/resume buttons.
 	 *
 	 * @since 1.0.0
+	 * @since 2.1.0 Added display options parameter.
 	 *
 	 * @param PressPrimer_Quiz_Quiz $quiz      Quiz object.
 	 * @param bool                  $is_retake Whether this is a retake request.
+	 * @param array                 $display   Display options for controlling element visibility.
 	 * @return string Rendered HTML.
 	 */
-	public function render_landing( $quiz, $is_retake = false ) {
+	public function render_landing( $quiz, $is_retake = false, $display = [] ) {
+		// Merge with defaults.
+		$display = wp_parse_args( $display, $this->get_default_start_display_options() );
 		// Enqueue assets
 		$this->enqueue_assets( $quiz );
 
@@ -211,6 +275,25 @@ class PressPrimer_Quiz_Quiz_Renderer {
 			}
 		}
 
+		/**
+		 * Filter whether the user can start this quiz.
+		 *
+		 * Allows addons to block quiz start on the landing page. Return true
+		 * to allow, or a WP_Error to block (the error message is displayed
+		 * as a warning notice in place of the start button).
+		 *
+		 * @since 2.1.0
+		 *
+		 * @param true|WP_Error          $can_start_result True if allowed, WP_Error to block.
+		 * @param PressPrimer_Quiz_Quiz   $quiz             The quiz object.
+		 */
+		$can_start_result = apply_filters( 'pressprimer_quiz_can_start', true, $quiz );
+
+		if ( $can_start && is_wp_error( $can_start_result ) ) {
+			$can_start     = false;
+			$limit_message = $can_start_result->get_error_message();
+		}
+
 		// Count questions
 		$question_count = 0;
 		if ( 'fixed' === $quiz->generation_mode ) {
@@ -247,7 +330,7 @@ class PressPrimer_Quiz_Quiz_Renderer {
 				<header class="ppq-quiz-header">
 					<h1 class="ppq-quiz-title"><?php echo esc_html( $quiz->title ); ?></h1>
 
-					<?php if ( ! empty( $quiz->description ) ) : ?>
+					<?php if ( $display['show_description'] && ! empty( $quiz->description ) ) : ?>
 						<div class="ppq-quiz-description">
 							<?php echo wp_kses_post( wpautop( $quiz->description ) ); ?>
 						</div>
@@ -265,13 +348,14 @@ class PressPrimer_Quiz_Quiz_Renderer {
 				do_action( 'pressprimer_quiz_before_quiz_meta', $quiz );
 				?>
 
+				<?php if ( $this->should_show_meta( $quiz, $display ) ) : ?>
 				<div class="ppq-quiz-meta">
 					<div class="ppq-quiz-meta-grid">
 
 						<?php
-						// Quiz mode information for tooltip
+						// Quiz mode information for tooltip.
 						// translators: Quiz type labels - Fixed means same questions for everyone,
-						// Random means questions are randomly selected, Adaptive adjusts difficulty
+						// Random means questions are randomly selected, Adaptive adjusts difficulty.
 						$mode_label   = '';
 						$mode_tooltip = '';
 						if ( 'fixed' === $quiz->generation_mode ) {
@@ -286,7 +370,7 @@ class PressPrimer_Quiz_Quiz_Renderer {
 						}
 						?>
 
-						<?php if ( $mode_label ) : ?>
+						<?php if ( $display['show_quiz_type'] && $mode_label ) : ?>
 							<div class="ppq-meta-item ppq-has-tooltip" title="<?php echo esc_attr( $mode_tooltip ); ?>">
 								<span class="ppq-meta-icon" aria-hidden="true">●</span>
 								<div class="ppq-meta-content">
@@ -296,6 +380,7 @@ class PressPrimer_Quiz_Quiz_Renderer {
 							</div>
 						<?php endif; ?>
 
+						<?php if ( $display['show_question_count'] ) : ?>
 						<div class="ppq-meta-item">
 							<span class="ppq-meta-icon" aria-hidden="true">#</span>
 							<div class="ppq-meta-content">
@@ -303,8 +388,9 @@ class PressPrimer_Quiz_Quiz_Renderer {
 								<span class="ppq-meta-value"><?php echo esc_html( $question_count ); ?></span>
 							</div>
 						</div>
+						<?php endif; ?>
 
-						<?php if ( $quiz->time_limit_seconds ) : ?>
+						<?php if ( $display['show_time_limit'] && $quiz->time_limit_seconds ) : ?>
 							<div class="ppq-meta-item">
 								<span class="ppq-meta-icon" aria-hidden="true">⏰</span>
 								<div class="ppq-meta-content">
@@ -320,6 +406,7 @@ class PressPrimer_Quiz_Quiz_Renderer {
 							</div>
 						<?php endif; ?>
 
+						<?php if ( $display['show_pass_percentage'] ) : ?>
 						<div class="ppq-meta-item">
 							<span class="ppq-meta-icon" aria-hidden="true">%</span>
 							<div class="ppq-meta-content">
@@ -327,8 +414,9 @@ class PressPrimer_Quiz_Quiz_Renderer {
 								<span class="ppq-meta-value"><?php echo esc_html( $quiz->pass_percent . '%' ); ?></span>
 							</div>
 						</div>
+						<?php endif; ?>
 
-						<?php if ( $quiz->max_attempts ) : ?>
+						<?php if ( $display['show_attempt_count'] && $quiz->max_attempts ) : ?>
 							<div class="ppq-meta-item">
 								<span class="ppq-meta-icon" aria-hidden="true">✓</span>
 								<div class="ppq-meta-content">
@@ -372,6 +460,7 @@ class PressPrimer_Quiz_Quiz_Renderer {
 
 					</div>
 				</div>
+				<?php endif; ?>
 
 				<?php
 				/**
@@ -383,7 +472,7 @@ class PressPrimer_Quiz_Quiz_Renderer {
 				 */
 				do_action( 'pressprimer_quiz_after_quiz_meta', $quiz );
 
-				// Count submitted attempts for display
+				// Count submitted attempts for display.
 				$submitted_attempts = array_filter(
 					$previous_attempts,
 					function ( $a ) {
@@ -392,7 +481,7 @@ class PressPrimer_Quiz_Quiz_Renderer {
 				);
 				?>
 
-				<?php if ( ! empty( $submitted_attempts ) && $is_logged_in ) : ?>
+				<?php if ( $display['show_attempt_history'] && ! empty( $submitted_attempts ) && $is_logged_in ) : ?>
 					<div class="ppq-previous-attempts">
 						<h2 class="ppq-section-title"><?php esc_html_e( 'Your Previous Attempts', 'pressprimer-quiz' ); ?></h2>
 						<div class="ppq-attempts-list">

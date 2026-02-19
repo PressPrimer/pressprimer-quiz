@@ -303,8 +303,8 @@ const IntegrationsTab = ({ settings, updateSetting, settingsData, apiKeyStatus, 
 			setValidationResult(null);
 
 			const response = await apiFetch({
-				path: '/ppq/v1/settings/api-key',
-				method: 'DELETE',
+				path: '/ppq/v1/settings/api-key/clear',
+				method: 'POST',
 			});
 
 			if (response.success) {

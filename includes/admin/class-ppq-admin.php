@@ -726,10 +726,42 @@ class PressPrimer_Quiz_Admin {
 			$params[]           = $tag_id;
 		}
 
-		// Filter by author if not admin
+		// Filter by author if not admin.
 		if ( ! current_user_can( 'pressprimer_quiz_manage_all' ) ) {
-			$where_conditions[] = 'q.author_id = %d';
-			$params[]           = get_current_user_id();
+			$current_user_id = get_current_user_id();
+
+			/**
+			 * Filter the author IDs whose questions are visible in the bank editor search.
+			 *
+			 * Non-admin users normally only see their own questions. Addons (e.g., Educator)
+			 * can expand this list to include questions from shared banks.
+			 *
+			 * @since 2.1.0
+			 *
+			 * @param int[] $author_ids Array of user IDs whose questions should be visible.
+			 * @param int   $user_id    The current user ID.
+			 */
+			$author_ids = apply_filters(
+				'pressprimer_quiz_search_question_author_ids',
+				array( $current_user_id ),
+				$current_user_id
+			);
+
+			$author_ids = array_unique( array_filter( array_map( 'absint', $author_ids ) ) );
+
+			if ( count( $author_ids ) === 1 ) {
+				$where_conditions[] = 'q.author_id = %d';
+				$params[]           = reset( $author_ids );
+			} elseif ( ! empty( $author_ids ) ) {
+				$placeholders       = implode( ',', array_fill( 0, count( $author_ids ), '%d' ) );
+				$where_conditions[] = "q.author_id IN ({$placeholders})";
+				foreach ( $author_ids as $aid ) {
+					$params[] = $aid;
+				}
+			} else {
+				// No accessible authors — show nothing.
+				$where_conditions[] = '1 = 0';
+			}
 		}
 
 		// Exclude questions already in this bank
@@ -850,17 +882,46 @@ class PressPrimer_Quiz_Admin {
 		$revisions_table      = $wpdb->prefix . 'ppq_question_revisions';
 		$bank_questions_table = $wpdb->prefix . 'ppq_bank_questions';
 
-		// Build query for recent questions
+		// Determine visible author IDs for non-admins.
+		$current_user_id = get_current_user_id();
+
+		if ( current_user_can( 'pressprimer_quiz_manage_all' ) ) {
+			$author_clause = '';
+			$author_params = array();
+		} else {
+			/** This filter is documented in includes/admin/class-ppq-admin.php::ajax_search_questions */
+			$author_ids = apply_filters(
+				'pressprimer_quiz_search_question_author_ids',
+				array( $current_user_id ),
+				$current_user_id
+			);
+
+			$author_ids = array_unique( array_filter( array_map( 'absint', $author_ids ) ) );
+
+			if ( count( $author_ids ) === 1 ) {
+				$author_clause = 'AND q.author_id = %d';
+				$author_params = array( reset( $author_ids ) );
+			} elseif ( ! empty( $author_ids ) ) {
+				$placeholders  = implode( ',', array_fill( 0, count( $author_ids ), '%d' ) );
+				$author_clause = "AND q.author_id IN ({$placeholders})";
+				$author_params = $author_ids;
+			} else {
+				$author_clause = 'AND 1 = 0';
+				$author_params = array();
+			}
+		}
+
+		// Build query for recent questions.
 		// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Table names safely constructed from $wpdb->prefix
 		$sql = "SELECT q.id, q.type, q.difficulty_author, r.stem
 				FROM {$questions_table} q
 				INNER JOIN {$revisions_table} r ON q.current_revision_id = r.id
 				WHERE q.deleted_at IS NULL
-				AND q.author_id = %d";
+				{$author_clause}";
 
-		$params = [ get_current_user_id() ];
+		$params = $author_params;
 
-		// Exclude questions already in this bank
+		// Exclude questions already in this bank.
 		if ( $bank_id > 0 ) {
 			$sql     .= " AND q.id NOT IN (SELECT question_id FROM {$bank_questions_table} WHERE bank_id = %d)";
 			$params[] = $bank_id;
@@ -868,14 +929,14 @@ class PressPrimer_Quiz_Admin {
 
 		$sql .= ' ORDER BY q.created_at DESC';
 
-		// Get total count (use same WHERE conditions)
+		// Get total count (use same WHERE conditions).
 		// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Table names safely constructed from $wpdb->prefix
 		$count_sql = "SELECT COUNT(DISTINCT q.id)
 				FROM {$questions_table} q
 				WHERE q.deleted_at IS NULL
-				AND q.author_id = %d";
+				{$author_clause}";
 
-		$count_params = [ get_current_user_id() ];
+		$count_params = $author_params;
 
 		if ( $bank_id > 0 ) {
 			$count_sql     .= " AND q.id NOT IN (SELECT question_id FROM {$bank_questions_table} WHERE bank_id = %d)";

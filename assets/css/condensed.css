@@ -9,11 +9,23 @@
  */
 
 /* ==========================================================================
+   Condensed Mode CSS Variables (defaults)
+   These can be overridden via Settings → Appearance → Condensed Mode
+   ========================================================================== */
+
+.ppq-quiz--condensed {
+	--ppq-line-height: 1.4;
+	--ppq-option-padding: 8px;
+	--ppq-question-margin: 12px;
+	--ppq-max-width: 800px;
+}
+
+/* ==========================================================================
    Quiz Interface Container
    ========================================================================== */
 
 .ppq-quiz-interface.ppq-quiz--condensed {
-	max-width: 800px !important;
+	max-width: var(--ppq-max-width) !important;
 	padding: 0 !important;
 }
 
@@ -85,8 +97,12 @@
 	border: 1px solid var(--ppq-border) !important;
 	border-radius: 8px !important;
 	padding: 16px !important;
-	margin-bottom: 0 !important;
+	margin-bottom: var(--ppq-question-margin) !important;
 	box-shadow: none !important;
+}
+
+.ppq-quiz-interface.ppq-quiz--condensed .ppq-question:last-child {
+	margin-bottom: 0 !important;
 }
 
 .ppq-quiz-interface.ppq-quiz--condensed .ppq-question-header {
@@ -111,8 +127,8 @@
 .ppq-quiz-interface.ppq-quiz--condensed .ppq-question-text {
 	font-size: inherit !important;
 	font-weight: 500 !important;
-	line-height: 1.5 !important;
-	margin-bottom: 12px !important;
+	line-height: var(--ppq-line-height) !important;
+	margin-bottom: var(--ppq-question-margin) !important;
 }
 
 .ppq-quiz-interface.ppq-quiz--condensed .ppq-question-text p {
@@ -128,12 +144,12 @@
    ========================================================================== */
 
 .ppq-quiz-interface.ppq-quiz--condensed .ppq-answers {
-	gap: 6px !important;
+	gap: var(--ppq-option-padding) !important;
 	margin-bottom: 0 !important;
 }
 
 .ppq-quiz-interface.ppq-quiz--condensed .ppq-answer-option {
-	padding: 10px 12px !important;
+	padding: var(--ppq-option-padding) !important;
 	min-height: 44px !important;
 	border-radius: 6px !important;
 	gap: 10px !important;
@@ -182,7 +198,7 @@
 
 .ppq-quiz-interface.ppq-quiz--condensed .ppq-answer-text {
 	font-size: inherit !important;
-	line-height: 1.5 !important;
+	line-height: var(--ppq-line-height) !important;
 }
 
 .ppq-quiz-interface.ppq-quiz--condensed .ppq-answer-text p {
@@ -292,7 +308,7 @@
    ========================================================================== */
 
 .ppq-quiz-landing.ppq-quiz--condensed {
-	max-width: 720px !important;
+	max-width: var(--ppq-max-width) !important;
 	padding: 0 !important;
 }
 
@@ -489,11 +505,11 @@
 }
 
 .ppq-quiz-interface.ppq-quiz--condensed.ppq-quiz-theme-modern .ppq-answers {
-	gap: var(--ppq-space-sm) !important;
+	gap: var(--ppq-option-padding) !important;
 }
 
 .ppq-quiz-interface.ppq-quiz--condensed.ppq-quiz-theme-modern .ppq-answer-option {
-	padding: var(--ppq-space-md) !important;
+	padding: var(--ppq-option-padding) !important;
 	border-radius: var(--ppq-radius-md) !important;
 }
 
@@ -569,11 +585,11 @@
 }
 
 .ppq-quiz-interface.ppq-quiz--condensed.ppq-quiz-theme-minimal .ppq-answers {
-	gap: var(--ppq-space-xs) !important;
+	gap: var(--ppq-option-padding) !important;
 }
 
 .ppq-quiz-interface.ppq-quiz--condensed.ppq-quiz-theme-minimal .ppq-answer-option {
-	padding: var(--ppq-space-sm) var(--ppq-space-md) !important;
+	padding: var(--ppq-option-padding) !important;
 	background: transparent !important;
 	border: 1px solid var(--ppq-border) !important;
 	border-radius: var(--ppq-radius-sm, 2px) !important;
@@ -619,7 +635,7 @@
    ========================================================================== */
 
 .ppq-results-container.ppq-quiz--condensed {
-	max-width: 800px !important;
+	max-width: var(--ppq-max-width) !important;
 	padding: 0 !important;
 }
 
@@ -790,7 +806,7 @@
    ========================================================================== */
 
 .ppq-question-review-container.ppq-quiz--condensed {
-	max-width: 800px !important;
+	max-width: var(--ppq-max-width) !important;
 	margin: 20px auto 0 !important;
 	padding: 0 !important;
 }

@@ -91,7 +91,8 @@ class PressPrimer_Quiz_LifterLMS {
 		// Completion tracking.
 		add_action( 'pressprimer_quiz_quiz_passed', [ $this, 'handle_quiz_passed' ], 10, 2 );
 
-		// Map Instructors to ppq_teacher role.
+		// Map LifterLMS Instructor role to PPQ teacher capabilities.
+		$this->map_instructor_capabilities();
 		add_filter( 'pressprimer_quiz_user_has_teacher_capability', [ $this, 'check_instructor_capability' ], 10, 2 );
 
 		// AJAX handler for metabox quiz search (classic editor).
@@ -583,7 +584,7 @@ class PressPrimer_Quiz_LifterLMS {
 		$parent_course = $lesson->get( 'parent_course' );
 
 		// Check enrollment.
-		if ( ! llms_is_user_enrolled( $user_id, $parent_course ) && ! PressPrimer_Quiz_Helpers::current_user_can_edit_post( $lesson->get( 'id' ) ) ) {
+		if ( ! $this->is_user_enrolled( $user_id, $parent_course ) && ! PressPrimer_Quiz_Helpers::current_user_can_edit_post( $lesson->get( 'id' ) ) ) {
 			echo '<div class="ppq-access-denied">';
 			esc_html_e( 'Enroll in this course to access the quiz.', 'pressprimer-quiz' );
 			echo '</div>';
@@ -660,7 +661,7 @@ class PressPrimer_Quiz_LifterLMS {
 		$parent_course = $lesson->get( 'parent_course' );
 
 		// Check enrollment.
-		if ( ! llms_is_user_enrolled( $user_id, $parent_course ) && ! PressPrimer_Quiz_Helpers::current_user_can_edit_post( $lesson->get( 'id' ) ) ) {
+		if ( ! $this->is_user_enrolled( $user_id, $parent_course ) && ! PressPrimer_Quiz_Helpers::current_user_can_edit_post( $lesson->get( 'id' ) ) ) {
 			$content .= '<div class="ppq-access-denied">';
 			$content .= esc_html__( 'Enroll in this course to access the quiz.', 'pressprimer-quiz' );
 			$content .= '</div>';
@@ -749,6 +750,17 @@ class PressPrimer_Quiz_LifterLMS {
 			$require_pass = get_post_meta( $lesson_id, self::META_KEY_REQUIRE_PASS, true );
 
 			if ( '1' === $require_pass ) {
+				// If the lesson is already marked complete, don't hide the button.
+				$user_id = get_current_user_id();
+				if ( $user_id && llms_is_complete( $user_id, $lesson_id, 'lesson' ) ) {
+					return $show;
+				}
+
+				// If the user has already passed this quiz, don't hide the button.
+				if ( $user_id && $this->user_has_passed_quiz( (int) $quiz_id, $user_id ) ) {
+					return $show;
+				}
+
 				return false;
 			}
 		}
@@ -809,6 +821,14 @@ class PressPrimer_Quiz_LifterLMS {
 			return;
 		}
 
+		// Verify the lesson has a valid parent section. LifterLMS cascades
+		// completion upward (lesson → section → course), so if _llms_parent_section
+		// is missing, the cascade triggers a fatal error.
+		$parent_section = get_post_meta( $lesson_id, '_llms_parent_section', true );
+		if ( empty( $parent_section ) ) {
+			return;
+		}
+
 		// Mark as complete.
 		llms_mark_complete( $user_id, $lesson_id, 'lesson' );
 
@@ -824,7 +844,113 @@ class PressPrimer_Quiz_LifterLMS {
 	}
 
 	/**
-	 * Check if user is a LifterLMS Instructor
+	 * Check if user has access to a LifterLMS course
+	 *
+	 * Checks open access plans, admin/instructor status, and enrollment
+	 * (including completed enrollments).
+	 *
+	 * @since 2.1.0
+	 *
+	 * @param int $user_id   User ID.
+	 * @param int $course_id Course ID.
+	 * @return bool True if user has access.
+	 */
+	private function is_user_enrolled( $user_id, $course_id ) {
+		// Admins always have access.
+		if ( current_user_can( 'manage_options' ) ) {
+			return true;
+		}
+
+		// Check if the course has an open (free) access plan — no enrollment needed.
+		if ( function_exists( 'llms_get_post' ) ) {
+			$course = llms_get_post( $course_id );
+			if ( $course && is_a( $course, 'LLMS_Course' ) ) {
+				$access_plans = $course->get_access_plans( false, false );
+				foreach ( $access_plans as $plan ) {
+					if ( $plan->is_free() && $plan->has_availability() ) {
+						return true;
+					}
+				}
+			}
+		}
+
+		// Check if user is an instructor for this course.
+		if ( function_exists( 'llms_get_post' ) ) {
+			$course = llms_get_post( $course_id );
+			if ( $course && is_a( $course, 'LLMS_Course' ) && method_exists( $course, 'get_instructors' ) ) {
+				$instructors = $course->get_instructors();
+				foreach ( $instructors as $instructor ) {
+					if ( isset( $instructor['id'] ) && (int) $instructor['id'] === $user_id ) {
+						return true;
+					}
+				}
+			}
+		}
+
+		// Check enrollment (includes completed enrollments).
+		if ( function_exists( 'llms_is_user_enrolled' ) ) {
+			return llms_is_user_enrolled( $user_id, $course_id );
+		}
+
+		// Default to allowing access if we can't determine enrollment.
+		return (bool) $user_id;
+	}
+
+	/**
+	 * Check if a user has passed a specific quiz
+	 *
+	 * @since 2.1.0
+	 *
+	 * @param int $quiz_id PPQ Quiz ID.
+	 * @param int $user_id User ID.
+	 * @return bool True if user has at least one passing submitted attempt.
+	 */
+	private function user_has_passed_quiz( int $quiz_id, int $user_id ): bool {
+		global $wpdb;
+		$table = $wpdb->prefix . 'ppq_attempts';
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- One-off check, not suitable for persistent caching.
+		$passed = $wpdb->get_var(
+			$wpdb->prepare(
+				"SELECT COUNT(*) FROM {$table} WHERE quiz_id = %d AND user_id = %d AND status = 'submitted' AND passed = 1", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Table name is constructed from $wpdb->prefix.
+				$quiz_id,
+				$user_id
+			)
+		);
+
+		return $passed > 0;
+	}
+
+	/**
+	 * Map LifterLMS Instructor role to PPQ teacher capabilities
+	 *
+	 * Grants pressprimer_quiz_manage_own and related capabilities to the
+	 * LifterLMS Instructor and Instructor's Assistant roles so they can
+	 * create and manage their own quizzes, questions, and banks.
+	 *
+	 * @since 2.1.0
+	 */
+	private function map_instructor_capabilities() {
+		$roles = array( 'instructor', 'instructors_assistant' );
+
+		foreach ( $roles as $role_slug ) {
+			$role = get_role( $role_slug );
+
+			if ( ! $role ) {
+				continue;
+			}
+
+			// Only add capabilities if the role doesn't already have them.
+			if ( ! $role->has_cap( 'pressprimer_quiz_manage_own' ) ) {
+				$role->add_cap( 'pressprimer_quiz_manage_own' );
+				$role->add_cap( 'pressprimer_quiz_view_results_own' );
+				$role->add_cap( 'pressprimer_quiz_take_quiz' );
+			}
+		}
+	}
+
+	/**
+	 * Check if user is a LifterLMS Instructor or Instructor's Assistant
 	 *
 	 * @since 1.0.0
 	 *
@@ -837,9 +963,9 @@ class PressPrimer_Quiz_LifterLMS {
 			return $has_capability;
 		}
 
-		// Check if user is a LifterLMS Instructor.
+		// Check if user is a LifterLMS Instructor or Instructor's Assistant.
 		$user = get_userdata( $user_id );
-		if ( $user && in_array( 'llms_instructor', (array) $user->roles, true ) ) {
+		if ( $user && ( in_array( 'instructor', (array) $user->roles, true ) || in_array( 'instructors_assistant', (array) $user->roles, true ) ) ) {
 			return true;
 		}
 

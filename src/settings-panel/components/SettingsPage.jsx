@@ -25,6 +25,8 @@ import {
 	ExperimentOutlined,
 	SkinOutlined,
 	AuditOutlined,
+	EyeOutlined,
+	ImportOutlined,
 } from '@ant-design/icons';
 
 import GeneralTab from './GeneralTab';
@@ -41,6 +43,8 @@ const ADDON_ICONS = {
 	xapi: <ExperimentOutlined />,
 	'white-label': <SkinOutlined />,
 	'audit-log': <AuditOutlined />,
+	proctoring: <EyeOutlined />,
+	import: <ImportOutlined />,
 	default: <SettingOutlined />,
 };
 

@@ -127,6 +127,28 @@ class PressPrimer_Quiz_AJAX_Handler {
 			);
 		}
 
+		/**
+		 * Filter whether the user can start this quiz.
+		 *
+		 * Allows addons to block quiz start at the server level. Return true
+		 * to allow, or a WP_Error to block. This is the AJAX-level enforcement
+		 * of the same filter used on the landing page.
+		 *
+		 * @since 2.1.0
+		 *
+		 * @param true|WP_Error          $can_start True if allowed, WP_Error to block.
+		 * @param PressPrimer_Quiz_Quiz   $quiz      The quiz object.
+		 */
+		$can_start = apply_filters( 'pressprimer_quiz_can_start', true, $quiz );
+
+		if ( is_wp_error( $can_start ) ) {
+			wp_send_json_error(
+				[
+					'message' => $can_start->get_error_message(),
+				]
+			);
+		}
+
 		// Get guest email if provided
 		$guest_email = isset( $_POST['guest_email'] ) ? sanitize_email( wp_unslash( $_POST['guest_email'] ) ) : '';
 

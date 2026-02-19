@@ -61,6 +61,17 @@ class PressPrimer_Quiz_TutorLMS {
 	private $supported_post_types = [ 'lesson' ];
 
 	/**
+	 * Whether the lesson quiz has already been rendered via the_content filter.
+	 *
+	 * Prevents double-rendering since Tutor LMS calls the_content() via
+	 * tutor_load_template() outside the standard WordPress loop.
+	 *
+	 * @since 2.1.0
+	 * @var bool
+	 */
+	private $lesson_quiz_rendered = false;
+
+	/**
 	 * Initialize the integration
 	 *
 	 * @since 1.0.0
@@ -85,8 +96,19 @@ class PressPrimer_Quiz_TutorLMS {
 		// Course builder support.
 		add_action( 'admin_enqueue_scripts', [ $this, 'enqueue_course_builder_assets' ] );
 
-		// Frontend hooks.
-		add_action( 'tutor_lesson/single/after/content', [ $this, 'display_quiz_in_lesson' ] );
+		// Map TutorLMS Instructor role to PPQ teacher capabilities.
+		$this->map_instructor_capabilities();
+		add_filter( 'pressprimer_quiz_user_has_teacher_capability', [ $this, 'check_instructor_capability' ], 10, 2 );
+
+		// Frontend hooks — append quiz to lesson content via the_content filter.
+		// Tutor LMS calls the_content() inside tutor_load_template() which does
+		// NOT use the WordPress loop, so in_the_loop()/is_main_query() are false.
+		add_filter( 'the_content', [ $this, 'append_quiz_to_lesson_content' ], 20 );
+
+		// Ensure the Overview tab is shown for empty lessons that have a quiz mapped.
+		// Without this, Tutor LMS hides the tab (and never calls the_content) when
+		// the lesson post_content is empty and the user is not an admin.
+		add_filter( 'tutor_has_lesson_content', [ $this, 'force_lesson_content_for_quiz' ], 10, 2 );
 		add_action( 'tutor_course/single/enrolled/after/lesson_list', [ $this, 'display_topic_quizzes' ] );
 		add_filter( 'tutor_course/single/enrolled/topic_contents', [ $this, 'inject_topic_quiz_content' ], 10, 2 );
 
@@ -534,7 +556,7 @@ class PressPrimer_Quiz_TutorLMS {
 		wp_enqueue_script(
 			'ppq-tutorlms-course-builder',
 			PRESSPRIMER_QUIZ_PLUGIN_URL . 'assets/js/tutorlms-course-builder.js',
-			[],
+			[ 'wp-element' ],
 			PRESSPRIMER_QUIZ_VERSION,
 			true
 		);
@@ -662,27 +684,53 @@ class PressPrimer_Quiz_TutorLMS {
 	}
 
 	/**
-	 * Display quiz in lesson content
+	 * Append quiz to lesson content via the_content filter.
 	 *
-	 * @since 1.0.0
+	 * Tutor LMS renders lesson text via the_content() inside its own template
+	 * loader (tutor_load_template) which bypasses the WordPress loop. This means
+	 * in_the_loop() and is_main_query() return false. Additionally, Tutor LMS
+	 * spotlight mode loads lesson content via AJAX (tutor_render_lesson_content),
+	 * where is_singular() returns false entirely. We guard with a post_type
+	 * check on the current post instead, which works in both contexts.
+	 *
+	 * @since 2.1.0
+	 *
+	 * @param string $content The post content.
+	 * @return string Modified content with quiz appended.
 	 */
-	public function display_quiz_in_lesson() {
+	public function append_quiz_to_lesson_content( $content ) {
+		// Only for Tutor LMS lesson posts. We check $post->post_type instead of
+		// is_singular('lesson') because Tutor's spotlight mode loads lessons via
+		// AJAX where the main WP query is not a singular lesson query.
+		$post = get_post();
+		if ( ! $post || 'lesson' !== $post->post_type ) {
+			return $content;
+		}
+
+		// Prevent double-rendering (the_content can fire multiple times).
+		if ( $this->lesson_quiz_rendered ) {
+			return $content;
+		}
+
 		$post_id = get_the_ID();
 		$quiz_id = get_post_meta( $post_id, self::META_KEY_QUIZ_ID, true );
 
 		if ( ! $quiz_id ) {
-			return;
+			return $content;
 		}
+
+		// Mark as rendered before processing.
+		$this->lesson_quiz_rendered = true;
 
 		// Check if user is enrolled in the course.
 		$course_id = $this->get_course_id_for_lesson( $post_id );
 		$user_id   = get_current_user_id();
 
 		if ( $course_id && ! $this->is_user_enrolled( $user_id, $course_id ) ) {
-			echo '<div class="ppq-tutorlms-access-denied">'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Safe HTML
-			echo '<p>' . esc_html__( 'Enroll in this course to access the quiz.', 'pressprimer-quiz' ) . '</p>'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Safe HTML with escaped string
-			echo '</div>'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Safe HTML
-			return;
+			$content .= '<div class="ppq-tutorlms-access-denied">';
+			$content .= '<p>' . esc_html__( 'Enroll in this course to access the quiz.', 'pressprimer-quiz' ) . '</p>';
+			$content .= '</div>';
+			return $content;
 		}
 
 		// Add context data for navigation.
@@ -698,9 +746,35 @@ class PressPrimer_Quiz_TutorLMS {
 			esc_attr( base64_encode( wp_json_encode( $context_data ) ) )
 		);
 
-		echo '<div class="ppq-tutorlms-quiz-wrapper">'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Safe HTML
-		echo do_shortcode( $quiz_shortcode ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Shortcode output
-		echo '</div>'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Safe HTML
+		$content .= '<div class="ppq-tutorlms-quiz-wrapper">';
+		$content .= do_shortcode( $quiz_shortcode );
+		$content .= '</div>';
+
+		return $content;
+	}
+
+	/**
+	 * Force Tutor LMS to show the Overview tab when a quiz is mapped.
+	 *
+	 * Tutor's Lesson::has_lesson_content() returns false for non-admin users
+	 * when the lesson post_content is empty. This causes the Overview tab
+	 * (and its the_content() call) to be hidden, preventing our quiz from
+	 * rendering. We override it to true when a PPQ quiz is attached.
+	 *
+	 * @since 2.1.0
+	 *
+	 * @param bool $has_content Whether Tutor thinks the lesson has content.
+	 * @param int  $lesson_id   Lesson post ID.
+	 * @return bool True if a quiz is mapped, original value otherwise.
+	 */
+	public function force_lesson_content_for_quiz( $has_content, $lesson_id ) {
+		if ( $has_content ) {
+			return $has_content;
+		}
+
+		$quiz_id = get_post_meta( $lesson_id, self::META_KEY_QUIZ_ID, true );
+
+		return ! empty( $quiz_id );
 	}
 
 	/**
@@ -825,12 +899,51 @@ class PressPrimer_Quiz_TutorLMS {
 			$require_pass = get_post_meta( $post_id, self::META_KEY_REQUIRE_PASS, true );
 
 			if ( '1' === $require_pass ) {
+				// If the lesson is already marked complete, don't hide the button.
+				if ( function_exists( 'tutor_utils' ) ) {
+					$completed = tutor_utils()->is_completed_lesson( $post_id, get_current_user_id() );
+					if ( false !== $completed ) {
+						return $form;
+					}
+				}
+
+				// If the user has already passed this quiz, don't hide the button.
+				$user_id = get_current_user_id();
+				if ( $user_id && $this->user_has_passed_quiz( (int) $quiz_id, $user_id ) ) {
+					return $form;
+				}
+
 				// Return empty to hide the complete button - user must pass quiz.
 				return '';
 			}
 		}
 
 		return $form;
+	}
+
+	/**
+	 * Check if a user has passed a specific quiz
+	 *
+	 * @since 2.1.0
+	 *
+	 * @param int $quiz_id PPQ Quiz ID.
+	 * @param int $user_id User ID.
+	 * @return bool True if user has at least one passing submitted attempt.
+	 */
+	private function user_has_passed_quiz( int $quiz_id, int $user_id ): bool {
+		global $wpdb;
+		$table = $wpdb->prefix . 'ppq_attempts';
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- One-off check, not suitable for persistent caching.
+		$passed = $wpdb->get_var(
+			$wpdb->prepare(
+				"SELECT COUNT(*) FROM {$table} WHERE quiz_id = %d AND user_id = %d AND status = 'submitted' AND passed = 1", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Table name is constructed from $wpdb->prefix.
+				$quiz_id,
+				$user_id
+			)
+		);
+
+		return $passed > 0;
 	}
 
 	/**
@@ -904,6 +1017,38 @@ class PressPrimer_Quiz_TutorLMS {
 			 * @param int $user_id   User ID.
 			 */
 			do_action( 'pressprimer_quiz_tutorlms_lesson_completed', $lesson_id, $user_id );
+
+			// Trigger auto-course-completion if all lessons are now complete.
+			// TutorLMS only checks this on course page load, so we trigger it here
+			// to complete the course immediately after the final lesson finishes.
+			$this->maybe_auto_complete_course( $lesson_id, $user_id );
+		}
+	}
+
+	/**
+	 * Trigger TutorLMS auto-course-completion if all content is done
+	 *
+	 * TutorLMS normally only checks for auto-completion on course page load.
+	 * This method triggers the check immediately after a lesson is programmatically
+	 * marked complete, so the course completes without requiring a page visit.
+	 *
+	 * @since 2.1.0
+	 *
+	 * @param int $lesson_id Lesson post ID.
+	 * @param int $user_id   User ID.
+	 */
+	private function maybe_auto_complete_course( $lesson_id, $user_id ) {
+		if ( ! class_exists( '\Tutor\Models\CourseModel' ) ) {
+			return;
+		}
+
+		$course_id = $this->get_course_id_for_lesson( $lesson_id );
+		if ( ! $course_id ) {
+			return;
+		}
+
+		if ( \Tutor\Models\CourseModel::can_autocomplete_course( $course_id, $user_id ) ) {
+			\Tutor\Models\CourseModel::mark_course_as_completed( $course_id, $user_id );
 		}
 	}
 
@@ -935,28 +1080,100 @@ class PressPrimer_Quiz_TutorLMS {
 	}
 
 	/**
-	 * Check if user is enrolled in a course
+	 * Check if user has access to a course
+	 *
+	 * Checks enrollment, public course status, admin/instructor status,
+	 * and completed course enrollment records.
 	 *
 	 * @since 1.0.0
 	 *
 	 * @param int $user_id   User ID.
 	 * @param int $course_id Course ID.
-	 * @return bool True if enrolled.
+	 * @return bool True if user has access.
 	 */
 	private function is_user_enrolled( $user_id, $course_id ) {
+		// Public courses are accessible to everyone (no enrollment required).
+		$is_public = get_post_meta( $course_id, '_tutor_is_public_course', true );
+		if ( 'yes' === $is_public ) {
+			return true;
+		}
+
+		// Admins and course instructors always have access.
+		if ( current_user_can( 'manage_options' ) ) {
+			return true;
+		}
+
+		if ( function_exists( 'tutor_utils' ) ) {
+			$utils = tutor_utils();
+
+			// Check if user is an instructor for this course.
+			if ( method_exists( $utils, 'is_instructor_of_this_course' ) ) {
+				if ( $utils->is_instructor_of_this_course( $user_id, $course_id ) ) {
+					return true;
+				}
+			}
+
+			// Check enrollment (includes completed courses — enrollment record
+			// keeps post_status='completed' even after course completion).
+			if ( method_exists( $utils, 'is_enrolled' ) ) {
+				if ( $utils->is_enrolled( $course_id, $user_id ) ) {
+					return true;
+				}
+			}
+		}
+
 		if ( ! $user_id ) {
 			return false;
 		}
 
-		// Use TutorLMS function.
-		if ( function_exists( 'tutor_utils' ) ) {
-			$utils = tutor_utils();
-			if ( method_exists( $utils, 'is_enrolled' ) ) {
-				return (bool) $utils->is_enrolled( $course_id, $user_id );
-			}
+		return true; // Default to allowing if we can't check.
+	}
+
+	/**
+	 * Map TutorLMS Instructor role to PPQ teacher capabilities
+	 *
+	 * Grants pressprimer_quiz_manage_own and related capabilities to the
+	 * tutor_instructor role so instructors can create and manage their own
+	 * quizzes, questions, and banks.
+	 *
+	 * @since 2.1.0
+	 */
+	private function map_instructor_capabilities() {
+		$instructor = get_role( 'tutor_instructor' );
+
+		if ( ! $instructor ) {
+			return;
 		}
 
-		return true; // Default to allowing if we can't check.
+		// Only add capabilities if the role doesn't already have them.
+		if ( ! $instructor->has_cap( 'pressprimer_quiz_manage_own' ) ) {
+			$instructor->add_cap( 'pressprimer_quiz_manage_own' );
+			$instructor->add_cap( 'pressprimer_quiz_view_results_own' );
+			$instructor->add_cap( 'pressprimer_quiz_take_quiz' );
+		}
+	}
+
+	/**
+	 * Check if user is a TutorLMS Instructor
+	 *
+	 * @since 2.1.0
+	 *
+	 * @param bool $has_capability Whether user has teacher capability.
+	 * @param int  $user_id        User ID.
+	 * @return bool Modified capability.
+	 */
+	public function check_instructor_capability( $has_capability, $user_id ) {
+		if ( $has_capability ) {
+			return $has_capability;
+		}
+
+		// Check if user is a TutorLMS Instructor.
+		$user = get_userdata( $user_id );
+		if ( $user && in_array( 'tutor_instructor', (array) $user->roles, true ) ) {
+			return true;
+		}
+
+		return $has_capability;
 	}
 
 	/**
@@ -1041,14 +1258,22 @@ class PressPrimer_Quiz_TutorLMS {
 		$recent = $request->get_param( 'recent' );
 
 		if ( $recent ) {
-			$user_id = get_current_user_id();
-			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- REST search results, not suitable for caching
-			$quizzes = $wpdb->get_results(
-				$wpdb->prepare(
-					"SELECT id, title FROM {$table} WHERE status = 'published' AND owner_id = %d ORDER BY id DESC LIMIT 50", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-					$user_id
-				)
-			);
+			if ( current_user_can( 'manage_options' ) ) {
+				// Admins see all published quizzes.
+				// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- REST search results, not suitable for caching
+				$quizzes = $wpdb->get_results(
+					"SELECT id, title FROM {$table} WHERE status = 'published' ORDER BY id DESC LIMIT 50" // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+				);
+			} else {
+				$user_id = get_current_user_id();
+				// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- REST search results, not suitable for caching
+				$quizzes = $wpdb->get_results(
+					$wpdb->prepare(
+						"SELECT id, title FROM {$table} WHERE status = 'published' AND owner_id = %d ORDER BY id DESC LIMIT 50", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+						$user_id
+					)
+				);
+			}
 
 			return new WP_REST_Response(
 				[
@@ -1161,7 +1386,15 @@ class PressPrimer_Quiz_TutorLMS {
 		}
 
 		// Check user can edit this lesson.
-		if ( ! PressPrimer_Quiz_Helpers::current_user_can_edit_post( $lesson_id ) ) {
+		// Note: Tutor LMS registers custom capabilities (edit_tutor_lesson) that may not
+		// be in the database if Tutor wasn't properly activated. We check manage_options
+		// (admin) or the Tutor-specific edit_tutor_lesson capability, plus verify the
+		// lesson author matches for non-admins.
+		$can_edit = current_user_can( 'manage_options' )
+			|| current_user_can( 'edit_tutor_lesson' )
+			|| ( (int) $lesson->post_author === get_current_user_id() && current_user_can( 'edit_posts' ) );
+
+		if ( ! $can_edit ) {
 			return new WP_REST_Response(
 				[
 					'success' => false,

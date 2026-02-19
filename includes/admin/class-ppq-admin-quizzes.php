@@ -707,6 +707,18 @@ class PressPrimer_Quiz_Admin_Quizzes {
 			];
 		}
 
+		/**
+		 * Filter quiz editor data before passing to React
+		 *
+		 * Allows addons to inject additional data into the quiz editor.
+		 *
+		 * @since 2.1.0
+		 *
+		 * @param array $quiz_data Quiz data array.
+		 * @param int   $quiz_id   Quiz ID (0 for new quiz).
+		 */
+		$quiz_data = apply_filters( 'pressprimer_quiz_quiz_editor_data', $quiz_data, $quiz_id );
+
 		// Localize script with data
 		wp_localize_script(
 			'ppq-quiz-editor',

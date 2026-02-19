@@ -654,11 +654,7 @@ class PressPrimer_Quiz_LearnPress {
 			if ( $user && method_exists( $user, 'complete_lesson' ) ) {
 				$result = $user->complete_lesson( $lesson_id, $course_id );
 
-				// Log any errors for debugging.
-				if ( is_wp_error( $result ) ) {
-					// phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log -- Intentional debug logging
-					error_log( 'PPQ LearnPress: Failed to complete lesson - ' . $result->get_error_message() );
-				} else {
+				if ( ! is_wp_error( $result ) ) {
 					/**
 					 * Fires after PPQ marks a LearnPress lesson complete.
 					 *

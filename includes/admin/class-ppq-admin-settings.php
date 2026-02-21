@@ -1838,12 +1838,21 @@ Good luck with your studies!',
 				'pluginVersion'          => PRESSPRIMER_QUIZ_VERSION,
 				'dbVersion'              => get_option( 'pressprimer_quiz_db_version', 'Not set' ),
 				'wpVersion'              => get_bloginfo( 'version' ),
+				'siteUrl'                => get_site_url(),
 				'memoryLimit'            => WP_MEMORY_LIMIT,
 				'phpVersion'             => PHP_VERSION,
 				'postMaxSize'            => ini_get( 'post_max_size' ),
 				'maxExecutionTime'       => ini_get( 'max_execution_time' ),
 				'mysqlVersion'           => $wpdb->db_version(),
 				'isMultisite'            => is_multisite(),
+				'activeTheme'            => wp_get_theme()->get( 'Name' ) . ' ' . wp_get_theme()->get( 'Version' ),
+				'addonVersions'          => [
+					'educator'   => defined( 'PRESSPRIMER_QUIZ_EDUCATOR_VERSION' ) ? PRESSPRIMER_QUIZ_EDUCATOR_VERSION : null,
+					'school'     => defined( 'PRESSPRIMER_QUIZ_SCHOOL_VERSION' ) ? PRESSPRIMER_QUIZ_SCHOOL_VERSION : null,
+					'enterprise' => defined( 'PRESSPRIMER_QUIZ_ENTERPRISE_VERSION' ) ? PRESSPRIMER_QUIZ_ENTERPRISE_VERSION : null,
+				],
+				'licenseStatus'          => get_option( 'pressprimer_quiz_license_status', 'inactive' ),
+				'activePlugins'          => self::get_active_plugins_list(),
 				'totalQuizzes'           => $total_quizzes,
 				'totalQuestions'         => $total_questions,
 				'totalBanks'             => $total_banks,
@@ -1891,6 +1900,39 @@ Good luck with your studies!',
 		 * @param array $data Settings data including settings, apiKeyStatus, systemInfo, etc.
 		 */
 		return apply_filters( 'pressprimer_quiz_settings_data', $data );
+	}
+
+	/**
+	 * Get a simplified list of active plugins for the Status tab.
+	 *
+	 * Returns an array of plugin names with their versions, e.g.
+	 * [ 'Akismet Anti-spam 5.3.1', 'WooCommerce 9.5.1' ].
+	 *
+	 * @since 2.2.0
+	 *
+	 * @return array List of "Plugin Name Version" strings.
+	 */
+	private static function get_active_plugins_list() {
+		$active_plugins = get_option( 'active_plugins', [] );
+		$plugins_list   = [];
+
+		if ( ! function_exists( 'get_plugin_data' ) ) {
+			require_once ABSPATH . 'wp-admin/includes/plugin.php';
+		}
+
+		foreach ( $active_plugins as $plugin_file ) {
+			$plugin_path = WP_PLUGIN_DIR . '/' . $plugin_file;
+			if ( ! file_exists( $plugin_path ) ) {
+				continue;
+			}
+			$plugin_data    = get_plugin_data( $plugin_path, false, false );
+			$name           = $plugin_data['Name'] ?: $plugin_file;
+			$version        = $plugin_data['Version'] ?: '';
+			$plugins_list[] = $version ? $name . ' ' . $version : $name;
+		}
+
+		sort( $plugins_list );
+		return $plugins_list;
 	}
 
 	/**

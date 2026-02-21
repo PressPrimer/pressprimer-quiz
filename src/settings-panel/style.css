@@ -355,6 +355,56 @@
 	margin: 0 -24px -24px -24px;
 }
 
+/* Status tab: copy-to-clipboard bar */
+.ppq-status-copy-bar {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	background: #f0f6fc;
+	border: 1px solid #c5d9ed;
+	border-radius: 6px;
+	padding: 12px 16px;
+	margin-bottom: 24px;
+}
+
+.ppq-status-copy-bar-text {
+	color: #2271b1;
+	font-size: 13px;
+}
+
+/* Status tab: two-column grid */
+.ppq-status-grid {
+	display: grid;
+	grid-template-columns: 1fr 1fr;
+	gap: 0 32px;
+}
+
+.ppq-status-grid .ppq-settings-section {
+	margin-bottom: 24px;
+}
+
+.ppq-status-grid .ppq-system-info th {
+	width: 140px;
+}
+
+/* Status tab: active plugins list */
+.ppq-status-plugin-list {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 8px;
+	padding: 4px 0;
+}
+
+.ppq-status-plugin-item {
+	background: #fafafa;
+	border: 1px solid #f0f0f0;
+	border-radius: 4px;
+	padding: 4px 10px;
+	font-size: 12px;
+	color: #3c434a;
+	line-height: 1.5;
+}
+
 /* Responsive adjustments */
 @media screen and (max-width: 1024px) {
 	.ppq-settings-layout {
@@ -388,6 +438,10 @@
 	.ppq-settings-tab--active:hover {
 		color: #fff;
 	}
+
+	.ppq-status-grid {
+		grid-template-columns: 1fr;
+	}
 }
 
 @media screen and (max-width: 600px) {
@@ -410,5 +464,15 @@
 
 	.ppq-system-info th {
 		width: 120px;
+	}
+
+	.ppq-status-copy-bar {
+		flex-direction: column;
+		gap: 8px;
+		text-align: center;
+	}
+
+	.ppq-status-grid .ppq-system-info th {
+		width: 100px;
 	}
 }

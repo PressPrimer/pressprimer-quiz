@@ -424,58 +424,6 @@ class PressPrimer_Quiz_Admin_Quizzes {
 				</a>
 			</div>
 
-			<!-- Quiz Landing Page Section -->
-			<div class="ppq-preview-section">
-				<h2><?php esc_html_e( 'Landing Page', 'pressprimer-quiz' ); ?></h2>
-				<div class="ppq-quiz-landing">
-					<h1 class="ppq-quiz-title"><?php echo esc_html( $quiz->title ); ?></h1>
-
-					<?php if ( ! empty( $quiz->description ) ) : ?>
-						<div class="ppq-quiz-description">
-							<?php echo wp_kses_post( $quiz->description ); ?>
-						</div>
-					<?php endif; ?>
-
-					<?php if ( $quiz->featured_image_id ) : ?>
-						<div class="ppq-quiz-featured-image">
-							<?php echo wp_get_attachment_image( $quiz->featured_image_id, 'large' ); ?>
-						</div>
-					<?php endif; ?>
-
-					<div class="ppq-quiz-info">
-						<div class="ppq-quiz-info-item">
-							<strong><?php esc_html_e( 'Questions:', 'pressprimer-quiz' ); ?></strong>
-							<?php echo esc_html( count( $questions ) ); ?>
-						</div>
-
-						<?php if ( $quiz->time_limit_seconds ) : ?>
-							<div class="ppq-quiz-info-item">
-								<strong><?php esc_html_e( 'Time Limit:', 'pressprimer-quiz' ); ?></strong>
-								<?php
-								$minutes = floor( $quiz->time_limit_seconds / 60 );
-								/* translators: %d: number of minutes for time limit */
-								echo esc_html( sprintf( _n( '%d minute', '%d minutes', $minutes, 'pressprimer-quiz' ), $minutes ) );
-								?>
-							</div>
-						<?php endif; ?>
-
-						<div class="ppq-quiz-info-item">
-							<strong><?php esc_html_e( 'Passing Score:', 'pressprimer-quiz' ); ?></strong>
-							<?php echo esc_html( $quiz->pass_percent . '%' ); ?>
-						</div>
-
-						<div class="ppq-quiz-info-item">
-							<strong><?php esc_html_e( 'Mode:', 'pressprimer-quiz' ); ?></strong>
-							<?php echo 'tutorial' === $quiz->mode ? esc_html__( 'Tutorial', 'pressprimer-quiz' ) : esc_html__( 'Test', 'pressprimer-quiz' ); ?>
-						</div>
-					</div>
-
-					<button class="button button-primary button-large" disabled>
-						<?php esc_html_e( 'Start Quiz (Preview Only)', 'pressprimer-quiz' ); ?>
-					</button>
-				</div>
-			</div>
-
 			<!-- Quiz Questions Section -->
 			<div class="ppq-preview-section">
 				<h2><?php esc_html_e( 'Questions', 'pressprimer-quiz' ); ?></h2>
@@ -517,7 +465,7 @@ class PressPrimer_Quiz_Admin_Quizzes {
 								?>
 							</span>
 							<span class="ppq-question-difficulty">
-								<?php echo esc_html( ucfirst( $question->difficulty_author ) ); ?>
+								<?php echo esc_html( ucfirst( $question->difficulty_author ?? '' ) ); ?>
 							</span>
 							<span class="ppq-question-points">
 								<?php
@@ -564,59 +512,6 @@ class PressPrimer_Quiz_Admin_Quizzes {
 						<?php endif; ?>
 					</div>
 				<?php endforeach; ?>
-			</div>
-
-			<!-- Mock Results Section -->
-			<div class="ppq-preview-section">
-				<h2><?php esc_html_e( 'Mock Results', 'pressprimer-quiz' ); ?></h2>
-				<div class="ppq-preview-results">
-					<div class="ppq-results-score">
-						<div class="ppq-score-circle">
-							<span class="ppq-score-value">85%</span>
-						</div>
-						<div class="ppq-pass-status ppq-pass">
-							<?php esc_html_e( 'PASSED', 'pressprimer-quiz' ); ?>
-						</div>
-					</div>
-
-					<div class="ppq-results-details">
-						<div class="ppq-result-item">
-							<strong><?php esc_html_e( 'Correct:', 'pressprimer-quiz' ); ?></strong>
-							<?php
-							$correct = ceil( count( $questions ) * 0.85 );
-							printf(
-								/* translators: 1: correct count, 2: total questions */
-								esc_html__( '%1$d of %2$d', 'pressprimer-quiz' ),
-								(int) $correct,
-								(int) count( $questions )
-							);
-							?>
-						</div>
-						<div class="ppq-result-item">
-							<strong><?php esc_html_e( 'Time Spent:', 'pressprimer-quiz' ); ?></strong>
-							<?php esc_html_e( '15 minutes', 'pressprimer-quiz' ); ?>
-						</div>
-						<div class="ppq-result-item">
-							<strong><?php esc_html_e( 'Passing Score:', 'pressprimer-quiz' ); ?></strong>
-							<?php echo esc_html( $quiz->pass_percent . '%' ); ?>
-						</div>
-					</div>
-
-					<?php
-					// Show feedback for 85% score
-					$feedback = $quiz->get_feedback_for_score( 85 );
-					if ( ! empty( $feedback ) ) :
-						?>
-						<div class="ppq-results-feedback">
-							<h3><?php esc_html_e( 'Feedback', 'pressprimer-quiz' ); ?></h3>
-							<?php echo wp_kses_post( $feedback ); ?>
-						</div>
-					<?php endif; ?>
-
-					<p class="ppq-preview-note">
-						<em><?php esc_html_e( 'This is a sample result showing 85% score. Actual results will vary based on student performance.', 'pressprimer-quiz' ); ?></em>
-					</p>
-				</div>
 			</div>
 
 			<!-- Exit Preview Button -->

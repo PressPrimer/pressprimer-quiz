@@ -378,7 +378,7 @@ class PressPrimer_Quiz_Banks_List_Table extends WP_List_Table {
 		// Check ownership for edit/delete.
 		if ( current_user_can( 'pressprimer_quiz_manage_all' ) || absint( $item->owner_id ) === get_current_user_id() ) {
 			$actions['edit']   = '<a href="' . esc_url( $edit_url ) . '">' . __( 'Edit', 'pressprimer-quiz' ) . '</a>';
-			$actions['delete'] = '<a href="' . esc_url( $delete_url ) . '" onclick="return confirm(\'' . esc_js( __( 'Are you sure you want to delete this bank?', 'pressprimer-quiz' ) ) . '\');">' . __( 'Delete', 'pressprimer-quiz' ) . '</a>';
+			$actions['delete'] = '<a href="' . esc_url( $delete_url ) . '" class="ppq-delete-confirm">' . __( 'Delete', 'pressprimer-quiz' ) . '</a>';
 		}
 
 		/**

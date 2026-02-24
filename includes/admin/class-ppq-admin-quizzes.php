@@ -1481,7 +1481,7 @@ class PressPrimer_Quiz_Quizzes_List_Table extends WP_List_Table {
 
 		// Delete action
 		$actions['delete'] = sprintf(
-			'<a href="%s" class="submitdelete" onclick="return confirm(\'%s\')">%s</a>',
+			'<a href="%s" class="submitdelete ppq-delete-confirm">%s</a>',
 			esc_url(
 				wp_nonce_url(
 					add_query_arg(
@@ -1495,7 +1495,6 @@ class PressPrimer_Quiz_Quizzes_List_Table extends WP_List_Table {
 					'delete-quiz_' . $item->id
 				)
 			),
-			esc_js( __( 'Are you sure you want to delete this quiz?', 'pressprimer-quiz' ) ),
 			esc_html__( 'Delete', 'pressprimer-quiz' )
 		);
 

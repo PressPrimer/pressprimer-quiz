@@ -1725,7 +1725,7 @@ Good luck with your studies!',
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching
 		$total_banks = (int) $wpdb->get_var( "SELECT COUNT(*) FROM {$wpdb->prefix}ppq_banks" ); // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching
-		$total_attempts = (int) $wpdb->get_var( "SELECT COUNT(*) FROM {$wpdb->prefix}ppq_attempts" ); // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		$total_attempts = (int) $wpdb->get_var( "SELECT COUNT(*) FROM {$wpdb->prefix}ppq_attempts a INNER JOIN {$wpdb->prefix}ppq_quizzes q ON a.quiz_id = q.id WHERE a.status = 'submitted'" ); // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 
 		// Get theme font family from WordPress theme
 		$theme_font = $this->get_theme_font_family();

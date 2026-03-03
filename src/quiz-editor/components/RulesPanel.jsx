@@ -252,9 +252,9 @@ const RulesPanel = ({ quizId, generationMode }) => {
 	 * Render rule card
 	 */
 	const renderRuleCard = (rule, index) => {
-		const selectedBank = banks.find(b => b.id === rule.bank_id);
-		const selectedCategories = categories.filter(c => rule.category_ids.includes(c.id));
-		const selectedTags = tags.filter(t => rule.tag_ids.includes(t.id));
+		const selectedBank = banks.find(b => Number(b.id) === rule.bank_id);
+		const selectedCategories = categories.filter(c => rule.category_ids.includes(Number(c.id)));
+		const selectedTags = tags.filter(t => rule.tag_ids.includes(Number(t.id)));
 
 		return (
 			<Card
@@ -301,7 +301,7 @@ const RulesPanel = ({ quizId, generationMode }) => {
 									value={rule.bank_id}
 									onChange={(value) => handleUpdateRule(rule.id, 'bank_id', value)}
 									options={banks.map(bank => ({
-										value: bank.id,
+										value: Number(bank.id),
 										label: bank.name,
 									}))}
 								/>
@@ -326,7 +326,7 @@ const RulesPanel = ({ quizId, generationMode }) => {
 									value={rule.category_ids}
 									onChange={(value) => handleUpdateRule(rule.id, 'category_ids', value)}
 									options={categories.map(cat => ({
-										value: cat.id,
+										value: Number(cat.id),
 										label: cat.name,
 									}))}
 								/>
@@ -353,7 +353,7 @@ const RulesPanel = ({ quizId, generationMode }) => {
 									value={rule.tag_ids}
 									onChange={(value) => handleUpdateRule(rule.id, 'tag_ids', value)}
 									options={tags.map(tag => ({
-										value: tag.id,
+										value: Number(tag.id),
 										label: tag.name,
 									}))}
 								/>

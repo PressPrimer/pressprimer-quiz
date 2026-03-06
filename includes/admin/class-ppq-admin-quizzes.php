@@ -591,6 +591,10 @@ class PressPrimer_Quiz_Admin_Quizzes {
 					'band_feedback_json'    => $quiz->band_feedback_json,
 					'access_mode'           => $quiz->access_mode,
 					'login_message'         => $quiz->login_message,
+					'display_density'       => $quiz->display_density,
+					'pool_enabled'          => (bool) $quiz->pool_enabled,
+					'max_questions'         => $quiz->max_questions,
+					'pool_size'             => $quiz->get_pool_size()['count'],
 				];
 			}
 		} else {

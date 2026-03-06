@@ -5,9 +5,8 @@
  * @since 1.0.0
  */
 
-import { useState, useEffect, useCallback } from '@wordpress/element';
-import { __ } from '@wordpress/i18n';
-import apiFetch from '@wordpress/api-fetch';
+import { useState, useEffect } from '@wordpress/element';
+import { __, sprintf } from '@wordpress/i18n';
 import {
 	Form,
 	Input,
@@ -23,19 +22,9 @@ import {
 	Tooltip,
 	Divider,
 	Alert,
-	Modal,
 } from 'antd';
 import {
 	QuestionCircleOutlined,
-	ClockCircleOutlined,
-	TrophyOutlined,
-	CompassOutlined,
-	ReloadOutlined,
-	EyeOutlined,
-	ExperimentOutlined,
-	FileTextOutlined,
-	LinkOutlined,
-	LockOutlined,
 } from '@ant-design/icons';
 
 const { TextArea } = Input;
@@ -54,101 +43,11 @@ const SettingsPanel = ({ form, generationMode, setGenerationMode, quizData = {} 
 	// Watch access_mode to show/hide login message field
 	const accessMode = Form.useWatch('access_mode', form);
 
-	// Pre-test selector state (only used when Educator addon is active).
-	const [preTestOptions, setPreTestOptions] = useState([]);
-	const [preTestLoading, setPreTestLoading] = useState(false);
-	const [preTestFetched, setPreTestFetched] = useState(false);
+	// Watch pool fields for conditional rendering
+	const poolEnabled = Form.useWatch('pool_enabled', form);
+	const maxQuestions = Form.useWatch('max_questions', form);
+	const passPercent = Form.useWatch('pass_percent', form);
 
-	// Set initial pre-test option if quiz already has one linked.
-	useEffect(() => {
-		if (quizData.pre_test_id && quizData.pre_test_title) {
-			setPreTestOptions([{
-				value: quizData.pre_test_id,
-				label: quizData.pre_test_title,
-			}]);
-		}
-	}, [quizData.pre_test_id, quizData.pre_test_title]);
-
-	/**
-	 * Fetch available pre-tests from the educator REST endpoint
-	 */
-	const fetchPreTests = useCallback(async (search = '') => {
-		if (!quizData.educatorActive) {
-			return;
-		}
-
-		setPreTestLoading(true);
-		try {
-			const params = new URLSearchParams({
-				per_page: '20',
-			});
-
-			if (quizData.id) {
-				params.append('exclude', quizData.id);
-			}
-
-			if (search) {
-				params.append('search', search);
-			}
-
-			const results = await apiFetch({
-				path: `/ppqe/v1/quizzes/available-pretests?${params.toString()}`,
-			});
-
-			const options = results.map((quiz) => ({
-				value: quiz.id,
-				label: quiz.owner_name
-					? `${quiz.title} (${quiz.owner_name})`
-					: quiz.title,
-			}));
-
-			setPreTestOptions(options);
-			setPreTestFetched(true);
-		} catch {
-			// Silently fail - the selector will just show no options.
-		} finally {
-			setPreTestLoading(false);
-		}
-	}, [quizData.educatorActive, quizData.id]);
-
-	/**
-	 * Handle pre-test dropdown open - load initial options
-	 */
-	const handlePreTestDropdownOpen = useCallback((open) => {
-		if (open && !preTestFetched) {
-			fetchPreTests();
-		}
-	}, [preTestFetched, fetchPreTests]);
-
-	/**
-	 * Handle pre-test search with debounce
-	 */
-	const handlePreTestSearch = useCallback((value) => {
-		fetchPreTests(value);
-	}, [fetchPreTests]);
-
-	/**
-	 * Handle pre-test change - confirm before unlinking
-	 */
-	const handlePreTestChange = useCallback((value) => {
-		const currentValue = form.getFieldValue('pre_test_id');
-
-		// If clearing (unlinking) and there was a previous value, confirm.
-		if (!value && currentValue) {
-			Modal.confirm({
-				title: __('Unlink Pre-Test?', 'pressprimer-quiz'),
-				content: __('Are you sure you want to unlink this pre-test? Existing comparison data will still be available, but new attempts will not be linked.', 'pressprimer-quiz'),
-				okText: __('Unlink', 'pressprimer-quiz'),
-				cancelText: __('Cancel', 'pressprimer-quiz'),
-				onOk: () => {
-					form.setFieldsValue({ pre_test_id: null });
-				},
-			});
-			return;
-		}
-
-		form.setFieldsValue({ pre_test_id: value || null });
-	}, [form]);
 	return (
 		<Space direction="vertical" size="large" style={{ width: '100%' }}>
 			{/* Basic Information */}
@@ -168,7 +67,6 @@ const SettingsPanel = ({ form, generationMode, setGenerationMode, quizData = {} 
 				<Form.Item
 					label={
 						<Space>
-							<FileTextOutlined />
 							<span>{__('Quiz Title', 'pressprimer-quiz')}</span>
 							<Tooltip title={__('Enter a clear, descriptive title that students will see', 'pressprimer-quiz')}>
 								<QuestionCircleOutlined style={{ fontSize: 12, color: '#8c8c8c' }} />
@@ -187,7 +85,6 @@ const SettingsPanel = ({ form, generationMode, setGenerationMode, quizData = {} 
 				<Form.Item
 					label={
 						<Space>
-							<FileTextOutlined />
 							<span>{__('Description', 'pressprimer-quiz')}</span>
 							<Tooltip title={__('Optional instructions or context shown to students before they start', 'pressprimer-quiz')}>
 								<QuestionCircleOutlined style={{ fontSize: 12, color: '#8c8c8c' }} />
@@ -374,7 +271,6 @@ const SettingsPanel = ({ form, generationMode, setGenerationMode, quizData = {} 
 						<Form.Item
 							label={
 								<Space>
-									<ClockCircleOutlined />
 									<span>{__('Time Limit', 'pressprimer-quiz')}</span>
 									<Tooltip title={__('Set a time limit in minutes, or leave empty for unlimited time', 'pressprimer-quiz')}>
 										<QuestionCircleOutlined style={{ fontSize: 12, color: '#8c8c8c' }} />
@@ -384,8 +280,9 @@ const SettingsPanel = ({ form, generationMode, setGenerationMode, quizData = {} 
 							name="time_limit_seconds"
 						>
 							<InputNumber
-								min={1}
-								max={1440}
+								min={60}
+								max={86400}
+								step={60}
 								size="small"
 								style={{ width: '100%' }}
 								placeholder={__('Unlimited', 'pressprimer-quiz')}
@@ -402,7 +299,6 @@ const SettingsPanel = ({ form, generationMode, setGenerationMode, quizData = {} 
 						<Form.Item
 							label={
 								<Space>
-									<TrophyOutlined />
 									<span>{__('Passing Score', 'pressprimer-quiz')}</span>
 									<Tooltip title={__('Percentage needed to pass - affects pass/fail status', 'pressprimer-quiz')}>
 										<QuestionCircleOutlined style={{ fontSize: 12, color: '#8c8c8c' }} />
@@ -414,7 +310,7 @@ const SettingsPanel = ({ form, generationMode, setGenerationMode, quizData = {} 
 							<InputNumber
 								min={0}
 								max={100}
-								step={0.01}
+								step={1}
 								size="small"
 								style={{ width: '100%' }}
 								addonAfter="%"
@@ -495,7 +391,6 @@ const SettingsPanel = ({ form, generationMode, setGenerationMode, quizData = {} 
 							<Form.Item
 								label={
 									<Space>
-										<ReloadOutlined />
 										<span>{__('Maximum Attempts', 'pressprimer-quiz')}</span>
 										<Tooltip title={__('How many times a student can take this quiz (empty = unlimited)', 'pressprimer-quiz')}>
 											<QuestionCircleOutlined style={{ fontSize: 12, color: '#8c8c8c' }} />
@@ -518,7 +413,6 @@ const SettingsPanel = ({ form, generationMode, setGenerationMode, quizData = {} 
 							<Form.Item
 								label={
 									<Space>
-										<ClockCircleOutlined />
 										<span>{__('Delay Between Attempts', 'pressprimer-quiz')}</span>
 										<Tooltip title={__('Minimum time (in minutes) students must wait between attempts', 'pressprimer-quiz')}>
 											<QuestionCircleOutlined style={{ fontSize: 12, color: '#8c8c8c' }} />
@@ -539,6 +433,58 @@ const SettingsPanel = ({ form, generationMode, setGenerationMode, quizData = {} 
 						</Space>
 					</Col>
 				</Row>
+
+				<Divider />
+
+				{/* Access Control */}
+				<Text strong>{__('Access Control', 'pressprimer-quiz')}</Text>
+				<Form.Item
+					label={
+						<Space>
+							<span>{__('Access Mode', 'pressprimer-quiz')}</span>
+							<Tooltip title={__('Control whether guests can take this quiz or if login is required', 'pressprimer-quiz')}>
+								<QuestionCircleOutlined style={{ fontSize: 12, color: '#8c8c8c' }} />
+							</Tooltip>
+						</Space>
+					}
+					name="access_mode"
+					style={{ marginTop: 12 }}
+				>
+					<Select
+						size="small"
+						style={{ width: 300 }}
+						options={[
+							{ value: 'default', label: __('Use global default', 'pressprimer-quiz') },
+							{ value: 'guest_optional', label: __('Allow guests (email optional)', 'pressprimer-quiz') },
+							{ value: 'guest_required', label: __('Allow guests (email required)', 'pressprimer-quiz') },
+							{ value: 'login_required', label: __('Require login', 'pressprimer-quiz') },
+						]}
+					/>
+				</Form.Item>
+				<Text type="secondary" style={{ fontSize: 10, display: 'block', marginTop: -8, marginBottom: 16 }}>
+					{__('Override the global access setting for this specific quiz', 'pressprimer-quiz')}
+				</Text>
+
+				{accessMode === 'login_required' && (
+					<Form.Item
+						label={
+							<Space>
+								<span>{__('Custom Login Message', 'pressprimer-quiz')}</span>
+								<Tooltip title={__('Message shown when login is required. Leave empty to use the global default.', 'pressprimer-quiz')}>
+									<QuestionCircleOutlined style={{ fontSize: 12, color: '#8c8c8c' }} />
+								</Tooltip>
+							</Space>
+						}
+						name="login_message"
+					>
+						<TextArea
+							rows={2}
+							placeholder={__('Leave empty to use global default message', 'pressprimer-quiz')}
+							style={{ maxWidth: 500 }}
+							size="small"
+						/>
+					</Form.Item>
+				)}
 			</Card>
 
 			{/* Display Options */}
@@ -585,9 +531,29 @@ const SettingsPanel = ({ form, generationMode, setGenerationMode, quizData = {} 
 								}
 								name="randomize_answers"
 								valuePropName="checked"
-								style={{ marginBottom: 0 }}
+								style={{ marginBottom: 8 }}
 							>
 								<Switch size="small" />
+							</Form.Item>
+							<Form.Item
+								label={
+									<Space>
+										<span>{__('Display Density', 'pressprimer-quiz')}</span>
+										<Tooltip title={__('Control spacing and visual density of the quiz interface', 'pressprimer-quiz')}>
+											<QuestionCircleOutlined style={{ fontSize: 12, color: '#8c8c8c' }} />
+										</Tooltip>
+									</Space>
+								}
+								name="display_density"
+							>
+								<Select
+									size="small"
+									options={[
+										{ value: 'default', label: __('Use Global Default', 'pressprimer-quiz') },
+										{ value: 'standard', label: __('Standard', 'pressprimer-quiz') },
+										{ value: 'condensed', label: __('Condensed', 'pressprimer-quiz') },
+									]}
+								/>
 							</Form.Item>
 						</Space>
 					</Col>
@@ -628,26 +594,6 @@ const SettingsPanel = ({ form, generationMode, setGenerationMode, quizData = {} 
 									style={{ width: '100%' }}
 								/>
 							</Form.Item>
-							<Form.Item
-								label={
-									<Space>
-										<span>{__('Display Density', 'pressprimer-quiz')}</span>
-										<Tooltip title={__('Control spacing and visual density of the quiz interface', 'pressprimer-quiz')}>
-											<QuestionCircleOutlined style={{ fontSize: 12, color: '#8c8c8c' }} />
-										</Tooltip>
-									</Space>
-								}
-								name="display_density"
-							>
-								<Select
-									size="small"
-									options={[
-										{ value: 'default', label: __('Use Global Default', 'pressprimer-quiz') },
-										{ value: 'standard', label: __('Standard', 'pressprimer-quiz') },
-										{ value: 'condensed', label: __('Condensed', 'pressprimer-quiz') },
-									]}
-								/>
-							</Form.Item>
 						</Space>
 					</Col>
 				</Row>
@@ -659,7 +605,6 @@ const SettingsPanel = ({ form, generationMode, setGenerationMode, quizData = {} 
 						<Form.Item
 							label={
 								<Space>
-									<EyeOutlined />
 									<span>{__('Show Correct Answers', 'pressprimer-quiz')}</span>
 									<Tooltip title={__('Control when students can see the correct answers', 'pressprimer-quiz')}>
 										<QuestionCircleOutlined style={{ fontSize: 12, color: '#8c8c8c' }} />
@@ -701,240 +646,121 @@ const SettingsPanel = ({ form, generationMode, setGenerationMode, quizData = {} 
 						</Text>
 					</Col>
 				</Row>
-			</Card>
 
-			{/* Access Control */}
-			<Card
-				title={
-					<Space>
-						<Title level={4} style={{ margin: 0 }}>
-							{__('Access Control', 'pressprimer-quiz')}
-						</Title>
-						<Tooltip title={__('Control who can access this quiz', 'pressprimer-quiz')}>
-							<QuestionCircleOutlined style={{ color: '#8c8c8c' }} />
-						</Tooltip>
-					</Space>
-				}
-				style={{ marginBottom: 24 }}
-			>
-				<Form.Item
-					label={
-						<Space>
-							<span>{__('Access Mode', 'pressprimer-quiz')}</span>
-							<Tooltip title={__('Control whether guests can take this quiz or if login is required', 'pressprimer-quiz')}>
-								<QuestionCircleOutlined style={{ fontSize: 12, color: '#8c8c8c' }} />
-							</Tooltip>
-						</Space>
-					}
-					name="access_mode"
-				>
-					<Select
-						size="small"
-						style={{ width: 300 }}
-						options={[
-							{ value: 'default', label: __('Use global default', 'pressprimer-quiz') },
-							{ value: 'guest_optional', label: __('Allow guests (email optional)', 'pressprimer-quiz') },
-							{ value: 'guest_required', label: __('Allow guests (email required)', 'pressprimer-quiz') },
-							{ value: 'login_required', label: __('Require login', 'pressprimer-quiz') },
-						]}
-					/>
-				</Form.Item>
-				<Text type="secondary" style={{ fontSize: 10, display: 'block', marginTop: -8, marginBottom: 16 }}>
-					{__('Override the global access setting for this specific quiz', 'pressprimer-quiz')}
+				<Divider />
+
+				{/* Question Pool */}
+				<Text strong>{__('Question Pool', 'pressprimer-quiz')}</Text>
+				<Text type="secondary" style={{ fontSize: 12, display: 'block', marginBottom: 12 }}>
+					{__('Randomly select a subset of questions for each attempt', 'pressprimer-quiz')}
 				</Text>
 
-				{accessMode === 'login_required' && (
-					<Form.Item
-						label={
-							<Space>
-								<span>{__('Custom Login Message', 'pressprimer-quiz')}</span>
-								<Tooltip title={__('Message shown when login is required. Leave empty to use the global default.', 'pressprimer-quiz')}>
-									<QuestionCircleOutlined style={{ fontSize: 12, color: '#8c8c8c' }} />
-								</Tooltip>
-							</Space>
-						}
-						name="login_message"
-					>
-						<TextArea
-							rows={2}
-							placeholder={__('Leave empty to use global default message', 'pressprimer-quiz')}
-							style={{ maxWidth: 500 }}
-							size="small"
-						/>
-					</Form.Item>
-				)}
+				{(() => {
+					const poolSize = quizData.pool_size || 0;
+
+					if (poolSize === 0 && !quizData.id) {
+						return (
+							<Alert
+								type="info"
+								message={__('Add questions to enable pooling.', 'pressprimer-quiz')}
+								showIcon
+							/>
+						);
+					}
+
+					return (
+						<>
+							<div style={{ display: 'flex', alignItems: 'flex-start', gap: 16, flexWrap: 'wrap' }}>
+								<Form.Item
+									label={
+										<Space>
+											<span>{__('Limit questions per attempt', 'pressprimer-quiz')}</span>
+											<Tooltip title={__('When enabled, each attempt randomly selects a subset of questions from the full pool', 'pressprimer-quiz')}>
+												<QuestionCircleOutlined style={{ fontSize: 12, color: '#8c8c8c' }} />
+											</Tooltip>
+										</Space>
+									}
+									name="pool_enabled"
+									valuePropName="checked"
+									style={{ marginBottom: 0 }}
+								>
+									<Switch size="small" />
+								</Form.Item>
+
+								{poolEnabled && (
+									<Form.Item
+										label={__('Questions per attempt', 'pressprimer-quiz')}
+										name="max_questions"
+										help={
+											poolSize > 0
+												? sprintf(
+													/* translators: %d: total number of questions in pool */
+													__('From a pool of %d available questions', 'pressprimer-quiz'),
+													poolSize
+												)
+												: __('Save quiz and add questions to see pool size', 'pressprimer-quiz')
+										}
+										rules={[
+											{
+												validator: (_, value) => {
+													if (value && poolSize > 0 && value > poolSize) {
+														return Promise.reject(
+															sprintf(
+																/* translators: %d: pool size */
+																__('Cannot exceed pool size (%d).', 'pressprimer-quiz'),
+																poolSize
+															)
+														);
+													}
+													return Promise.resolve();
+												},
+											},
+										]}
+										validateTrigger={['onChange', 'onBlur']}
+										style={{ marginBottom: 0 }}
+									>
+										<InputNumber
+											min={1}
+											max={poolSize > 0 ? poolSize : undefined}
+											placeholder={poolSize > 0 ? String(poolSize) : ''}
+											style={{ width: 150 }}
+											size="small"
+										/>
+									</Form.Item>
+								)}
+							</div>
+
+							{poolEnabled && (
+								<>
+
+									{maxQuestions && maxQuestions > 0 && maxQuestions <= 10 && passPercent > 0 && (
+										<Alert
+											type="warning"
+											message={sprintf(
+												/* translators: 1: number of questions, 2: pass percentage, 3: number of correct answers needed */
+												__('With %1$d questions and a %2$d%% pass rate, students need at least %3$d correct answers to pass.', 'pressprimer-quiz'),
+												maxQuestions,
+												passPercent,
+												Math.ceil((maxQuestions * passPercent) / 100)
+											)}
+											showIcon
+											style={{ marginBottom: 16 }}
+										/>
+									)}
+
+									<Alert
+										type="info"
+										message={__('Each attempt randomly selects from the full pool. Students may see different questions on retakes.', 'pressprimer-quiz')}
+										showIcon
+										style={{ marginBottom: 0 }}
+									/>
+								</>
+							)}
+						</>
+					);
+				})()}
 			</Card>
 
-			{/* Pre/Post Test Linking - Only shown when Educator addon is active */}
-			{quizData.educatorActive && (
-				<Card
-					title={
-						<Space>
-							<Title level={4} style={{ margin: 0 }}>
-								{__('Pre/Post Test Linking', 'pressprimer-quiz')}
-							</Title>
-							<Tooltip title={__('Link this quiz to a pre-test to track student improvement between assessments', 'pressprimer-quiz')}>
-								<QuestionCircleOutlined style={{ color: '#8c8c8c' }} />
-							</Tooltip>
-						</Space>
-					}
-					style={{ marginBottom: 24 }}
-				>
-					<Alert
-						type="info"
-						showIcon
-						message={__('Pre/Post Test Comparison', 'pressprimer-quiz')}
-						description={__('Link a pre-test to this quiz to automatically show students their improvement on the results page. The pre-test should be taken before this quiz.', 'pressprimer-quiz')}
-						style={{ marginBottom: 16 }}
-					/>
-
-					<Form.Item
-						label={
-							<Space>
-								<LinkOutlined />
-								<span>{__('Pre-Test Quiz', 'pressprimer-quiz')}</span>
-								<Tooltip title={__('Select the quiz that serves as the pre-test for this quiz. Students who complete both will see a comparison of their scores.', 'pressprimer-quiz')}>
-									<QuestionCircleOutlined style={{ fontSize: 12, color: '#8c8c8c' }} />
-								</Tooltip>
-							</Space>
-						}
-						name="pre_test_id"
-					>
-						<Select
-							size="small"
-							style={{ width: 300 }}
-							placeholder={__('None (no pre-test linked)', 'pressprimer-quiz')}
-							allowClear
-							showSearch
-							filterOption={false}
-							loading={preTestLoading}
-							options={preTestOptions}
-							onDropdownVisibleChange={handlePreTestDropdownOpen}
-							onSearch={handlePreTestSearch}
-							onChange={handlePreTestChange}
-							notFoundContent={preTestLoading ? __('Loading...', 'pressprimer-quiz') : __('No quizzes found', 'pressprimer-quiz')}
-						/>
-					</Form.Item>
-					<Text type="secondary" style={{ fontSize: 10, display: 'block', marginTop: -8 }}>
-						{__('Select a quiz to use as the pre-test for this quiz', 'pressprimer-quiz')}
-					</Text>
-				</Card>
-			)}
-
-			{/* Proctoring Overrides - Only shown when Enterprise addon is active */}
-			{quizData.enterpriseActive && (
-				<Card
-					title={
-						<Space>
-							<Title level={4} style={{ margin: 0 }}>
-								{__('Proctoring', 'pressprimer-quiz')}
-							</Title>
-							<Tooltip title={__('Override global proctoring settings for this quiz', 'pressprimer-quiz')}>
-								<QuestionCircleOutlined style={{ color: '#8c8c8c' }} />
-							</Tooltip>
-						</Space>
-					}
-					style={{ marginBottom: 24 }}
-				>
-					<Alert
-						type="info"
-						showIcon
-						message={__('Per-Quiz Proctoring Overrides', 'pressprimer-quiz')}
-						description={
-							quizData.proctoring_global_mode === 'off'
-								? __('Global proctoring is currently off. You can enable it for this quiz individually.', 'pressprimer-quiz')
-								: __('These settings override the global proctoring configuration for this quiz only. Use "Use Global Default" to inherit from Settings > Proctoring.', 'pressprimer-quiz')
-						}
-						style={{ marginBottom: 16 }}
-					/>
-
-					<Form.Item
-						label={
-							<Space>
-								<LockOutlined />
-								<span>{__('Proctoring Mode', 'pressprimer-quiz')}</span>
-								<Tooltip title={__('Controls the level of proctoring for this quiz. Monitor logs incidents silently. Strict warns students of violations.', 'pressprimer-quiz')}>
-									<QuestionCircleOutlined style={{ fontSize: 12, color: '#8c8c8c' }} />
-								</Tooltip>
-							</Space>
-						}
-						name="proctoring_mode"
-					>
-						<Select
-							size="small"
-							style={{ width: 300 }}
-							options={[
-								{ value: 'default', label: __('Use Global Default', 'pressprimer-quiz') },
-								{ value: 'off', label: __('Off', 'pressprimer-quiz') },
-								{ value: 'monitor', label: __('Monitor', 'pressprimer-quiz') },
-								{ value: 'strict', label: __('Strict', 'pressprimer-quiz') },
-							]}
-						/>
-					</Form.Item>
-
-					<Form.Item
-						label={
-							<Space>
-								<EyeOutlined />
-								<span>{__('Tab/Focus Monitoring', 'pressprimer-quiz')}</span>
-								<Tooltip title={__('Detect when the student leaves the quiz tab or switches to another application.', 'pressprimer-quiz')}>
-									<QuestionCircleOutlined style={{ fontSize: 12, color: '#8c8c8c' }} />
-								</Tooltip>
-							</Space>
-						}
-						name="proctoring_tab_monitoring"
-					>
-						<Select
-							size="small"
-							style={{ width: 300 }}
-							options={[
-								{ value: 'default', label: __('Use Global Default', 'pressprimer-quiz') },
-								{ value: 'on', label: __('Enabled', 'pressprimer-quiz') },
-								{ value: 'off', label: __('Disabled', 'pressprimer-quiz') },
-							]}
-						/>
-					</Form.Item>
-
-					<Form.Item
-						label={
-							<Space>
-								<CompassOutlined />
-								<span>{__('Full-Screen Mode', 'pressprimer-quiz')}</span>
-								<Tooltip title={__('Require the quiz to be taken in full-screen mode. Exiting full-screen is logged as a proctoring incident.', 'pressprimer-quiz')}>
-									<QuestionCircleOutlined style={{ fontSize: 12, color: '#8c8c8c' }} />
-								</Tooltip>
-							</Space>
-						}
-						name="proctoring_fullscreen"
-					>
-						<Select
-							size="small"
-							style={{ width: 300 }}
-							options={[
-								{ value: 'default', label: __('Use Global Default', 'pressprimer-quiz') },
-								{ value: 'on', label: __('Enabled', 'pressprimer-quiz') },
-								{ value: 'off', label: __('Disabled', 'pressprimer-quiz') },
-							]}
-						/>
-					</Form.Item>
-
-					<Form.Item
-						name="proctoring_require_desktop"
-						valuePropName="checked"
-					>
-						<Space>
-							<Switch size="small" />
-							<span>{__('Require Desktop Browser', 'pressprimer-quiz')}</span>
-							<Tooltip title={__('Block mobile and tablet devices from taking this quiz. Detection is based on user agent strings and may not be 100% accurate.', 'pressprimer-quiz')}>
-								<QuestionCircleOutlined style={{ fontSize: 12, color: '#8c8c8c' }} />
-							</Tooltip>
-						</Space>
-					</Form.Item>
-					<Text type="secondary" style={{ fontSize: 10, display: 'block', marginTop: -8 }}>
-						{__('Mobile devices have limited proctoring support. Enable this to restrict quizzes to desktop browsers only.', 'pressprimer-quiz')}
-					</Text>
-				</Card>
-			)}
 		</Space>
 	);
 };

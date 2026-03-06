@@ -1481,6 +1481,9 @@ class PressPrimer_Quiz_REST_Controller {
 			'generation_mode'       => $quiz->generation_mode,
 			'access_mode'           => $quiz->access_mode,
 			'login_message'         => $quiz->login_message,
+			'pool_enabled'          => (bool) $quiz->pool_enabled,
+			'max_questions'         => $quiz->max_questions ? (int) $quiz->max_questions : null,
+			'pool_size'             => $quiz->get_pool_size()['count'],
 		];
 
 		return new WP_REST_Response( $data, 200 );
@@ -1531,6 +1534,8 @@ class PressPrimer_Quiz_REST_Controller {
 					'generation_mode'       => sanitize_key( $data['generation_mode'] ?? 'fixed' ),
 					'access_mode'           => sanitize_key( $data['access_mode'] ?? 'default' ),
 					'login_message'         => wp_kses_post( $data['login_message'] ?? '' ),
+					'pool_enabled'          => ! empty( $data['pool_enabled'] ),
+					'max_questions'         => isset( $data['max_questions'] ) && '' !== $data['max_questions'] && null !== $data['max_questions'] ? absint( $data['max_questions'] ) : null,
 				]
 			);
 
@@ -1538,8 +1543,25 @@ class PressPrimer_Quiz_REST_Controller {
 				throw new Exception( $quiz_id->get_error_message() );
 			}
 
-			/** This action is documented in includes/api/class-ppq-rest-controller.php */
+			// Validate max_questions against pool size.
 			$quiz = PressPrimer_Quiz_Quiz::get( $quiz_id );
+
+			if ( $quiz && $quiz->pool_enabled && $quiz->max_questions ) {
+				$pool_size = $quiz->get_pool_size();
+				if ( $pool_size['count'] > 0 && $quiz->max_questions > $pool_size['count'] ) {
+					$wpdb->query( 'ROLLBACK' );
+					return new WP_Error(
+						'invalid_max_questions',
+						sprintf(
+							/* translators: %d: pool size */
+							__( 'Maximum questions cannot exceed pool size (%d).', 'pressprimer-quiz' ),
+							$pool_size['count']
+						),
+						[ 'status' => 400 ]
+					);
+				}
+			}
+
 			if ( $quiz ) {
 				do_action( 'pressprimer_quiz_rest_quiz_saved', $quiz, $data );
 			}
@@ -1612,11 +1634,30 @@ class PressPrimer_Quiz_REST_Controller {
 			$quiz->generation_mode       = sanitize_key( $data['generation_mode'] ?? 'fixed' );
 			$quiz->access_mode           = sanitize_key( $data['access_mode'] ?? 'default' );
 			$quiz->login_message         = wp_kses_post( $data['login_message'] ?? '' );
+			$quiz->pool_enabled          = ! empty( $data['pool_enabled'] );
+			$quiz->max_questions         = isset( $data['max_questions'] ) && '' !== $data['max_questions'] && null !== $data['max_questions'] ? absint( $data['max_questions'] ) : null;
 
 			$result = $quiz->save();
 
 			if ( is_wp_error( $result ) ) {
 				throw new Exception( $result->get_error_message() );
+			}
+
+			// Validate max_questions against pool size.
+			if ( $quiz->pool_enabled && $quiz->max_questions ) {
+				$pool_size = $quiz->get_pool_size();
+				if ( $pool_size['count'] > 0 && $quiz->max_questions > $pool_size['count'] ) {
+					$wpdb->query( 'ROLLBACK' );
+					return new WP_Error(
+						'invalid_max_questions',
+						sprintf(
+							/* translators: %d: pool size */
+							__( 'Maximum questions cannot exceed pool size (%d).', 'pressprimer-quiz' ),
+							$pool_size['count']
+						),
+						[ 'status' => 400 ]
+					);
+				}
 			}
 
 			/**

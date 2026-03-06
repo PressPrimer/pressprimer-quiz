@@ -342,6 +342,22 @@ class PressPrimer_Quiz_Results_Renderer {
 					);
 					?>
 				</div>
+				<?php if ( $quiz->pool_enabled ) : ?>
+					<?php
+					$pool_info = $quiz->get_pool_size();
+					if ( $pool_info['count'] > 0 ) :
+						?>
+					<div class="ppq-pool-context">
+						<?php
+						printf(
+							/* translators: %d: total number of questions in the pool */
+							esc_html__( 'Questions randomly selected from a pool of %d.', 'pressprimer-quiz' ),
+							absint( $pool_info['count'] )
+						);
+						?>
+					</div>
+					<?php endif; ?>
+				<?php endif; ?>
 			</div>
 			<?php endif; ?>
 

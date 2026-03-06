@@ -265,6 +265,8 @@ class PressPrimer_Quiz_Schema {
 			access_mode VARCHAR(20) NOT NULL DEFAULT 'default',
 			login_message TEXT DEFAULT NULL,
 			display_density VARCHAR(20) NOT NULL DEFAULT 'default',
+			pool_enabled TINYINT(1) NOT NULL DEFAULT 0,
+			max_questions INT UNSIGNED DEFAULT NULL,
 			created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
 			updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
 			PRIMARY KEY  (id),

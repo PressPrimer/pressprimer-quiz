@@ -241,6 +241,28 @@ class PressPrimer_Quiz_Quiz extends PressPrimer_Quiz_Model {
 	public $display_density = 'default';
 
 	/**
+	 * Question pool enabled
+	 *
+	 * When enabled, each attempt randomly selects a subset of questions
+	 * from the full pool (max_questions from total available).
+	 *
+	 * @since 2.2.0
+	 * @var int 0|1
+	 */
+	public $pool_enabled = 0;
+
+	/**
+	 * Maximum questions per attempt from pool
+	 *
+	 * When pool_enabled is true, limits the number of questions shown
+	 * per attempt. NULL means show all questions.
+	 *
+	 * @since 2.2.0
+	 * @var int|null
+	 */
+	public $max_questions = null;
+
+	/**
 	 * Created timestamp
 	 *
 	 * @since 1.0.0
@@ -319,6 +341,8 @@ class PressPrimer_Quiz_Quiz extends PressPrimer_Quiz_Model {
 			'access_mode',
 			'login_message',
 			'display_density',
+			'pool_enabled',
+			'max_questions',
 		];
 	}
 
@@ -498,6 +522,7 @@ class PressPrimer_Quiz_Quiz extends PressPrimer_Quiz_Model {
 			'randomize_questions',
 			'randomize_answers',
 			'enable_confidence',
+			'pool_enabled',
 		];
 
 		foreach ( $boolean_fields as $field ) {
@@ -518,6 +543,18 @@ class PressPrimer_Quiz_Quiz extends PressPrimer_Quiz_Model {
 				$data['questions_per_page'] = 1;
 			} else {
 				$data['questions_per_page'] = $questions_per_page;
+			}
+		}
+
+		// Validate max_questions (must be positive integer or null)
+		if ( isset( $data['max_questions'] ) ) {
+			if ( null === $data['max_questions'] || '' === $data['max_questions'] ) {
+				$data['max_questions'] = null;
+			} else {
+				$data['max_questions'] = absint( $data['max_questions'] );
+				if ( $data['max_questions'] < 1 ) {
+					$data['max_questions'] = null;
+				}
 			}
 		}
 
@@ -716,11 +753,64 @@ class PressPrimer_Quiz_Quiz extends PressPrimer_Quiz_Model {
 	}
 
 	/**
+	 * Get the pool size for this quiz
+	 *
+	 * Returns the total number of questions available in the pool.
+	 * For fixed quizzes, this is the count of assigned quiz items.
+	 * For dynamic quizzes, this is the sum of each rule's available
+	 * questions capped by that rule's question_count setting.
+	 *
+	 * @since 2.2.0
+	 *
+	 * @return array {
+	 *     Pool size information.
+	 *
+	 *     @type int  $count Total questions in pool.
+	 *     @type bool $exact True if exact count, false if estimated.
+	 * }
+	 */
+	public function get_pool_size() {
+		if ( 'fixed' === $this->generation_mode ) {
+			global $wpdb;
+
+			$items_table = $wpdb->prefix . 'ppq_quiz_items';
+
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Pool size calculation
+			$count = (int) $wpdb->get_var(
+				$wpdb->prepare(
+					"SELECT COUNT(*) FROM {$items_table} WHERE quiz_id = %d", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Table name is from controlled prefix
+					$this->id
+				)
+			);
+
+			return [
+				'count' => $count,
+				'exact' => true,
+			];
+		}
+
+		// Dynamic: sum of each rule's contribution (capped by available questions).
+		$rules = $this->get_rules();
+		$total = 0;
+
+		foreach ( $rules as $rule ) {
+			$available = $rule->get_matching_count();
+			$total    += min( $rule->question_count, $available );
+		}
+
+		return [
+			'count' => $total,
+			'exact' => true,
+		];
+	}
+
+	/**
 	 * Get questions for attempt
 	 *
 	 * Generates the question set for a quiz attempt.
 	 * For fixed quizzes, returns the ordered question IDs.
 	 * For dynamic quizzes, applies rules to select questions then randomizes if enabled.
+	 * When pool_enabled is true, limits the result to max_questions from the full pool.
 	 *
 	 * @since 1.0.0
 	 *
@@ -735,11 +825,6 @@ class PressPrimer_Quiz_Quiz extends PressPrimer_Quiz_Model {
 
 			foreach ( $items as $item ) {
 				$question_ids[] = $item->question_id;
-			}
-
-			// Apply randomization if enabled
-			if ( $this->randomize_questions ) {
-				shuffle( $question_ids );
 			}
 		} else {
 			// Dynamic quiz - generate from rules
@@ -758,11 +843,18 @@ class PressPrimer_Quiz_Quiz extends PressPrimer_Quiz_Model {
 
 			// Remove duplicates (if same question matched multiple rules)
 			$question_ids = array_unique( $all_question_ids );
+		}
 
-			// Randomize if enabled
-			if ( $this->randomize_questions ) {
-				shuffle( $question_ids );
-			}
+		// Apply pool limit if enabled (after full pool is built).
+		if ( $this->pool_enabled && $this->max_questions ) {
+			$max = min( (int) $this->max_questions, count( $question_ids ) );
+			shuffle( $question_ids );
+			$question_ids = array_slice( $question_ids, 0, $max );
+		}
+
+		// Apply question randomization if enabled.
+		if ( $this->randomize_questions ) {
+			shuffle( $question_ids );
 		}
 
 		return $question_ids;
@@ -814,6 +906,8 @@ class PressPrimer_Quiz_Quiz extends PressPrimer_Quiz_Model {
 				'access_mode'           => $this->access_mode,
 				'login_message'         => $this->login_message,
 				'display_density'       => $this->display_density,
+				'pool_enabled'          => $this->pool_enabled,
+				'max_questions'         => $this->max_questions,
 			];
 
 			$new_quiz_id = self::create( $new_quiz_data );

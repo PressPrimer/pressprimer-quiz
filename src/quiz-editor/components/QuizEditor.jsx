@@ -28,6 +28,7 @@ import {
 } from '@ant-design/icons';
 
 import SettingsPanel from './SettingsPanel';
+import PremiumSettingsPanel from './PremiumSettingsPanel';
 import QuestionsPanel from './QuestionsPanel';
 import RulesPanel from './RulesPanel';
 import FeedbackPanel from './FeedbackPanel';
@@ -74,6 +75,8 @@ const QuizEditor = ({ quizData = {} }) => {
 				enable_confidence: quizData.enable_confidence ?? false,
 				theme: quizData.theme || 'default',
 				display_density: quizData.display_density || 'default',
+				pool_enabled: quizData.pool_enabled ?? false,
+				max_questions: quizData.max_questions || null,
 				max_attempts: quizData.max_attempts || null,
 				attempt_delay_minutes: quizData.attempt_delay_minutes || 0,
 				generation_mode: quizData.generation_mode || 'fixed',
@@ -84,6 +87,14 @@ const QuizEditor = ({ quizData = {} }) => {
 			// Add pre_test_id if Educator addon is active.
 			if (quizData.educatorActive) {
 				fieldValues.pre_test_id = quizData.pre_test_id || null;
+			}
+
+			// Add proctoring fields if Enterprise addon is active.
+			if (quizData.enterpriseActive) {
+				fieldValues.proctoring_mode = quizData.proctoring_mode || 'default';
+				fieldValues.proctoring_tab_monitoring = quizData.proctoring_tab_monitoring || 'default';
+				fieldValues.proctoring_fullscreen = quizData.proctoring_fullscreen || 'default';
+				fieldValues.proctoring_require_desktop = quizData.proctoring_require_desktop ?? false;
 			}
 
 			form.setFieldsValue(fieldValues);
@@ -234,11 +245,18 @@ const QuizEditor = ({ quizData = {} }) => {
 		}
 	};
 
+	const hasPremiumAddons = quizData.educatorActive || quizData.enterpriseActive;
+
 	const tabItems = [
 		{
 			key: 'settings',
 			label: __('Settings', 'pressprimer-quiz'),
 			children: <SettingsPanel form={form} generationMode={generationMode} setGenerationMode={setGenerationMode} quizData={quizData} />,
+		},
+		hasPremiumAddons && {
+			key: 'premium',
+			label: __('Premium Settings', 'pressprimer-quiz'),
+			children: <PremiumSettingsPanel form={form} quizData={quizData} />,
 		},
 		{
 			key: 'questions',
@@ -252,7 +270,7 @@ const QuizEditor = ({ quizData = {} }) => {
 			label: __('Feedback', 'pressprimer-quiz'),
 			children: <FeedbackPanel value={feedbackBands} onChange={setFeedbackBands} />,
 		},
-	];
+	].filter(Boolean);
 
 	return (
 		<div className="ppq-quiz-editor-container">
@@ -278,6 +296,8 @@ const QuizEditor = ({ quizData = {} }) => {
 						enable_confidence: false,
 						theme: 'default',
 						display_density: 'default',
+						pool_enabled: false,
+						max_questions: null,
 						generation_mode: 'fixed',
 						attempt_delay_minutes: 0,
 						access_mode: 'default',

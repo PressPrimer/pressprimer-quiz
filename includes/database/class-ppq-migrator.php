@@ -112,6 +112,11 @@ class PressPrimer_Quiz_Migrator {
 		if ( version_compare( $from_version, '2.0.1', '<' ) ) {
 			self::migrate_to_2_0_1();
 		}
+
+		// Version 2.2.0: Add pool_enabled and max_questions columns
+		if ( version_compare( $from_version, '2.2.0', '<' ) ) {
+			self::migrate_to_2_2_0();
+		}
 	}
 
 	/**
@@ -164,6 +169,61 @@ class PressPrimer_Quiz_Migrator {
 			$wpdb->query(
 				$wpdb->prepare(
 					'ALTER TABLE %i ADD COLUMN login_message TEXT DEFAULT NULL',
+					$table_name
+				)
+			);
+		}
+	}
+
+	/**
+	 * Migration to version 2.2.0
+	 *
+	 * Adds pool_enabled and max_questions columns to quizzes table.
+	 *
+	 * @since 2.2.0
+	 */
+	private static function migrate_to_2_2_0() {
+		global $wpdb;
+
+		$table_name = $wpdb->prefix . 'ppq_quizzes';
+
+		// Check if pool_enabled column exists
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching
+		$column_exists = $wpdb->get_results(
+			$wpdb->prepare(
+				'SHOW COLUMNS FROM %i LIKE %s',
+				$table_name,
+				'pool_enabled'
+			)
+		);
+
+		if ( empty( $column_exists ) ) {
+			// Add pool_enabled column
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.DirectDatabaseQuery.SchemaChange
+			$wpdb->query(
+				$wpdb->prepare(
+					'ALTER TABLE %i ADD COLUMN pool_enabled TINYINT(1) NOT NULL DEFAULT 0',
+					$table_name
+				)
+			);
+		}
+
+		// Check if max_questions column exists
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching
+		$column_exists = $wpdb->get_results(
+			$wpdb->prepare(
+				'SHOW COLUMNS FROM %i LIKE %s',
+				$table_name,
+				'max_questions'
+			)
+		);
+
+		if ( empty( $column_exists ) ) {
+			// Add max_questions column
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.DirectDatabaseQuery.SchemaChange
+			$wpdb->query(
+				$wpdb->prepare(
+					'ALTER TABLE %i ADD COLUMN max_questions INT UNSIGNED DEFAULT NULL',
 					$table_name
 				)
 			);

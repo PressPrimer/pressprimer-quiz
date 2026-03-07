@@ -733,7 +733,7 @@ const SettingsPanel = ({ form, generationMode, setGenerationMode, quizData = {} 
 							{poolEnabled && (
 								<>
 
-									{maxQuestions && maxQuestions > 0 && maxQuestions <= 10 && passPercent > 0 && (
+									{maxQuestions && maxQuestions > 0 && maxQuestions <= 100 && passPercent > 0 && (
 										<Alert
 											type="warning"
 											message={sprintf(

@@ -788,6 +788,17 @@ class PressPrimer_Quiz_Attempt extends PressPrimer_Quiz_Model {
 			);
 		}
 
+		// Block answer changes for already-checked items in tutorial mode.
+		if ( ! empty( $existing->answer_checked_at ) ) {
+			$quiz = $this->get_quiz();
+			if ( $quiz && 'tutorial' === $quiz->mode ) {
+				return new WP_Error(
+					'ppq_answer_locked',
+					__( 'This answer has already been checked and cannot be changed.', 'pressprimer-quiz' )
+				);
+			}
+		}
+
 		$answer_data = [
 			'selected_answers_json' => wp_json_encode( $selected_answers ),
 			'last_answer_at'        => current_time( 'mysql' ),

@@ -244,6 +244,8 @@
 		 * Initialize quiz interface
 		 */
 		init: function() {
+			const self = this;
+
 			this.$container = $('.ppq-quiz-interface');
 
 			if (!this.$container.length) {
@@ -274,6 +276,14 @@
 			// Tutorial mode tracking
 			this.feedbackShown = {}; // Track which questions have shown feedback
 			this.isCheckingAnswer = false; // Prevent double-clicks on Check button
+
+			// Restore checked state from server data (for page reload/resume)
+			if (this.quizMode === 'tutorial') {
+				this.$container.find('.ppq-question[data-answer-checked="1"]').each(function() {
+					var qi = parseInt($(this).data('question-index'), 10);
+					self.feedbackShown[qi] = true;
+				});
+			}
 
 			// Get guest token from URL (for environments where cookies may not work)
 			this.guestToken = new URLSearchParams(window.location.search).get('token') || '';

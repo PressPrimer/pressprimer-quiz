@@ -117,6 +117,11 @@ class PressPrimer_Quiz_Migrator {
 		if ( version_compare( $from_version, '2.2.0', '<' ) ) {
 			self::migrate_to_2_2_0();
 		}
+
+		// Version 2.2.1: Add answer_checked_at column to attempt items
+		if ( version_compare( $from_version, '2.2.1', '<' ) ) {
+			self::migrate_to_2_2_1();
+		}
 	}
 
 	/**
@@ -224,6 +229,42 @@ class PressPrimer_Quiz_Migrator {
 			$wpdb->query(
 				$wpdb->prepare(
 					'ALTER TABLE %i ADD COLUMN max_questions INT UNSIGNED DEFAULT NULL',
+					$table_name
+				)
+			);
+		}
+	}
+
+	/**
+	 * Migration to version 2.2.1
+	 *
+	 * Adds answer_checked_at column to attempt items table for tutorial mode
+	 * answer locking. This column tracks when an answer was validated via
+	 * "Check Answer" so it cannot be changed on page reload.
+	 *
+	 * @since 2.2.1
+	 */
+	private static function migrate_to_2_2_1() {
+		global $wpdb;
+
+		$table_name = $wpdb->prefix . 'ppq_attempt_items';
+
+		// Check if answer_checked_at column exists
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching
+		$column_exists = $wpdb->get_results(
+			$wpdb->prepare(
+				'SHOW COLUMNS FROM %i LIKE %s',
+				$table_name,
+				'answer_checked_at'
+			)
+		);
+
+		if ( empty( $column_exists ) ) {
+			// Add answer_checked_at column
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.DirectDatabaseQuery.SchemaChange
+			$wpdb->query(
+				$wpdb->prepare(
+					'ALTER TABLE %i ADD COLUMN answer_checked_at DATETIME DEFAULT NULL',
 					$table_name
 				)
 			);

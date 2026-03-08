@@ -962,10 +962,20 @@ class PressPrimer_Quiz_Quiz_Renderer {
 
 		ob_start();
 		?>
-		<div class="ppq-question"
+		<?php
+		$is_answer_checked = ! empty( $item->answer_checked_at );
+		$question_classes  = 'ppq-question';
+		if ( $is_answer_checked ) {
+			$question_classes .= ' ppq-feedback-shown';
+		}
+		?>
+		<div class="<?php echo esc_attr( $question_classes ); ?>"
 			data-question-index="<?php echo esc_attr( $index ); ?>"
 			data-item-id="<?php echo esc_attr( $item->id ); ?>"
 			data-question-type="<?php echo esc_attr( $question->type ); ?>"
+			<?php if ( $is_answer_checked ) : ?>
+			data-answer-checked="1"
+			<?php endif; ?>
 			style="<?php echo esc_attr( 0 === $index ? '' : 'display: none;' ); ?>">
 
 			<div class="ppq-question-header">
@@ -996,6 +1006,17 @@ class PressPrimer_Quiz_Quiz_Renderer {
 				<?php echo wp_kses_post( wpautop( $revision->stem ) ); ?>
 			</div>
 
+			<?php
+			// Build correct indices for already-checked answers (tutorial mode resume).
+			$correct_indices = [];
+			if ( $is_answer_checked ) {
+				foreach ( $answers as $ci => $ca ) {
+					if ( ! empty( $ca['is_correct'] ) ) {
+						$correct_indices[] = $ci;
+					}
+				}
+			}
+			?>
 			<div class="ppq-answers">
 				<?php foreach ( $answer_order as $answer_index ) : ?>
 					<?php
@@ -1006,8 +1027,22 @@ class PressPrimer_Quiz_Quiz_Renderer {
 					$answer     = $answers[ $answer_index ];
 					$answer_id  = 'ppq_answer_' . $item->id . '_' . $answer_index;
 					$is_checked = in_array( $answer_index, $selected_answers, true );
+
+					// Build CSS classes for answer option.
+					$option_classes = 'ppq-answer-option';
+					if ( $is_checked ) {
+						$option_classes .= ' ppq-selected';
+					}
+					if ( $is_answer_checked ) {
+						$is_this_correct = in_array( $answer_index, $correct_indices, true );
+						if ( $is_this_correct ) {
+							$option_classes .= ' ppq-correct';
+						} elseif ( $is_checked && ! $is_this_correct ) {
+							$option_classes .= ' ppq-incorrect';
+						}
+					}
 					?>
-					<label class="ppq-answer-option <?php echo esc_attr( $is_checked ? 'ppq-selected' : '' ); ?>"
+					<label class="<?php echo esc_attr( $option_classes ); ?>"
 							for="<?php echo esc_attr( $answer_id ); ?>">
 						<input type="<?php echo esc_attr( $input_type ); ?>"
 								id="<?php echo esc_attr( $answer_id ); ?>"
@@ -1015,7 +1050,8 @@ class PressPrimer_Quiz_Quiz_Renderer {
 								value="<?php echo esc_attr( $answer_index ); ?>"
 								class="ppq-answer-input"
 								data-item-id="<?php echo esc_attr( $item->id ); ?>"
-								<?php checked( $is_checked ); ?>>
+								<?php checked( $is_checked ); ?>
+								<?php disabled( $is_answer_checked ); ?>>
 						<span class="ppq-answer-radio-check"></span>
 						<span class="ppq-answer-text">
 							<?php echo wp_kses_post( $answer['text'] ); ?>
@@ -1051,21 +1087,55 @@ class PressPrimer_Quiz_Quiz_Renderer {
 				</div>
 			<?php endif; ?>
 
-			<!-- Check Answer button for tutorial mode (hidden in timed mode) -->
+			<!-- Check Answer button for tutorial mode (hidden when already checked or in timed mode) -->
 			<div class="ppq-check-answer-container ppq-hidden">
 				<button type="button" class="ppq-button ppq-button-primary ppq-check-answer-button">
 					<?php esc_html_e( 'Check Answer', 'pressprimer-quiz' ); ?>
 				</button>
 			</div>
 
-			<!-- Feedback container for tutorial mode (hidden until answer checked) -->
-			<div class="ppq-feedback ppq-hidden">
-				<div class="ppq-feedback-result"></div>
-				<div class="ppq-feedback-text"></div>
-				<button type="button" class="ppq-button ppq-button-primary ppq-continue-button">
-					<?php esc_html_e( 'Continue', 'pressprimer-quiz' ); ?>
-				</button>
-			</div>
+			<!-- Feedback container for tutorial mode -->
+			<?php
+			if ( $is_answer_checked ) :
+				// Determine correctness for server-rendered feedback.
+				$sorted_selected = $selected_answers;
+				$sorted_correct  = $correct_indices;
+				sort( $sorted_selected );
+				sort( $sorted_correct );
+				$was_correct = ( $sorted_selected === $sorted_correct );
+
+				$feedback_class = $was_correct ? 'ppq-feedback-correct' : 'ppq-feedback-incorrect';
+				$feedback_label = $was_correct
+					? __( 'Correct!', 'pressprimer-quiz' )
+					: __( 'Incorrect', 'pressprimer-quiz' );
+
+				// Get feedback text from revision if available.
+				$feedback_text = '';
+				if ( $was_correct && ! empty( $revision->feedback_correct ) ) {
+					$feedback_text = $revision->feedback_correct;
+				} elseif ( ! $was_correct && ! empty( $revision->feedback_incorrect ) ) {
+					$feedback_text = $revision->feedback_incorrect;
+				}
+				?>
+				<div class="ppq-feedback">
+					<div class="ppq-feedback-result <?php echo esc_attr( $feedback_class ); ?>">
+						<strong><?php echo esc_html( $feedback_label ); ?></strong>
+					</div>
+					<?php if ( $feedback_text ) : ?>
+						<div class="ppq-feedback-text">
+							<?php echo wp_kses_post( $feedback_text ); ?>
+						</div>
+					<?php endif; ?>
+				</div>
+			<?php else : ?>
+				<div class="ppq-feedback ppq-hidden">
+					<div class="ppq-feedback-result"></div>
+					<div class="ppq-feedback-text"></div>
+					<button type="button" class="ppq-button ppq-button-primary ppq-continue-button">
+						<?php esc_html_e( 'Continue', 'pressprimer-quiz' ); ?>
+					</button>
+				</div>
+			<?php endif; ?>
 
 		</div>
 		<?php

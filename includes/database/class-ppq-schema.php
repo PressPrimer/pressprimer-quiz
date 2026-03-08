@@ -474,6 +474,7 @@ class PressPrimer_Quiz_Schema {
 			is_correct TINYINT(1) DEFAULT NULL,
 			score_points DECIMAL(5,2) DEFAULT NULL,
 			confidence TINYINT(1) DEFAULT NULL,
+			answer_checked_at DATETIME DEFAULT NULL,
 			PRIMARY KEY  (id),
 			UNIQUE KEY attempt_revision (attempt_id, question_revision_id),
 			KEY question_revision_id (question_revision_id),

@@ -802,6 +802,15 @@ class PressPrimer_Quiz_AJAX_Handler {
 			);
 		}
 
+		// Block re-checking an already checked answer
+		if ( ! empty( $item->answer_checked_at ) ) {
+			wp_send_json_error(
+				[
+					'message' => __( 'This answer has already been checked.', 'pressprimer-quiz' ),
+				]
+			);
+		}
+
 		// Get selected answers from POST and sanitize immediately
 		// Handle both array (multiple choice) and scalar (single choice) inputs
 		if ( isset( $_POST['answers'] ) && is_array( $_POST['answers'] ) ) {
@@ -825,6 +834,19 @@ class PressPrimer_Quiz_AJAX_Handler {
 
 		// Save the answer
 		$attempt->save_answer( $item_id, $selected_answers );
+
+		// Mark answer as checked (locks it from future changes)
+		global $wpdb;
+		$items_table = $wpdb->prefix . 'ppq_attempt_items';
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching
+		$wpdb->update(
+			$items_table,
+			[ 'answer_checked_at' => current_time( 'mysql' ) ],
+			[ 'id' => $item_id ],
+			[ '%s' ],
+			[ '%d' ]
+		);
 
 		// Get question revision for correct answers and feedback
 		$revision = $item->get_question_revision();

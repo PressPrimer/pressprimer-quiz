@@ -116,6 +116,17 @@ class PressPrimer_Quiz_Attempt_Item extends PressPrimer_Quiz_Model {
 	public $confidence;
 
 	/**
+	 * Answer checked timestamp (tutorial mode)
+	 *
+	 * Set when the user clicks "Check Answer" in tutorial mode.
+	 * Once set, the answer is locked and cannot be changed.
+	 *
+	 * @since 2.2.1
+	 * @var string|null
+	 */
+	public $answer_checked_at;
+
+	/**
 	 * Cached question revision
 	 *
 	 * @since 1.0.0
@@ -162,6 +173,7 @@ class PressPrimer_Quiz_Attempt_Item extends PressPrimer_Quiz_Model {
 			'is_correct',
 			'score_points',
 			'confidence',
+			'answer_checked_at',
 		];
 	}
 

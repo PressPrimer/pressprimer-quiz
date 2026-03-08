@@ -122,6 +122,11 @@ class PressPrimer_Quiz_Migrator {
 		if ( version_compare( $from_version, '2.2.1', '<' ) ) {
 			self::migrate_to_2_2_1();
 		}
+
+		// Version 2.2.2: Add show_points column to quizzes
+		if ( version_compare( $from_version, '2.2.2', '<' ) ) {
+			self::migrate_to_2_2_2();
+		}
 	}
 
 	/**
@@ -265,6 +270,41 @@ class PressPrimer_Quiz_Migrator {
 			$wpdb->query(
 				$wpdb->prepare(
 					'ALTER TABLE %i ADD COLUMN answer_checked_at DATETIME DEFAULT NULL',
+					$table_name
+				)
+			);
+		}
+	}
+
+	/**
+	 * Migration to version 2.2.2
+	 *
+	 * Adds show_points column to quizzes table. When enabled, point values
+	 * are displayed per question during the quiz and on the results page.
+	 *
+	 * @since 2.2.2
+	 */
+	private static function migrate_to_2_2_2() {
+		global $wpdb;
+
+		$table_name = $wpdb->prefix . 'ppq_quizzes';
+
+		// Check if show_points column exists
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching
+		$column_exists = $wpdb->get_results(
+			$wpdb->prepare(
+				'SHOW COLUMNS FROM %i LIKE %s',
+				$table_name,
+				'show_points'
+			)
+		);
+
+		if ( empty( $column_exists ) ) {
+			// Add show_points column after enable_confidence
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.DirectDatabaseQuery.SchemaChange
+			$wpdb->query(
+				$wpdb->prepare(
+					'ALTER TABLE %i ADD COLUMN show_points TINYINT(1) NOT NULL DEFAULT 0 AFTER enable_confidence',
 					$table_name
 				)
 			);

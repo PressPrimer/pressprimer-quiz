@@ -536,6 +536,26 @@
 	font-weight: 600;
 }
 
+.ppq-review-points {
+	display: flex;
+	align-items: center;
+	gap: 0.5rem;
+	font-weight: 600;
+	font-size: 0.875rem;
+}
+
+.ppq-review-points.ppq-points-full {
+	color: #10b981;
+}
+
+.ppq-review-points.ppq-points-partial {
+	color: #f59e0b;
+}
+
+.ppq-review-points.ppq-points-zero {
+	color: #ef4444;
+}
+
 /* ==========================================================================
    Question Stem
    ========================================================================== */

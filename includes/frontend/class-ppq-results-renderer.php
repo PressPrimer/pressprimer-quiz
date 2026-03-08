@@ -915,7 +915,42 @@ class PressPrimer_Quiz_Results_Renderer {
 					</span>
 				<?php endif; ?>
 
-				<?php if ( $item->score_points && ! $item->is_correct ) : ?>
+				<?php if ( $quiz->show_points ) : ?>
+					<?php
+					$earned     = (float) ( $item->score_points ?? 0 );
+					$max        = (float) $question->max_points;
+					$decimals   = ( $max === floor( $max ) && $earned === floor( $earned ) ) ? 0 : 1;
+					$earned_fmt = number_format_i18n( $earned, $decimals );
+					$max_fmt    = number_format_i18n( $max, $decimals );
+
+					if ( $earned >= $max && $max > 0 ) {
+						$points_class = 'ppq-points-full';
+					} elseif ( $earned > 0 ) {
+						$points_class = 'ppq-points-partial';
+					} else {
+						$points_class = 'ppq-points-zero';
+					}
+					?>
+					<span class="ppq-review-points <?php echo esc_attr( $points_class ); ?>">
+						<?php
+						if ( 1.0 === $max ) {
+							printf(
+								/* translators: 1: earned points, 2: max points */
+								esc_html__( '%1$s/%2$s point', 'pressprimer-quiz' ),
+								esc_html( $earned_fmt ),
+								esc_html( $max_fmt )
+							);
+						} else {
+							printf(
+								/* translators: 1: earned points, 2: max points */
+								esc_html__( '%1$s/%2$s points', 'pressprimer-quiz' ),
+								esc_html( $earned_fmt ),
+								esc_html( $max_fmt )
+							);
+						}
+						?>
+					</span>
+				<?php elseif ( $item->score_points && ! $item->is_correct ) : ?>
 					<span class="ppq-review-partial">
 						<?php
 						printf(

@@ -5,7 +5,6 @@
  * @since 1.0.0
  */
 
-import { useState, useEffect } from '@wordpress/element';
 import { __, sprintf } from '@wordpress/i18n';
 import {
 	Form,
@@ -538,22 +537,16 @@ const SettingsPanel = ({ form, generationMode, setGenerationMode, quizData = {} 
 							<Form.Item
 								label={
 									<Space>
-										<span>{__('Display Density', 'pressprimer-quiz')}</span>
-										<Tooltip title={__('Control spacing and visual density of the quiz interface', 'pressprimer-quiz')}>
+										<span>{__('Show Points Per Question', 'pressprimer-quiz')}</span>
+										<Tooltip title={__('Display point values on each question during the quiz and on the results page', 'pressprimer-quiz')}>
 											<QuestionCircleOutlined style={{ fontSize: 12, color: '#8c8c8c' }} />
 										</Tooltip>
 									</Space>
 								}
-								name="display_density"
+								name="show_points"
+								valuePropName="checked"
 							>
-								<Select
-									size="small"
-									options={[
-										{ value: 'default', label: __('Use Global Default', 'pressprimer-quiz') },
-										{ value: 'standard', label: __('Standard', 'pressprimer-quiz') },
-										{ value: 'condensed', label: __('Condensed', 'pressprimer-quiz') },
-									]}
-								/>
+								<Switch size="small" />
 							</Form.Item>
 						</Space>
 					</Col>
@@ -592,6 +585,26 @@ const SettingsPanel = ({ form, generationMode, setGenerationMode, quizData = {} 
 									max={100}
 									size="small"
 									style={{ width: '100%' }}
+								/>
+							</Form.Item>
+							<Form.Item
+								label={
+									<Space>
+										<span>{__('Display Density', 'pressprimer-quiz')}</span>
+										<Tooltip title={__('Control spacing and visual density of the quiz interface', 'pressprimer-quiz')}>
+											<QuestionCircleOutlined style={{ fontSize: 12, color: '#8c8c8c' }} />
+										</Tooltip>
+									</Space>
+								}
+								name="display_density"
+							>
+								<Select
+									size="small"
+									options={[
+										{ value: 'default', label: __('Use Global Default', 'pressprimer-quiz') },
+										{ value: 'standard', label: __('Standard', 'pressprimer-quiz') },
+										{ value: 'condensed', label: __('Condensed', 'pressprimer-quiz') },
+									]}
 								/>
 							</Form.Item>
 						</Space>
@@ -656,7 +669,7 @@ const SettingsPanel = ({ form, generationMode, setGenerationMode, quizData = {} 
 				</Text>
 
 				{(() => {
-					const poolSize = quizData.pool_size || 0;
+					const poolSize = Number(quizData.pool_size) || 0;
 
 					if (poolSize === 0 && !quizData.id) {
 						return (
@@ -703,7 +716,7 @@ const SettingsPanel = ({ form, generationMode, setGenerationMode, quizData = {} 
 										rules={[
 											{
 												validator: (_, value) => {
-													if (value && poolSize > 0 && value > poolSize) {
+													if (value && Number(poolSize) > 0 && Number(value) > Number(poolSize)) {
 														return Promise.reject(
 															sprintf(
 																/* translators: %d: pool size */

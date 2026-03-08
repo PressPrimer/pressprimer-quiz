@@ -258,6 +258,7 @@ class PressPrimer_Quiz_Schema {
 			questions_per_page TINYINT UNSIGNED DEFAULT 1,
 			show_answers ENUM('never', 'after_submit', 'after_pass') NOT NULL DEFAULT 'after_submit',
 			enable_confidence TINYINT(1) NOT NULL DEFAULT 0,
+			show_points TINYINT(1) NOT NULL DEFAULT 0,
 			theme VARCHAR(50) NOT NULL DEFAULT 'default',
 			theme_settings_json TEXT DEFAULT NULL,
 			band_feedback_json TEXT DEFAULT NULL,

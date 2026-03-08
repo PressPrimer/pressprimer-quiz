@@ -1474,6 +1474,7 @@ class PressPrimer_Quiz_REST_Controller {
 			'questions_per_page'    => $quiz->questions_per_page,
 			'show_answers'          => $quiz->show_answers,
 			'enable_confidence'     => $quiz->enable_confidence,
+			'show_points'           => (bool) $quiz->show_points,
 			'theme'                 => $quiz->theme,
 			'display_density'       => $quiz->display_density,
 			'theme_settings_json'   => $quiz->theme_settings_json,
@@ -1527,6 +1528,7 @@ class PressPrimer_Quiz_REST_Controller {
 					'questions_per_page'    => absint( $data['questions_per_page'] ?? 1 ),
 					'show_answers'          => sanitize_key( $data['show_answers'] ?? 'after_submit' ),
 					'enable_confidence'     => ! empty( $data['enable_confidence'] ),
+					'show_points'           => ! empty( $data['show_points'] ),
 					'theme'                 => sanitize_key( $data['theme'] ?? 'default' ),
 					'display_density'       => sanitize_key( $data['display_density'] ?? 'default' ),
 					'theme_settings_json'   => $data['theme_settings_json'] ?? null,
@@ -1627,6 +1629,7 @@ class PressPrimer_Quiz_REST_Controller {
 			$quiz->questions_per_page    = absint( $data['questions_per_page'] ?? 1 );
 			$quiz->show_answers          = sanitize_key( $data['show_answers'] ?? 'after_submit' );
 			$quiz->enable_confidence     = ! empty( $data['enable_confidence'] );
+			$quiz->show_points           = ! empty( $data['show_points'] );
 			$quiz->theme                 = sanitize_key( $data['theme'] ?? 'default' );
 			$quiz->display_density       = sanitize_key( $data['display_density'] ?? 'default' );
 			$quiz->theme_settings_json   = $data['theme_settings_json'] ?? null;
@@ -1711,7 +1714,7 @@ class PressPrimer_Quiz_REST_Controller {
 					'id'            => $item->id,
 					'question_id'   => $item->question_id,
 					'order_index'   => $item->order_index,
-					'weight'        => $item->weight,
+					'max_points'    => $question ? (float) $question->max_points : 1.0,
 					'question_stem' => $stem,
 					'question_type' => $question ? $question->type : '',
 				];
@@ -1784,9 +1787,9 @@ class PressPrimer_Quiz_REST_Controller {
 			return new WP_Error( 'not_found', __( 'Quiz item not found.', 'pressprimer-quiz' ), [ 'status' => 404 ] );
 		}
 
-		// Update weight
-		if ( isset( $data['weight'] ) ) {
-			$item->weight = floatval( $data['weight'] );
+		// Update order index if provided
+		if ( isset( $data['order_index'] ) ) {
+			$item->order_index = absint( $data['order_index'] );
 			$item->save();
 		}
 

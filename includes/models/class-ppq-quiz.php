@@ -241,6 +241,17 @@ class PressPrimer_Quiz_Quiz extends PressPrimer_Quiz_Model {
 	public $display_density = 'default';
 
 	/**
+	 * Show points per question
+	 *
+	 * When enabled, displays point values on each question during the
+	 * quiz and on the results page.
+	 *
+	 * @since 2.2.2
+	 * @var int 0|1
+	 */
+	public $show_points = 0;
+
+	/**
 	 * Question pool enabled
 	 *
 	 * When enabled, each attempt randomly selects a subset of questions
@@ -334,6 +345,7 @@ class PressPrimer_Quiz_Quiz extends PressPrimer_Quiz_Model {
 			'questions_per_page',
 			'show_answers',
 			'enable_confidence',
+			'show_points',
 			'theme',
 			'theme_settings_json',
 			'band_feedback_json',

@@ -989,14 +989,19 @@ class PressPrimer_Quiz_Quiz_Renderer {
 					);
 					?>
 				</span>
-				<?php if ( $question->max_points > 1 ) : ?>
+				<?php if ( $this->current_quiz->show_points ) : ?>
 					<span class="ppq-question-points">
 						<?php
-						printf(
-							/* translators: %s: points value */
-							esc_html__( '%s points', 'pressprimer-quiz' ),
-							esc_html( number_format_i18n( $question->max_points, 0 ) )
-						);
+						if ( 1.0 === (float) $question->max_points ) {
+							echo esc_html__( '1 point', 'pressprimer-quiz' );
+						} else {
+							$decimals = ( (float) $question->max_points === floor( (float) $question->max_points ) ) ? 0 : 1;
+							printf(
+								/* translators: %s: points value */
+								esc_html__( '%s points', 'pressprimer-quiz' ),
+								esc_html( number_format_i18n( $question->max_points, $decimals ) )
+							);
+						}
 						?>
 					</span>
 				<?php endif; ?>

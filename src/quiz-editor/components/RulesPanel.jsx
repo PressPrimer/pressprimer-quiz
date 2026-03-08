@@ -298,8 +298,8 @@ const RulesPanel = ({ quizId, generationMode }) => {
 									size="small"
 									placeholder={__('Any bank', 'pressprimer-quiz')}
 									allowClear
-									value={rule.bank_id}
-									onChange={(value) => handleUpdateRule(rule.id, 'bank_id', value)}
+									value={rule.bank_id ? Number(rule.bank_id) : undefined}
+									onChange={(value) => handleUpdateRule(rule.id, 'bank_id', value ?? null)}
 									options={banks.map(bank => ({
 										value: Number(bank.id),
 										label: bank.name,

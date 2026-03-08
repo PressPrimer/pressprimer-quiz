@@ -248,6 +248,8 @@ class PressPrimer_Quiz_Migrator {
 	 * "Check Answer" so it cannot be changed on page reload.
 	 *
 	 * @since 2.2.1
+	 *
+	 * @return void
 	 */
 	private static function migrate_to_2_2_1() {
 		global $wpdb;
@@ -283,6 +285,8 @@ class PressPrimer_Quiz_Migrator {
 	 * are displayed per question during the quiz and on the results page.
 	 *
 	 * @since 2.2.2
+	 *
+	 * @return void
 	 */
 	private static function migrate_to_2_2_2() {
 		global $wpdb;

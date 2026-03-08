@@ -966,6 +966,8 @@ class PressPrimer_Quiz_AJAX_Handler {
 	 * Returns paginated attempt rows as HTML for the quiz landing page.
 	 *
 	 * @since 2.2.0
+	 *
+	 * @return void
 	 */
 	public function load_more_attempts() {
 		// Verify nonce.

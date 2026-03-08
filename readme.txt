@@ -3,7 +3,7 @@ Contributors: pressprimer
 Tags: quiz, learndash, assessment, lms, elearning
 Requires at least: 6.4
 Tested up to: 6.9.1
-Stable tag: 2.1.0
+Stable tag: 2.2.0
 Requires PHP: 7.4
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -202,6 +202,22 @@ This plugin offers optional AI-powered question generation using the OpenAI API.
 5. Admin reporting with analytics
 
 == Changelog ==
+
+= 2.2.0 =
+* Added: Question pool — limit the number of questions shown per attempt so each student gets a different random subset from the full question list
+* Added: Show points per question during the quiz and on the results page, with a new "Show Points Per Question" toggle in quiz settings
+* Added: Lazy-load pagination for previous attempts on the quiz landing page — shows the first 5 attempts with a "Show more" button that loads additional attempts via AJAX
+* Added: Redesigned Status tab with two-column layout and a one-click "Copy Diagnostics" button for support requests
+* Fixed: Tutorial mode answer locks now persist across page reloads instead of resetting when navigating away
+* Fixed: Question pool pass-rate warning threshold raised from 10 to 100 questions to reduce false positives
+* Fixed: Source Bank dropdown in dynamic quiz rules now shows the bank name instead of the numeric ID
+* Fixed: Category and tag dropdowns in dynamic quiz rules now show names instead of IDs
+* Fixed: Quiz start page now shows the number of questions per attempt instead of total pool size when question pool is enabled
+* Fixed: Quiz now appears on LearnPress preview lessons after course completion
+* Fixed: Status tab attempt count now matches the Reports page total
+* Fixed: Quiz and bank deletion now uses a modal confirmation dialog instead of browser confirm
+* Fixed: Quiz preview page cleaned up with PHP 8.1 deprecation fix
+* Fixed: Diagnostics page now shows the actual PHP memory limit instead of the WordPress constant
 
 = 2.1.0 =
 * Added: Display option controls — show or hide individual quiz elements (description, question count, score, pass/fail status, time spent, category breakdown, retake button, and more) via shortcode attributes or block inspector toggles

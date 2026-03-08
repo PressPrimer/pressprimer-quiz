@@ -160,7 +160,8 @@
 			const offset = parseInt($button.data('offset'), 10) || 0;
 
 			// Disable button and show loading
-			$button.prop('disabled', true).text(pressprimerQuiz.strings.loadingText || 'Loading...');
+			$button.prop('disabled', true).attr('aria-busy', 'true').text(pressprimerQuiz.strings.loadingText || 'Loading...');
+			$list.attr('aria-busy', 'true');
 
 			$.ajax({
 				url: pressprimerQuiz.ajaxUrl,
@@ -172,12 +173,18 @@
 					offset: offset
 				},
 				success: function(response) {
+					$list.removeAttr('aria-busy');
 					if (response.success && response.data.html) {
 						$list.append(response.data.html);
 
+						// Announce loaded count to screen readers
+						var $status = $container.find('#ppq-attempts-status');
+						var loaded = response.data.loaded || 0;
+						$status.text(loaded + ' more attempts loaded.');
+
 						if (response.data.has_more) {
 							$button.data('offset', response.data.next_offset);
-							$button.prop('disabled', false);
+							$button.prop('disabled', false).removeAttr('aria-busy');
 
 							// Update button text with remaining count
 							var remaining = total - response.data.next_offset;
@@ -190,11 +197,13 @@
 						} else {
 							// No more attempts — remove the footer
 							$button.closest('.ppq-attempts-footer').remove();
+							$status.text('All ' + total + ' attempts loaded.');
 						}
 					}
 				},
 				error: function() {
-					$button.prop('disabled', false);
+					$list.removeAttr('aria-busy');
+					$button.prop('disabled', false).removeAttr('aria-busy');
 					$button.text(pressprimerQuiz.strings.showMore || 'Show more');
 				}
 			});

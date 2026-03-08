@@ -306,6 +306,11 @@ class PressPrimer_Quiz_Quiz_Renderer {
 			}
 		}
 
+		// If pool is enabled, show how many questions the user will actually see.
+		if ( $quiz->pool_enabled && $quiz->max_questions && $quiz->max_questions < $question_count ) {
+			$question_count = $quiz->max_questions;
+		}
+
 		// Get theme class
 		$theme_class = PressPrimer_Quiz_Theme_Loader::get_theme_class( PressPrimer_Quiz_Theme_Loader::get_quiz_theme( $quiz ) );
 
@@ -488,6 +493,7 @@ class PressPrimer_Quiz_Quiz_Renderer {
 				<?php if ( $display['show_attempt_history'] && ! empty( $submitted_attempts ) && $is_logged_in ) : ?>
 					<div class="ppq-previous-attempts" data-quiz-id="<?php echo esc_attr( $quiz->id ); ?>" data-total="<?php echo esc_attr( $total_submitted ); ?>">
 						<h2 class="ppq-section-title"><?php esc_html_e( 'Your Previous Attempts', 'pressprimer-quiz' ); ?></h2>
+						<div class="ppq-sr-only" aria-live="polite" id="ppq-attempts-status"></div>
 						<div class="ppq-attempts-list">
 							<?php
 							$shown = 0;
@@ -1293,6 +1299,7 @@ class PressPrimer_Quiz_Quiz_Renderer {
 	 * @since 2.2.0
 	 *
 	 * @param PressPrimer_Quiz_Attempt $attempt Attempt object.
+	 * @return void
 	 */
 	public function render_attempt_row( $attempt ) {
 		?>

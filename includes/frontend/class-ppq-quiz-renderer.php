@@ -481,37 +481,38 @@ class PressPrimer_Quiz_Quiz_Renderer {
 				);
 				?>
 
+				<?php
+				$total_submitted = count( $submitted_attempts );
+				$initial_limit   = 5;
+				?>
 				<?php if ( $display['show_attempt_history'] && ! empty( $submitted_attempts ) && $is_logged_in ) : ?>
-					<div class="ppq-previous-attempts">
+					<div class="ppq-previous-attempts" data-quiz-id="<?php echo esc_attr( $quiz->id ); ?>" data-total="<?php echo esc_attr( $total_submitted ); ?>">
 						<h2 class="ppq-section-title"><?php esc_html_e( 'Your Previous Attempts', 'pressprimer-quiz' ); ?></h2>
 						<div class="ppq-attempts-list">
 							<?php
 							$shown = 0;
 							foreach ( $submitted_attempts as $attempt ) {
-								if ( $shown >= 3 ) {
-									break; // Show max 3 previous attempts
+								if ( $shown >= $initial_limit ) {
+									break;
 								}
 								++$shown;
-								?>
-								<div class="ppq-attempt-card">
-									<div class="ppq-attempt-info">
-										<span class="ppq-attempt-date">
-											<?php echo esc_html( wp_date( get_option( 'date_format' ), strtotime( $attempt->started_at ) ) ); ?>
-										</span>
-										<?php if ( null !== $attempt->score_percent ) : ?>
-											<span class="ppq-attempt-score <?php echo esc_attr( $attempt->passed ? 'ppq-passed' : 'ppq-failed' ); ?>">
-												<?php echo esc_html( number_format_i18n( $attempt->score_percent, 1 ) . '%' ); ?>
-												<?php if ( $attempt->passed ) : ?>
-													<span class="ppq-pass-badge" aria-label="<?php esc_attr_e( 'Passed', 'pressprimer-quiz' ); ?>">✓</span>
-												<?php endif; ?>
-											</span>
-										<?php endif; ?>
-									</div>
-								</div>
-								<?php
+								$this->render_attempt_row( $attempt );
 							}
 							?>
 						</div>
+						<?php if ( $total_submitted > $initial_limit ) : ?>
+							<div class="ppq-attempts-footer">
+								<button type="button" class="ppq-button ppq-button-secondary ppq-load-more" data-offset="<?php echo esc_attr( $initial_limit ); ?>">
+									<?php
+									printf(
+										/* translators: %d: total number of attempts */
+										esc_html__( 'Show more (%d total)', 'pressprimer-quiz' ),
+										absint( $total_submitted )
+									);
+									?>
+								</button>
+							</div>
+						<?php endif; ?>
 					</div>
 				<?php endif; ?>
 
@@ -1256,6 +1257,9 @@ class PressPrimer_Quiz_Quiz_Renderer {
 			'unsavedChanges'            => __( 'You have unsaved answers. Are you sure you want to leave?', 'pressprimer-quiz' ),
 			'confirmLeave'              => __( 'Are you sure you want to leave this quiz? Your progress is saved, but you can only resume if the time limit allows.', 'pressprimer-quiz' ),
 			'offlineMessage'            => __( 'You are offline. Answers will be saved when connection is restored.', 'pressprimer-quiz' ),
+			'loadingText'               => __( 'Loading...', 'pressprimer-quiz' ),
+			'showMore'                  => __( 'Show more', 'pressprimer-quiz' ),
+			'total'                     => __( 'total', 'pressprimer-quiz' ),
 		];
 
 		/**
@@ -1279,5 +1283,34 @@ class PressPrimer_Quiz_Quiz_Renderer {
 				'strings' => $strings,
 			]
 		);
+	}
+
+	/**
+	 * Render a single attempt row card.
+	 *
+	 * Used by both the initial page render and the AJAX load-more handler.
+	 *
+	 * @since 2.2.0
+	 *
+	 * @param PressPrimer_Quiz_Attempt $attempt Attempt object.
+	 */
+	public function render_attempt_row( $attempt ) {
+		?>
+		<div class="ppq-attempt-card">
+			<div class="ppq-attempt-info">
+				<span class="ppq-attempt-date">
+					<?php echo esc_html( wp_date( get_option( 'date_format' ), strtotime( $attempt->started_at ) ) ); ?>
+				</span>
+				<?php if ( null !== $attempt->score_percent ) : ?>
+					<span class="ppq-attempt-score <?php echo esc_attr( $attempt->passed ? 'ppq-passed' : 'ppq-failed' ); ?>">
+						<?php echo esc_html( number_format_i18n( $attempt->score_percent, 1 ) . '%' ); ?>
+						<?php if ( $attempt->passed ) : ?>
+							<span class="ppq-pass-badge" aria-label="<?php esc_attr_e( 'Passed', 'pressprimer-quiz' ); ?>">✓</span>
+						<?php endif; ?>
+					</span>
+				<?php endif; ?>
+			</div>
+		</div>
+		<?php
 	}
 }

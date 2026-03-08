@@ -292,6 +292,15 @@
 	line-height: 1;
 }
 
+.ppq-attempts-footer {
+	margin-top: var(--ppq-space-lg);
+	text-align: center;
+}
+
+.ppq-load-more {
+	font-size: 0.875rem;
+}
+
 /* ==========================================================================
    Quiz Actions Section
    ========================================================================== */

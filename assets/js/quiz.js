@@ -27,6 +27,7 @@
 		 */
 		bindEvents: function() {
 			$(document).on('click', '.ppq-start-quiz-button', this.handleStartQuiz.bind(this));
+			$(document).on('click', '.ppq-load-more', this.handleLoadMore.bind(this));
 		},
 
 		/**
@@ -141,6 +142,62 @@
 			// Remove retake flag - we're now in an active attempt
 			url.searchParams.delete('pressprimer_quiz_retake');
 			return url.toString();
+		},
+
+		/**
+		 * Handle Load More attempts click
+		 *
+		 * @param {Event} e Click event
+		 */
+		handleLoadMore: function(e) {
+			e.preventDefault();
+
+			const $button = $(e.currentTarget);
+			const $container = $button.closest('.ppq-previous-attempts');
+			const $list = $container.find('.ppq-attempts-list');
+			const quizId = $container.data('quiz-id');
+			const total = $container.data('total');
+			const offset = parseInt($button.data('offset'), 10) || 0;
+
+			// Disable button and show loading
+			$button.prop('disabled', true).text(pressprimerQuiz.strings.loadingText || 'Loading...');
+
+			$.ajax({
+				url: pressprimerQuiz.ajaxUrl,
+				type: 'POST',
+				data: {
+					action: 'pressprimer_quiz_load_more_attempts',
+					nonce: pressprimerQuiz.nonce,
+					quiz_id: quizId,
+					offset: offset
+				},
+				success: function(response) {
+					if (response.success && response.data.html) {
+						$list.append(response.data.html);
+
+						if (response.data.has_more) {
+							$button.data('offset', response.data.next_offset);
+							$button.prop('disabled', false);
+
+							// Update button text with remaining count
+							var remaining = total - response.data.next_offset;
+							if (remaining > 0) {
+								$button.text(
+									(pressprimerQuiz.strings.showMore || 'Show more') +
+									' (' + total + ' ' + (pressprimerQuiz.strings.total || 'total') + ')'
+								);
+							}
+						} else {
+							// No more attempts — remove the footer
+							$button.closest('.ppq-attempts-footer').remove();
+						}
+					}
+				},
+				error: function() {
+					$button.prop('disabled', false);
+					$button.text(pressprimerQuiz.strings.showMore || 'Show more');
+				}
+			});
 		},
 
 		/**

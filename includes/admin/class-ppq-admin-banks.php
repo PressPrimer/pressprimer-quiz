@@ -1041,6 +1041,21 @@ class PressPrimer_Quiz_Admin_Banks {
 					</a>
 				</form>
 
+				<?php
+				/**
+				 * Fires after the bank questions filter form.
+				 *
+				 * Allows addons to add actions related to bank questions,
+				 * such as bulk generation buttons.
+				 *
+				 * @since 2.2.0
+				 *
+				 * @param PressPrimer_Quiz_Bank $bank     The bank being viewed.
+				 * @param bool                  $can_edit Whether the current user can edit this bank.
+				 */
+				do_action( 'pressprimer_quiz_bank_questions_actions', $bank, $can_edit );
+				?>
+
 				<!-- Questions Table -->
 				<?php
 				$has_filters = ( '' !== $filter_type || '' !== $filter_difficulty || $filter_category > 0 );

@@ -308,6 +308,7 @@ const QuestionEditor = ({ questionData = {} }) => {
 												<AnswersList
 													answers={answers}
 													questionType={questionType}
+													questionId={questionData.id || 0}
 													onChange={setAnswers}
 												/>
 												<FeedbackFields form={form} />
@@ -395,6 +396,7 @@ const QuestionEditor = ({ questionData = {} }) => {
 								<AnswersList
 									answers={answers}
 									questionType={questionType}
+									questionId={questionData.id || 0}
 									onChange={setAnswers}
 								/>
 

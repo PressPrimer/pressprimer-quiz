@@ -92,6 +92,8 @@ const EmailTab = ({ settings, updateSetting, settingsData }) => {
 	const [sendingResultsTest, setSendingResultsTest] = useState(false);
 	const [welcomeTestEmail, setWelcomeTestEmail] = useState(settingsData.defaults?.adminEmail || '');
 	const [sendingWelcomeTest, setSendingWelcomeTest] = useState(false);
+	const [reminderTestEmail, setReminderTestEmail] = useState(settingsData.defaults?.adminEmail || '');
+	const [sendingReminderTest, setSendingReminderTest] = useState(false);
 
 	const defaultResultsSubject = __('Your results for {quiz_title}', 'pressprimer-quiz');
 	const defaultResultsBody = `{results_summary}
@@ -108,6 +110,18 @@ Here are your results:
 Good luck with your studies!
 
 {results_url}`;
+
+	const defaultReminderSubject = settingsData.educatorDefaults?.reminderEmailSubject || __('Reminder: {quiz_title} is {due_timing}', 'pressprimer-quiz');
+	const defaultReminderBody = settingsData.educatorDefaults?.reminderEmailBody || `Hi {student_name},
+
+This is a friendly reminder about an upcoming assignment:
+
+Quiz: {quiz_title}
+Due: {due_date}
+
+{quiz_url}
+
+You are receiving this email because you have an incomplete assignment.`;
 
 	const defaultWelcomeSubject = __('Welcome to {site_name}', 'pressprimer-quiz');
 	const defaultWelcomeBody = settingsData.educatorDefaults?.welcomeEmailBody || `Hello {student_name},
@@ -179,6 +193,35 @@ The {site_name} Team`;
 			message.error(err.message || __('Failed to send test email', 'pressprimer-quiz'));
 		} finally {
 			setSendingResultsTest(false);
+		}
+	};
+
+	/**
+	 * Send test reminder email
+	 */
+	const handleSendReminderTestEmail = async () => {
+		if (!reminderTestEmail || !reminderTestEmail.includes('@')) {
+			message.error(__('Please enter a valid email address', 'pressprimer-quiz'));
+			return;
+		}
+
+		setSendingReminderTest(true);
+		try {
+			const response = await apiFetch({
+				path: '/ppq/v1/email/test',
+				method: 'POST',
+				data: { email: reminderTestEmail, type: 'reminder' },
+			});
+
+			if (response.success) {
+				message.success(__('Test reminder email sent successfully!', 'pressprimer-quiz'));
+			} else {
+				message.error(response.message || __('Failed to send test email', 'pressprimer-quiz'));
+			}
+		} catch (err) {
+			message.error(err.message || __('Failed to send test email', 'pressprimer-quiz'));
+		} finally {
+			setSendingReminderTest(false);
 		}
 	};
 
@@ -415,6 +458,111 @@ The {site_name} Team`;
 					</Form.Item>
 				</div>
 			</div>
+
+			{/* Assignment Reminder Email Template Section - Educator Addon */}
+			{settingsData.educatorActive && (
+				<div className="ppq-settings-section">
+					<Title level={4} className="ppq-settings-section-title">
+						{__('Assignment Reminder Email Template', 'pressprimer-quiz')}
+					</Title>
+					<Paragraph className="ppq-settings-section-description">
+						{__('Customize the reminder email sent to students before assignment due dates.', 'pressprimer-quiz')}
+					</Paragraph>
+
+					<div className="ppq-settings-field">
+						<Form.Item
+							label={__('Subject Line', 'pressprimer-quiz')}
+						>
+							<Input
+								value={settings.educator_reminder_email_subject ?? defaultReminderSubject}
+								onChange={(e) => updateSetting('educator_reminder_email_subject', e.target.value)}
+								style={{ maxWidth: 500 }}
+							/>
+						</Form.Item>
+					</div>
+
+					<div className="ppq-settings-field">
+						<Form.Item
+							label={__('Email Body', 'pressprimer-quiz')}
+						>
+							<TextArea
+								value={settings.educator_reminder_email_body ?? defaultReminderBody}
+								onChange={(e) => updateSetting('educator_reminder_email_body', e.target.value)}
+								rows={12}
+								style={{ fontFamily: 'monospace' }}
+							/>
+						</Form.Item>
+					</div>
+
+					{/* Available Tokens for Reminder Email */}
+					<div className="ppq-token-list">
+						<Text strong>{__('Available Tokens:', 'pressprimer-quiz')}</Text>
+						<Text type="secondary" style={{ marginLeft: 8 }}>
+							{__('(click to copy)', 'pressprimer-quiz')}
+						</Text>
+						<div style={{ marginTop: 8 }}>
+							<TokenItem
+								token="{first_name}"
+								description={__("Student's first name", 'pressprimer-quiz')}
+							/>
+							<TokenItem
+								token="{student_name}"
+								description={__("Student's display name", 'pressprimer-quiz')}
+							/>
+							<TokenItem
+								token="{quiz_title}"
+								description={__('Quiz name', 'pressprimer-quiz')}
+							/>
+							<TokenItem
+								token="{due_date}"
+								description={__('Due date and time', 'pressprimer-quiz')}
+							/>
+							<TokenItem
+								token="{due_timing}"
+								description={__('Timing phrase (e.g. "due in 3 days", "due tomorrow")', 'pressprimer-quiz')}
+							/>
+							<TokenItem
+								token="{quiz_url}"
+								description={__('Button linking to the quiz', 'pressprimer-quiz')}
+							/>
+							<TokenItem
+								token="{site_name}"
+								description={__('Your site name', 'pressprimer-quiz')}
+							/>
+						</div>
+					</div>
+
+					{/* Test Reminder Email */}
+					<div className="ppq-settings-field" style={{ marginTop: 24, paddingTop: 16, borderTop: '1px solid #f0f0f0' }}>
+						<Form.Item
+							label={__('Send Test Email', 'pressprimer-quiz')}
+						>
+							<Space.Compact style={{ maxWidth: 400 }}>
+								<Input
+									type="email"
+									value={reminderTestEmail}
+									onChange={(e) => setReminderTestEmail(e.target.value)}
+									placeholder={__('Enter email address', 'pressprimer-quiz')}
+									style={{ width: 280 }}
+								/>
+								<Button
+									type="primary"
+									icon={<SendOutlined />}
+									onClick={handleSendReminderTestEmail}
+									loading={sendingReminderTest}
+								>
+									{__('Send Test', 'pressprimer-quiz')}
+								</Button>
+							</Space.Compact>
+							<div style={{ marginTop: 8 }}>
+								<Text type="secondary">
+									{__('Send a sample reminder email using the template above.', 'pressprimer-quiz')}
+								</Text>
+							</div>
+						</Form.Item>
+					</div>
+				</div>
+			)}
 
 			{/* Student Welcome Email Template Section - Educator Addon */}
 			{settingsData.educatorActive && (

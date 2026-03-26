@@ -635,6 +635,25 @@ Good luck with your studies!
 				'{quiz_url}'     => self::build_results_button_html( home_url( '/sample-quiz/' ), __( 'Take Quiz Now', 'pressprimer-quiz' ) ),
 				'{site_name}'    => get_bloginfo( 'name' ),
 			];
+		} elseif ( 'sr_reminder' === $type ) {
+			// Spaced repetition review reminder email template.
+			$default_subject  = __( 'You have questions due for review', 'pressprimer-quiz' );
+			$default_body     = self::get_default_sr_reminder_body_template();
+			$subject_template = isset( $settings['school_sr_reminder_email_subject'] ) && $settings['school_sr_reminder_email_subject']
+				? $settings['school_sr_reminder_email_subject']
+				: $default_subject;
+			$body_template    = isset( $settings['school_sr_reminder_email_body'] ) && $settings['school_sr_reminder_email_body']
+				? $settings['school_sr_reminder_email_body']
+				: $default_body;
+
+			// Build sample token replacements for SR reminder email.
+			$tokens = [
+				'{first_name}'   => $first_name ?: __( 'there', 'pressprimer-quiz' ),
+				'{student_name}' => $current_user->display_name ?: __( 'Test Student', 'pressprimer-quiz' ),
+				'{due_count}'    => '12',
+				'{review_url}'   => self::build_results_button_html( home_url( '/review/' ), __( 'Start Review', 'pressprimer-quiz' ) ),
+				'{site_name}'    => get_bloginfo( 'name' ),
+			];
 		} else {
 			// Results email template (default).
 			$subject_template = isset( $settings['email_results_subject'] ) && $settings['email_results_subject']
@@ -683,6 +702,25 @@ Good luck with your studies!
 
 		// Send email.
 		return wp_mail( $to_email, $subject, $html_body, $headers );
+	}
+
+	/**
+	 * Get default SR reminder email body template
+	 *
+	 * @since 2.2.3
+	 *
+	 * @return string Default SR reminder email body.
+	 */
+	private static function get_default_sr_reminder_body_template() {
+		return 'Hi {first_name},
+
+You have {due_count} questions due for review across your quizzes.
+
+Practice makes perfect! Review these questions to strengthen your long-term retention.
+
+{review_url}
+
+Keep up the great work!';
 	}
 
 	/**

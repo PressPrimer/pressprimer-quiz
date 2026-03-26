@@ -595,6 +595,7 @@ class PressPrimer_Quiz_Admin_Quizzes {
 					'pool_enabled'          => (bool) $quiz->pool_enabled,
 					'max_questions'         => $quiz->max_questions,
 					'pool_size'             => $quiz->get_pool_size()['count'],
+					'enable_sr'             => (bool) $quiz->enable_sr,
 				];
 			}
 		} else {

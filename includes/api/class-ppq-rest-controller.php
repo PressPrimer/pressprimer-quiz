@@ -1485,6 +1485,8 @@ class PressPrimer_Quiz_REST_Controller {
 			'pool_enabled'          => (bool) $quiz->pool_enabled,
 			'max_questions'         => $quiz->max_questions ? (int) $quiz->max_questions : null,
 			'pool_size'             => $quiz->get_pool_size()['count'],
+			'enable_sr'             => (bool) $quiz->enable_sr,
+			'is_review_quiz'        => (bool) $quiz->is_review_quiz,
 		];
 
 		return new WP_REST_Response( $data, 200 );
@@ -1538,6 +1540,8 @@ class PressPrimer_Quiz_REST_Controller {
 					'login_message'         => wp_kses_post( $data['login_message'] ?? '' ),
 					'pool_enabled'          => ! empty( $data['pool_enabled'] ),
 					'max_questions'         => isset( $data['max_questions'] ) && '' !== $data['max_questions'] && null !== $data['max_questions'] ? absint( $data['max_questions'] ) : null,
+					'enable_sr'             => ! empty( $data['enable_sr'] ),
+					'is_review_quiz'        => ! empty( $data['is_review_quiz'] ),
 				]
 			);
 
@@ -1639,6 +1643,8 @@ class PressPrimer_Quiz_REST_Controller {
 			$quiz->login_message         = wp_kses_post( $data['login_message'] ?? '' );
 			$quiz->pool_enabled          = ! empty( $data['pool_enabled'] );
 			$quiz->max_questions         = isset( $data['max_questions'] ) && '' !== $data['max_questions'] && null !== $data['max_questions'] ? absint( $data['max_questions'] ) : null;
+			$quiz->enable_sr             = ! empty( $data['enable_sr'] );
+			$quiz->is_review_quiz        = ! empty( $data['is_review_quiz'] );
 
 			$result = $quiz->save();
 

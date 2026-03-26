@@ -94,6 +94,8 @@ const EmailTab = ({ settings, updateSetting, settingsData }) => {
 	const [sendingWelcomeTest, setSendingWelcomeTest] = useState(false);
 	const [reminderTestEmail, setReminderTestEmail] = useState(settingsData.defaults?.adminEmail || '');
 	const [sendingReminderTest, setSendingReminderTest] = useState(false);
+	const [srReminderTestEmail, setSrReminderTestEmail] = useState(settingsData.defaults?.adminEmail || '');
+	const [sendingSrReminderTest, setSendingSrReminderTest] = useState(false);
 
 	const defaultResultsSubject = __('Your results for {quiz_title}', 'pressprimer-quiz');
 	const defaultResultsBody = `{results_summary}
@@ -122,6 +124,17 @@ Due: {due_date}
 {quiz_url}
 
 You are receiving this email because you have an incomplete assignment.`;
+
+	const defaultSrReminderSubject = settingsData.schoolDefaults?.srReminderEmailSubject || __('You have questions due for review', 'pressprimer-quiz');
+	const defaultSrReminderBody = settingsData.schoolDefaults?.srReminderEmailBody || `Hi {first_name},
+
+You have {due_count} questions due for review across your quizzes.
+
+Practice makes perfect! Review these questions to strengthen your long-term retention.
+
+{review_url}
+
+Keep up the great work!`;
 
 	const defaultWelcomeSubject = __('Welcome to {site_name}', 'pressprimer-quiz');
 	const defaultWelcomeBody = settingsData.educatorDefaults?.welcomeEmailBody || `Hello {student_name},
@@ -222,6 +235,35 @@ The {site_name} Team`;
 			message.error(err.message || __('Failed to send test email', 'pressprimer-quiz'));
 		} finally {
 			setSendingReminderTest(false);
+		}
+	};
+
+	/**
+	 * Send test SR reminder email
+	 */
+	const handleSendSrReminderTestEmail = async () => {
+		if (!srReminderTestEmail || !srReminderTestEmail.includes('@')) {
+			message.error(__('Please enter a valid email address', 'pressprimer-quiz'));
+			return;
+		}
+
+		setSendingSrReminderTest(true);
+		try {
+			const response = await apiFetch({
+				path: '/ppq/v1/email/test',
+				method: 'POST',
+				data: { email: srReminderTestEmail, type: 'sr_reminder' },
+			});
+
+			if (response.success) {
+				message.success(__('Test review reminder email sent successfully!', 'pressprimer-quiz'));
+			} else {
+				message.error(response.message || __('Failed to send test email', 'pressprimer-quiz'));
+			}
+		} catch (err) {
+			message.error(err.message || __('Failed to send test email', 'pressprimer-quiz'));
+		} finally {
+			setSendingSrReminderTest(false);
 		}
 	};
 
@@ -662,6 +704,116 @@ The {site_name} Team`;
 							<div style={{ marginTop: 8 }}>
 								<Text type="secondary">
 									{__('Send a sample welcome email using the template above.', 'pressprimer-quiz')}
+								</Text>
+							</div>
+						</Form.Item>
+					</div>
+				</div>
+			)}
+			{/* Spaced Repetition Review Reminder Email Template Section - School Addon */}
+			{settingsData.schoolActive && (
+				<div className="ppq-settings-section">
+					<Title level={4} className="ppq-settings-section-title">
+						{__('Review Reminder Email Template', 'pressprimer-quiz')}
+					</Title>
+					<Paragraph className="ppq-settings-section-description">
+						{__('Customize the daily reminder email sent to students when they have questions due for spaced repetition review.', 'pressprimer-quiz')}
+					</Paragraph>
+
+					<div className="ppq-settings-field">
+						<Form.Item
+							label={__('Enable Review Reminders', 'pressprimer-quiz')}
+						>
+							<Switch
+								checked={settings.school_sr_reminder_enabled || false}
+								onChange={(checked) => updateSetting('school_sr_reminder_enabled', checked)}
+							/>
+							<Text type="secondary" style={{ marginLeft: 12 }}>
+								{__('Send a daily email to students who have questions due for review', 'pressprimer-quiz')}
+							</Text>
+						</Form.Item>
+					</div>
+
+					<div className="ppq-settings-field">
+						<Form.Item
+							label={__('Subject Line', 'pressprimer-quiz')}
+						>
+							<Input
+								value={settings.school_sr_reminder_email_subject ?? defaultSrReminderSubject}
+								onChange={(e) => updateSetting('school_sr_reminder_email_subject', e.target.value)}
+								style={{ maxWidth: 500 }}
+							/>
+						</Form.Item>
+					</div>
+
+					<div className="ppq-settings-field">
+						<Form.Item
+							label={__('Email Body', 'pressprimer-quiz')}
+						>
+							<TextArea
+								value={settings.school_sr_reminder_email_body ?? defaultSrReminderBody}
+								onChange={(e) => updateSetting('school_sr_reminder_email_body', e.target.value)}
+								rows={12}
+								style={{ fontFamily: 'monospace' }}
+							/>
+						</Form.Item>
+					</div>
+
+					{/* Available Tokens for SR Reminder Email */}
+					<div className="ppq-token-list">
+						<Text strong>{__('Available Tokens:', 'pressprimer-quiz')}</Text>
+						<Text type="secondary" style={{ marginLeft: 8 }}>
+							{__('(click to copy)', 'pressprimer-quiz')}
+						</Text>
+						<div style={{ marginTop: 8 }}>
+							<TokenItem
+								token="{first_name}"
+								description={__("Student's first name", 'pressprimer-quiz')}
+							/>
+							<TokenItem
+								token="{student_name}"
+								description={__("Student's display name", 'pressprimer-quiz')}
+							/>
+							<TokenItem
+								token="{due_count}"
+								description={__('Number of questions due for review', 'pressprimer-quiz')}
+							/>
+							<TokenItem
+								token="{review_url}"
+								description={__('Button linking to the review page', 'pressprimer-quiz')}
+							/>
+							<TokenItem
+								token="{site_name}"
+								description={__('Your site name', 'pressprimer-quiz')}
+							/>
+						</div>
+					</div>
+
+					{/* Test SR Reminder Email */}
+					<div className="ppq-settings-field" style={{ marginTop: 24, paddingTop: 16, borderTop: '1px solid #f0f0f0' }}>
+						<Form.Item
+							label={__('Send Test Email', 'pressprimer-quiz')}
+						>
+							<Space.Compact style={{ maxWidth: 400 }}>
+								<Input
+									type="email"
+									value={srReminderTestEmail}
+									onChange={(e) => setSrReminderTestEmail(e.target.value)}
+									placeholder={__('Enter email address', 'pressprimer-quiz')}
+									style={{ width: 280 }}
+								/>
+								<Button
+									type="primary"
+									icon={<SendOutlined />}
+									onClick={handleSendSrReminderTestEmail}
+									loading={sendingSrReminderTest}
+								>
+									{__('Send Test', 'pressprimer-quiz')}
+								</Button>
+							</Space.Compact>
+							<div style={{ marginTop: 8 }}>
+								<Text type="secondary">
+									{__('Send a sample review reminder email using the template above.', 'pressprimer-quiz')}
 								</Text>
 							</div>
 						</Form.Item>

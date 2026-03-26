@@ -90,6 +90,11 @@ const QuizEditor = ({ quizData = {} }) => {
 				fieldValues.pre_test_id = quizData.pre_test_id || null;
 			}
 
+			// Add spaced repetition field if School addon is active.
+			if (quizData.schoolActive) {
+				fieldValues.enable_sr = quizData.enable_sr ?? false;
+			}
+
 			// Add proctoring fields if Enterprise addon is active.
 			if (quizData.enterpriseActive) {
 				fieldValues.proctoring_mode = quizData.proctoring_mode || 'default';

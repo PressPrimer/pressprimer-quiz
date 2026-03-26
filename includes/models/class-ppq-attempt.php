@@ -156,6 +156,14 @@ class PressPrimer_Quiz_Attempt extends PressPrimer_Quiz_Model {
 	public $passed;
 
 	/**
+	 * Curved score percentage (set by School addon curve grading)
+	 *
+	 * @since 2.2.0
+	 * @var float|null
+	 */
+	public $curved_score;
+
+	/**
 	 * Attempt status
 	 *
 	 * @since 1.0.0
@@ -239,6 +247,7 @@ class PressPrimer_Quiz_Attempt extends PressPrimer_Quiz_Model {
 			'max_points',
 			'score_percent',
 			'passed',
+			'curved_score',
 			'status',
 			'current_position',
 			'questions_json',
@@ -1224,6 +1233,34 @@ class PressPrimer_Quiz_Attempt extends PressPrimer_Quiz_Model {
 		$row = $wpdb->get_row(
 			$wpdb->prepare(
 				"SELECT * FROM {$table} WHERE quiz_id = %d AND user_id = %d AND status = 'submitted' ORDER BY finished_at DESC LIMIT 1", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+				$quiz_id,
+				$user_id
+			)
+		);
+
+		return $row ? static::from_row( $row ) : null;
+	}
+
+	/**
+	 * Get user's best submitted attempt for a quiz
+	 *
+	 * Returns the submitted attempt with the highest score_percent
+	 * for a given user and quiz. Includes the curved_score field.
+	 *
+	 * @since 2.2.0
+	 *
+	 * @param int $quiz_id Quiz ID.
+	 * @param int $user_id User ID.
+	 * @return PressPrimer_Quiz_Attempt|null Attempt object or null.
+	 */
+	public static function get_user_best_attempt( int $quiz_id, int $user_id ) {
+		global $wpdb;
+		$table = static::get_full_table_name();
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Custom table query for best attempt
+		$row = $wpdb->get_row(
+			$wpdb->prepare(
+				"SELECT * FROM {$table} WHERE quiz_id = %d AND user_id = %d AND status = 'submitted' ORDER BY score_percent DESC LIMIT 1", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 				$quiz_id,
 				$user_id
 			)

@@ -803,6 +803,7 @@
 
 .ppq-quiz-theme-default .ppq-retake-button:hover {
 	background: var(--ppq-primary-light);
+	color: var(--ppq-primary);
 }
 
 .ppq-quiz-theme-default .ppq-email-button {

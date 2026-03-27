@@ -1,7 +1,7 @@
 /**
  * Premium Settings Panel Component
  *
- * Settings provided by premium addons (Educator, Enterprise).
+ * Settings provided by premium addons (Educator, School, Enterprise).
  * Displayed as a separate tab in the Quiz Editor when at least one addon is active.
  *
  * @package PressPrimer_Quiz
@@ -297,6 +297,42 @@ const PremiumSettingsPanel = ({ form, quizData = {} }) => {
 					</Form.Item>
 					<Text type="secondary" style={{ fontSize: 10, display: 'block', marginTop: -8 }}>
 						{__('Mobile devices have limited proctoring support. Enable this to restrict quizzes to desktop browsers only.', 'pressprimer-quiz')}
+					</Text>
+				</Card>
+			)}
+
+			{/* Spaced Repetition - Only shown when School addon is active */}
+			{quizData.schoolActive && (
+				<Card
+					title={
+						<Space>
+							<Title level={4} style={{ margin: 0 }}>
+								{__('Spaced Repetition', 'pressprimer-quiz')}
+							</Title>
+							<Tooltip title={__('Track student mastery over time and generate review quizzes for questions they need to practice', 'pressprimer-quiz')}>
+								<QuestionCircleOutlined style={{ color: '#8c8c8c' }} />
+							</Tooltip>
+						</Space>
+					}
+					style={{ marginBottom: 24 }}
+				>
+					<Form.Item
+						label={
+							<Space>
+								<span>{__('Enable Spaced Repetition', 'pressprimer-quiz')}</span>
+								<Tooltip title={__('When enabled, student answers are tracked for mastery using SM-2 (SuperMemo 2), a proven algorithm that schedules reviews at increasing intervals based on how well each question is remembered. Questions answered incorrectly are reviewed sooner; mastered questions are spaced further apart.', 'pressprimer-quiz')}>
+									<QuestionCircleOutlined style={{ fontSize: 12, color: '#8c8c8c' }} />
+								</Tooltip>
+							</Space>
+						}
+						name="enable_sr"
+						valuePropName="checked"
+						style={{ marginBottom: 0 }}
+					>
+						<Switch size="small" />
+					</Form.Item>
+					<Text type="secondary" style={{ fontSize: 12, display: 'block', marginTop: 8 }}>
+						{__('Students will see review prompts and can generate personalized review quizzes from questions they need to practice.', 'pressprimer-quiz')}
 					</Text>
 				</Card>
 			)}

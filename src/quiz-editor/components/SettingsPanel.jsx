@@ -774,41 +774,6 @@ const SettingsPanel = ({ form, generationMode, setGenerationMode, quizData = {} 
 				})()}
 			</Card>
 
-			{/* Spaced Repetition - School Addon */}
-			{quizData.schoolActive && (
-				<Card
-					title={
-						<Space>
-							<Title level={4} style={{ margin: 0 }}>
-								{__('Spaced Repetition', 'pressprimer-quiz')}
-							</Title>
-							<Tooltip title={__('Track student mastery over time and generate review quizzes for questions they need to practice', 'pressprimer-quiz')}>
-								<QuestionCircleOutlined style={{ color: '#8c8c8c' }} />
-							</Tooltip>
-						</Space>
-					}
-					style={{ marginBottom: 24 }}
-				>
-					<Form.Item
-						label={
-							<Space>
-								<span>{__('Enable Spaced Repetition', 'pressprimer-quiz')}</span>
-								<Tooltip title={__('When enabled, student answers are tracked for mastery. Questions they get wrong will be scheduled for review at increasing intervals using the SM-2 algorithm.', 'pressprimer-quiz')}>
-									<QuestionCircleOutlined style={{ fontSize: 12, color: '#8c8c8c' }} />
-								</Tooltip>
-							</Space>
-						}
-						name="enable_sr"
-						valuePropName="checked"
-						style={{ marginBottom: 0 }}
-					>
-						<Switch size="small" />
-					</Form.Item>
-					<Text type="secondary" style={{ fontSize: 12, display: 'block', marginTop: 8 }}>
-						{__('Students will see review prompts and can generate personalized review quizzes from questions they need to practice.', 'pressprimer-quiz')}
-					</Text>
-				</Card>
-			)}
 
 		</Space>
 	);

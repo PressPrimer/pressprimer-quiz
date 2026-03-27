@@ -251,7 +251,7 @@ const QuizEditor = ({ quizData = {} }) => {
 		}
 	};
 
-	const hasPremiumAddons = quizData.educatorActive || quizData.enterpriseActive;
+	const hasPremiumAddons = quizData.educatorActive || quizData.enterpriseActive || quizData.schoolActive;
 
 	const tabItems = [
 		{

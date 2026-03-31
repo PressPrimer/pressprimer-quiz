@@ -795,6 +795,34 @@ class PressPrimer_Quiz_Quiz_Renderer {
 			}
 		}
 
+		/**
+		 * Filters whether backward navigation is allowed for this quiz.
+		 *
+		 * Addons can override this — for example, the Enterprise addon disables
+		 * backward navigation when branching rules are active.
+		 *
+		 * @since 2.2.0
+		 *
+		 * @param bool                     $allow_backward Whether backward nav is allowed.
+		 * @param PressPrimer_Quiz_Quiz    $quiz           The quiz object.
+		 * @param PressPrimer_Quiz_Attempt $attempt        The current attempt object.
+		 */
+		$allow_backward = (bool) apply_filters( 'pressprimer_quiz_allow_backward', $quiz->allow_backward, $quiz, $attempt );
+
+		/**
+		 * Filters the page mode for this quiz.
+		 *
+		 * Addons can override this — for example, the Enterprise addon forces
+		 * paginated mode when branching rules are active.
+		 *
+		 * @since 2.2.0
+		 *
+		 * @param string                   $page_mode Page mode ('single' or 'paged').
+		 * @param PressPrimer_Quiz_Quiz    $quiz      The quiz object.
+		 * @param PressPrimer_Quiz_Attempt $attempt   The current attempt object.
+		 */
+		$page_mode = apply_filters( 'pressprimer_quiz_page_mode', $quiz->page_mode ?: 'single', $quiz, $attempt );
+
 		// Start output buffering
 		ob_start();
 
@@ -809,8 +837,8 @@ class PressPrimer_Quiz_Quiz_Renderer {
 			data-quiz-id="<?php echo esc_attr( $quiz->id ); ?>"
 			data-quiz-mode="<?php echo esc_attr( $quiz->mode ); ?>"
 			data-allow-skip="<?php echo esc_attr( $quiz->allow_skip ? '1' : '0' ); ?>"
-			data-allow-backward="<?php echo esc_attr( $quiz->allow_backward ? '1' : '0' ); ?>"
-			data-page-mode="<?php echo esc_attr( $quiz->page_mode ?: 'single' ); ?>"
+			data-allow-backward="<?php echo esc_attr( $allow_backward ? '1' : '0' ); ?>"
+			data-page-mode="<?php echo esc_attr( $page_mode ); ?>"
 			data-questions-per-page="<?php echo esc_attr( $quiz->questions_per_page ?: 1 ); ?>"
 			data-time-limit="<?php echo esc_attr( $time_limit ); ?>"
 			data-time-remaining="<?php echo esc_attr( $time_remaining ); ?>"
@@ -840,7 +868,7 @@ class PressPrimer_Quiz_Quiz_Renderer {
 
 					<?php
 					$total_questions    = count( $items );
-					$is_paginated       = 'paged' === $quiz->page_mode;
+					$is_paginated       = 'paged' === $page_mode;
 					$questions_per_page = max( 1, (int) $quiz->questions_per_page );
 					$total_pages        = $is_paginated ? (int) ceil( $total_questions / $questions_per_page ) : $total_questions;
 					$progress_label     = $is_paginated ? __( 'Page progress', 'pressprimer-quiz' ) : __( 'Question progress', 'pressprimer-quiz' );

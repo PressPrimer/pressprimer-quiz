@@ -890,8 +890,21 @@ class PressPrimer_Quiz_Quiz extends PressPrimer_Quiz_Model {
 			$question_ids = array_slice( $question_ids, 0, $max );
 		}
 
+		/**
+		 * Filters whether question randomization should be applied.
+		 *
+		 * Addons can override this — for example, the Enterprise addon disables
+		 * randomization when branching rules are active on the quiz.
+		 *
+		 * @since 2.2.0
+		 *
+		 * @param bool                  $randomize Whether to randomize question order.
+		 * @param PressPrimer_Quiz_Quiz $quiz      The quiz object.
+		 */
+		$should_randomize = (bool) apply_filters( 'pressprimer_quiz_randomize_questions', $this->randomize_questions, $this );
+
 		// Apply question randomization if enabled.
-		if ( $this->randomize_questions ) {
+		if ( $should_randomize ) {
 			shuffle( $question_ids );
 		}
 

@@ -47,6 +47,10 @@ const SettingsPanel = ({ form, generationMode, setGenerationMode, quizData = {} 
 	const maxQuestions = Form.useWatch('max_questions', form);
 	const passPercent = Form.useWatch('pass_percent', form);
 
+	// Branching rules enforce certain settings.
+	const hasBranchingRules = !! quizData.hasBranchingRules;
+	const branchingTooltip = __('This setting is locked because branching rules are active on this quiz.', 'pressprimer-quiz');
+
 	return (
 		<Space direction="vertical" size="large" style={{ width: '100%' }}>
 			{/* Basic Information */}
@@ -356,7 +360,7 @@ const SettingsPanel = ({ form, generationMode, setGenerationMode, quizData = {} 
 								label={
 									<Space>
 										<span>{__('Allow Backward Navigation', 'pressprimer-quiz')}</span>
-										<Tooltip title={__('Students can go back to previous questions', 'pressprimer-quiz')}>
+										<Tooltip title={hasBranchingRules ? branchingTooltip : __('Students can go back to previous questions', 'pressprimer-quiz')}>
 											<QuestionCircleOutlined style={{ fontSize: 12, color: '#8c8c8c' }} />
 										</Tooltip>
 									</Space>
@@ -365,7 +369,7 @@ const SettingsPanel = ({ form, generationMode, setGenerationMode, quizData = {} 
 								valuePropName="checked"
 								style={{ marginBottom: 8 }}
 							>
-								<Switch size="small" />
+								<Switch size="small" disabled={hasBranchingRules} />
 							</Form.Item>
 							<Form.Item
 								label={
@@ -508,7 +512,7 @@ const SettingsPanel = ({ form, generationMode, setGenerationMode, quizData = {} 
 								label={
 									<Space>
 										<span>{__('Randomize Question Order', 'pressprimer-quiz')}</span>
-										<Tooltip title={__('Shuffle the order of questions for each attempt', 'pressprimer-quiz')}>
+										<Tooltip title={hasBranchingRules ? branchingTooltip : __('Shuffle the order of questions for each attempt', 'pressprimer-quiz')}>
 											<QuestionCircleOutlined style={{ fontSize: 12, color: '#8c8c8c' }} />
 										</Tooltip>
 									</Space>
@@ -517,7 +521,7 @@ const SettingsPanel = ({ form, generationMode, setGenerationMode, quizData = {} 
 								valuePropName="checked"
 								style={{ marginBottom: 8 }}
 							>
-								<Switch size="small" />
+								<Switch size="small" disabled={hasBranchingRules} />
 							</Form.Item>
 							<Form.Item
 								label={
@@ -557,14 +561,14 @@ const SettingsPanel = ({ form, generationMode, setGenerationMode, quizData = {} 
 								label={
 									<Space>
 										<span>{__('Page Mode', 'pressprimer-quiz')}</span>
-										<Tooltip title={__('Show all questions on one page or paginate them', 'pressprimer-quiz')}>
+										<Tooltip title={hasBranchingRules ? branchingTooltip : __('Show all questions on one page or paginate them', 'pressprimer-quiz')}>
 											<QuestionCircleOutlined style={{ fontSize: 12, color: '#8c8c8c' }} />
 										</Tooltip>
 									</Space>
 								}
 								name="page_mode"
 							>
-								<Radio.Group size="small">
+								<Radio.Group size="small" disabled={hasBranchingRules}>
 									<Radio value="single">{__('Single Page', 'pressprimer-quiz')}</Radio>
 									<Radio value="paged">{__('Paginated', 'pressprimer-quiz')}</Radio>
 								</Radio.Group>

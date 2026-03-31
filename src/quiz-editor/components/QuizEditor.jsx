@@ -249,9 +249,19 @@ const QuizEditor = ({ quizData = {} }) => {
 			// Allow switching freely between Settings and Feedback
 			setActiveTab(newTab);
 		}
+
+		// Notify addon components when their tab becomes active.
+		if (newTab === 'branching') {
+			window.dispatchEvent(
+				new CustomEvent('ppq-quiz-editor-tab-active', { detail: { tab: 'branching' } })
+			);
+		}
 	};
 
 	const hasPremiumAddons = quizData.educatorActive || quizData.enterpriseActive || quizData.schoolActive;
+
+	// Branching tab is available only for fixed-mode quizzes when Enterprise addon provides branching.
+	const showBranchingTab = quizData.branchingActive && generationMode === 'fixed' && currentQuizId;
 
 	const tabItems = [
 		{
@@ -270,6 +280,11 @@ const QuizEditor = ({ quizData = {} }) => {
 			children: generationMode === 'fixed'
 				? <QuestionsPanel quizId={currentQuizId} generationMode={generationMode} />
 				: <RulesPanel quizId={currentQuizId} generationMode={generationMode} />,
+		},
+		showBranchingTab && {
+			key: 'branching',
+			label: __('Branching', 'pressprimer-quiz'),
+			children: <div id="ppqen-branching-root" data-quiz-id={currentQuizId} />,
 		},
 		{
 			key: 'feedback',

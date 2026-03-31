@@ -53,6 +53,16 @@ const QuizEditor = ({ quizData = {} }) => {
 
 	const isNew = !currentQuizId;
 
+	// Initialise the addon validator registry.
+	// Addons (e.g. Enterprise branching) can push async validator functions
+	// into this array.  Each validator receives { quizId, values } and must
+	// return { valid: bool, errors: string[] }.
+	useEffect(() => {
+		if (!window.ppqQuizEditorValidators) {
+			window.ppqQuizEditorValidators = [];
+		}
+	}, []);
+
 	// Initialize form with quiz data
 	useEffect(() => {
 		if (quizData.id) {
@@ -124,6 +134,39 @@ const QuizEditor = ({ quizData = {} }) => {
 	}, [quizData, form]);
 
 	/**
+	 * Run all registered addon validators.
+	 *
+	 * Returns an array of error strings. An empty array means all validators
+	 * passed.  Each validator function receives { quizId, values } and must
+	 * return { valid: bool, errors: string[] }.
+	 *
+	 * @param {number|null} quizId Current quiz ID.
+	 * @param {Object}      values Form values.
+	 * @return {Promise<string[]>} Collected error messages.
+	 */
+	const runAddonValidators = async (quizId, values) => {
+		const validators = window.ppqQuizEditorValidators || [];
+		if (!validators.length) {
+			return [];
+		}
+
+		const allErrors = [];
+
+		for (const validator of validators) {
+			try {
+				const result = await validator({ quizId, values });
+				if (result && !result.valid && Array.isArray(result.errors)) {
+					allErrors.push(...result.errors);
+				}
+			} catch (err) {
+				debugError('Addon validator error:', err);
+			}
+		}
+
+		return allErrors;
+	};
+
+	/**
 	 * Handle form submission
 	 */
 	const handleSubmit = async (values) => {
@@ -132,6 +175,16 @@ const QuizEditor = ({ quizData = {} }) => {
 
 			// Use currentQuizId (which may have been set by auto-save) or fall back to quizData.id
 			const quizId = currentQuizId || quizData.id;
+
+			// Run addon validators before saving.
+			if (quizId) {
+				const addonErrors = await runAddonValidators(quizId, values);
+				if (addonErrors.length > 0) {
+					addonErrors.forEach((err) => message.error(err));
+					setSaving(false);
+					return;
+				}
+			}
 
 			// Prepare data for submission
 			const quizPayload = {

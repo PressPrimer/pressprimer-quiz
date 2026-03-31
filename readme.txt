@@ -212,7 +212,6 @@ This plugin offers optional AI-powered question generation using the OpenAI API.
 * Fixed: Question pool pass-rate warning threshold raised from 10 to 100 questions to reduce false positives
 * Fixed: Source Bank dropdown in dynamic quiz rules now shows the bank name instead of the numeric ID
 * Fixed: Category and tag dropdowns in dynamic quiz rules now show names instead of IDs
-* Fixed: Quiz start page now shows the number of questions per attempt instead of total pool size when question pool is enabled
 * Fixed: Quiz now appears on LearnPress preview lessons after course completion
 * Fixed: Status tab attempt count now matches the Reports page total
 * Fixed: Quiz and bank deletion now uses a modal confirmation dialog instead of browser confirm

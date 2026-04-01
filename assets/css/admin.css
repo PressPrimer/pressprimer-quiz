@@ -5,6 +5,30 @@
  * @since 1.0.0
  */
 
+/*
+ * Fix Ant Design radio/checkbox native inputs in WP admin.
+ *
+ * WordPress admin forms.css styles input[type="radio"] and input[type="checkbox"]
+ * with explicit width, height, and positioning that override Ant Design v5's
+ * CSS-in-JS styles. This makes the native <input> visible alongside the custom
+ * styled <span class="ant-radio-inner"> / <span class="ant-checkbox-inner">,
+ * causing duplicate radio buttons and checkboxes to appear.
+ *
+ * @since 2.2.0
+ */
+.ant-radio-input,
+.ant-checkbox-input {
+	position: absolute !important;
+	inset: 0 !important;
+	z-index: 1 !important;
+	width: 100% !important;
+	height: 100% !important;
+	margin: 0 !important;
+	padding: 0 !important;
+	cursor: pointer !important;
+	opacity: 0 !important;
+}
+
 /* Dashboard Layout */
 .ppq-dashboard {
 	margin-top: 20px;

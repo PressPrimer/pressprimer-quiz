@@ -53,6 +53,14 @@ const SettingsPanel = ({ form, generationMode, setGenerationMode, quizData = {} 
 
 	return (
 		<Space direction="vertical" size="large" style={{ width: '100%' }}>
+			{hasBranchingRules && (
+				<Alert
+					type="warning"
+					showIcon
+					message={__('Some settings are locked by branching rules', 'pressprimer-quiz')}
+					description={__('This quiz has active branching rules that require paginated mode, no question randomization, and no backward navigation. Remove the branching rules to unlock these settings.', 'pressprimer-quiz')}
+				/>
+			)}
 			{/* Basic Information */}
 			<Card
 				title={
@@ -369,7 +377,13 @@ const SettingsPanel = ({ form, generationMode, setGenerationMode, quizData = {} 
 								valuePropName="checked"
 								style={{ marginBottom: 8 }}
 							>
-								<Switch size="small" disabled={hasBranchingRules} />
+								{hasBranchingRules ? (
+									<Tooltip title={branchingTooltip}>
+										<Switch size="small" disabled />
+									</Tooltip>
+								) : (
+									<Switch size="small" />
+								)}
 							</Form.Item>
 							<Form.Item
 								label={
@@ -521,7 +535,13 @@ const SettingsPanel = ({ form, generationMode, setGenerationMode, quizData = {} 
 								valuePropName="checked"
 								style={{ marginBottom: 8 }}
 							>
-								<Switch size="small" disabled={hasBranchingRules} />
+								{hasBranchingRules ? (
+									<Tooltip title={branchingTooltip}>
+										<Switch size="small" disabled />
+									</Tooltip>
+								) : (
+									<Switch size="small" />
+								)}
 							</Form.Item>
 							<Form.Item
 								label={
@@ -568,10 +588,19 @@ const SettingsPanel = ({ form, generationMode, setGenerationMode, quizData = {} 
 								}
 								name="page_mode"
 							>
-								<Radio.Group size="small" disabled={hasBranchingRules}>
-									<Radio value="single">{__('Single Page', 'pressprimer-quiz')}</Radio>
-									<Radio value="paged">{__('Paginated', 'pressprimer-quiz')}</Radio>
-								</Radio.Group>
+								{hasBranchingRules ? (
+									<Tooltip title={branchingTooltip}>
+										<Radio.Group size="small" disabled>
+											<Radio value="single">{__('Single Page', 'pressprimer-quiz')}</Radio>
+											<Radio value="paged">{__('Paginated', 'pressprimer-quiz')}</Radio>
+										</Radio.Group>
+									</Tooltip>
+								) : (
+									<Radio.Group size="small">
+										<Radio value="single">{__('Single Page', 'pressprimer-quiz')}</Radio>
+										<Radio value="paged">{__('Paginated', 'pressprimer-quiz')}</Radio>
+									</Radio.Group>
+								)}
 							</Form.Item>
 							<Form.Item
 								label={

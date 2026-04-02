@@ -89,11 +89,15 @@ const StatusTab = ({ settingsData }) => {
 	};
 
 	/**
-	 * Get short table name (remove prefix)
+	 * Get short table name (remove wp_ prefix, keep plugin prefix)
 	 */
 	const getShortTableName = (fullName) => {
-		const match = fullName.match(/ppq_(.+)$/);
-		return match ? match[1] : fullName;
+		const match = fullName.match(/(?:ppqent?_|ppqs_|ppqe_|ppq_)(.+)$/);
+		if (!match) {
+			return fullName;
+		}
+		// Return the plugin prefix + table name (e.g. "ppq_quizzes", "ppqs_xapi_queue")
+		return match[0];
 	};
 
 	/**

@@ -489,7 +489,6 @@ class PressPrimer_Quiz_Shortcodes {
 		ob_start();
 		?>
 		<div class="ppq-my-attempts-container">
-			<h2 class="ppq-attempts-title"><?php esc_html_e( 'My Quiz Attempts', 'pressprimer-quiz' ); ?></h2>
 
 			<!-- Filters -->
 			<form method="get" class="ppq-attempts-filters">
@@ -566,6 +565,16 @@ class PressPrimer_Quiz_Shortcodes {
 					<p><?php esc_html_e( 'No attempts found.', 'pressprimer-quiz' ); ?></p>
 				</div>
 			<?php else : ?>
+				<?php
+				// Check if any attempts on this page have curved scores.
+				$has_curved_scores = false;
+				foreach ( $attempts as $attempt_row ) {
+					if ( ! empty( $attempt_row->curved_score ) ) {
+						$has_curved_scores = true;
+						break;
+					}
+				}
+				?>
 				<!-- Results Table -->
 				<div class="ppq-attempts-table-wrapper">
 					<table class="ppq-attempts-table">
@@ -573,7 +582,15 @@ class PressPrimer_Quiz_Shortcodes {
 							<tr>
 								<th><?php esc_html_e( 'Quiz', 'pressprimer-quiz' ); ?></th>
 								<?php if ( $show_score ) : ?>
-									<th><?php esc_html_e( 'Score', 'pressprimer-quiz' ); ?></th>
+									<th>
+										<?php esc_html_e( 'Score', 'pressprimer-quiz' ); ?>
+										<?php if ( $has_curved_scores ) : ?>
+											<span class="ppq-score-tooltip-trigger" aria-label="<?php esc_attr_e( 'Some scores have been adjusted by your instructor. Hover over a score to see the original.', 'pressprimer-quiz' ); ?>">
+												<span class="ppq-score-tooltip-icon" aria-hidden="true">&#9432;</span>
+												<span class="ppq-score-tooltip-text"><?php esc_html_e( 'Some scores have been adjusted by your instructor. Hover over a score to see the original.', 'pressprimer-quiz' ); ?></span>
+											</span>
+										<?php endif; ?>
+									</th>
 								<?php endif; ?>
 								<th><?php esc_html_e( 'Pass/Fail', 'pressprimer-quiz' ); ?></th>
 								<?php if ( $show_date ) : ?>
@@ -649,7 +666,13 @@ class PressPrimer_Quiz_Shortcodes {
 			<?php if ( $show_score ) : ?>
 				<td class="ppq-attempt-score" data-label="<?php esc_attr_e( 'Score', 'pressprimer-quiz' ); ?>">
 					<?php if ( 'submitted' === $attempt->status && null !== $attempt->score_percent ) : ?>
-						<?php echo esc_html( number_format_i18n( $attempt->score_percent, 1 ) ); ?>%
+						<?php if ( null !== $attempt->curved_score ) : ?>
+							<span class="ppq-curved-score" title="<?php echo esc_attr( sprintf( /* translators: %s: original score percentage */ __( 'Original: %s%%', 'pressprimer-quiz' ), number_format_i18n( $attempt->score_percent, 1 ) ) ); ?>">
+								<?php echo esc_html( number_format_i18n( $attempt->curved_score, 1 ) ); ?>%
+							</span>
+						<?php else : ?>
+							<?php echo esc_html( number_format_i18n( $attempt->score_percent, 1 ) ); ?>%
+						<?php endif; ?>
 					<?php else : ?>
 						<span class="ppq-text-muted">—</span>
 					<?php endif; ?>

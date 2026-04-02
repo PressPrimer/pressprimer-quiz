@@ -955,7 +955,7 @@
 	background: #fff;
 	border: 1px solid #e5e5e5;
 	border-radius: 8px;
-	overflow: hidden;
+	overflow: visible;
 	margin-bottom: 2rem;
 }
 
@@ -996,6 +996,53 @@
 
 .ppq-text-muted {
 	color: #9ca3af;
+}
+
+/* Curved score indicator */
+.ppq-curved-score {
+	cursor: help;
+	border-bottom: 1px dotted #9ca3af;
+}
+
+/* Score header tooltip */
+.ppq-score-tooltip-trigger {
+	position: relative;
+	display: inline-block;
+	margin-left: 4px;
+	vertical-align: middle;
+}
+
+.ppq-score-tooltip-icon {
+	font-size: 14px;
+	color: #9ca3af;
+	cursor: help;
+	font-style: normal;
+}
+
+.ppq-score-tooltip-text {
+	display: none;
+	position: absolute;
+	bottom: 100%;
+	left: 50%;
+	transform: translateX(-50%);
+	padding: 6px 10px;
+	background: #1d2327;
+	color: #fff;
+	font-size: 12px;
+	font-weight: 400;
+	text-transform: none;
+	letter-spacing: normal;
+	white-space: normal;
+	width: 220px;
+	border-radius: 4px;
+	z-index: 10;
+	line-height: 1.4;
+	margin-bottom: 6px;
+}
+
+.ppq-score-tooltip-trigger:hover .ppq-score-tooltip-text,
+.ppq-score-tooltip-trigger:focus-within .ppq-score-tooltip-text {
+	display: block;
 }
 
 /* Badges */

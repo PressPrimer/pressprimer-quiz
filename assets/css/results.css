@@ -1076,41 +1076,56 @@
 	color: #6b7280;
 }
 
-/* Buttons */
-.ppq-button-small {
-	padding: 0.375rem 0.75rem;
+/* Buttons — compound selector ensures these override quiz.css's .ppq-button */
+.ppq-button.ppq-button-small {
+	padding: 4px 14px;
 	font-size: 0.875rem;
 	border-radius: 4px;
 	text-decoration: none;
 	display: inline-block;
 	font-weight: 500;
 	transition: all 0.2s;
-	border: 1px solid transparent;
+	border-width: 1px;
+	border-style: solid;
 	white-space: nowrap;
 }
 
-.ppq-button-primary {
+.ppq-button.ppq-button-primary {
 	background: #3b82f6;
 	color: #fff;
+	border-color: #3b82f6;
 }
 
-.ppq-button-primary:hover {
+.ppq-button.ppq-button-primary:hover {
 	background: #2563eb;
 	color: #fff;
+	border-color: #2563eb;
 	text-decoration: none;
 }
 
-.ppq-button-secondary {
+.ppq-button.ppq-button-secondary {
 	background: #fff;
 	color: #3b82f6;
 	border-color: #3b82f6;
-	margin-left: 0.5rem;
 }
 
-.ppq-button-secondary:hover {
+.ppq-button.ppq-button-secondary:hover {
 	background: #eff6ff;
 	color: #2563eb;
 	border-color: #2563eb;
+	text-decoration: none;
+}
+
+.ppq-button.ppq-button-outline {
+	background: #fff;
+	color: #6b7280;
+	border-color: #d1d5db;
+}
+
+.ppq-button.ppq-button-outline:hover {
+	background: #f9fafb;
+	color: #374151;
+	border-color: #9ca3af;
 	text-decoration: none;
 }
 
@@ -1290,8 +1305,9 @@
 		flex-wrap: wrap;
 	}
 
-	.ppq-button-secondary {
-		margin-left: 0.5rem;
+	.ppq-button-secondary,
+	.ppq-button-outline {
+		margin-left: 0;
 		margin-top: 0;
 	}
 }

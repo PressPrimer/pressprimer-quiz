@@ -711,7 +711,7 @@ class PressPrimer_Quiz_Shortcodes {
 				<?php if ( 'in_progress' === $attempt->status && $attempt->can_resume() ) : ?>
 					<?php if ( $quiz_page_url ) : ?>
 						<?php $resume_url = add_query_arg( 'attempt', $attempt->id, $quiz_page_url ); ?>
-						<a href="<?php echo esc_url( $resume_url ); ?>" class="ppq-button ppq-button-small">
+						<a href="<?php echo esc_url( $resume_url ); ?>" class="ppq-button ppq-button-small ppq-button-secondary">
 							<?php esc_html_e( 'Resume', 'pressprimer-quiz' ); ?>
 						</a>
 					<?php else : ?>
@@ -727,7 +727,7 @@ class PressPrimer_Quiz_Shortcodes {
 						</a>
 						<?php if ( $this->can_retake_quiz( $quiz, $attempt ) ) : ?>
 							<?php $retake_url = add_query_arg( 'pressprimer_quiz_retake', '1', $quiz_page_url ); ?>
-							<a href="<?php echo esc_url( $retake_url ); ?>" class="ppq-button ppq-button-small ppq-button-secondary">
+							<a href="<?php echo esc_url( $retake_url ); ?>" class="ppq-button ppq-button-small ppq-button-outline">
 								<?php esc_html_e( 'Retake', 'pressprimer-quiz' ); ?>
 							</a>
 						<?php endif; ?>

@@ -217,6 +217,11 @@ This plugin offers optional AI-powered question generation using the OpenAI API.
 * Fixed: Quiz and bank deletion now uses a modal confirmation dialog instead of browser confirm
 * Fixed: Quiz preview page cleaned up with PHP 8.1 deprecation fix
 * Fixed: Diagnostics page now shows the actual PHP memory limit instead of the WordPress constant
+* Fixed: Correct and incorrect answer icons now display properly in the attempt detail modal
+* Fixed: Report dates no longer show with a timezone offset in non-UTC timezones
+* Fixed: Action buttons on quiz and bank pages now have distinct visual styles and correct sizing
+* Fixed: Duplicate radio buttons no longer appear in the WordPress admin when Ant Design is loaded
+* Fixed: Primary and retake button text now maintains readable contrast on hover
 
 = 2.1.0 =
 * Added: Display option controls — show or hide individual quiz elements (description, question count, score, pass/fail status, time spent, category breakdown, retake button, and more) via shortcode attributes or block inspector toggles

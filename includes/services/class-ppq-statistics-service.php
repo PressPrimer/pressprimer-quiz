@@ -784,7 +784,7 @@ class PressPrimer_Quiz_Statistics_Service {
 			foreach ( $answers as $idx => $answer ) {
 				$answer_options[] = [
 					'text'         => wp_strip_all_tags( $answer['text'] ?? '' ),
-					'is_correct'   => (bool) ( $answer['correct'] ?? false ),
+					'is_correct'   => (bool) ( $answer['is_correct'] ?? false ),
 					'was_selected' => in_array( $idx, $selected_indexes, true ),
 				];
 			}

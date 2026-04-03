@@ -436,6 +436,7 @@ class PressPrimer_Quiz_Schema {
 			max_points DECIMAL(10,2) DEFAULT NULL,
 			score_percent DECIMAL(5,2) DEFAULT NULL,
 			passed TINYINT(1) DEFAULT NULL,
+			curved_score DECIMAL(5,2) DEFAULT NULL,
 			status ENUM('in_progress', 'submitted', 'abandoned') NOT NULL DEFAULT 'in_progress',
 			current_position SMALLINT UNSIGNED NOT NULL DEFAULT 0,
 			questions_json LONGTEXT NOT NULL,

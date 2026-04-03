@@ -132,6 +132,11 @@ class PressPrimer_Quiz_Migrator {
 		if ( version_compare( $from_version, '2.2.3', '<' ) ) {
 			self::migrate_to_2_2_3();
 		}
+
+		// Version 2.2.4: Add curved_score column to attempts table
+		if ( version_compare( $from_version, '2.2.4', '<' ) ) {
+			self::migrate_to_2_2_4();
+		}
 	}
 
 	/**
@@ -373,6 +378,44 @@ class PressPrimer_Quiz_Migrator {
 			$wpdb->query(
 				$wpdb->prepare(
 					'ALTER TABLE %i ADD COLUMN is_review_quiz TINYINT(1) NOT NULL DEFAULT 0',
+					$table_name
+				)
+			);
+		}
+	}
+
+	/**
+	 * Migration to version 2.2.4
+	 *
+	 * Adds curved_score column to attempts table. This column is used by the
+	 * School addon's curve grading feature, but must exist in the free plugin's
+	 * schema because the Attempt model includes it in get_fillable_fields().
+	 *
+	 * @since 2.2.4
+	 *
+	 * @return void
+	 */
+	private static function migrate_to_2_2_4() {
+		global $wpdb;
+
+		$table_name = $wpdb->prefix . 'ppq_attempts';
+
+		// Check if curved_score column exists
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching
+		$column_exists = $wpdb->get_results(
+			$wpdb->prepare(
+				'SHOW COLUMNS FROM %i LIKE %s',
+				$table_name,
+				'curved_score'
+			)
+		);
+
+		if ( empty( $column_exists ) ) {
+			// Add curved_score column after passed
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.DirectDatabaseQuery.SchemaChange
+			$wpdb->query(
+				$wpdb->prepare(
+					'ALTER TABLE %i ADD COLUMN curved_score DECIMAL(5,2) DEFAULT NULL AFTER passed',
 					$table_name
 				)
 			);

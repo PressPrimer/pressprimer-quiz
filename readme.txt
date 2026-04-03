@@ -3,7 +3,7 @@ Contributors: pressprimer
 Tags: quiz, learndash, assessment, lms, elearning
 Requires at least: 6.4
 Tested up to: 6.9
-Stable tag: 2.2.0
+Stable tag: 2.2.1
 Requires PHP: 7.4
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -209,6 +209,9 @@ This plugin offers optional AI-powered question generation using the OpenAI API.
 
 == Changelog ==
 
+= 2.2.1 =
+* Fixed: Quiz submission failing with "Database error: Failed to save record" on sites without the School addon
+
 = 2.2.0 =
 * Added: Question Pool support to limit the number of questions shown per quiz attempt
 * Added: Show points per question during the quiz and on the results page, with a new "Show Points Per Question" toggle in quiz settings
@@ -287,6 +290,9 @@ This plugin offers optional AI-powered question generation using the OpenAI API.
 * Full internationalization support
 
 == Upgrade Notice ==
+
+= 2.2.1 =
+Fix: Resolves quiz submission failure introduced in 2.2.0. All users should update immediately.
 
 = 2.2.0 =
 New: Question pool for random subsets, points per question display, and lazy-load attempt pagination. Premium: AI distractor generation, assignment reminders, branching logic, curve grading, and spaced repetition.

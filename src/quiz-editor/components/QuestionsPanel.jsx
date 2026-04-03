@@ -15,7 +15,6 @@ import {
 	Modal,
 	message,
 	Space,
-	InputNumber,
 	Popconfirm,
 	Empty,
 	Typography,
@@ -70,11 +69,11 @@ const QuestionsPanel = ({ quizId, generationMode }) => {
 		}
 	}, [quizId, generationMode]);
 
-	// Calculate total points
+	// Calculate total points from question max_points
 	useEffect(() => {
 		const total = items
-			.filter(item => item && item.weight !== undefined)
-			.reduce((sum, item) => sum + (parseFloat(item.weight) || 0), 0);
+			.filter(item => item && item.max_points !== undefined)
+			.reduce((sum, item) => sum + (parseFloat(item.max_points) || 0), 0);
 		setTotalPoints(total);
 	}, [items]);
 
@@ -274,28 +273,6 @@ const QuestionsPanel = ({ quizId, generationMode }) => {
 	};
 
 	/**
-	 * Update item weight
-	 */
-	const handleWeightChange = async (itemId, newWeight) => {
-		try {
-			await apiFetch({
-				path: `/ppq/v1/quizzes/${quizId}/items/${itemId}`,
-				method: 'PUT',
-				data: {
-					weight: newWeight,
-				},
-			});
-
-			// Update local state
-			setItems(items.map(item =>
-				item.id === itemId ? { ...item, weight: newWeight } : item
-			));
-		} catch (error) {
-			message.error(__('Failed to update weight', 'pressprimer-quiz'));
-		}
-	};
-
-	/**
 	 * Handle drag end
 	 */
 	const handleDragEnd = (result) => {
@@ -392,19 +369,12 @@ const QuestionsPanel = ({ quizId, generationMode }) => {
 			render: (type) => type ? type.toUpperCase() : '',
 		},
 		{
-			title: __('Weight', 'pressprimer-quiz'),
-			dataIndex: 'weight',
-			key: 'weight',
-			width: 120,
-			render: (weight, record) => (
-				<InputNumber
-					min={0}
-					max={100}
-					step={0.01}
-					value={weight}
-					onChange={(value) => handleWeightChange(record.id, value)}
-					style={{ width: '100%' }}
-				/>
+			title: __('Points', 'pressprimer-quiz'),
+			dataIndex: 'max_points',
+			key: 'max_points',
+			width: 100,
+			render: (maxPoints) => (
+				<Text>{parseFloat(maxPoints || 0).toFixed(2)}</Text>
 			),
 		},
 		{

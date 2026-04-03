@@ -107,6 +107,11 @@ const CORE_TABS = [
 const IGNORED_SERVER_TABS = ['ai', 'integration'];
 
 /**
+ * Tabs that are read-only and should not show the Save Settings button.
+ */
+const READ_ONLY_TABS = ['status'];
+
+/**
  * Settings Page Component
  *
  * @param {Object} props Component props
@@ -290,19 +295,21 @@ const SettingsPage = ({ settingsData = {} }) => {
 								setApiModels={setApiModels}
 							/>
 
-							{/* Save Button Footer */}
-							<div className="ppq-settings-footer">
-								<Button
-									type="primary"
-									size="large"
-									icon={<SaveOutlined />}
-									onClick={handleSave}
-									loading={saving}
-									disabled={!hasChanges}
-								>
-									{__('Save Settings', 'pressprimer-quiz')}
-								</Button>
-							</div>
+							{/* Save Button Footer - hidden on read-only tabs like Status */}
+							{!READ_ONLY_TABS.includes(activeTab) && (
+								<div className="ppq-settings-footer">
+									<Button
+										type="primary"
+										size="large"
+										icon={<SaveOutlined />}
+										onClick={handleSave}
+										loading={saving}
+										disabled={!hasChanges}
+									>
+										{__('Save Settings', 'pressprimer-quiz')}
+									</Button>
+								</div>
+							)}
 						</Spin>
 					)}
 

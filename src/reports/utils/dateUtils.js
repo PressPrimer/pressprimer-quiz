@@ -96,10 +96,13 @@ export const formatDuration = (seconds) => {
 export const formatDate = (dateStr, includeTime = true) => {
 	if (!dateStr) return '-';
 
-	// Normalize MySQL datetime to ISO format with UTC timezone
+	// Normalize MySQL datetime to ISO format.
+	// WordPress stores dates via current_time('mysql') in the site's local
+	// timezone, so we must NOT append 'Z' (which would mark them as UTC and
+	// cause an offset equal to the site's UTC difference).
 	let normalizedDate = dateStr;
-	if (!dateStr.endsWith('Z') && !dateStr.includes('+') && !dateStr.includes('T')) {
-		normalizedDate = dateStr.replace(' ', 'T') + 'Z';
+	if (!dateStr.includes('T')) {
+		normalizedDate = dateStr.replace(' ', 'T');
 	}
 
 	const date = new Date(normalizedDate);

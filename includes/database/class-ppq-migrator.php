@@ -112,6 +112,26 @@ class PressPrimer_Quiz_Migrator {
 		if ( version_compare( $from_version, '2.0.1', '<' ) ) {
 			self::migrate_to_2_0_1();
 		}
+
+		// Version 2.2.0: Add pool_enabled and max_questions columns
+		if ( version_compare( $from_version, '2.2.0', '<' ) ) {
+			self::migrate_to_2_2_0();
+		}
+
+		// Version 2.2.1: Add answer_checked_at column to attempt items
+		if ( version_compare( $from_version, '2.2.1', '<' ) ) {
+			self::migrate_to_2_2_1();
+		}
+
+		// Version 2.2.2: Add show_points column to quizzes
+		if ( version_compare( $from_version, '2.2.2', '<' ) ) {
+			self::migrate_to_2_2_2();
+		}
+
+		// Version 2.2.3: Add enable_sr and is_review_quiz columns to quizzes
+		if ( version_compare( $from_version, '2.2.3', '<' ) ) {
+			self::migrate_to_2_2_3();
+		}
 	}
 
 	/**
@@ -164,6 +184,195 @@ class PressPrimer_Quiz_Migrator {
 			$wpdb->query(
 				$wpdb->prepare(
 					'ALTER TABLE %i ADD COLUMN login_message TEXT DEFAULT NULL',
+					$table_name
+				)
+			);
+		}
+	}
+
+	/**
+	 * Migration to version 2.2.0
+	 *
+	 * Adds pool_enabled and max_questions columns to quizzes table.
+	 *
+	 * @since 2.2.0
+	 */
+	private static function migrate_to_2_2_0() {
+		global $wpdb;
+
+		$table_name = $wpdb->prefix . 'ppq_quizzes';
+
+		// Check if pool_enabled column exists
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching
+		$column_exists = $wpdb->get_results(
+			$wpdb->prepare(
+				'SHOW COLUMNS FROM %i LIKE %s',
+				$table_name,
+				'pool_enabled'
+			)
+		);
+
+		if ( empty( $column_exists ) ) {
+			// Add pool_enabled column
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.DirectDatabaseQuery.SchemaChange
+			$wpdb->query(
+				$wpdb->prepare(
+					'ALTER TABLE %i ADD COLUMN pool_enabled TINYINT(1) NOT NULL DEFAULT 0',
+					$table_name
+				)
+			);
+		}
+
+		// Check if max_questions column exists
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching
+		$column_exists = $wpdb->get_results(
+			$wpdb->prepare(
+				'SHOW COLUMNS FROM %i LIKE %s',
+				$table_name,
+				'max_questions'
+			)
+		);
+
+		if ( empty( $column_exists ) ) {
+			// Add max_questions column
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.DirectDatabaseQuery.SchemaChange
+			$wpdb->query(
+				$wpdb->prepare(
+					'ALTER TABLE %i ADD COLUMN max_questions INT UNSIGNED DEFAULT NULL',
+					$table_name
+				)
+			);
+		}
+	}
+
+	/**
+	 * Migration to version 2.2.1
+	 *
+	 * Adds answer_checked_at column to attempt items table for tutorial mode
+	 * answer locking. This column tracks when an answer was validated via
+	 * "Check Answer" so it cannot be changed on page reload.
+	 *
+	 * @since 2.2.1
+	 *
+	 * @return void
+	 */
+	private static function migrate_to_2_2_1() {
+		global $wpdb;
+
+		$table_name = $wpdb->prefix . 'ppq_attempt_items';
+
+		// Check if answer_checked_at column exists
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching
+		$column_exists = $wpdb->get_results(
+			$wpdb->prepare(
+				'SHOW COLUMNS FROM %i LIKE %s',
+				$table_name,
+				'answer_checked_at'
+			)
+		);
+
+		if ( empty( $column_exists ) ) {
+			// Add answer_checked_at column
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.DirectDatabaseQuery.SchemaChange
+			$wpdb->query(
+				$wpdb->prepare(
+					'ALTER TABLE %i ADD COLUMN answer_checked_at DATETIME DEFAULT NULL',
+					$table_name
+				)
+			);
+		}
+	}
+
+	/**
+	 * Migration to version 2.2.2
+	 *
+	 * Adds show_points column to quizzes table. When enabled, point values
+	 * are displayed per question during the quiz and on the results page.
+	 *
+	 * @since 2.2.2
+	 *
+	 * @return void
+	 */
+	private static function migrate_to_2_2_2() {
+		global $wpdb;
+
+		$table_name = $wpdb->prefix . 'ppq_quizzes';
+
+		// Check if show_points column exists
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching
+		$column_exists = $wpdb->get_results(
+			$wpdb->prepare(
+				'SHOW COLUMNS FROM %i LIKE %s',
+				$table_name,
+				'show_points'
+			)
+		);
+
+		if ( empty( $column_exists ) ) {
+			// Add show_points column after enable_confidence
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.DirectDatabaseQuery.SchemaChange
+			$wpdb->query(
+				$wpdb->prepare(
+					'ALTER TABLE %i ADD COLUMN show_points TINYINT(1) NOT NULL DEFAULT 0 AFTER enable_confidence',
+					$table_name
+				)
+			);
+		}
+	}
+
+	/**
+	 * Migration to version 2.2.3
+	 *
+	 * Adds enable_sr and is_review_quiz columns to quizzes table.
+	 * enable_sr controls whether spaced repetition tracks questions from
+	 * this quiz. is_review_quiz marks quizzes generated by the SR service.
+	 *
+	 * @since 2.2.3
+	 *
+	 * @return void
+	 */
+	private static function migrate_to_2_2_3() {
+		global $wpdb;
+
+		$table_name = $wpdb->prefix . 'ppq_quizzes';
+
+		// Check if enable_sr column exists
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching
+		$column_exists = $wpdb->get_results(
+			$wpdb->prepare(
+				'SHOW COLUMNS FROM %i LIKE %s',
+				$table_name,
+				'enable_sr'
+			)
+		);
+
+		if ( empty( $column_exists ) ) {
+			// Add enable_sr column
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.DirectDatabaseQuery.SchemaChange
+			$wpdb->query(
+				$wpdb->prepare(
+					'ALTER TABLE %i ADD COLUMN enable_sr TINYINT(1) NOT NULL DEFAULT 0',
+					$table_name
+				)
+			);
+		}
+
+		// Check if is_review_quiz column exists
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching
+		$column_exists = $wpdb->get_results(
+			$wpdb->prepare(
+				'SHOW COLUMNS FROM %i LIKE %s',
+				$table_name,
+				'is_review_quiz'
+			)
+		);
+
+		if ( empty( $column_exists ) ) {
+			// Add is_review_quiz column
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.DirectDatabaseQuery.SchemaChange
+			$wpdb->query(
+				$wpdb->prepare(
+					'ALTER TABLE %i ADD COLUMN is_review_quiz TINYINT(1) NOT NULL DEFAULT 0',
 					$table_name
 				)
 			);
@@ -330,15 +539,31 @@ class PressPrimer_Quiz_Migrator {
 	 * Get table status
 	 *
 	 * Returns status information for all plugin tables.
+	 * Addons can register their own tables via the
+	 * `pressprimer_quiz_status_tables` filter.
 	 *
 	 * @since 1.0.0
+	 * @since 2.2.0 Added pressprimer_quiz_status_tables filter for addon tables.
 	 *
 	 * @return array Array of table status info with keys: name, exists, row_count.
 	 */
 	public static function get_table_status() {
 		global $wpdb;
 
-		$tables  = self::get_required_tables();
+		$tables = self::get_required_tables();
+
+		/**
+		 * Filter the list of database tables shown on the Status page.
+		 *
+		 * Addons can append their own table names (with $wpdb->prefix)
+		 * so they appear alongside the core tables.
+		 *
+		 * @since 2.2.0
+		 *
+		 * @param string[] $tables Array of full table names including prefix.
+		 */
+		$tables = apply_filters( 'pressprimer_quiz_status_tables', $tables );
+
 		$results = [];
 
 		foreach ( $tables as $table ) {

@@ -490,8 +490,10 @@ class PressPrimer_Quiz_LearnPress {
 		$course    = function_exists( 'learn_press_get_course' ) ? learn_press_get_course() : null;
 		$course_id = $course ? $course->get_id() : 0;
 
-		// Check if user is enrolled (if course exists).
-		if ( $course_id && ! $this->is_user_enrolled( $course_id ) ) {
+		// Preview lessons are viewable without enrollment — skip the check.
+		$is_preview = get_post_meta( $lesson_id, '_lp_preview', true );
+
+		if ( 'yes' !== $is_preview && $course_id && ! $this->is_user_enrolled( $course_id ) ) {
 			return;
 		}
 
@@ -818,9 +820,13 @@ class PressPrimer_Quiz_LearnPress {
 			}
 		}
 
-		// Check enrollment (includes completed enrollments).
+		// Check enrollment (includes completed/finished enrollments).
 		if ( function_exists( 'learn_press_get_user' ) ) {
 			$user = learn_press_get_user( $user_id );
+			if ( $user && method_exists( $user, 'has_enrolled_or_finished' ) ) {
+				return (bool) $user->has_enrolled_or_finished( $course_id );
+			}
+			// Fallback for older LearnPress versions without has_enrolled_or_finished.
 			if ( $user && method_exists( $user, 'has_enrolled_course' ) ) {
 				return (bool) $user->has_enrolled_course( $course_id );
 			}

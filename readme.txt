@@ -2,8 +2,8 @@
 Contributors: pressprimer
 Tags: quiz, learndash, assessment, lms, elearning
 Requires at least: 6.4
-Tested up to: 6.9.1
-Stable tag: 2.1.0
+Tested up to: 6.9
+Stable tag: 2.2.0
 Requires PHP: 7.4
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -47,6 +47,7 @@ PressPrimer Quiz includes features in the free version that competitors charge f
 * **Per-question and per-answer feedback** – Explain correct and incorrect answers
 * **Confidence ratings** – Optional checkbox for students to indicate certainty
 * **Three professional themes** – Default, Modern, and Minimal
+* **Question pool** – Limit the number of questions shown per attempt so each student gets a random subset from the full list
 * **Customizable Appearance** – Adjust fonts, colors, spacing, and other visual styles. Includes Condensed Mode for streamlined quizzes with reduced vertical spacing.
 * **Uncanny Automator integration** – Triggers for quiz completion, pass, and fail, with a comprehensive set of tokens for use in automations
 
@@ -95,6 +96,11 @@ Unlock additional premium features at [pressprimer.com](https://pressprimer.com/
 * **White-Label Branding** – Remove all PressPrimer branding and customize with your own logos, colors, and plugin name
 * **Audit Logging** – Immutable log of every quiz, question, settings, and attempt change for compliance and accountability
 * **Question Recovery & Version History** – Restore deleted questions and track every edit with one-click rollback to previous versions
+* **AI Distractor Generation** – Generate plausible wrong answers for multiple choice questions using OpenAI, with individual review and bulk generation across entire question banks
+* **Assignment Reminder Emails** – Automated reminder emails for students approaching assignment deadlines, with configurable timing windows and customizable templates
+* **Branching Logic** – Create rules that skip or jump to questions based on student answers, with path-through-quiz visualization in reports
+* **Curve Grading** – Apply grading curves to quiz scores with multiple methods
+* **Spaced Repetition** – Schedule review sessions using the SM-2 algorithm with a student dashboard, email reminders, and educator tracking
 
 = Scale-Ready Architecture =
 
@@ -140,7 +146,7 @@ The `/src` directory contains all unminified source files. The plugin uses webpa
 
 = LMS Integration =
 
-If you have LearnDash, TutorLMS, or LifterLMS installed, integration features enable automatically. No configuration required—just edit a lesson or topic and you'll see the quiz attachment options.
+If you have LearnDash, Tutor LMS, LifterLMS, or LearnPress installed, integration features enable automatically. No configuration required—just edit a lesson or topic and you'll see the quiz attachment options.
 
 == Frequently Asked Questions ==
 
@@ -203,6 +209,25 @@ This plugin offers optional AI-powered question generation using the OpenAI API.
 
 == Changelog ==
 
+= 2.2.0 =
+* Added: Question Pool support to limit the number of questions shown per quiz attempt
+* Added: Show points per question during the quiz and on the results page, with a new "Show Points Per Question" toggle in quiz settings
+* Added: Lazy-load pagination for previous attempts on the quiz landing page; shows the first 5 attempts with a "Show more" button
+* Added: Redesigned Status tab with two-column layout and a one-click copy button for support requests
+* Fixed: Tutorial mode answer locks now persist across page reloads instead of resetting when navigating away
+* Fixed: Source Bank dropdown in dynamic quiz rules now shows the bank name instead of the numeric ID
+* Fixed: Category and tag dropdowns in dynamic quiz rules now show names instead of IDs
+* Fixed: Quiz now appears on LearnPress preview lessons after course completion
+* Fixed: Status tab attempt count now matches the Reports page total
+* Fixed: Quiz and bank deletion now uses a modal confirmation dialog instead of browser confirm
+* Fixed: Quiz preview page cleaned up with PHP 8.1 deprecation fix
+* Fixed: Diagnostics page now shows the actual PHP memory limit instead of the WordPress constant
+* Fixed: Correct and incorrect answer icons now display properly in the attempt detail modal
+* Fixed: Report dates no longer show with a timezone offset in non-UTC timezones
+* Fixed: Action buttons on quiz and bank pages now have distinct visual styles and correct sizing
+* Fixed: Duplicate radio buttons no longer appear in the WordPress admin when Ant Design is loaded
+* Fixed: Primary and retake button text now maintains readable contrast on hover
+
 = 2.1.0 =
 * Added: Display option controls — show or hide individual quiz elements (description, question count, score, pass/fail status, time spent, category breakdown, retake button, and more) via shortcode attributes or block inspector toggles
 * Added: Customizable spacing — adjust line height, answer option spacing, question spacing, and container max width from Settings > Appearance, with separate values for Standard and Condensed modes
@@ -262,6 +287,9 @@ This plugin offers optional AI-powered question generation using the OpenAI API.
 * Full internationalization support
 
 == Upgrade Notice ==
+
+= 2.2.0 =
+New: Question pool for random subsets, points per question display, and lazy-load attempt pagination. Premium: AI distractor generation, assignment reminders, branching logic, curve grading, and spaced repetition.
 
 = 2.1.0 =
 New: Display option controls, customizable appearance spacing, LearnDash, Tutor LMS, LifterLMS, and LearnPress improvements, and support for new premium addon features.

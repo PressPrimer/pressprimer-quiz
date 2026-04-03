@@ -48,11 +48,11 @@ const formatDate = (dateStr) => {
 	if (!dateStr) return '-';
 
 	// MySQL datetime format: "2024-12-02 10:30:00"
-	// Append 'Z' to indicate UTC if not already present
+	// WordPress stores dates in the site's local timezone via current_time('mysql'),
+	// so we must NOT append 'Z' (which would mark them as UTC).
 	let normalizedDate = dateStr;
-	if (!dateStr.endsWith('Z') && !dateStr.includes('+') && !dateStr.includes('T')) {
-		// Convert MySQL format to ISO format with UTC timezone
-		normalizedDate = dateStr.replace(' ', 'T') + 'Z';
+	if (!dateStr.includes('T')) {
+		normalizedDate = dateStr.replace(' ', 'T');
 	}
 
 	const date = new Date(normalizedDate);

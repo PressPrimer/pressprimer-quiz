@@ -56,8 +56,8 @@
 	}
 }
 
-/* Loading states */
-.ant-spin-nested-loading {
+/* Loading state for the main editor content only (not sidebar panels). */
+.ppq-question-editor-container > .ant-spin-nested-loading {
 	min-height: 125px;
 }
 

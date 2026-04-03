@@ -66,6 +66,17 @@ const AttemptDetailModal = ({ visible, attempt, onClose }) => {
 		}
 	}, [visible, attempt?.id]);
 
+	// Notify addons when attempt details are loaded.
+	useEffect(() => {
+		if (visible && details && attempt?.id) {
+			window.dispatchEvent(
+				new CustomEvent('ppq-attempt-detail-ready', {
+					detail: { attemptId: attempt.id },
+				})
+			);
+		}
+	}, [visible, details, attempt?.id]);
+
 	// Reset when modal closes
 	useEffect(() => {
 		if (!visible) {
@@ -463,6 +474,14 @@ const AttemptDetailModal = ({ visible, attempt, onClose }) => {
 							{renderQuestionsContent()}
 						</div>
 					</>
+				)}
+
+				{/* Addon mount point for attempt detail extensions (e.g., path visualization). */}
+				{details && (
+					<div
+						id="ppq-addon-attempt-detail-root"
+						data-attempt-id={attempt?.id || ''}
+					/>
 				)}
 			</Spin>
 		</Modal>

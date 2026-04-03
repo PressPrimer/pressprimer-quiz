@@ -131,6 +131,13 @@
 	color: #666;
 }
 
+.ppq-pool-context {
+	font-size: 0.875rem;
+	color: #999;
+	font-style: italic;
+	margin-top: 0.375rem;
+}
+
 .ppq-pass-status {
 	display: inline-block;
 	padding: 0.75rem 1.5rem;
@@ -527,6 +534,26 @@
 .ppq-review-partial {
 	color: #f59e0b;
 	font-weight: 600;
+}
+
+.ppq-review-points {
+	display: flex;
+	align-items: center;
+	gap: 0.5rem;
+	font-weight: 600;
+	font-size: 0.875rem;
+}
+
+.ppq-review-points.ppq-points-full {
+	color: #10b981;
+}
+
+.ppq-review-points.ppq-points-partial {
+	color: #f59e0b;
+}
+
+.ppq-review-points.ppq-points-zero {
+	color: #ef4444;
 }
 
 /* ==========================================================================
@@ -928,7 +955,7 @@
 	background: #fff;
 	border: 1px solid #e5e5e5;
 	border-radius: 8px;
-	overflow: hidden;
+	overflow: visible;
 	margin-bottom: 2rem;
 }
 
@@ -971,6 +998,53 @@
 	color: #9ca3af;
 }
 
+/* Curved score indicator */
+.ppq-curved-score {
+	cursor: help;
+	border-bottom: 1px dotted #9ca3af;
+}
+
+/* Score header tooltip */
+.ppq-score-tooltip-trigger {
+	position: relative;
+	display: inline-block;
+	margin-left: 4px;
+	vertical-align: middle;
+}
+
+.ppq-score-tooltip-icon {
+	font-size: 14px;
+	color: #9ca3af;
+	cursor: help;
+	font-style: normal;
+}
+
+.ppq-score-tooltip-text {
+	display: none;
+	position: absolute;
+	bottom: 100%;
+	left: 50%;
+	transform: translateX(-50%);
+	padding: 6px 10px;
+	background: #1d2327;
+	color: #fff;
+	font-size: 12px;
+	font-weight: 400;
+	text-transform: none;
+	letter-spacing: normal;
+	white-space: normal;
+	width: 220px;
+	border-radius: 4px;
+	z-index: 10;
+	line-height: 1.4;
+	margin-bottom: 6px;
+}
+
+.ppq-score-tooltip-trigger:hover .ppq-score-tooltip-text,
+.ppq-score-tooltip-trigger:focus-within .ppq-score-tooltip-text {
+	display: block;
+}
+
 /* Badges */
 .ppq-badge {
 	display: inline-block;
@@ -1002,41 +1076,56 @@
 	color: #6b7280;
 }
 
-/* Buttons */
-.ppq-button-small {
-	padding: 0.375rem 0.75rem;
+/* Buttons — compound selector ensures these override quiz.css's .ppq-button */
+.ppq-button.ppq-button-small {
+	padding: 4px 14px;
 	font-size: 0.875rem;
 	border-radius: 4px;
 	text-decoration: none;
 	display: inline-block;
 	font-weight: 500;
 	transition: all 0.2s;
-	border: 1px solid transparent;
+	border-width: 1px;
+	border-style: solid;
 	white-space: nowrap;
 }
 
-.ppq-button-primary {
+.ppq-button.ppq-button-primary {
 	background: #3b82f6;
 	color: #fff;
+	border-color: #3b82f6;
 }
 
-.ppq-button-primary:hover {
+.ppq-button.ppq-button-primary:hover {
 	background: #2563eb;
 	color: #fff;
+	border-color: #2563eb;
 	text-decoration: none;
 }
 
-.ppq-button-secondary {
+.ppq-button.ppq-button-secondary {
 	background: #fff;
 	color: #3b82f6;
 	border-color: #3b82f6;
-	margin-left: 0.5rem;
 }
 
-.ppq-button-secondary:hover {
+.ppq-button.ppq-button-secondary:hover {
 	background: #eff6ff;
 	color: #2563eb;
 	border-color: #2563eb;
+	text-decoration: none;
+}
+
+.ppq-button.ppq-button-outline {
+	background: #fff;
+	color: #6b7280;
+	border-color: #d1d5db;
+}
+
+.ppq-button.ppq-button-outline:hover {
+	background: #f9fafb;
+	color: #374151;
+	border-color: #9ca3af;
 	text-decoration: none;
 }
 
@@ -1216,8 +1305,9 @@
 		flex-wrap: wrap;
 	}
 
-	.ppq-button-secondary {
-		margin-left: 0.5rem;
+	.ppq-button-secondary,
+	.ppq-button-outline {
+		margin-left: 0;
 		margin-top: 0;
 	}
 }

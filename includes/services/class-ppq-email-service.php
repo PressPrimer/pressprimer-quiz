@@ -441,13 +441,17 @@ class PressPrimer_Quiz_Email_Service {
 	 *
 	 * @since 1.0.0
 	 *
-	 * @param string $url The results URL.
-	 * @return string HTML for results button.
+	 * @param string $url   The URL.
+	 * @param string $label Optional button label. Default 'View Full Results'.
+	 * @return string HTML for button.
 	 */
-	private static function build_results_button_html( $url ) {
+	private static function build_results_button_html( $url, $label = '' ) {
+		if ( empty( $label ) ) {
+			$label = __( 'View Full Results', 'pressprimer-quiz' );
+		}
 		$html  = '<div style="text-align: center; margin: 20px 0;">';
 		$html .= '<a href="' . esc_url( $url ) . '" style="display: inline-block; padding: 12px 30px; background-color: #3b82f6; color: #ffffff; text-decoration: none; border-radius: 6px; font-weight: 600;">';
-		$html .= esc_html__( 'View Full Results', 'pressprimer-quiz' );
+		$html .= esc_html( $label );
 		$html .= '</a>';
 		$html .= '</div>';
 
@@ -610,6 +614,46 @@ Good luck with your studies!
 				'{reset_link}'    => wp_lostpassword_url(),
 				'{login_url}'     => wp_login_url(),
 			];
+		} elseif ( 'reminder' === $type ) {
+			// Assignment reminder email template.
+			$default_subject  = __( 'Reminder: {quiz_title} is {due_timing}', 'pressprimer-quiz' );
+			$default_body     = self::get_default_reminder_body_template();
+			$subject_template = isset( $settings['educator_reminder_email_subject'] ) && $settings['educator_reminder_email_subject']
+				? $settings['educator_reminder_email_subject']
+				: $default_subject;
+			$body_template    = isset( $settings['educator_reminder_email_body'] ) && $settings['educator_reminder_email_body']
+				? $settings['educator_reminder_email_body']
+				: $default_body;
+
+			// Build sample token replacements for reminder email.
+			$tokens = [
+				'{first_name}'   => $first_name ?: __( 'there', 'pressprimer-quiz' ),
+				'{student_name}' => $current_user->display_name ?: __( 'Test Student', 'pressprimer-quiz' ),
+				'{quiz_title}'   => __( 'Sample Quiz', 'pressprimer-quiz' ),
+				'{due_date}'     => wp_date( get_option( 'date_format' ) . ' ' . get_option( 'time_format' ), strtotime( '+3 days' ) ),
+				'{due_timing}'   => __( 'due in 3 days', 'pressprimer-quiz' ),
+				'{quiz_url}'     => self::build_results_button_html( home_url( '/sample-quiz/' ), __( 'Take Quiz Now', 'pressprimer-quiz' ) ),
+				'{site_name}'    => get_bloginfo( 'name' ),
+			];
+		} elseif ( 'sr_reminder' === $type ) {
+			// Spaced repetition review reminder email template.
+			$default_subject  = __( 'You have questions due for review', 'pressprimer-quiz' );
+			$default_body     = self::get_default_sr_reminder_body_template();
+			$subject_template = isset( $settings['school_sr_reminder_email_subject'] ) && $settings['school_sr_reminder_email_subject']
+				? $settings['school_sr_reminder_email_subject']
+				: $default_subject;
+			$body_template    = isset( $settings['school_sr_reminder_email_body'] ) && $settings['school_sr_reminder_email_body']
+				? $settings['school_sr_reminder_email_body']
+				: $default_body;
+
+			// Build sample token replacements for SR reminder email.
+			$tokens = [
+				'{first_name}'   => $first_name ?: __( 'there', 'pressprimer-quiz' ),
+				'{student_name}' => $current_user->display_name ?: __( 'Test Student', 'pressprimer-quiz' ),
+				'{due_count}'    => '12',
+				'{review_url}'   => self::build_results_button_html( home_url( '/review/' ), __( 'Start Review', 'pressprimer-quiz' ) ),
+				'{site_name}'    => get_bloginfo( 'name' ),
+			];
 		} else {
 			// Results email template (default).
 			$subject_template = isset( $settings['email_results_subject'] ) && $settings['email_results_subject']
@@ -661,6 +705,25 @@ Good luck with your studies!
 	}
 
 	/**
+	 * Get default SR reminder email body template
+	 *
+	 * @since 2.2.3
+	 *
+	 * @return string Default SR reminder email body.
+	 */
+	private static function get_default_sr_reminder_body_template() {
+		return 'Hi {first_name},
+
+You have {due_count} questions due for review across your quizzes.
+
+Practice makes perfect! Review these questions to strengthen your long-term retention.
+
+{review_url}
+
+Keep up the great work!';
+	}
+
+	/**
 	 * Get default welcome email body template
 	 *
 	 * @since 1.0.0
@@ -682,6 +745,26 @@ After setting your password, you can log in to access your quizzes and assignmen
 
 Best regards,
 The {site_name} Team';
+	}
+
+	/**
+	 * Get default reminder email body template
+	 *
+	 * @since 2.2.0
+	 *
+	 * @return string Default reminder email body.
+	 */
+	private static function get_default_reminder_body_template() {
+		return 'Hi {student_name},
+
+This is a friendly reminder about an upcoming assignment:
+
+Quiz: {quiz_title}
+Due: {due_date}
+
+{quiz_url}
+
+You are receiving this email because you have an incomplete assignment.';
 	}
 
 	/**

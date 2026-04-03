@@ -89,6 +89,7 @@ postcss.config.js
 /tests
 phpunit.xml
 phpunit.xml.dist
+.phpunit.result.cache
 
 # Playwright / E2E Testing
 /e2e

@@ -28,6 +28,7 @@ import {
 } from '@ant-design/icons';
 
 import SettingsPanel from './SettingsPanel';
+import PremiumSettingsPanel from './PremiumSettingsPanel';
 import QuestionsPanel from './QuestionsPanel';
 import RulesPanel from './RulesPanel';
 import FeedbackPanel from './FeedbackPanel';
@@ -52,6 +53,16 @@ const QuizEditor = ({ quizData = {} }) => {
 
 	const isNew = !currentQuizId;
 
+	// Initialise the addon validator registry.
+	// Addons (e.g. Enterprise branching) can push async validator functions
+	// into this array.  Each validator receives { quizId, values } and must
+	// return { valid: bool, errors: string[] }.
+	useEffect(() => {
+		if (!window.ppqQuizEditorValidators) {
+			window.ppqQuizEditorValidators = [];
+		}
+	}, []);
+
 	// Initialize form with quiz data
 	useEffect(() => {
 		if (quizData.id) {
@@ -72,8 +83,11 @@ const QuizEditor = ({ quizData = {} }) => {
 				questions_per_page: quizData.questions_per_page || 1,
 				show_answers: quizData.show_answers || 'after_submit',
 				enable_confidence: quizData.enable_confidence ?? false,
+				show_points: quizData.show_points ?? false,
 				theme: quizData.theme || 'default',
 				display_density: quizData.display_density || 'default',
+				pool_enabled: quizData.pool_enabled ?? false,
+				max_questions: quizData.max_questions || null,
 				max_attempts: quizData.max_attempts || null,
 				attempt_delay_minutes: quizData.attempt_delay_minutes || 0,
 				generation_mode: quizData.generation_mode || 'fixed',
@@ -84,6 +98,19 @@ const QuizEditor = ({ quizData = {} }) => {
 			// Add pre_test_id if Educator addon is active.
 			if (quizData.educatorActive) {
 				fieldValues.pre_test_id = quizData.pre_test_id || null;
+			}
+
+			// Add spaced repetition field if School addon is active.
+			if (quizData.schoolActive) {
+				fieldValues.enable_sr = quizData.enable_sr ?? false;
+			}
+
+			// Add proctoring fields if Enterprise addon is active.
+			if (quizData.enterpriseActive) {
+				fieldValues.proctoring_mode = quizData.proctoring_mode || 'default';
+				fieldValues.proctoring_tab_monitoring = quizData.proctoring_tab_monitoring || 'default';
+				fieldValues.proctoring_fullscreen = quizData.proctoring_fullscreen || 'default';
+				fieldValues.proctoring_require_desktop = quizData.proctoring_require_desktop ?? false;
 			}
 
 			form.setFieldsValue(fieldValues);
@@ -107,6 +134,39 @@ const QuizEditor = ({ quizData = {} }) => {
 	}, [quizData, form]);
 
 	/**
+	 * Run all registered addon validators.
+	 *
+	 * Returns an array of error strings. An empty array means all validators
+	 * passed.  Each validator function receives { quizId, values } and must
+	 * return { valid: bool, errors: string[] }.
+	 *
+	 * @param {number|null} quizId Current quiz ID.
+	 * @param {Object}      values Form values.
+	 * @return {Promise<string[]>} Collected error messages.
+	 */
+	const runAddonValidators = async (quizId, values) => {
+		const validators = window.ppqQuizEditorValidators || [];
+		if (!validators.length) {
+			return [];
+		}
+
+		const allErrors = [];
+
+		for (const validator of validators) {
+			try {
+				const result = await validator({ quizId, values });
+				if (result && !result.valid && Array.isArray(result.errors)) {
+					allErrors.push(...result.errors);
+				}
+			} catch (err) {
+				debugError('Addon validator error:', err);
+			}
+		}
+
+		return allErrors;
+	};
+
+	/**
 	 * Handle form submission
 	 */
 	const handleSubmit = async (values) => {
@@ -115,6 +175,16 @@ const QuizEditor = ({ quizData = {} }) => {
 
 			// Use currentQuizId (which may have been set by auto-save) or fall back to quizData.id
 			const quizId = currentQuizId || quizData.id;
+
+			// Run addon validators before saving.
+			if (quizId) {
+				const addonErrors = await runAddonValidators(quizId, values);
+				if (addonErrors.length > 0) {
+					addonErrors.forEach((err) => message.error(err));
+					setSaving(false);
+					return;
+				}
+			}
 
 			// Prepare data for submission
 			const quizPayload = {
@@ -232,13 +302,30 @@ const QuizEditor = ({ quizData = {} }) => {
 			// Allow switching freely between Settings and Feedback
 			setActiveTab(newTab);
 		}
+
+		// Notify addon components when their tab becomes active.
+		if (newTab === 'branching') {
+			window.dispatchEvent(
+				new CustomEvent('ppq-quiz-editor-tab-active', { detail: { tab: 'branching' } })
+			);
+		}
 	};
+
+	const hasPremiumAddons = quizData.educatorActive || quizData.enterpriseActive || quizData.schoolActive;
+
+	// Branching tab is available only for fixed-mode quizzes when Enterprise addon provides branching.
+	const showBranchingTab = quizData.branchingActive && generationMode === 'fixed' && currentQuizId;
 
 	const tabItems = [
 		{
 			key: 'settings',
 			label: __('Settings', 'pressprimer-quiz'),
 			children: <SettingsPanel form={form} generationMode={generationMode} setGenerationMode={setGenerationMode} quizData={quizData} />,
+		},
+		hasPremiumAddons && {
+			key: 'premium',
+			label: __('Premium Settings', 'pressprimer-quiz'),
+			children: <PremiumSettingsPanel form={form} quizData={quizData} />,
 		},
 		{
 			key: 'questions',
@@ -247,12 +334,17 @@ const QuizEditor = ({ quizData = {} }) => {
 				? <QuestionsPanel quizId={currentQuizId} generationMode={generationMode} />
 				: <RulesPanel quizId={currentQuizId} generationMode={generationMode} />,
 		},
+		showBranchingTab && {
+			key: 'branching',
+			label: __('Branching', 'pressprimer-quiz'),
+			children: <div id="ppqen-branching-root" data-quiz-id={currentQuizId} />,
+		},
 		{
 			key: 'feedback',
 			label: __('Feedback', 'pressprimer-quiz'),
 			children: <FeedbackPanel value={feedbackBands} onChange={setFeedbackBands} />,
 		},
-	];
+	].filter(Boolean);
 
 	return (
 		<div className="ppq-quiz-editor-container">
@@ -276,8 +368,11 @@ const QuizEditor = ({ quizData = {} }) => {
 						questions_per_page: 1,
 						show_answers: 'after_submit',
 						enable_confidence: false,
+						show_points: false,
 						theme: 'default',
 						display_density: 'default',
+						pool_enabled: false,
+						max_questions: null,
 						generation_mode: 'fixed',
 						attempt_delay_minutes: 0,
 						access_mode: 'default',

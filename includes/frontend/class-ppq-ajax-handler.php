@@ -77,6 +77,9 @@ class PressPrimer_Quiz_AJAX_Handler {
 		// Check answer - Tutorial Mode (logged in and guests)
 		add_action( 'wp_ajax_pressprimer_quiz_check_answer', [ $this, 'check_answer' ] );
 		add_action( 'wp_ajax_nopriv_pressprimer_quiz_check_answer', [ $this, 'check_answer' ] );
+
+		// Load more previous attempts (logged in only)
+		add_action( 'wp_ajax_pressprimer_quiz_load_more_attempts', [ $this, 'load_more_attempts' ] );
 	}
 
 	/**
@@ -802,6 +805,15 @@ class PressPrimer_Quiz_AJAX_Handler {
 			);
 		}
 
+		// Block re-checking an already checked answer
+		if ( ! empty( $item->answer_checked_at ) ) {
+			wp_send_json_error(
+				[
+					'message' => __( 'This answer has already been checked.', 'pressprimer-quiz' ),
+				]
+			);
+		}
+
 		// Get selected answers from POST and sanitize immediately
 		// Handle both array (multiple choice) and scalar (single choice) inputs
 		if ( isset( $_POST['answers'] ) && is_array( $_POST['answers'] ) ) {
@@ -825,6 +837,19 @@ class PressPrimer_Quiz_AJAX_Handler {
 
 		// Save the answer
 		$attempt->save_answer( $item_id, $selected_answers );
+
+		// Mark answer as checked (locks it from future changes)
+		global $wpdb;
+		$items_table = $wpdb->prefix . 'ppq_attempt_items';
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching
+		$wpdb->update(
+			$items_table,
+			[ 'answer_checked_at' => current_time( 'mysql' ) ],
+			[ 'id' => $item_id ],
+			[ '%s' ],
+			[ '%d' ]
+		);
 
 		// Get question revision for correct answers and feedback
 		$revision = $item->get_question_revision();
@@ -933,5 +958,132 @@ class PressPrimer_Quiz_AJAX_Handler {
 		}
 
 		return $sanitized;
+	}
+
+	/**
+	 * Handle AJAX request to load more previous attempts.
+	 *
+	 * Returns paginated attempt rows as HTML for the quiz landing page.
+	 *
+	 * @since 2.2.0
+	 *
+	 * @return void
+	 */
+	public function load_more_attempts() {
+		// Verify nonce.
+		if ( ! check_ajax_referer( 'pressprimer_quiz_nonce', 'nonce', false ) ) {
+			wp_send_json_error(
+				[
+					'message' => __( 'Security check failed. Please refresh the page and try again.', 'pressprimer-quiz' ),
+				]
+			);
+		}
+
+		$quiz_id = isset( $_POST['quiz_id'] ) ? absint( wp_unslash( $_POST['quiz_id'] ) ) : 0;
+		$offset  = isset( $_POST['offset'] ) ? absint( wp_unslash( $_POST['offset'] ) ) : 0;
+		$limit   = isset( $_POST['limit'] ) ? absint( wp_unslash( $_POST['limit'] ) ) : 5;
+
+		// Cap limit to prevent abuse.
+		$limit = min( $limit, 20 );
+
+		if ( ! $quiz_id ) {
+			wp_send_json_error(
+				[
+					'message' => __( 'Invalid quiz ID.', 'pressprimer-quiz' ),
+				]
+			);
+		}
+
+		$user_id = get_current_user_id();
+
+		if ( ! $user_id ) {
+			wp_send_json_error(
+				[
+					'message' => __( 'Not logged in.', 'pressprimer-quiz' ),
+				]
+			);
+		}
+
+		$attempts = $this->get_user_attempts_paginated( $user_id, $quiz_id, $limit, $offset );
+		$total    = $this->count_user_attempts( $user_id, $quiz_id );
+
+		$renderer = new PressPrimer_Quiz_Quiz_Renderer();
+
+		ob_start();
+		foreach ( $attempts as $attempt ) {
+			$renderer->render_attempt_row( $attempt );
+		}
+		$html = ob_get_clean();
+
+		$next_offset = $offset + count( $attempts );
+
+		wp_send_json_success(
+			[
+				'html'        => $html,
+				'loaded'      => count( $attempts ),
+				'total'       => $total,
+				'has_more'    => $next_offset < $total,
+				'next_offset' => $next_offset,
+			]
+		);
+	}
+
+	/**
+	 * Get paginated submitted attempts for a user.
+	 *
+	 * @since 2.2.0
+	 *
+	 * @param int $user_id User ID.
+	 * @param int $quiz_id Quiz ID.
+	 * @param int $limit   Number of attempts to return.
+	 * @param int $offset  Offset for pagination.
+	 * @return PressPrimer_Quiz_Attempt[] Array of attempt objects.
+	 */
+	private function get_user_attempts_paginated( $user_id, $quiz_id, $limit, $offset ) {
+		global $wpdb;
+		$table = $wpdb->prefix . 'ppq_attempts';
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Paginated query for AJAX
+		$rows = $wpdb->get_results(
+			$wpdb->prepare(
+				"SELECT * FROM {$table} WHERE quiz_id = %d AND user_id = %d AND status = 'submitted' ORDER BY started_at DESC LIMIT %d OFFSET %d", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Table name from controlled prefix
+				$quiz_id,
+				$user_id,
+				$limit,
+				$offset
+			)
+		);
+
+		$attempts = [];
+		if ( $rows ) {
+			foreach ( $rows as $row ) {
+				$attempts[] = PressPrimer_Quiz_Attempt::from_row( $row );
+			}
+		}
+
+		return $attempts;
+	}
+
+	/**
+	 * Count total submitted attempts for a user on a quiz.
+	 *
+	 * @since 2.2.0
+	 *
+	 * @param int $user_id User ID.
+	 * @param int $quiz_id Quiz ID.
+	 * @return int Total count.
+	 */
+	private function count_user_attempts( $user_id, $quiz_id ) {
+		global $wpdb;
+		$table = $wpdb->prefix . 'ppq_attempts';
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Count query for AJAX
+		return (int) $wpdb->get_var(
+			$wpdb->prepare(
+				"SELECT COUNT(*) FROM {$table} WHERE quiz_id = %d AND user_id = %d AND status = 'submitted'", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Table name from controlled prefix
+				$quiz_id,
+				$user_id
+			)
+		);
 	}
 }

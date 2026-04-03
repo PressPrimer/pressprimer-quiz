@@ -245,6 +245,43 @@ class PressPrimer_Quiz_Scoring_Service {
 			}
 		}
 
+		/**
+		 * Filters the scoring totals before percentage calculation.
+		 *
+		 * Addons can adjust the denominator — for example, the Enterprise addon
+		 * excludes questions that were skipped by branching rules so students
+		 * are scored only on the questions they were actually presented.
+		 *
+		 * @since 2.2.0
+		 *
+		 * @param array                    $totals  {
+		 *     Scoring totals.
+		 *
+		 *     @type float $total_score   Total points earned.
+		 *     @type float $total_max     Maximum possible points (denominator).
+		 *     @type int   $correct_count Number of correct answers.
+		 *     @type int   $total_count   Total number of scored items.
+		 * }
+		 * @param PressPrimer_Quiz_Attempt $attempt The attempt being scored.
+		 * @param array                    $items   The attempt items.
+		 */
+		$totals = apply_filters(
+			'pressprimer_quiz_scoring_totals',
+			array(
+				'total_score'   => $total_score,
+				'total_max'     => $total_max,
+				'correct_count' => $correct_count,
+				'total_count'   => $total_count,
+			),
+			$attempt,
+			$items
+		);
+
+		$total_score   = (float) $totals['total_score'];
+		$total_max     = (float) $totals['total_max'];
+		$correct_count = (int) $totals['correct_count'];
+		$total_count   = (int) $totals['total_count'];
+
 		// Calculate percentage
 		$score_percent = $total_max > 0 ? ( $total_score / $total_max ) * 100 : 0;
 

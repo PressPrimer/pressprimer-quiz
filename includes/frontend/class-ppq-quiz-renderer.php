@@ -306,6 +306,11 @@ class PressPrimer_Quiz_Quiz_Renderer {
 			}
 		}
 
+		// If pool is enabled, show how many questions the user will actually see.
+		if ( $quiz->pool_enabled && $quiz->max_questions && $quiz->max_questions < $question_count ) {
+			$question_count = $quiz->max_questions;
+		}
+
 		// Get theme class
 		$theme_class = PressPrimer_Quiz_Theme_Loader::get_theme_class( PressPrimer_Quiz_Theme_Loader::get_quiz_theme( $quiz ) );
 
@@ -481,37 +486,39 @@ class PressPrimer_Quiz_Quiz_Renderer {
 				);
 				?>
 
+				<?php
+				$total_submitted = count( $submitted_attempts );
+				$initial_limit   = 5;
+				?>
 				<?php if ( $display['show_attempt_history'] && ! empty( $submitted_attempts ) && $is_logged_in ) : ?>
-					<div class="ppq-previous-attempts">
+					<div class="ppq-previous-attempts" data-quiz-id="<?php echo esc_attr( $quiz->id ); ?>" data-total="<?php echo esc_attr( $total_submitted ); ?>">
 						<h2 class="ppq-section-title"><?php esc_html_e( 'Your Previous Attempts', 'pressprimer-quiz' ); ?></h2>
+						<div class="ppq-sr-only" aria-live="polite" id="ppq-attempts-status"></div>
 						<div class="ppq-attempts-list">
 							<?php
 							$shown = 0;
 							foreach ( $submitted_attempts as $attempt ) {
-								if ( $shown >= 3 ) {
-									break; // Show max 3 previous attempts
+								if ( $shown >= $initial_limit ) {
+									break;
 								}
 								++$shown;
-								?>
-								<div class="ppq-attempt-card">
-									<div class="ppq-attempt-info">
-										<span class="ppq-attempt-date">
-											<?php echo esc_html( wp_date( get_option( 'date_format' ), strtotime( $attempt->started_at ) ) ); ?>
-										</span>
-										<?php if ( null !== $attempt->score_percent ) : ?>
-											<span class="ppq-attempt-score <?php echo esc_attr( $attempt->passed ? 'ppq-passed' : 'ppq-failed' ); ?>">
-												<?php echo esc_html( number_format_i18n( $attempt->score_percent, 1 ) . '%' ); ?>
-												<?php if ( $attempt->passed ) : ?>
-													<span class="ppq-pass-badge" aria-label="<?php esc_attr_e( 'Passed', 'pressprimer-quiz' ); ?>">✓</span>
-												<?php endif; ?>
-											</span>
-										<?php endif; ?>
-									</div>
-								</div>
-								<?php
+								$this->render_attempt_row( $attempt );
 							}
 							?>
 						</div>
+						<?php if ( $total_submitted > $initial_limit ) : ?>
+							<div class="ppq-attempts-footer">
+								<button type="button" class="ppq-button ppq-button-secondary ppq-load-more" data-offset="<?php echo esc_attr( $initial_limit ); ?>">
+									<?php
+									printf(
+										/* translators: %d: total number of attempts */
+										esc_html__( 'Show more (%d total)', 'pressprimer-quiz' ),
+										absint( $total_submitted )
+									);
+									?>
+								</button>
+							</div>
+						<?php endif; ?>
 					</div>
 				<?php endif; ?>
 
@@ -788,6 +795,34 @@ class PressPrimer_Quiz_Quiz_Renderer {
 			}
 		}
 
+		/**
+		 * Filters whether backward navigation is allowed for this quiz.
+		 *
+		 * Addons can override this — for example, the Enterprise addon disables
+		 * backward navigation when branching rules are active.
+		 *
+		 * @since 2.2.0
+		 *
+		 * @param bool                     $allow_backward Whether backward nav is allowed.
+		 * @param PressPrimer_Quiz_Quiz    $quiz           The quiz object.
+		 * @param PressPrimer_Quiz_Attempt $attempt        The current attempt object.
+		 */
+		$allow_backward = (bool) apply_filters( 'pressprimer_quiz_allow_backward', $quiz->allow_backward, $quiz, $attempt );
+
+		/**
+		 * Filters the page mode for this quiz.
+		 *
+		 * Addons can override this — for example, the Enterprise addon forces
+		 * paginated mode when branching rules are active.
+		 *
+		 * @since 2.2.0
+		 *
+		 * @param string                   $page_mode Page mode ('single' or 'paged').
+		 * @param PressPrimer_Quiz_Quiz    $quiz      The quiz object.
+		 * @param PressPrimer_Quiz_Attempt $attempt   The current attempt object.
+		 */
+		$page_mode = apply_filters( 'pressprimer_quiz_page_mode', $quiz->page_mode ?: 'single', $quiz, $attempt );
+
 		// Start output buffering
 		ob_start();
 
@@ -802,8 +837,8 @@ class PressPrimer_Quiz_Quiz_Renderer {
 			data-quiz-id="<?php echo esc_attr( $quiz->id ); ?>"
 			data-quiz-mode="<?php echo esc_attr( $quiz->mode ); ?>"
 			data-allow-skip="<?php echo esc_attr( $quiz->allow_skip ? '1' : '0' ); ?>"
-			data-allow-backward="<?php echo esc_attr( $quiz->allow_backward ? '1' : '0' ); ?>"
-			data-page-mode="<?php echo esc_attr( $quiz->page_mode ?: 'single' ); ?>"
+			data-allow-backward="<?php echo esc_attr( $allow_backward ? '1' : '0' ); ?>"
+			data-page-mode="<?php echo esc_attr( $page_mode ); ?>"
 			data-questions-per-page="<?php echo esc_attr( $quiz->questions_per_page ?: 1 ); ?>"
 			data-time-limit="<?php echo esc_attr( $time_limit ); ?>"
 			data-time-remaining="<?php echo esc_attr( $time_remaining ); ?>"
@@ -833,7 +868,7 @@ class PressPrimer_Quiz_Quiz_Renderer {
 
 					<?php
 					$total_questions    = count( $items );
-					$is_paginated       = 'paged' === $quiz->page_mode;
+					$is_paginated       = 'paged' === $page_mode;
 					$questions_per_page = max( 1, (int) $quiz->questions_per_page );
 					$total_pages        = $is_paginated ? (int) ceil( $total_questions / $questions_per_page ) : $total_questions;
 					$progress_label     = $is_paginated ? __( 'Page progress', 'pressprimer-quiz' ) : __( 'Question progress', 'pressprimer-quiz' );
@@ -962,10 +997,20 @@ class PressPrimer_Quiz_Quiz_Renderer {
 
 		ob_start();
 		?>
-		<div class="ppq-question"
+		<?php
+		$is_answer_checked = ! empty( $item->answer_checked_at );
+		$question_classes  = 'ppq-question';
+		if ( $is_answer_checked ) {
+			$question_classes .= ' ppq-feedback-shown';
+		}
+		?>
+		<div class="<?php echo esc_attr( $question_classes ); ?>"
 			data-question-index="<?php echo esc_attr( $index ); ?>"
 			data-item-id="<?php echo esc_attr( $item->id ); ?>"
 			data-question-type="<?php echo esc_attr( $question->type ); ?>"
+			<?php if ( $is_answer_checked ) : ?>
+			data-answer-checked="1"
+			<?php endif; ?>
 			style="<?php echo esc_attr( 0 === $index ? '' : 'display: none;' ); ?>">
 
 			<div class="ppq-question-header">
@@ -979,14 +1024,19 @@ class PressPrimer_Quiz_Quiz_Renderer {
 					);
 					?>
 				</span>
-				<?php if ( $question->max_points > 1 ) : ?>
+				<?php if ( $this->current_quiz->show_points ) : ?>
 					<span class="ppq-question-points">
 						<?php
-						printf(
-							/* translators: %s: points value */
-							esc_html__( '%s points', 'pressprimer-quiz' ),
-							esc_html( number_format_i18n( $question->max_points, 0 ) )
-						);
+						if ( 1.0 === (float) $question->max_points ) {
+							echo esc_html__( '1 point', 'pressprimer-quiz' );
+						} else {
+							$decimals = ( (float) $question->max_points === floor( (float) $question->max_points ) ) ? 0 : 1;
+							printf(
+								/* translators: %s: points value */
+								esc_html__( '%s points', 'pressprimer-quiz' ),
+								esc_html( number_format_i18n( $question->max_points, $decimals ) )
+							);
+						}
 						?>
 					</span>
 				<?php endif; ?>
@@ -996,6 +1046,17 @@ class PressPrimer_Quiz_Quiz_Renderer {
 				<?php echo wp_kses_post( wpautop( $revision->stem ) ); ?>
 			</div>
 
+			<?php
+			// Build correct indices for already-checked answers (tutorial mode resume).
+			$correct_indices = [];
+			if ( $is_answer_checked ) {
+				foreach ( $answers as $ci => $ca ) {
+					if ( ! empty( $ca['is_correct'] ) ) {
+						$correct_indices[] = $ci;
+					}
+				}
+			}
+			?>
 			<div class="ppq-answers">
 				<?php foreach ( $answer_order as $answer_index ) : ?>
 					<?php
@@ -1006,8 +1067,22 @@ class PressPrimer_Quiz_Quiz_Renderer {
 					$answer     = $answers[ $answer_index ];
 					$answer_id  = 'ppq_answer_' . $item->id . '_' . $answer_index;
 					$is_checked = in_array( $answer_index, $selected_answers, true );
+
+					// Build CSS classes for answer option.
+					$option_classes = 'ppq-answer-option';
+					if ( $is_checked ) {
+						$option_classes .= ' ppq-selected';
+					}
+					if ( $is_answer_checked ) {
+						$is_this_correct = in_array( $answer_index, $correct_indices, true );
+						if ( $is_this_correct ) {
+							$option_classes .= ' ppq-correct';
+						} elseif ( $is_checked && ! $is_this_correct ) {
+							$option_classes .= ' ppq-incorrect';
+						}
+					}
 					?>
-					<label class="ppq-answer-option <?php echo esc_attr( $is_checked ? 'ppq-selected' : '' ); ?>"
+					<label class="<?php echo esc_attr( $option_classes ); ?>"
 							for="<?php echo esc_attr( $answer_id ); ?>">
 						<input type="<?php echo esc_attr( $input_type ); ?>"
 								id="<?php echo esc_attr( $answer_id ); ?>"
@@ -1015,7 +1090,8 @@ class PressPrimer_Quiz_Quiz_Renderer {
 								value="<?php echo esc_attr( $answer_index ); ?>"
 								class="ppq-answer-input"
 								data-item-id="<?php echo esc_attr( $item->id ); ?>"
-								<?php checked( $is_checked ); ?>>
+								<?php checked( $is_checked ); ?>
+								<?php disabled( $is_answer_checked ); ?>>
 						<span class="ppq-answer-radio-check"></span>
 						<span class="ppq-answer-text">
 							<?php echo wp_kses_post( $answer['text'] ); ?>
@@ -1051,21 +1127,55 @@ class PressPrimer_Quiz_Quiz_Renderer {
 				</div>
 			<?php endif; ?>
 
-			<!-- Check Answer button for tutorial mode (hidden in timed mode) -->
+			<!-- Check Answer button for tutorial mode (hidden when already checked or in timed mode) -->
 			<div class="ppq-check-answer-container ppq-hidden">
 				<button type="button" class="ppq-button ppq-button-primary ppq-check-answer-button">
 					<?php esc_html_e( 'Check Answer', 'pressprimer-quiz' ); ?>
 				</button>
 			</div>
 
-			<!-- Feedback container for tutorial mode (hidden until answer checked) -->
-			<div class="ppq-feedback ppq-hidden">
-				<div class="ppq-feedback-result"></div>
-				<div class="ppq-feedback-text"></div>
-				<button type="button" class="ppq-button ppq-button-primary ppq-continue-button">
-					<?php esc_html_e( 'Continue', 'pressprimer-quiz' ); ?>
-				</button>
-			</div>
+			<!-- Feedback container for tutorial mode -->
+			<?php
+			if ( $is_answer_checked ) :
+				// Determine correctness for server-rendered feedback.
+				$sorted_selected = $selected_answers;
+				$sorted_correct  = $correct_indices;
+				sort( $sorted_selected );
+				sort( $sorted_correct );
+				$was_correct = ( $sorted_selected === $sorted_correct );
+
+				$feedback_class = $was_correct ? 'ppq-feedback-correct' : 'ppq-feedback-incorrect';
+				$feedback_label = $was_correct
+					? __( 'Correct!', 'pressprimer-quiz' )
+					: __( 'Incorrect', 'pressprimer-quiz' );
+
+				// Get feedback text from revision if available.
+				$feedback_text = '';
+				if ( $was_correct && ! empty( $revision->feedback_correct ) ) {
+					$feedback_text = $revision->feedback_correct;
+				} elseif ( ! $was_correct && ! empty( $revision->feedback_incorrect ) ) {
+					$feedback_text = $revision->feedback_incorrect;
+				}
+				?>
+				<div class="ppq-feedback">
+					<div class="ppq-feedback-result <?php echo esc_attr( $feedback_class ); ?>">
+						<strong><?php echo esc_html( $feedback_label ); ?></strong>
+					</div>
+					<?php if ( $feedback_text ) : ?>
+						<div class="ppq-feedback-text">
+							<?php echo wp_kses_post( $feedback_text ); ?>
+						</div>
+					<?php endif; ?>
+				</div>
+			<?php else : ?>
+				<div class="ppq-feedback ppq-hidden">
+					<div class="ppq-feedback-result"></div>
+					<div class="ppq-feedback-text"></div>
+					<button type="button" class="ppq-button ppq-button-primary ppq-continue-button">
+						<?php esc_html_e( 'Continue', 'pressprimer-quiz' ); ?>
+					</button>
+				</div>
+			<?php endif; ?>
 
 		</div>
 		<?php
@@ -1181,6 +1291,9 @@ class PressPrimer_Quiz_Quiz_Renderer {
 			'unsavedChanges'            => __( 'You have unsaved answers. Are you sure you want to leave?', 'pressprimer-quiz' ),
 			'confirmLeave'              => __( 'Are you sure you want to leave this quiz? Your progress is saved, but you can only resume if the time limit allows.', 'pressprimer-quiz' ),
 			'offlineMessage'            => __( 'You are offline. Answers will be saved when connection is restored.', 'pressprimer-quiz' ),
+			'loadingText'               => __( 'Loading...', 'pressprimer-quiz' ),
+			'showMore'                  => __( 'Show more', 'pressprimer-quiz' ),
+			'total'                     => __( 'total', 'pressprimer-quiz' ),
 		];
 
 		/**
@@ -1204,5 +1317,35 @@ class PressPrimer_Quiz_Quiz_Renderer {
 				'strings' => $strings,
 			]
 		);
+	}
+
+	/**
+	 * Render a single attempt row card.
+	 *
+	 * Used by both the initial page render and the AJAX load-more handler.
+	 *
+	 * @since 2.2.0
+	 *
+	 * @param PressPrimer_Quiz_Attempt $attempt Attempt object.
+	 * @return void
+	 */
+	public function render_attempt_row( $attempt ) {
+		?>
+		<div class="ppq-attempt-card">
+			<div class="ppq-attempt-info">
+				<span class="ppq-attempt-date">
+					<?php echo esc_html( wp_date( get_option( 'date_format' ), strtotime( $attempt->started_at ) ) ); ?>
+				</span>
+				<?php if ( null !== $attempt->score_percent ) : ?>
+					<span class="ppq-attempt-score <?php echo esc_attr( $attempt->passed ? 'ppq-passed' : 'ppq-failed' ); ?>">
+						<?php echo esc_html( number_format_i18n( $attempt->score_percent, 1 ) . '%' ); ?>
+						<?php if ( $attempt->passed ) : ?>
+							<span class="ppq-pass-badge" aria-label="<?php esc_attr_e( 'Passed', 'pressprimer-quiz' ); ?>">✓</span>
+						<?php endif; ?>
+					</span>
+				<?php endif; ?>
+			</div>
+		</div>
+		<?php
 	}
 }

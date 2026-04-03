@@ -27,6 +27,7 @@
 		 */
 		bindEvents: function() {
 			$(document).on('click', '.ppq-start-quiz-button', this.handleStartQuiz.bind(this));
+			$(document).on('click', '.ppq-load-more', this.handleLoadMore.bind(this));
 		},
 
 		/**
@@ -144,6 +145,71 @@
 		},
 
 		/**
+		 * Handle Load More attempts click
+		 *
+		 * @param {Event} e Click event
+		 */
+		handleLoadMore: function(e) {
+			e.preventDefault();
+
+			const $button = $(e.currentTarget);
+			const $container = $button.closest('.ppq-previous-attempts');
+			const $list = $container.find('.ppq-attempts-list');
+			const quizId = $container.data('quiz-id');
+			const total = $container.data('total');
+			const offset = parseInt($button.data('offset'), 10) || 0;
+
+			// Disable button and show loading
+			$button.prop('disabled', true).attr('aria-busy', 'true').text(pressprimerQuiz.strings.loadingText || 'Loading...');
+			$list.attr('aria-busy', 'true');
+
+			$.ajax({
+				url: pressprimerQuiz.ajaxUrl,
+				type: 'POST',
+				data: {
+					action: 'pressprimer_quiz_load_more_attempts',
+					nonce: pressprimerQuiz.nonce,
+					quiz_id: quizId,
+					offset: offset
+				},
+				success: function(response) {
+					$list.removeAttr('aria-busy');
+					if (response.success && response.data.html) {
+						$list.append(response.data.html);
+
+						// Announce loaded count to screen readers
+						var $status = $container.find('#ppq-attempts-status');
+						var loaded = response.data.loaded || 0;
+						$status.text(loaded + ' more attempts loaded.');
+
+						if (response.data.has_more) {
+							$button.data('offset', response.data.next_offset);
+							$button.prop('disabled', false).removeAttr('aria-busy');
+
+							// Update button text with remaining count
+							var remaining = total - response.data.next_offset;
+							if (remaining > 0) {
+								$button.text(
+									(pressprimerQuiz.strings.showMore || 'Show more') +
+									' (' + total + ' ' + (pressprimerQuiz.strings.total || 'total') + ')'
+								);
+							}
+						} else {
+							// No more attempts — remove the footer
+							$button.closest('.ppq-attempts-footer').remove();
+							$status.text('All ' + total + ' attempts loaded.');
+						}
+					}
+				},
+				error: function() {
+					$list.removeAttr('aria-busy');
+					$button.prop('disabled', false).removeAttr('aria-busy');
+					$button.text(pressprimerQuiz.strings.showMore || 'Show more');
+				}
+			});
+		},
+
+		/**
 		 * Show error message
 		 *
 		 * @param {string} message Error message
@@ -244,6 +310,8 @@
 		 * Initialize quiz interface
 		 */
 		init: function() {
+			const self = this;
+
 			this.$container = $('.ppq-quiz-interface');
 
 			if (!this.$container.length) {
@@ -274,6 +342,14 @@
 			// Tutorial mode tracking
 			this.feedbackShown = {}; // Track which questions have shown feedback
 			this.isCheckingAnswer = false; // Prevent double-clicks on Check button
+
+			// Restore checked state from server data (for page reload/resume)
+			if (this.quizMode === 'tutorial') {
+				this.$container.find('.ppq-question[data-answer-checked="1"]').each(function() {
+					var qi = parseInt($(this).data('question-index'), 10);
+					self.feedbackShown[qi] = true;
+				});
+			}
 
 			// Get guest token from URL (for environments where cookies may not work)
 			this.guestToken = new URLSearchParams(window.location.search).get('token') || '';

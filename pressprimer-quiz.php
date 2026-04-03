@@ -3,7 +3,7 @@
  * Plugin Name:       PressPrimer Quiz
  * Plugin URI:        https://pressprimer.com/quiz
  * Description:       Enterprise-grade quiz and assessment platform for WordPress educators.
- * Version:           2.1.0
+ * Version:           2.2.0
  * Requires at least: 6.4
  * Requires PHP:      7.4
  * Author:            PressPrimer
@@ -23,12 +23,12 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 // Plugin constants
-define( 'PRESSPRIMER_QUIZ_VERSION', '2.1.0' );
+define( 'PRESSPRIMER_QUIZ_VERSION', '2.2.0' );
 define( 'PRESSPRIMER_QUIZ_PLUGIN_FILE', __FILE__ );
 define( 'PRESSPRIMER_QUIZ_PLUGIN_PATH', plugin_dir_path( __FILE__ ) );
 define( 'PRESSPRIMER_QUIZ_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
 define( 'PRESSPRIMER_QUIZ_PLUGIN_BASENAME', plugin_basename( __FILE__ ) );
-define( 'PRESSPRIMER_QUIZ_DB_VERSION', '2.0.2' );
+define( 'PRESSPRIMER_QUIZ_DB_VERSION', '2.2.3' );
 
 // Composer autoloader (for smalot/pdfparser and other vendor dependencies)
 if ( file_exists( PRESSPRIMER_QUIZ_PLUGIN_PATH . 'vendor/autoload.php' ) ) {

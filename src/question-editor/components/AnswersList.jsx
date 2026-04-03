@@ -5,6 +5,7 @@
  * @since 1.0.0
  */
 
+import { useEffect } from '@wordpress/element';
 import { __ } from '@wordpress/i18n';
 import { Card, Button, Typography, Space, Tooltip, Alert } from 'antd';
 import { PlusOutlined, QuestionCircleOutlined } from '@ant-design/icons';
@@ -13,9 +14,34 @@ import AnswerRow from './AnswerRow';
 
 const { Title, Text } = Typography;
 
-const AnswersList = ({ answers, questionType, onChange }) => {
+const AnswersList = ({ answers, questionType, questionId, onChange }) => {
 	const maxAnswers = questionType === 'tf' ? 2 : 8;
 	const minAnswers = 2;
+
+	/**
+	 * Notify addons when answers change.
+	 *
+	 * Dispatches a CustomEvent with current answer state so addons
+	 * (e.g., AI distractor generation) can update their UI.
+	 *
+	 * @since 2.2.0
+	 */
+	useEffect( () => {
+		const detail = {
+			questionId: questionId || 0,
+			questionType,
+			answers,
+			answerCount: answers.length,
+			maxAnswers,
+		};
+
+		// Cache latest state so late-mounting addons can read it immediately.
+		window._ppqAnswersState = detail;
+
+		document.dispatchEvent(
+			new CustomEvent( 'ppq-answers-changed', { detail } )
+		);
+	}, [ answers, questionType, questionId, maxAnswers ] );
 
 	/**
 	 * Handle drag end
@@ -176,6 +202,11 @@ const AnswersList = ({ answers, questionType, onChange }) => {
 					>
 						{__('Add Answer Option', 'pressprimer-quiz')}
 					</Button>
+				)}
+
+				{/* Addon mount point for answer-related actions (e.g., AI distractor generation). @since 2.2.0 */}
+				{questionType !== 'tf' && (
+					<div id="ppq-answers-addon-actions" />
 				)}
 			</Space>
 		</Card>

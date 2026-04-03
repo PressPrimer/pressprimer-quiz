@@ -210,12 +210,11 @@ This plugin offers optional AI-powered question generation using the OpenAI API.
 == Changelog ==
 
 = 2.2.0 =
-* Added: Question pool — limit the number of questions shown per attempt so each student gets a different random subset from the full question list
+* Added: Question Pool support to limit the number of questions shown per quiz attempt
 * Added: Show points per question during the quiz and on the results page, with a new "Show Points Per Question" toggle in quiz settings
-* Added: Lazy-load pagination for previous attempts on the quiz landing page — shows the first 5 attempts with a "Show more" button that loads additional attempts via AJAX
-* Added: Redesigned Status tab with two-column layout and a one-click "Copy Diagnostics" button for support requests
+* Added: Lazy-load pagination for previous attempts on the quiz landing page; shows the first 5 attempts with a "Show more" button
+* Added: Redesigned Status tab with two-column layout and a one-click copy button for support requests
 * Fixed: Tutorial mode answer locks now persist across page reloads instead of resetting when navigating away
-* Fixed: Question pool pass-rate warning threshold raised from 10 to 100 questions to reduce false positives
 * Fixed: Source Bank dropdown in dynamic quiz rules now shows the bank name instead of the numeric ID
 * Fixed: Category and tag dropdowns in dynamic quiz rules now show names instead of IDs
 * Fixed: Quiz now appears on LearnPress preview lessons after course completion

@@ -103,10 +103,21 @@ const QuestionsPanel = ({ quizId, generationMode }) => {
 
 	/**
 	 * Load available questions with specific page size
+	 *
+	 * @param {number} page     Page number.
+	 * @param {number} pageSize Items per page.
+	 * @param {Object} filters  Optional filter overrides (avoids stale closure state).
 	 */
-	const loadAvailableQuestionsWithPageSize = async (page = 1, pageSize = 10) => {
+	const loadAvailableQuestionsWithPageSize = async (page = 1, pageSize = 10, filters = null) => {
 		try {
 			setLoadingQuestions(true);
+
+			// Use explicit filter values when provided, otherwise fall back to state.
+			const search     = filters ? filters.search     : searchQuery;
+			const type       = filters ? filters.type       : filterType;
+			const difficulty = filters ? filters.difficulty  : filterDifficulty;
+			const category   = filters ? filters.category   : filterCategory;
+			const bank       = filters ? filters.bank       : filterBank;
 
 			// Build query params
 			const params = new URLSearchParams({
@@ -114,20 +125,20 @@ const QuestionsPanel = ({ quizId, generationMode }) => {
 				page: page.toString(),
 			});
 
-			if (searchQuery) {
-				params.append('search', searchQuery);
+			if (search) {
+				params.append('search', search);
 			}
-			if (filterType) {
-				params.append('type', filterType);
+			if (type) {
+				params.append('type', type);
 			}
-			if (filterDifficulty) {
-				params.append('difficulty', filterDifficulty);
+			if (difficulty) {
+				params.append('difficulty', difficulty);
 			}
-			if (filterCategory) {
-				params.append('category_id', filterCategory);
+			if (category) {
+				params.append('category_id', category);
 			}
-			if (filterBank) {
-				params.append('bank_id', filterBank);
+			if (bank) {
+				params.append('bank_id', bank);
 			}
 
 			// Exclude questions already in the quiz
@@ -190,7 +201,15 @@ const QuestionsPanel = ({ quizId, generationMode }) => {
 		setSelectedQuestionIds([]);
 		setModalVisible(true);
 		loadFilterOptions();
-		loadAvailableQuestions(1);
+
+		// Pass empty filters explicitly to avoid stale closure state.
+		loadAvailableQuestionsWithPageSize(1, 10, {
+			search: '',
+			type: '',
+			difficulty: '',
+			category: '',
+			bank: '',
+		});
 	};
 
 	/**

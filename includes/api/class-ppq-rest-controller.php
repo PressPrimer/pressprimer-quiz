@@ -2376,11 +2376,11 @@ class PressPrimer_Quiz_REST_Controller {
 			return new WP_Error( 'no_key', __( 'No API key configured.', 'pressprimer-quiz' ), [ 'status' => 400 ] );
 		}
 
-		// Validate by trying to fetch models
-		$models = PressPrimer_Quiz_AI_Service::get_available_models( $api_key );
+		// Validate the key against the OpenAI API.
+		$result = PressPrimer_Quiz_AI_Service::validate_api_key( $api_key );
 
-		if ( is_wp_error( $models ) ) {
-			return new WP_Error( 'invalid_key', $models->get_error_message(), [ 'status' => 400 ] );
+		if ( is_wp_error( $result ) ) {
+			return new WP_Error( 'invalid_key', $result->get_error_message(), [ 'status' => 400 ] );
 		}
 
 		return new WP_REST_Response(

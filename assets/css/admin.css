@@ -29,6 +29,20 @@
 	opacity: 0 !important;
 }
 
+/*
+ * Fix Ant Design modal close button in WP admin.
+ *
+ * WordPress admin CSS applies styles to bare <button> elements that interfere
+ * with the Ant Design v5 modal close button, making it unclickable even though
+ * the X icon renders. Reset the button so the click target covers the icon.
+ *
+ * @since 2.2.2
+ */
+.ant-modal-close {
+	cursor: pointer !important;
+	pointer-events: auto !important;
+}
+
 /* Dashboard Layout */
 .ppq-dashboard {
 	margin-top: 20px;

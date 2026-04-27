@@ -1983,11 +1983,16 @@ class PressPrimer_Quiz_REST_Controller {
 	 * @return WP_REST_Response|WP_Error Response object or error.
 	 */
 	public function reorder_quiz_rules( $request ) {
-		$data      = $request->get_json_params();
-		$order_map = $data['order_map'] ?? [];
+		$data       = $request->get_json_params();
+		$rule_order = isset( $data['rule_order'] ) && is_array( $data['rule_order'] ) ? $data['rule_order'] : [];
 
-		if ( empty( $order_map ) ) {
+		if ( empty( $rule_order ) ) {
 			return new WP_Error( 'no_rules', __( 'No rules provided.', 'pressprimer-quiz' ), [ 'status' => 400 ] );
+		}
+
+		$order_map = [];
+		foreach ( $rule_order as $index => $rule_id ) {
+			$order_map[ absint( $rule_id ) ] = (int) $index;
 		}
 
 		$result = PressPrimer_Quiz_Quiz_Rule::reorder( $order_map );

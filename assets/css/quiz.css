@@ -1089,12 +1089,47 @@
 	color: var(--ppq-text);
 }
 
+.ppq-answer-text > *:first-child {
+	margin-top: 0;
+}
+
+.ppq-answer-text > *:last-child {
+	margin-bottom: 0;
+}
+
 .ppq-answer-text p {
 	margin: 0 0 var(--ppq-space-sm);
 }
 
-.ppq-answer-text p:last-child {
+.ppq-answer-text ul,
+.ppq-answer-text ol {
+	margin: 0 0 var(--ppq-space-sm);
+	padding-left: 1.5em;
+}
+
+.ppq-answer-text li {
+	margin-bottom: 0.25em;
+}
+
+.ppq-answer-text li:last-child {
 	margin-bottom: 0;
+}
+
+.ppq-answer-text h1,
+.ppq-answer-text h2,
+.ppq-answer-text h3,
+.ppq-answer-text h4,
+.ppq-answer-text h5,
+.ppq-answer-text h6 {
+	margin: 0 0 var(--ppq-space-sm);
+	font-size: 1.05em;
+	font-weight: 600;
+}
+
+.ppq-answer-text blockquote {
+	margin: 0 0 var(--ppq-space-sm);
+	padding-left: var(--ppq-space-md);
+	border-left: 3px solid var(--ppq-border);
 }
 
 /* Question Hint */

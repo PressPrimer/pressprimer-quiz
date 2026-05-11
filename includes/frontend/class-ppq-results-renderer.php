@@ -1029,7 +1029,7 @@ class PressPrimer_Quiz_Results_Renderer {
 					<?php echo $label; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
 				</div>
 				<div class="ppq-answer-text">
-					<?php echo pressprimer_quiz_kses_inline_answer( $answer['text'] ); ?>
+					<?php echo wp_kses_post( $answer['text'] ); ?>
 				</div>
 
 				<?php

@@ -210,11 +210,12 @@ This plugin offers optional AI-powered question generation using the OpenAI API.
 == Changelog ==
 
 = 2.2.2 =
-* Fixed: Answers containing rich-text formatting from Word, Google Docs, or other sources now display correctly on the quiz page, keeping the radio button aligned with its answer text
+* Fixed: Quiz answer text now renders the full range of formatting offered by the editor, including bulleted lists, numbered lists, paragraphs, headings, links, bold, italic, and color. Previously, pasting formatted content from Word, Google Docs, or other rich-text sources could break the answer layout by separating the radio button from its text.
 * Fixed: Drag-and-drop reordering of rules in the Rules tab of a dynamic quiz now saves the new order
 * Fixed: The close (X) button on admin modal dialogs (such as the Add Questions modal) now responds to clicks
 * Fixed: Validating an OpenAI API key that has been disabled now shows a clear explanation instead of a generic error message
 * Fixed: Search filters in the Add Questions modal are now cleared when the modal is reopened, so previous searches do not carry over
+* Note: Each answer option is now wrapped in a `<div>` element instead of a `<label>` element to support rich content. If you have added custom CSS targeting `label.ppq-answer-option`, change the selector to `.ppq-answer-option` so it continues to apply.
 
 = 2.2.1 =
 * Fixed: Quiz submission failing with "Database error: Failed to save record" on sites without the School addon

@@ -1082,21 +1082,22 @@ class PressPrimer_Quiz_Quiz_Renderer {
 						}
 					}
 					?>
-					<label class="<?php echo esc_attr( $option_classes ); ?>"
-							for="<?php echo esc_attr( $answer_id ); ?>">
+					<div class="<?php echo esc_attr( $option_classes ); ?>"
+							data-input-id="<?php echo esc_attr( $answer_id ); ?>">
 						<input type="<?php echo esc_attr( $input_type ); ?>"
 								id="<?php echo esc_attr( $answer_id ); ?>"
 								name="<?php echo esc_attr( $input_name ); ?>"
 								value="<?php echo esc_attr( $answer_index ); ?>"
 								class="ppq-answer-input"
 								data-item-id="<?php echo esc_attr( $item->id ); ?>"
+								aria-labelledby="<?php echo esc_attr( $answer_id . '_label' ); ?>"
 								<?php checked( $is_checked ); ?>
 								<?php disabled( $is_answer_checked ); ?>>
-						<span class="ppq-answer-radio-check"></span>
-						<span class="ppq-answer-text">
-							<?php echo pressprimer_quiz_kses_inline_answer( $answer['text'] ); ?>
-						</span>
-					</label>
+						<span class="ppq-answer-radio-check" aria-hidden="true"></span>
+						<div class="ppq-answer-text" id="<?php echo esc_attr( $answer_id . '_label' ); ?>">
+							<?php echo wp_kses_post( $answer['text'] ); ?>
+						</div>
+					</div>
 				<?php endforeach; ?>
 			</div>
 

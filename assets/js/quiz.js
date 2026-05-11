@@ -473,17 +473,21 @@
 				self.handleConfidenceChange($(this));
 			});
 
-			// Handle clicks on answer options
-			// Since the input is hidden (width/height: 0), we need to manually handle clicks
-			// on the visible parts of the label (the custom radio/checkbox and text)
+			// Handle clicks on answer options.
+			// The input is visually hidden (opacity: 0, w/h: 0), so clicks on the
+			// visible parts (custom radio/checkbox and text) are delegated here.
 			$(document).on('click', '.ppq-answer-option', function(e) {
-				// If clicking directly on the input, let native behavior handle it
+				// If clicking directly on the input, let native behavior handle it.
 				if (e.target.tagName === 'INPUT') {
 					return;
 				}
 
-				// Prevent the label's native "click input" behavior since we'll handle it manually
-				e.preventDefault();
+				// If the click landed on (or inside) a link or button within
+				// rich answer content, let that element's behavior run instead
+				// of selecting the answer.
+				if (e.target.closest('a, button')) {
+					return;
+				}
 
 				const $input = $(this).find('.ppq-answer-input');
 

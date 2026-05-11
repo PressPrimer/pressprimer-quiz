@@ -116,21 +116,3 @@ function pressprimer_quiz_register_addon( $slug, $config ) {
 function pressprimer_quiz_addon_active( $slug ) {
 	return pressprimer_quiz_addon_manager()->is_active( $slug );
 }
-
-/**
- * Sanitize answer text to phrasing (inline) content only.
- *
- * Thin wrapper around {@see PressPrimer_Quiz_Helpers::inline_answer_html()}
- * exposed at the global scope so it can be registered with PHPCS as a
- * recognized escaping function (see phpcs.xml.dist). Call from render
- * sites where answer text is echoed inside an inline element such as
- * `<label>` or `<span>`.
- *
- * @since 2.2.2
- *
- * @param string $html Raw answer text (may include HTML).
- * @return string Inline-safe HTML.
- */
-function pressprimer_quiz_kses_inline_answer( $html ) {
-	return PressPrimer_Quiz_Helpers::inline_answer_html( $html );
-}

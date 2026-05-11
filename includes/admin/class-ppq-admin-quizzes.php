@@ -486,7 +486,7 @@ class PressPrimer_Quiz_Admin_Quizzes {
 									<?php else : ?>
 										<input type="checkbox" disabled>
 									<?php endif; ?>
-									<span class="ppq-answer-text"><?php echo wp_kses_post( $answer['text'] ); ?></span>
+									<span class="ppq-answer-text"><?php echo pressprimer_quiz_kses_inline_answer( $answer['text'] ); ?></span>
 									<?php if ( $answer['is_correct'] ) : ?>
 										<span class="ppq-correct-indicator"><?php esc_html_e( '(Correct)', 'pressprimer-quiz' ); ?></span>
 									<?php endif; ?>

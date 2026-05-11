@@ -1095,7 +1095,7 @@ class PressPrimer_Quiz_Quiz_Renderer {
 								<?php disabled( $is_answer_checked ); ?>>
 						<span class="ppq-answer-radio-check" aria-hidden="true"></span>
 						<div class="ppq-answer-text" id="<?php echo esc_attr( $answer_id . '_label' ); ?>">
-							<?php echo wp_kses_post( $answer['text'] ); ?>
+							<?php echo pressprimer_quiz_render_answer_html( $answer['text'] ); ?>
 						</div>
 					</div>
 				<?php endforeach; ?>

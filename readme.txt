@@ -210,7 +210,7 @@ This plugin offers optional AI-powered question generation using the OpenAI API.
 == Changelog ==
 
 = 2.2.2 =
-* Fixed: Quiz answer text now renders the full range of formatting offered by the editor, including bulleted lists, numbered lists, paragraphs, headings, links, bold, italic, and color. Previously, pasting formatted content from Word, Google Docs, or other rich-text sources could break the answer layout by separating the radio button from its text.
+* Fixed: Quiz answer text now renders the full range of formatting offered by the editor, including bulleted lists, numbered lists, paragraphs, headings, links, bold, italic, and color. Previously, pasting formatted content from Word, Google Docs, or other rich-text sources could break the answer layout by separating the radio button from its text. Links inside answers now always open in a new tab so students do not lose their progress when exploring a reference.
 * Fixed: Drag-and-drop reordering of rules in the Rules tab of a dynamic quiz now saves the new order
 * Fixed: The close (X) button on admin modal dialogs (such as the Add Questions modal) now responds to clicks
 * Fixed: Validating an OpenAI API key that has been disabled now shows a clear explanation instead of a generic error message

@@ -116,3 +116,42 @@ function pressprimer_quiz_register_addon( $slug, $config ) {
 function pressprimer_quiz_addon_active( $slug ) {
 	return pressprimer_quiz_addon_manager()->is_active( $slug );
 }
+
+/**
+ * Render answer text HTML for output.
+ *
+ * Sanitizes the stored HTML with {@see wp_kses_post()} and then forces every
+ * `<a>` link to open in a new tab with a safe `rel` attribute. This prevents
+ * a student from accidentally navigating away from an in-progress quiz when
+ * an answer contains a link, and blocks the opened page from accessing the
+ * parent window via `window.opener`.
+ *
+ * Registered with PHPCS in phpcs.xml.dist as a recognized escaping function.
+ *
+ * @since 2.2.2
+ *
+ * @param string $html Raw answer text (may include HTML).
+ * @return string Sanitized HTML with all links targeting `_blank`.
+ */
+function pressprimer_quiz_render_answer_html( $html ) {
+	if ( ! is_string( $html ) || '' === $html ) {
+		return '';
+	}
+
+	$html = wp_kses_post( $html );
+
+	return preg_replace_callback(
+		'#<a\b([^>]*?)>#i',
+		static function ( $captures ) {
+			// Strip any existing target and rel attributes so our values win.
+			$attrs = $captures[1];
+			$attrs = preg_replace(
+				'#\s+(?:target|rel)\s*=\s*(?:"[^"]*"|\'[^\']*\'|[^\s>]+)#i',
+				'',
+				$attrs
+			);
+			return '<a' . rtrim( $attrs ) . ' target="_blank" rel="noopener noreferrer">';
+		},
+		$html
+	);
+}

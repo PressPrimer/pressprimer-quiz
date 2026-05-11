@@ -32,6 +32,7 @@ composer.lock
 # Testing
 /tests/tmp/
 /tests/results/
+/tests/manual/
 .phpunit.result.cache
 
 # Internal documentation (kept locally, not pushed to public repo)

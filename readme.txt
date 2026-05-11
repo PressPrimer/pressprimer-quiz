@@ -3,7 +3,7 @@ Contributors: pressprimer
 Tags: quiz, learndash, assessment, lms, elearning
 Requires at least: 6.4
 Tested up to: 6.9
-Stable tag: 2.2.1
+Stable tag: 2.2.2
 Requires PHP: 7.4
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -209,6 +209,13 @@ This plugin offers optional AI-powered question generation using the OpenAI API.
 
 == Changelog ==
 
+= 2.2.2 =
+* Fixed: Answers containing rich-text formatting from Word, Google Docs, or other sources now display correctly on the quiz page, keeping the radio button aligned with its answer text
+* Fixed: Drag-and-drop reordering of rules in the Rules tab of a dynamic quiz now saves the new order
+* Fixed: The close (X) button on admin modal dialogs (such as the Add Questions modal) now responds to clicks
+* Fixed: Validating an OpenAI API key that has been disabled now shows a clear explanation instead of a generic error message
+* Fixed: Search filters in the Add Questions modal are now cleared when the modal is reopened, so previous searches do not carry over
+
 = 2.2.1 =
 * Fixed: Quiz submission failing with "Database error: Failed to save record" on sites without the School addon
 
@@ -290,6 +297,9 @@ This plugin offers optional AI-powered question generation using the OpenAI API.
 * Full internationalization support
 
 == Upgrade Notice ==
+
+= 2.2.2 =
+Fixes a quiz layout issue with formatted answer text, plus four smaller admin bug fixes.
 
 = 2.2.1 =
 Fix: Resolves quiz submission failure introduced in 2.2.0. All users should update immediately.

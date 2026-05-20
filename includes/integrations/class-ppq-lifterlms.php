@@ -306,13 +306,15 @@ class PressPrimer_Quiz_LifterLMS {
 						'recent: 1' .
 					'},' .
 					'success: function(response) {' .
+						'var html = "";' .
 						'if (response.success && response.data.quizzes && response.data.quizzes.length > 0) {' .
-							'var html = "";' .
 							'response.data.quizzes.forEach(function(quiz) {' .
 								'html += formatQuiz(quiz);' .
 							'});' .
-							'$results.html(html).show();' .
+						'} else {' .
+							'html = \'<div class="ppq-no-results">\' + strings.noQuizzesFound + \'</div>\';' .
 						'}' .
+						'$results.html(html).show();' .
 					'}' .
 				'});' .
 			'});' .
@@ -1185,19 +1187,28 @@ class PressPrimer_Quiz_LifterLMS {
 		global $wpdb;
 		$table = $wpdb->prefix . 'ppq_quizzes';
 
+		// Users with manage_all see every published quiz; teacher-scoped users
+		// see only their own. Same rule applies to both recent and search.
+		$can_see_all = current_user_can( 'pressprimer_quiz_manage_all' );
+
 		// Check if requesting recent quizzes.
 		$recent = isset( $_POST['recent'] ) && rest_sanitize_boolean( wp_unslash( $_POST['recent'] ) );
 
 		if ( $recent ) {
-			// Get 50 most recent quizzes created by current user.
-			$user_id = get_current_user_id();
-			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- AJAX search results, not suitable for caching
-			$quizzes = $wpdb->get_results(
-				$wpdb->prepare(
-					"SELECT id, title FROM {$table} WHERE status = 'published' AND owner_id = %d ORDER BY id DESC LIMIT 50", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-					$user_id
-				)
-			);
+			if ( $can_see_all ) {
+				// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- AJAX search results, not suitable for caching
+				$quizzes = $wpdb->get_results(
+					"SELECT id, title FROM {$table} WHERE status = 'published' ORDER BY id DESC LIMIT 50" // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+				);
+			} else {
+				// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- AJAX search results, not suitable for caching
+				$quizzes = $wpdb->get_results(
+					$wpdb->prepare(
+						"SELECT id, title FROM {$table} WHERE status = 'published' AND owner_id = %d ORDER BY id DESC LIMIT 50", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+						get_current_user_id()
+					)
+				);
+			}
 
 			wp_send_json_success( [ 'quizzes' => $quizzes ] );
 			return;
@@ -1210,13 +1221,24 @@ class PressPrimer_Quiz_LifterLMS {
 			return;
 		}
 
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- AJAX search results, not suitable for caching
-		$quizzes = $wpdb->get_results(
-			$wpdb->prepare(
-				"SELECT id, title FROM {$table} WHERE title LIKE %s AND status = 'published' ORDER BY title ASC LIMIT 20", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-				'%' . $wpdb->esc_like( $search ) . '%'
-			)
-		);
+		if ( $can_see_all ) {
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- AJAX search results, not suitable for caching
+			$quizzes = $wpdb->get_results(
+				$wpdb->prepare(
+					"SELECT id, title FROM {$table} WHERE title LIKE %s AND status = 'published' ORDER BY title ASC LIMIT 20", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+					'%' . $wpdb->esc_like( $search ) . '%'
+				)
+			);
+		} else {
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- AJAX search results, not suitable for caching
+			$quizzes = $wpdb->get_results(
+				$wpdb->prepare(
+					"SELECT id, title FROM {$table} WHERE title LIKE %s AND status = 'published' AND owner_id = %d ORDER BY title ASC LIMIT 20", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+					'%' . $wpdb->esc_like( $search ) . '%',
+					get_current_user_id()
+				)
+			);
+		}
 
 		wp_send_json_success( [ 'quizzes' => $quizzes ] );
 	}

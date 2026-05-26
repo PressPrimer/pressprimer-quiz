@@ -233,6 +233,19 @@ class PressPrimer_Quiz_Quiz extends PressPrimer_Quiz_Model {
 	public $login_message;
 
 	/**
+	 * Multiple-answer scoring mode
+	 *
+	 * Per-quiz override for how multiple-answer questions are scored. NULL
+	 * means inherit the site default from the
+	 * pressprimer_quiz_default_ma_scoring option. Allowed non-null values:
+	 * right_minus_wrong, proportional, partial_no_wrong, all_or_nothing.
+	 *
+	 * @since 2.3.0
+	 * @var string|null
+	 */
+	public $ma_scoring_mode;
+
+	/**
 	 * Display density
 	 *
 	 * @since 2.0.0
@@ -374,6 +387,7 @@ class PressPrimer_Quiz_Quiz extends PressPrimer_Quiz_Model {
 			'generation_mode',
 			'access_mode',
 			'login_message',
+			'ma_scoring_mode',
 			'display_density',
 			'pool_enabled',
 			'max_questions',
@@ -1139,6 +1153,25 @@ class PressPrimer_Quiz_Quiz extends PressPrimer_Quiz_Model {
 		$access_mode = $this->get_effective_access_mode();
 
 		return 'guest_required' === $access_mode;
+	}
+
+	/**
+	 * Get the resolved multiple-answer scoring mode for this quiz
+	 *
+	 * Returns the per-quiz override when set, otherwise the site-wide default
+	 * stored in the pressprimer_quiz_default_ma_scoring option. Always
+	 * returns a non-null string.
+	 *
+	 * @since 2.3.0
+	 *
+	 * @return string One of: right_minus_wrong, proportional, partial_no_wrong, all_or_nothing.
+	 */
+	public function get_resolved_ma_scoring_mode() {
+		if ( ! empty( $this->ma_scoring_mode ) ) {
+			return $this->ma_scoring_mode;
+		}
+
+		return get_option( 'pressprimer_quiz_default_ma_scoring', 'right_minus_wrong' );
 	}
 
 	/**

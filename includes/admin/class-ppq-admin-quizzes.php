@@ -597,15 +597,19 @@ class PressPrimer_Quiz_Admin_Quizzes {
 					'pool_size'             => $quiz->get_pool_size()['count'],
 					'enable_sr'             => (bool) $quiz->enable_sr,
 					'ma_scoring_mode'       => $quiz->ma_scoring_mode,
+					// Cast to object so empty {} round-trips through wp_localize_script
+					// instead of being serialized as a JSON array [].
+					'display_settings'      => (object) $quiz->get_display_settings(),
 				];
 			}
 		} else {
 			// For new quizzes, load defaults from settings
 			$settings  = get_option( 'pressprimer_quiz_settings', [] );
 			$quiz_data = [
-				'mode'            => isset( $settings['default_quiz_mode'] ) ? $settings['default_quiz_mode'] : 'tutorial',
-				'pass_percent'    => isset( $settings['default_passing_score'] ) ? (float) $settings['default_passing_score'] : 70,
-				'ma_scoring_mode' => null,
+				'mode'             => isset( $settings['default_quiz_mode'] ) ? $settings['default_quiz_mode'] : 'tutorial',
+				'pass_percent'     => isset( $settings['default_passing_score'] ) ? (float) $settings['default_passing_score'] : 70,
+				'ma_scoring_mode'  => null,
+				'display_settings' => (object) array(),
 			];
 		}
 

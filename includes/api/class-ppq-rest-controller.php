@@ -1518,6 +1518,8 @@ class PressPrimer_Quiz_REST_Controller {
 			'enable_sr'             => (bool) $quiz->enable_sr,
 			'is_review_quiz'        => (bool) $quiz->is_review_quiz,
 			'ma_scoring_mode'       => $quiz->ma_scoring_mode,
+			// Cast to object so an empty sparse map serializes as {} rather than [].
+			'display_settings'      => (object) $quiz->get_display_settings(),
 		];
 
 		return new WP_REST_Response( $data, 200 );
@@ -1588,8 +1590,16 @@ class PressPrimer_Quiz_REST_Controller {
 				throw new Exception( $quiz_id->get_error_message() );
 			}
 
-			// Validate max_questions against pool size.
+			// Persist display_settings via the model setter so unknown keys
+			// are filtered and the column is stored as JSON or NULL.
 			$quiz = PressPrimer_Quiz_Quiz::get( $quiz_id );
+
+			if ( $quiz && isset( $data['display_settings'] ) && ( is_array( $data['display_settings'] ) || is_object( $data['display_settings'] ) ) ) {
+				$quiz->set_display_settings( (array) $data['display_settings'] );
+				$quiz->save();
+			}
+
+			// Validate max_questions against pool size.
 
 			if ( $quiz && $quiz->pool_enabled && $quiz->max_questions ) {
 				$pool_size = $quiz->get_pool_size();
@@ -1692,6 +1702,12 @@ class PressPrimer_Quiz_REST_Controller {
 			$quiz->enable_sr             = ! empty( $data['enable_sr'] );
 			$quiz->is_review_quiz        = ! empty( $data['is_review_quiz'] );
 			$quiz->ma_scoring_mode       = $ma_scoring_mode;
+
+			// Apply display_settings via the model setter so unknown keys
+			// are filtered and the column is normalized to JSON or NULL.
+			if ( isset( $data['display_settings'] ) && ( is_array( $data['display_settings'] ) || is_object( $data['display_settings'] ) ) ) {
+				$quiz->set_display_settings( (array) $data['display_settings'] );
+			}
 
 			$result = $quiz->save();
 

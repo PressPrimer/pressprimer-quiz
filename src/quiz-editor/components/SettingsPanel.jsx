@@ -22,6 +22,9 @@ import {
 	Divider,
 	Alert,
 	Tag,
+	Button,
+	Checkbox,
+	Collapse,
 } from 'antd';
 import {
 	QuestionCircleOutlined,
@@ -35,6 +38,41 @@ const { Title, Text } = Typography;
  * plain-language description and a worked example rendered side by side
  * in the Quiz Editor so authors can compare modes at a glance.
  */
+/**
+ * Quiz-level display option keys, grouped by the screen they affect.
+ * Values default to `true` (all visible) when absent from the quiz's
+ * display_settings_json. Reset buttons in the panel just clear the
+ * keys for that section from the form value.
+ */
+const DISPLAY_OPTION_SECTIONS = [
+	{
+		key: 'start',
+		title: __('Start Page', 'pressprimer-quiz'),
+		options: [
+			{ key: 'show_description', label: __('Show description', 'pressprimer-quiz') },
+			{ key: 'show_question_count', label: __('Show question count', 'pressprimer-quiz') },
+			{ key: 'show_quiz_type', label: __('Show quiz type', 'pressprimer-quiz') },
+			{ key: 'show_time_limit', label: __('Show time limit', 'pressprimer-quiz') },
+			{ key: 'show_pass_percentage', label: __('Show pass percentage', 'pressprimer-quiz') },
+			{ key: 'show_attempt_count', label: __('Show attempt count', 'pressprimer-quiz') },
+			{ key: 'show_attempt_history', label: __('Show attempt history', 'pressprimer-quiz') },
+		],
+	},
+	{
+		key: 'results',
+		title: __('Results Page', 'pressprimer-quiz'),
+		options: [
+			{ key: 'show_score', label: __('Show score', 'pressprimer-quiz') },
+			{ key: 'show_pass_fail', label: __('Show pass/fail status', 'pressprimer-quiz') },
+			{ key: 'show_time_spent', label: __('Show time spent', 'pressprimer-quiz') },
+			{ key: 'show_average', label: __('Show average score', 'pressprimer-quiz') },
+			{ key: 'show_category_breakdown', label: __('Show category breakdown', 'pressprimer-quiz') },
+			{ key: 'show_question_review', label: __('Show question review', 'pressprimer-quiz') },
+			{ key: 'show_retake_button', label: __('Show retake button', 'pressprimer-quiz') },
+		],
+	},
+];
+
 const MA_SCORING_OPTIONS = [
 	{
 		value: 'right_minus_wrong',
@@ -93,6 +131,50 @@ const SettingsPanel = ({ form, generationMode, setGenerationMode, quizData = {} 
 	// Watch scoring mode so the selected card highlights as the user clicks.
 	const maScoringMode = Form.useWatch('ma_scoring_mode', form);
 	const siteDefaultMaScoring = quizData.default_ma_scoring || 'right_minus_wrong';
+
+	// Watch display_settings so the 14 toggles stay in sync with form state.
+	const displaySettings = Form.useWatch('display_settings', form) || {};
+
+	/**
+	 * Resolve the current value of one display key for the checkbox.
+	 * A key absent from display_settings reflects the hard-coded default
+	 * (true), so checkboxes are checked by default for new quizzes.
+	 */
+	const getDisplayValue = (key) => {
+		if (Object.prototype.hasOwnProperty.call(displaySettings, key)) {
+			return Boolean(displaySettings[key]);
+		}
+		return true;
+	};
+
+	/**
+	 * Set one display key in the form's display_settings object.
+	 */
+	const setDisplayValue = (key, value) => {
+		form.setFieldsValue({
+			display_settings: {
+				...displaySettings,
+				[key]: Boolean(value),
+			},
+		});
+	};
+
+	/**
+	 * Remove the keys for a section from display_settings so they fall back
+	 * to the hard-coded default at render time. Used by the per-section
+	 * "Reset to defaults" button.
+	 */
+	const resetDisplaySection = (sectionKey) => {
+		const section = DISPLAY_OPTION_SECTIONS.find((s) => s.key === sectionKey);
+		if (!section) {
+			return;
+		}
+		const next = { ...displaySettings };
+		section.options.forEach((opt) => {
+			delete next[opt.key];
+		});
+		form.setFieldsValue({ display_settings: next });
+	};
 
 	// Branching rules enforce certain settings.
 	const hasBranchingRules = !! quizData.hasBranchingRules;
@@ -938,6 +1020,61 @@ const SettingsPanel = ({ form, generationMode, setGenerationMode, quizData = {} 
 				})()}
 			</Card>
 
+			{/* Display Options — per-quiz defaults for Start/Results pages */}
+			<Card
+				title={
+					<Space>
+						<Title level={4} style={{ margin: 0 }}>
+							{__('Display Options', 'pressprimer-quiz')}
+						</Title>
+						<Tooltip title={__('Quiz-level display defaults. Block and shortcode attributes can override these per instance.', 'pressprimer-quiz')}>
+							<QuestionCircleOutlined style={{ color: '#8c8c8c' }} />
+						</Tooltip>
+					</Space>
+				}
+				style={{ marginBottom: 24 }}
+			>
+				<Text type="secondary" style={{ display: 'block', marginBottom: 16 }}>
+					{__('Choose which sections of the Start and Results pages appear by default for this quiz. Block and shortcode attributes can override these per instance.', 'pressprimer-quiz')}
+				</Text>
+
+				{/* Hidden field so the form recognizes display_settings on submit. */}
+				<Form.Item name="display_settings" hidden>
+					<Input />
+				</Form.Item>
+
+				<Collapse
+					defaultActiveKey={['start', 'results']}
+					items={DISPLAY_OPTION_SECTIONS.map((section) => ({
+						key: section.key,
+						label: section.title,
+						children: (
+							<>
+								<Space direction="vertical" style={{ width: '100%' }}>
+									{section.options.map((opt) => (
+										<Checkbox
+											key={opt.key}
+											checked={getDisplayValue(opt.key)}
+											onChange={(e) => setDisplayValue(opt.key, e.target.checked)}
+										>
+											{opt.label}
+										</Checkbox>
+									))}
+								</Space>
+								<div style={{ marginTop: 12 }}>
+									<Button size="small" onClick={() => resetDisplaySection(section.key)}>
+										{sprintf(
+											/* translators: %s: section title (Start Page or Results Page) */
+											__('Reset %s to defaults', 'pressprimer-quiz'),
+											section.title
+										)}
+									</Button>
+								</div>
+							</>
+						),
+					}))}
+				/>
+			</Card>
 
 		</Space>
 	);

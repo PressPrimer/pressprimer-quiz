@@ -24,7 +24,6 @@ import {
 	Tag,
 	Button,
 	Checkbox,
-	Collapse,
 } from 'antd';
 import {
 	QuestionCircleOutlined,
@@ -163,6 +162,11 @@ const SettingsPanel = ({ form, generationMode, setGenerationMode, quizData = {} 
 	 * Remove the keys for a section from display_settings so they fall back
 	 * to the hard-coded default at render time. Used by the per-section
 	 * "Reset to defaults" button.
+	 *
+	 * Important: form.setFieldsValue() performs a deep merge, which means
+	 * passing an object with deleted keys would leave the old keys in place.
+	 * We use form.setFields() instead so the field is fully replaced with
+	 * the new (smaller) object.
 	 */
 	const resetDisplaySection = (sectionKey) => {
 		const section = DISPLAY_OPTION_SECTIONS.find((s) => s.key === sectionKey);
@@ -173,7 +177,7 @@ const SettingsPanel = ({ form, generationMode, setGenerationMode, quizData = {} 
 		section.options.forEach((opt) => {
 			delete next[opt.key];
 		});
-		form.setFieldsValue({ display_settings: next });
+		form.setFields([{ name: 'display_settings', value: next }]);
 	};
 
 	// Branching rules enforce certain settings.
@@ -1018,62 +1022,48 @@ const SettingsPanel = ({ form, generationMode, setGenerationMode, quizData = {} 
 						</>
 					);
 				})()}
-			</Card>
 
-			{/* Display Options — per-quiz defaults for Start/Results pages */}
-			<Card
-				title={
-					<Space>
-						<Title level={4} style={{ margin: 0 }}>
-							{__('Display Options', 'pressprimer-quiz')}
-						</Title>
-						<Tooltip title={__('Quiz-level display defaults. Block and shortcode attributes can override these per instance.', 'pressprimer-quiz')}>
-							<QuestionCircleOutlined style={{ color: '#8c8c8c' }} />
-						</Tooltip>
-					</Space>
-				}
-				style={{ marginBottom: 24 }}
-			>
-				<Text type="secondary" style={{ display: 'block', marginBottom: 16 }}>
-					{__('Choose which sections of the Start and Results pages appear by default for this quiz. Block and shortcode attributes can override these per instance.', 'pressprimer-quiz')}
-				</Text>
+				<Divider />
 
 				{/* Hidden field so the form recognizes display_settings on submit. */}
 				<Form.Item name="display_settings" hidden>
 					<Input />
 				</Form.Item>
 
-				<Collapse
-					defaultActiveKey={['start', 'results']}
-					items={DISPLAY_OPTION_SECTIONS.map((section) => ({
-						key: section.key,
-						label: section.title,
-						children: (
-							<>
-								<Space direction="vertical" style={{ width: '100%' }}>
-									{section.options.map((opt) => (
-										<Checkbox
-											key={opt.key}
-											checked={getDisplayValue(opt.key)}
-											onChange={(e) => setDisplayValue(opt.key, e.target.checked)}
-										>
-											{opt.label}
-										</Checkbox>
-									))}
-								</Space>
-								<div style={{ marginTop: 12 }}>
-									<Button size="small" onClick={() => resetDisplaySection(section.key)}>
-										{sprintf(
-											/* translators: %s: section title (Start Page or Results Page) */
-											__('Reset %s to defaults', 'pressprimer-quiz'),
-											section.title
-										)}
-									</Button>
-								</div>
-							</>
-						),
-					}))}
-				/>
+				<Text strong style={{ display: 'block', marginBottom: 4 }}>
+					{__('Quiz-Level Display Defaults', 'pressprimer-quiz')}
+				</Text>
+				<Text type="secondary" style={{ display: 'block', marginBottom: 12, fontSize: 12 }}>
+					{__('Toggle which sections appear by default on the Start and Results pages for this quiz. Block and shortcode attributes can override these per instance.', 'pressprimer-quiz')}
+				</Text>
+				<Row gutter={24}>
+					{DISPLAY_OPTION_SECTIONS.map((section) => (
+						<Col xs={24} sm={12} key={section.key}>
+							<Text strong style={{ display: 'block', marginBottom: 8 }}>
+								{section.title}
+							</Text>
+							<Space direction="vertical" style={{ width: '100%' }} size={4}>
+								{section.options.map((opt) => (
+									<Checkbox
+										key={opt.key}
+										checked={getDisplayValue(opt.key)}
+										onChange={(e) => setDisplayValue(opt.key, e.target.checked)}
+									>
+										{opt.label}
+									</Checkbox>
+								))}
+							</Space>
+							<Button
+								type="link"
+								size="small"
+								style={{ paddingLeft: 0, marginTop: 8 }}
+								onClick={() => resetDisplaySection(section.key)}
+							>
+								{__('Reset to defaults', 'pressprimer-quiz')}
+							</Button>
+						</Col>
+					))}
+				</Row>
 			</Card>
 
 		</Space>

@@ -185,6 +185,10 @@ class PressPrimer_Quiz_Activator {
 			$existing_settings['remove_data_on_uninstall'] = false;
 			update_option( 'pressprimer_quiz_settings', $existing_settings );
 		}
+
+		// Site-wide default multiple-answer scoring mode (introduced in 2.3.0).
+		// add_option() does not overwrite an existing value, so this is safe on upgrade.
+		add_option( 'pressprimer_quiz_default_ma_scoring', 'right_minus_wrong' );
 	}
 
 	/**

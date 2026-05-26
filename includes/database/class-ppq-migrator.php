@@ -137,6 +137,11 @@ class PressPrimer_Quiz_Migrator {
 		if ( version_compare( $from_version, '2.2.4', '<' ) ) {
 			self::migrate_to_2_2_4();
 		}
+
+		// Version 2.3.0: Add ma_scoring_mode column to quizzes table
+		if ( version_compare( $from_version, '2.3.0', '<' ) ) {
+			self::migrate_to_2_3_0();
+		}
 	}
 
 	/**
@@ -416,6 +421,44 @@ class PressPrimer_Quiz_Migrator {
 			$wpdb->query(
 				$wpdb->prepare(
 					'ALTER TABLE %i ADD COLUMN curved_score DECIMAL(5,2) DEFAULT NULL AFTER passed',
+					$table_name
+				)
+			);
+		}
+	}
+
+	/**
+	 * Migration to version 2.3.0
+	 *
+	 * Adds ma_scoring_mode column to quizzes table. This column stores the
+	 * per-quiz multiple-answer scoring mode override. NULL means inherit the
+	 * site default stored in the pressprimer_quiz_default_ma_scoring option.
+	 *
+	 * @since 2.3.0
+	 *
+	 * @return void
+	 */
+	private static function migrate_to_2_3_0() {
+		global $wpdb;
+
+		$table_name = $wpdb->prefix . 'ppq_quizzes';
+
+		// Check if ma_scoring_mode column exists
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching
+		$column_exists = $wpdb->get_results(
+			$wpdb->prepare(
+				'SHOW COLUMNS FROM %i LIKE %s',
+				$table_name,
+				'ma_scoring_mode'
+			)
+		);
+
+		if ( empty( $column_exists ) ) {
+			// Add ma_scoring_mode column after login_message
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.DirectDatabaseQuery.SchemaChange
+			$wpdb->query(
+				$wpdb->prepare(
+					'ALTER TABLE %i ADD COLUMN ma_scoring_mode VARCHAR(32) DEFAULT NULL AFTER login_message',
 					$table_name
 				)
 			);

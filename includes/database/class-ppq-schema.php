@@ -265,6 +265,7 @@ class PressPrimer_Quiz_Schema {
 			generation_mode ENUM('fixed', 'dynamic') NOT NULL DEFAULT 'fixed',
 			access_mode VARCHAR(20) NOT NULL DEFAULT 'default',
 			login_message TEXT DEFAULT NULL,
+			ma_scoring_mode VARCHAR(32) DEFAULT NULL,
 			display_density VARCHAR(20) NOT NULL DEFAULT 'default',
 			pool_enabled TINYINT(1) NOT NULL DEFAULT 0,
 			max_questions INT UNSIGNED DEFAULT NULL,

@@ -93,7 +93,7 @@ const QuizEditor = ({ quizData = {} }) => {
 				generation_mode: quizData.generation_mode || 'fixed',
 				access_mode: quizData.access_mode || 'default',
 				login_message: quizData.login_message || '',
-				ma_scoring_mode: quizData.ma_scoring_mode ?? '',
+				ma_scoring_mode: quizData.ma_scoring_mode || quizData.default_ma_scoring || 'right_minus_wrong',
 			};
 
 			// Add pre_test_id if Educator addon is active.
@@ -378,7 +378,7 @@ const QuizEditor = ({ quizData = {} }) => {
 						attempt_delay_minutes: 0,
 						access_mode: 'default',
 						login_message: '',
-						ma_scoring_mode: '',
+						ma_scoring_mode: quizData.ma_scoring_mode || quizData.default_ma_scoring || 'right_minus_wrong',
 					}}
 				>
 					{/* Header */}

@@ -43,47 +43,6 @@ const GeneralTab = ({ settings, updateSetting }) => {
 
 	return (
 		<div>
-			{/* Scoring Section */}
-			<div className="ppq-settings-section">
-				<Title level={4} className="ppq-settings-section-title">
-					{__('Scoring', 'pressprimer-quiz')}
-				</Title>
-				<Paragraph className="ppq-settings-section-description">
-					{__('How multiple-answer questions are scored across the site. Individual quizzes can override this default.', 'pressprimer-quiz')}
-				</Paragraph>
-
-				<div className="ppq-settings-field">
-					<Form.Item
-						label={__('Default Multiple-Answer Scoring', 'pressprimer-quiz')}
-						help={MA_SCORING_DESCRIPTIONS[maScoringMode]}
-					>
-						<Select
-							value={maScoringMode}
-							onChange={(value) => updateSetting('default_ma_scoring', value)}
-							style={{ width: 300 }}
-							options={[
-								{
-									value: 'right_minus_wrong',
-									label: __('Right Minus Wrong', 'pressprimer-quiz'),
-								},
-								{
-									value: 'proportional',
-									label: __('Partial Credit', 'pressprimer-quiz'),
-								},
-								{
-									value: 'partial_no_wrong',
-									label: __('Partial Credit, No Wrong Answers', 'pressprimer-quiz'),
-								},
-								{
-									value: 'all_or_nothing',
-									label: __('All or Nothing', 'pressprimer-quiz'),
-								},
-							]}
-						/>
-					</Form.Item>
-				</div>
-			</div>
-
 			{/* Quiz Defaults Section */}
 			<div className="ppq-settings-section">
 				<Title level={4} className="ppq-settings-section-title">
@@ -176,6 +135,47 @@ const GeneralTab = ({ settings, updateSetting }) => {
 							onChange={(e) => updateSetting('login_message_default', e.target.value)}
 							rows={2}
 							style={{ maxWidth: 500 }}
+						/>
+					</Form.Item>
+				</div>
+			</div>
+
+			{/* Scoring Section */}
+			<div className="ppq-settings-section">
+				<Title level={4} className="ppq-settings-section-title">
+					{__('Scoring', 'pressprimer-quiz')}
+				</Title>
+				<Paragraph className="ppq-settings-section-description">
+					{__('How multiple-answer questions are scored across the site. Individual quizzes can override this default.', 'pressprimer-quiz')}
+				</Paragraph>
+
+				<div className="ppq-settings-field">
+					<Form.Item
+						label={__('Default Multiple-Answer Scoring', 'pressprimer-quiz')}
+						help={MA_SCORING_DESCRIPTIONS[maScoringMode]}
+					>
+						<Select
+							value={maScoringMode}
+							onChange={(value) => updateSetting('default_ma_scoring', value)}
+							style={{ width: 300 }}
+							options={[
+								{
+									value: 'right_minus_wrong',
+									label: __('Right Minus Wrong', 'pressprimer-quiz'),
+								},
+								{
+									value: 'proportional',
+									label: __('Partial Credit', 'pressprimer-quiz'),
+								},
+								{
+									value: 'partial_no_wrong',
+									label: __('Partial Credit, No Wrong Answers', 'pressprimer-quiz'),
+								},
+								{
+									value: 'all_or_nothing',
+									label: __('All or Nothing', 'pressprimer-quiz'),
+								},
+							]}
 						/>
 					</Form.Item>
 				</div>

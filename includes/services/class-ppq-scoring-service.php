@@ -28,16 +28,24 @@ class PressPrimer_Quiz_Scoring_Service {
 	/**
 	 * Score a single question response
 	 *
-	 * Routes to appropriate scoring method based on question type.
+	 * Routes to the appropriate per-type scoring method and then applies the
+	 * unified pressprimer_quiz_question_score filter so addons can implement
+	 * custom rubrics without replacing the scoring service.
 	 *
 	 * @since 1.0.0
+	 * @since 2.3.0 Added $quiz parameter for MA scoring mode resolution and
+	 *              the unified pressprimer_quiz_question_score filter.
 	 *
-	 * @param PressPrimer_Quiz_Question          $question Question object.
-	 * @param PressPrimer_Quiz_Question_Revision $revision Question revision.
+	 * @param PressPrimer_Quiz_Question          $question         Question object.
+	 * @param PressPrimer_Quiz_Question_Revision $revision         Question revision.
 	 * @param array                              $selected_answers Array of selected answer indices.
+	 * @param PressPrimer_Quiz_Quiz|null         $quiz             Optional. Quiz the question is being scored under.
+	 *                                                              When provided, the quiz's resolved MA scoring mode is used
+	 *                                                              for multiple-answer questions. When omitted, the site default
+	 *                                                              applies.
 	 * @return array Scoring result with is_correct, score, max_points.
 	 */
-	public function score_response( $question, $revision, array $selected_answers ) {
+	public function score_response( $question, $revision, array $selected_answers, $quiz = null ) {
 		$answers = $revision->get_answers();
 
 		// Ensure selected_answers are integers for consistent comparison
@@ -55,23 +63,100 @@ class PressPrimer_Quiz_Scoring_Service {
 		switch ( $question->type ) {
 			case 'multiple_choice':
 			case 'mc':
-				return $this->score_mc( $correct_indices, $selected_answers, $question->max_points );
+				$result = $this->score_mc( $correct_indices, $selected_answers, $question->max_points );
+				break;
 
 			case 'multiple_answer':
 			case 'ma':
-				return $this->score_ma( $correct_indices, $selected_answers, $question->max_points );
+				$mode   = $this->resolve_ma_scoring_mode( $quiz );
+				$result = $this->score_ma( $correct_indices, $selected_answers, $question->max_points, $mode );
+				break;
 
 			case 'true_false':
 			case 'tf':
-				return $this->score_tf( $correct_indices, $selected_answers, $question->max_points );
+				$result = $this->score_tf( $correct_indices, $selected_answers, $question->max_points );
+				break;
 
 			default:
-				return [
+				$result = [
 					'is_correct' => false,
 					'score'      => 0,
 					'max_points' => $question->max_points,
 				];
 		}
+
+		/**
+		 * Filters the per-question score result before it is persisted.
+		 *
+		 * Use this filter to implement custom scoring rules without replacing
+		 * the scoring service. Return the original $result unchanged to leave
+		 * scoring unaffected.
+		 *
+		 * Replaces three previously-documented but never-implemented filters:
+		 * pressprimer_quiz_scoring_mc, pressprimer_quiz_scoring_ma, and
+		 * pressprimer_quiz_scoring_tf.
+		 *
+		 * @since 2.3.0
+		 *
+		 * @param array                              $result {
+		 *     The scoring result.
+		 *
+		 *     @type bool  $is_correct     Whether the response is fully correct.
+		 *     @type float $score          Points earned.
+		 *     @type float $max_points     Maximum points possible for this question.
+		 *     @type bool  $partial_credit (MA only) Whether the score reflects partial credit.
+		 * }
+		 * @param PressPrimer_Quiz_Question          $question         The question object.
+		 * @param PressPrimer_Quiz_Question_Revision $revision         The revision scored against.
+		 * @param array                              $selected_answers Integer indices the student selected.
+		 * @param array                              $correct_indices  Integer indices marked correct on the revision.
+		 */
+		$filtered = apply_filters(
+			'pressprimer_quiz_question_score',
+			$result,
+			$question,
+			$revision,
+			$selected_answers,
+			$correct_indices
+		);
+
+		// Validate filter return. A buggy callback must not corrupt scoring,
+		// so fall back to the pre-filter result when required keys are missing.
+		if ( ! is_array( $filtered )
+			|| ! array_key_exists( 'is_correct', $filtered )
+			|| ! array_key_exists( 'score', $filtered )
+			|| ! array_key_exists( 'max_points', $filtered ) ) {
+			// phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log -- Defensive logging for malformed filter output.
+			error_log( 'PressPrimer Quiz: pressprimer_quiz_question_score filter returned malformed result; using pre-filter result.' );
+			return $result;
+		}
+
+		// Clamp the filtered score to a defensive range so a buggy filter
+		// cannot produce absurd scores. Upper bound is max_points * 2 to
+		// allow modest bonus scoring while still rejecting nonsense values.
+		$max_clamp         = max( 0.0, (float) $result['max_points'] * 2 );
+		$filtered['score'] = max( 0.0, min( (float) $filtered['score'], $max_clamp ) );
+
+		return $filtered;
+	}
+
+	/**
+	 * Resolve the multiple-answer scoring mode for a quiz context.
+	 *
+	 * Returns the quiz's resolved scoring mode when a quiz is available,
+	 * otherwise the site-wide default. Always returns a non-null string.
+	 *
+	 * @since 2.3.0
+	 *
+	 * @param PressPrimer_Quiz_Quiz|null $quiz Quiz the question is being scored under, or null.
+	 * @return string One of: right_minus_wrong, proportional, partial_no_wrong, all_or_nothing.
+	 */
+	private function resolve_ma_scoring_mode( $quiz ) {
+		if ( $quiz instanceof PressPrimer_Quiz_Quiz ) {
+			return $quiz->get_resolved_ma_scoring_mode();
+		}
+
+		return get_option( 'pressprimer_quiz_default_ma_scoring', 'right_minus_wrong' );
 	}
 
 	/**
@@ -107,24 +192,35 @@ class PressPrimer_Quiz_Scoring_Service {
 	}
 
 	/**
-	 * Score multiple answer question with partial credit
+	 * Score a multiple-answer question with the specified mode
 	 *
-	 * Formula: (correct_selected - incorrect_selected) / total_correct * max_points
-	 * Minimum score is 0 (no negative scores).
+	 * Four modes are supported, spanning lenient to strict rubrics:
 	 *
-	 * Examples:
-	 * - 3 correct answers, selected 2 correct + 0 incorrect = 2/3 credit
-	 * - 3 correct answers, selected 2 correct + 1 incorrect = 1/3 credit
-	 * - 3 correct answers, selected 1 correct + 2 incorrect = -1/3 = 0 credit
+	 * - right_minus_wrong (default): wrong selections cancel out correct
+	 *   selections, with a floor at zero. Formula:
+	 *   max(0, (correct_selected - incorrect_selected) / total_correct) * max_points
+	 * - proportional: each correct selection earns proportional credit,
+	 *   wrong selections are ignored.
+	 * - partial_no_wrong: proportional credit, but any wrong selection
+	 *   results in zero for the question.
+	 * - all_or_nothing: full credit only when every correct is selected and
+	 *   no wrong is selected; otherwise zero.
+	 *
+	 * is_correct is true only on exact match (every correct selected, no
+	 * wrong selected) regardless of mode. partial_credit is true when
+	 * !is_correct && score > 0.
 	 *
 	 * @since 1.0.0
+	 * @since 2.3.0 Added $mode parameter and four-mode branching.
 	 *
-	 * @param array $correct_indices Array of correct answer indices.
-	 * @param array $selected_answers Array of selected answer indices.
-	 * @param float $max_points Maximum points possible.
+	 * @param array  $correct_indices  Array of correct answer indices.
+	 * @param array  $selected_answers Array of selected answer indices.
+	 * @param float  $max_points       Maximum points possible.
+	 * @param string $mode             One of: right_minus_wrong, proportional, partial_no_wrong, all_or_nothing.
+	 *                                  Unknown modes fall back to right_minus_wrong.
 	 * @return array Scoring result.
 	 */
-	public function score_ma( array $correct_indices, array $selected_answers, float $max_points ) {
+	public function score_ma( array $correct_indices, array $selected_answers, float $max_points, string $mode = 'right_minus_wrong' ) {
 		$total_correct = count( $correct_indices );
 
 		// Edge case: No correct answers (shouldn't happen, but handle gracefully)
@@ -141,12 +237,32 @@ class PressPrimer_Quiz_Scoring_Service {
 		$correct_selected   = count( array_intersect( $selected_answers, $correct_indices ) );
 		$incorrect_selected = count( array_diff( $selected_answers, $correct_indices ) );
 
-		// Determine if completely correct
+		// Determine if completely correct (independent of mode)
 		$is_correct = $correct_selected === $total_correct && 0 === $incorrect_selected;
 
-		// Calculate proportional score with penalty for incorrect selections
-		$raw_score = ( $correct_selected - $incorrect_selected ) / $total_correct;
-		$score     = max( 0, $raw_score ) * $max_points;
+		switch ( $mode ) {
+			case 'all_or_nothing':
+				$score = $is_correct ? $max_points : 0;
+				break;
+
+			case 'partial_no_wrong':
+				if ( $incorrect_selected > 0 ) {
+					$score = 0;
+				} else {
+					$score = ( $correct_selected / $total_correct ) * $max_points;
+				}
+				break;
+
+			case 'proportional':
+				$score = ( $correct_selected / $total_correct ) * $max_points;
+				break;
+
+			case 'right_minus_wrong':
+			default:
+				$raw_score = ( $correct_selected - $incorrect_selected ) / $total_correct;
+				$score     = max( 0, $raw_score ) * $max_points;
+				break;
+		}
 
 		return [
 			'is_correct'     => $is_correct,
@@ -194,6 +310,10 @@ class PressPrimer_Quiz_Scoring_Service {
 			);
 		}
 
+		// Load quiz upfront so we can resolve the MA scoring mode once and
+		// thread the quiz into every score_response() call.
+		$quiz = $attempt->get_quiz();
+
 		// Get all attempt items
 		$items = $attempt->get_items( true ); // Force refresh
 
@@ -221,7 +341,7 @@ class PressPrimer_Quiz_Scoring_Service {
 			$selected = $item->get_selected_answers();
 
 			// Score the response
-			$result = $this->score_response( $question, $revision, $selected );
+			$result = $this->score_response( $question, $revision, $selected, $quiz );
 
 			// Update attempt item with score
 			global $wpdb;
@@ -285,8 +405,7 @@ class PressPrimer_Quiz_Scoring_Service {
 		// Calculate percentage
 		$score_percent = $total_max > 0 ? ( $total_score / $total_max ) * 100 : 0;
 
-		// Get quiz to determine if passed
-		$quiz   = $attempt->get_quiz();
+		// Determine pass/fail (quiz was loaded upfront)
 		$passed = $score_percent >= $quiz->pass_percent;
 
 		// Update attempt with scores

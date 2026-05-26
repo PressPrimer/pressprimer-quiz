@@ -20,6 +20,18 @@ const { Title, Paragraph } = Typography;
 const { TextArea } = Input;
 
 /**
+ * Description shown under the Default Multiple-Answer Scoring field for each
+ * mode. Keyed by the internal mode string so the help text can update without
+ * imperative JS — React re-renders whenever the Select value changes.
+ */
+const MA_SCORING_DESCRIPTIONS = {
+	right_minus_wrong: __('Each wrong selection cancels out one correct selection. Score never goes below zero.', 'pressprimer-quiz'),
+	proportional: __('Each correct selection earns proportional credit. Wrong selections are ignored.', 'pressprimer-quiz'),
+	partial_no_wrong: __('Each correct selection earns proportional credit, but any wrong selection results in zero.', 'pressprimer-quiz'),
+	all_or_nothing: __('Full credit only when every correct answer is selected and no wrong answers are selected.', 'pressprimer-quiz'),
+};
+
+/**
  * General Tab - Quiz defaults and general settings
  *
  * @param {Object} props Component props
@@ -27,8 +39,51 @@ const { TextArea } = Input;
  * @param {Function} props.updateSetting Function to update a setting
  */
 const GeneralTab = ({ settings, updateSetting }) => {
+	const maScoringMode = settings.default_ma_scoring || 'right_minus_wrong';
+
 	return (
 		<div>
+			{/* Scoring Section */}
+			<div className="ppq-settings-section">
+				<Title level={4} className="ppq-settings-section-title">
+					{__('Scoring', 'pressprimer-quiz')}
+				</Title>
+				<Paragraph className="ppq-settings-section-description">
+					{__('How multiple-answer questions are scored across the site. Individual quizzes can override this default.', 'pressprimer-quiz')}
+				</Paragraph>
+
+				<div className="ppq-settings-field">
+					<Form.Item
+						label={__('Default Multiple-Answer Scoring', 'pressprimer-quiz')}
+						help={MA_SCORING_DESCRIPTIONS[maScoringMode]}
+					>
+						<Select
+							value={maScoringMode}
+							onChange={(value) => updateSetting('default_ma_scoring', value)}
+							style={{ width: 300 }}
+							options={[
+								{
+									value: 'right_minus_wrong',
+									label: __('Right Minus Wrong', 'pressprimer-quiz'),
+								},
+								{
+									value: 'proportional',
+									label: __('Partial Credit', 'pressprimer-quiz'),
+								},
+								{
+									value: 'partial_no_wrong',
+									label: __('Partial Credit, No Wrong Answers', 'pressprimer-quiz'),
+								},
+								{
+									value: 'all_or_nothing',
+									label: __('All or Nothing', 'pressprimer-quiz'),
+								},
+							]}
+						/>
+					</Form.Item>
+				</div>
+			</div>
+
 			{/* Quiz Defaults Section */}
 			<div className="ppq-settings-section">
 				<Title level={4} className="ppq-settings-section-title">

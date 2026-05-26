@@ -430,9 +430,11 @@ class PressPrimer_Quiz_Migrator {
 	/**
 	 * Migration to version 2.3.0
 	 *
-	 * Adds ma_scoring_mode column to quizzes table. This column stores the
-	 * per-quiz multiple-answer scoring mode override. NULL means inherit the
-	 * site default stored in the pressprimer_quiz_default_ma_scoring option.
+	 * Adds the v2.3 quiz columns: ma_scoring_mode (per-quiz override of the
+	 * multiple-answer scoring mode), display_settings_json (per-quiz defaults
+	 * for the 14 Start/Results display toggles). Each column check is
+	 * independent so the migration is safe to re-run for partially-migrated
+	 * installations.
 	 *
 	 * @since 2.3.0
 	 *
@@ -459,6 +461,27 @@ class PressPrimer_Quiz_Migrator {
 			$wpdb->query(
 				$wpdb->prepare(
 					'ALTER TABLE %i ADD COLUMN ma_scoring_mode VARCHAR(32) DEFAULT NULL AFTER login_message',
+					$table_name
+				)
+			);
+		}
+
+		// Check if display_settings_json column exists
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching
+		$column_exists = $wpdb->get_results(
+			$wpdb->prepare(
+				'SHOW COLUMNS FROM %i LIKE %s',
+				$table_name,
+				'display_settings_json'
+			)
+		);
+
+		if ( empty( $column_exists ) ) {
+			// Add display_settings_json column after ma_scoring_mode
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.DirectDatabaseQuery.SchemaChange
+			$wpdb->query(
+				$wpdb->prepare(
+					'ALTER TABLE %i ADD COLUMN display_settings_json TEXT DEFAULT NULL AFTER ma_scoring_mode',
 					$table_name
 				)
 			);

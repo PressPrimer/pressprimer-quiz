@@ -1434,6 +1434,73 @@ class PressPrimer_Quiz_REST_Controller {
 	}
 
 	/**
+	 * Sanitize a submitted display_settings payload
+	 *
+	 * Accepts an object or associative array whose keys are a subset of the
+	 * 14 display option keys. Returns a clean array of (string => bool)
+	 * pairs ready to pass to PressPrimer_Quiz_Quiz::set_display_settings(),
+	 * or a WP_Error with HTTP 400 if the payload contains any unknown key.
+	 *
+	 * Strict validation lives here so REST clients see a clear error rather
+	 * than the silent key-drop the model's setter performs.
+	 *
+	 * @since 2.3.0
+	 *
+	 * @param mixed $value Raw value from the request body.
+	 * @return array|WP_Error Sanitized map of display keys → booleans, or WP_Error on unknown key.
+	 */
+	private function sanitize_display_settings( $value ) {
+		// An object cast (or empty array) means "clear all per-quiz defaults."
+		if ( null === $value || '' === $value ) {
+			return array();
+		}
+
+		if ( ! is_array( $value ) && ! is_object( $value ) ) {
+			return new WP_Error(
+				'invalid_display_settings',
+				__( 'display_settings must be an object.', 'pressprimer-quiz' ),
+				array( 'status' => 400 )
+			);
+		}
+
+		$payload      = (array) $value;
+		$allowed_keys = array(
+			'show_description',
+			'show_question_count',
+			'show_quiz_type',
+			'show_time_limit',
+			'show_pass_percentage',
+			'show_attempt_count',
+			'show_attempt_history',
+			'show_score',
+			'show_pass_fail',
+			'show_time_spent',
+			'show_average',
+			'show_category_breakdown',
+			'show_question_review',
+			'show_retake_button',
+		);
+
+		$sanitized = array();
+		foreach ( $payload as $key => $val ) {
+			if ( ! is_string( $key ) || ! in_array( $key, $allowed_keys, true ) ) {
+				return new WP_Error(
+					'invalid_display_key',
+					sprintf(
+						/* translators: %s: invalid display option key */
+						__( 'Unknown display option key: %s', 'pressprimer-quiz' ),
+						is_scalar( $key ) ? (string) $key : '(non-string)'
+					),
+					array( 'status' => 400 )
+				);
+			}
+			$sanitized[ $key ] = rest_sanitize_boolean( $val );
+		}
+
+		return $sanitized;
+	}
+
+	/**
 	 * Sanitize a submitted ma_scoring_mode value
 	 *
 	 * Empty, null, or absent inputs map to NULL (meaning "use site default").
@@ -1543,6 +1610,16 @@ class PressPrimer_Quiz_REST_Controller {
 			return $ma_scoring_mode;
 		}
 
+		// Validate display_settings: object with keys from the 14-key whitelist.
+		// Unknown keys short-circuit with HTTP 400 invalid_display_key.
+		$display_settings = null;
+		if ( array_key_exists( 'display_settings', $data ) ) {
+			$display_settings = $this->sanitize_display_settings( $data['display_settings'] );
+			if ( is_wp_error( $display_settings ) ) {
+				return $display_settings;
+			}
+		}
+
 		global $wpdb;
 		$wpdb->query( 'START TRANSACTION' );
 
@@ -1590,12 +1667,12 @@ class PressPrimer_Quiz_REST_Controller {
 				throw new Exception( $quiz_id->get_error_message() );
 			}
 
-			// Persist display_settings via the model setter so unknown keys
-			// are filtered and the column is stored as JSON or NULL.
+			// Persist display_settings via the model setter using the
+			// pre-validated payload from sanitize_display_settings() above.
 			$quiz = PressPrimer_Quiz_Quiz::get( $quiz_id );
 
-			if ( $quiz && isset( $data['display_settings'] ) && ( is_array( $data['display_settings'] ) || is_object( $data['display_settings'] ) ) ) {
-				$quiz->set_display_settings( (array) $data['display_settings'] );
+			if ( $quiz && null !== $display_settings ) {
+				$quiz->set_display_settings( $display_settings );
 				$quiz->save();
 			}
 
@@ -1666,6 +1743,16 @@ class PressPrimer_Quiz_REST_Controller {
 			return $ma_scoring_mode;
 		}
 
+		// Validate display_settings: object with keys from the 14-key whitelist.
+		// Unknown keys short-circuit with HTTP 400 invalid_display_key.
+		$display_settings = null;
+		if ( array_key_exists( 'display_settings', $data ) ) {
+			$display_settings = $this->sanitize_display_settings( $data['display_settings'] );
+			if ( is_wp_error( $display_settings ) ) {
+				return $display_settings;
+			}
+		}
+
 		global $wpdb;
 		$wpdb->query( 'START TRANSACTION' );
 
@@ -1703,10 +1790,10 @@ class PressPrimer_Quiz_REST_Controller {
 			$quiz->is_review_quiz        = ! empty( $data['is_review_quiz'] );
 			$quiz->ma_scoring_mode       = $ma_scoring_mode;
 
-			// Apply display_settings via the model setter so unknown keys
-			// are filtered and the column is normalized to JSON or NULL.
-			if ( isset( $data['display_settings'] ) && ( is_array( $data['display_settings'] ) || is_object( $data['display_settings'] ) ) ) {
-				$quiz->set_display_settings( (array) $data['display_settings'] );
+			// Apply display_settings via the model setter using the
+			// pre-validated payload from sanitize_display_settings() above.
+			if ( null !== $display_settings ) {
+				$quiz->set_display_settings( $display_settings );
 			}
 
 			$result = $quiz->save();

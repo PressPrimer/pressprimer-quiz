@@ -37,11 +37,34 @@ const quizIcon = (
  * @param {Object} props Block props.
  * @return {JSX.Element} Block edit component.
  */
+/**
+ * Display attribute names in camelCase. Used by the deprecation migrate()
+ * and to render the per-section toggle groups when "Use quiz default
+ * settings" is off.
+ */
+const DISPLAY_ATTRIBUTE_KEYS = [
+	'showDescription',
+	'showQuestionCount',
+	'showQuizType',
+	'showTimeLimit',
+	'showPassPercentage',
+	'showAttemptCount',
+	'showAttemptHistory',
+	'showScore',
+	'showPassFail',
+	'showTimeSpent',
+	'showAverage',
+	'showCategoryBreakdown',
+	'showQuestionReview',
+	'showRetakeButton',
+];
+
 function Edit( props ) {
 	const { attributes, setAttributes } = props;
 	const {
 		quizId,
 		preTestId,
+		useQuizDefaults,
 		showDescription,
 		showQuestionCount,
 		showQuizType,
@@ -211,6 +234,22 @@ function Edit( props ) {
 					/>
 				</PanelBody>
 
+				<PanelBody title={ __( 'Display Settings', 'pressprimer-quiz' ) } initialOpen={ false }>
+					<ToggleControl
+						__nextHasNoMarginBottom
+						label={ __( 'Use quiz default settings', 'pressprimer-quiz' ) }
+						checked={ useQuizDefaults }
+						onChange={ ( value ) => setAttributes( { useQuizDefaults: value } ) }
+						help={
+							useQuizDefaults
+								? __( 'This block uses the display defaults configured in the quiz. Turn off to set per-instance overrides.', 'pressprimer-quiz' )
+								: __( 'Per-instance overrides are active. Turn on to inherit the quiz’s display defaults instead.', 'pressprimer-quiz' )
+						}
+					/>
+				</PanelBody>
+
+				{ ! useQuizDefaults && (
+				<>
 				<PanelBody title={ __( 'Start Page Display', 'pressprimer-quiz' ) } initialOpen={ false }>
 					<ToggleControl
 						__nextHasNoMarginBottom
@@ -300,6 +339,8 @@ function Edit( props ) {
 						onChange={ ( value ) => setAttributes( { showRetakeButton: value } ) }
 					/>
 				</PanelBody>
+				</>
+				) }
 			</InspectorControls>
 
 			{ renderContent() }
@@ -308,10 +349,53 @@ function Edit( props ) {
 }
 
 /**
+ * v2.2 attribute schema — used by the deprecation entry to migrate existing
+ * blocks placed before useQuizDefaults was introduced. Existing blocks that
+ * had ANY display attribute explicitly set in their saved markup get
+ * useQuizDefaults flipped to false so their per-instance overrides still
+ * win at render time, preserving v2.2 behavior. Blocks with no explicit
+ * display attributes (i.e., relying on the default `true` for everything)
+ * stay at useQuizDefaults=true and now inherit the quiz's display defaults.
+ */
+const v22Attributes = {
+	quizId: { type: 'number', default: 0 },
+	preTestId: { type: 'number', default: 0 },
+	showDescription: { type: 'boolean', default: true },
+	showQuestionCount: { type: 'boolean', default: true },
+	showQuizType: { type: 'boolean', default: true },
+	showTimeLimit: { type: 'boolean', default: true },
+	showPassPercentage: { type: 'boolean', default: true },
+	showAttemptCount: { type: 'boolean', default: true },
+	showAttemptHistory: { type: 'boolean', default: true },
+	showScore: { type: 'boolean', default: true },
+	showPassFail: { type: 'boolean', default: true },
+	showTimeSpent: { type: 'boolean', default: true },
+	showAverage: { type: 'boolean', default: true },
+	showCategoryBreakdown: { type: 'boolean', default: true },
+	showQuestionReview: { type: 'boolean', default: true },
+	showRetakeButton: { type: 'boolean', default: true },
+};
+
+const v22Deprecation = {
+	attributes: v22Attributes,
+	save: () => null,
+	migrate( attributes ) {
+		const anyExplicit = DISPLAY_ATTRIBUTE_KEYS.some(
+			( key ) => attributes[ key ] !== undefined
+		);
+		return {
+			...attributes,
+			useQuizDefaults: ! anyExplicit,
+		};
+	},
+};
+
+/**
  * Register Quiz block
  */
 registerBlockType( 'pressprimer-quiz/quiz', {
 	icon: quizIcon,
 	edit: Edit,
 	save: () => null,
+	deprecated: [ v22Deprecation ],
 } );

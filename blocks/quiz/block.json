@@ -16,6 +16,10 @@
 			"type": "number",
 			"default": 0
 		},
+		"useQuizDefaults": {
+			"type": "boolean",
+			"default": true
+		},
 		"showDescription": {
 			"type": "boolean",
 			"default": true

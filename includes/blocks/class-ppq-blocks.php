@@ -239,28 +239,37 @@ class PressPrimer_Quiz_Blocks {
 			return '<div class="ppq-error">' . esc_html__( 'Quiz renderer not available.', 'pressprimer-quiz' ) . '</div>';
 		}
 
-		// Build shortcode attributes including display options.
-		$pre_test_id    = isset( $attributes['preTestId'] ) ? absint( $attributes['preTestId'] ) : 0;
+		// Build shortcode attributes. When the block opts into "Use quiz default
+		// settings" (the default for new v2.3 blocks), omit the 14 display keys
+		// entirely so the shortcode handler's extract_display_overrides() sees
+		// them as absent and the renderer resolves from the quiz's defaults.
+		// When the toggle is off, pass all 14 keys as explicit overrides.
+		$pre_test_id       = isset( $attributes['preTestId'] ) ? absint( $attributes['preTestId'] ) : 0;
+		$use_quiz_defaults = isset( $attributes['useQuizDefaults'] ) ? (bool) $attributes['useQuizDefaults'] : true;
+
 		$shortcode_atts = [
-			'id'                      => $quiz_id,
-			'pre_test_id'             => $pre_test_id,
-			// Start page display options (convert camelCase to snake_case).
-			'show_description'        => isset( $attributes['showDescription'] ) ? ( $attributes['showDescription'] ? 'true' : 'false' ) : 'true',
-			'show_question_count'     => isset( $attributes['showQuestionCount'] ) ? ( $attributes['showQuestionCount'] ? 'true' : 'false' ) : 'true',
-			'show_quiz_type'          => isset( $attributes['showQuizType'] ) ? ( $attributes['showQuizType'] ? 'true' : 'false' ) : 'true',
-			'show_time_limit'         => isset( $attributes['showTimeLimit'] ) ? ( $attributes['showTimeLimit'] ? 'true' : 'false' ) : 'true',
-			'show_pass_percentage'    => isset( $attributes['showPassPercentage'] ) ? ( $attributes['showPassPercentage'] ? 'true' : 'false' ) : 'true',
-			'show_attempt_count'      => isset( $attributes['showAttemptCount'] ) ? ( $attributes['showAttemptCount'] ? 'true' : 'false' ) : 'true',
-			'show_attempt_history'    => isset( $attributes['showAttemptHistory'] ) ? ( $attributes['showAttemptHistory'] ? 'true' : 'false' ) : 'true',
-			// Results page display options.
-			'show_score'              => isset( $attributes['showScore'] ) ? ( $attributes['showScore'] ? 'true' : 'false' ) : 'true',
-			'show_pass_fail'          => isset( $attributes['showPassFail'] ) ? ( $attributes['showPassFail'] ? 'true' : 'false' ) : 'true',
-			'show_time_spent'         => isset( $attributes['showTimeSpent'] ) ? ( $attributes['showTimeSpent'] ? 'true' : 'false' ) : 'true',
-			'show_average'            => isset( $attributes['showAverage'] ) ? ( $attributes['showAverage'] ? 'true' : 'false' ) : 'true',
-			'show_category_breakdown' => isset( $attributes['showCategoryBreakdown'] ) ? ( $attributes['showCategoryBreakdown'] ? 'true' : 'false' ) : 'true',
-			'show_question_review'    => isset( $attributes['showQuestionReview'] ) ? ( $attributes['showQuestionReview'] ? 'true' : 'false' ) : 'true',
-			'show_retake_button'      => isset( $attributes['showRetakeButton'] ) ? ( $attributes['showRetakeButton'] ? 'true' : 'false' ) : 'true',
+			'id'          => $quiz_id,
+			'pre_test_id' => $pre_test_id,
 		];
+
+		if ( ! $use_quiz_defaults ) {
+			// Per-instance overrides: include all 14 display attributes
+			// (convert camelCase block attrs to snake_case shortcode atts).
+			$shortcode_atts['show_description']        = isset( $attributes['showDescription'] ) ? ( $attributes['showDescription'] ? 'true' : 'false' ) : 'true';
+			$shortcode_atts['show_question_count']     = isset( $attributes['showQuestionCount'] ) ? ( $attributes['showQuestionCount'] ? 'true' : 'false' ) : 'true';
+			$shortcode_atts['show_quiz_type']          = isset( $attributes['showQuizType'] ) ? ( $attributes['showQuizType'] ? 'true' : 'false' ) : 'true';
+			$shortcode_atts['show_time_limit']         = isset( $attributes['showTimeLimit'] ) ? ( $attributes['showTimeLimit'] ? 'true' : 'false' ) : 'true';
+			$shortcode_atts['show_pass_percentage']    = isset( $attributes['showPassPercentage'] ) ? ( $attributes['showPassPercentage'] ? 'true' : 'false' ) : 'true';
+			$shortcode_atts['show_attempt_count']      = isset( $attributes['showAttemptCount'] ) ? ( $attributes['showAttemptCount'] ? 'true' : 'false' ) : 'true';
+			$shortcode_atts['show_attempt_history']    = isset( $attributes['showAttemptHistory'] ) ? ( $attributes['showAttemptHistory'] ? 'true' : 'false' ) : 'true';
+			$shortcode_atts['show_score']              = isset( $attributes['showScore'] ) ? ( $attributes['showScore'] ? 'true' : 'false' ) : 'true';
+			$shortcode_atts['show_pass_fail']          = isset( $attributes['showPassFail'] ) ? ( $attributes['showPassFail'] ? 'true' : 'false' ) : 'true';
+			$shortcode_atts['show_time_spent']         = isset( $attributes['showTimeSpent'] ) ? ( $attributes['showTimeSpent'] ? 'true' : 'false' ) : 'true';
+			$shortcode_atts['show_average']            = isset( $attributes['showAverage'] ) ? ( $attributes['showAverage'] ? 'true' : 'false' ) : 'true';
+			$shortcode_atts['show_category_breakdown'] = isset( $attributes['showCategoryBreakdown'] ) ? ( $attributes['showCategoryBreakdown'] ? 'true' : 'false' ) : 'true';
+			$shortcode_atts['show_question_review']    = isset( $attributes['showQuestionReview'] ) ? ( $attributes['showQuestionReview'] ? 'true' : 'false' ) : 'true';
+			$shortcode_atts['show_retake_button']      = isset( $attributes['showRetakeButton'] ) ? ( $attributes['showRetakeButton'] ? 'true' : 'false' ) : 'true';
+		}
 
 		// Call the shortcode handler.
 		$shortcodes = new PressPrimer_Quiz_Shortcodes();

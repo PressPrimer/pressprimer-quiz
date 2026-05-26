@@ -246,6 +246,18 @@ class PressPrimer_Quiz_Quiz extends PressPrimer_Quiz_Model {
 	public $ma_scoring_mode;
 
 	/**
+	 * Quiz-level display defaults
+	 *
+	 * Sparse JSON object of overrides for the 14 Start Page / Results Page
+	 * display toggles. NULL or empty means "use hard-coded defaults
+	 * everywhere." Keys must match the snake_case shortcode attribute names.
+	 *
+	 * @since 2.3.0
+	 * @var string|null
+	 */
+	public $display_settings_json;
+
+	/**
 	 * Display density
 	 *
 	 * @since 2.0.0
@@ -341,6 +353,37 @@ class PressPrimer_Quiz_Quiz extends PressPrimer_Quiz_Model {
 	private $_rules = null;
 
 	/**
+	 * Hard-coded defaults for the 14 quiz display options
+	 *
+	 * Authoritative key list. All values default to true (existing behavior:
+	 * every section visible) and are overridden by quiz-level JSON or by an
+	 * instance attribute on the block/shortcode.
+	 *
+	 * Keys match the snake_case shortcode attribute names in
+	 * class-ppq-shortcodes.php. The Quiz block stores the same keys in
+	 * camelCase but normalizes to snake_case when persisting.
+	 *
+	 * @since 2.3.0
+	 * @var array<string, bool>
+	 */
+	private static $display_hard_defaults = array(
+		'show_description'        => true,
+		'show_question_count'     => true,
+		'show_quiz_type'          => true,
+		'show_time_limit'         => true,
+		'show_pass_percentage'    => true,
+		'show_attempt_count'      => true,
+		'show_attempt_history'    => true,
+		'show_score'              => true,
+		'show_pass_fail'          => true,
+		'show_time_spent'         => true,
+		'show_average'            => true,
+		'show_category_breakdown' => true,
+		'show_question_review'    => true,
+		'show_retake_button'      => true,
+	);
+
+	/**
 	 * Get table name
 	 *
 	 * @since 1.0.0
@@ -388,6 +431,7 @@ class PressPrimer_Quiz_Quiz extends PressPrimer_Quiz_Model {
 			'access_mode',
 			'login_message',
 			'ma_scoring_mode',
+			'display_settings_json',
 			'display_density',
 			'pool_enabled',
 			'max_questions',
@@ -1172,6 +1216,103 @@ class PressPrimer_Quiz_Quiz extends PressPrimer_Quiz_Model {
 		}
 
 		return get_option( 'pressprimer_quiz_default_ma_scoring', 'right_minus_wrong' );
+	}
+
+	/**
+	 * Get the quiz-level display defaults
+	 *
+	 * Returns the decoded JSON from display_settings_json, or an empty array
+	 * if no defaults are stored or the JSON is malformed.
+	 *
+	 * @since 2.3.0
+	 *
+	 * @return array<string, bool> Sparse map of display keys → boolean values.
+	 */
+	public function get_display_settings() {
+		if ( empty( $this->display_settings_json ) ) {
+			return array();
+		}
+
+		$decoded = json_decode( $this->display_settings_json, true );
+
+		return is_array( $decoded ) ? $decoded : array();
+	}
+
+	/**
+	 * Set the quiz-level display defaults
+	 *
+	 * Filters out unknown keys, coerces values to boolean, then stores the
+	 * filtered set as JSON. An empty result is stored as NULL so the column
+	 * remains a clean "no overrides" sentinel.
+	 *
+	 * @since 2.3.0
+	 *
+	 * @param array $settings Snake_case keys, boolean values.
+	 * @return void
+	 */
+	public function set_display_settings( array $settings ) {
+		$filtered = array();
+		foreach ( $settings as $key => $value ) {
+			if ( array_key_exists( $key, self::$display_hard_defaults ) ) {
+				$filtered[ $key ] = (bool) $value;
+			}
+		}
+
+		$this->display_settings_json = empty( $filtered ) ? null : wp_json_encode( $filtered );
+	}
+
+	/**
+	 * Resolve a single display option for this quiz
+	 *
+	 * Three-tier precedence:
+	 *   1. Instance override (block/shortcode attribute that was explicitly set)
+	 *   2. Quiz default (key present in display_settings_json)
+	 *   3. Hard-coded default (true for all 14 keys)
+	 *
+	 * Returns true for any unknown key, which keeps the renderer safe if a
+	 * caller misspells a key during development.
+	 *
+	 * @since 2.3.0
+	 *
+	 * @param string $key                One of the 14 display option keys.
+	 * @param array  $instance_overrides Optional. Block/shortcode attribute values, snake_case keys.
+	 * @return bool Resolved boolean value.
+	 */
+	public function resolve_display_option( $key, array $instance_overrides = array() ) {
+		if ( ! array_key_exists( $key, self::$display_hard_defaults ) ) {
+			return true;
+		}
+
+		if ( array_key_exists( $key, $instance_overrides ) ) {
+			return (bool) $instance_overrides[ $key ];
+		}
+
+		$quiz_defaults = $this->get_display_settings();
+		if ( array_key_exists( $key, $quiz_defaults ) ) {
+			return (bool) $quiz_defaults[ $key ];
+		}
+
+		return self::$display_hard_defaults[ $key ];
+	}
+
+	/**
+	 * Resolve all 14 display options for this quiz
+	 *
+	 * Convenience wrapper around resolve_display_option() that returns the
+	 * full set so the renderer can iterate without 14 individual calls.
+	 *
+	 * @since 2.3.0
+	 *
+	 * @param array $instance_overrides Optional. Block/shortcode attribute values.
+	 * @return array<string, bool> Map of all 14 display keys → resolved boolean values.
+	 */
+	public function resolve_all_display_options( array $instance_overrides = array() ) {
+		$resolved = array();
+		foreach ( array_keys( self::$display_hard_defaults ) as $key ) {
+			$resolved[ $key ] = $this->resolve_display_option( $key, $instance_overrides );
+		}
+
+		return $resolved;
 	}
 
 	/**

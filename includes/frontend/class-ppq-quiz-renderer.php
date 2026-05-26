@@ -106,7 +106,13 @@ class PressPrimer_Quiz_Quiz_Renderer {
 	/**
 	 * Get default display options for Start page
 	 *
+	 * Retained for backward compatibility with any third-party caller that
+	 * builds its own display array. The shortcode and renderer now resolve
+	 * display values via PressPrimer_Quiz_Quiz::resolve_all_display_options()
+	 * which returns all 14 keys.
+	 *
 	 * @since 2.1.0
+	 * @deprecated 2.3.0 Use $quiz->resolve_all_display_options() instead.
 	 *
 	 * @return array Default display options.
 	 */
@@ -170,15 +176,23 @@ class PressPrimer_Quiz_Quiz_Renderer {
 	 *
 	 * @since 1.0.0
 	 * @since 2.1.0 Added display options parameter.
+	 * @since 2.3.0 Third parameter is now a sparse map of instance overrides
+	 *              (block/shortcode attributes that were explicitly set). Final
+	 *              display values resolve through the quiz model so LMS embeds
+	 *              and explicit attributes share one resolution path.
 	 *
-	 * @param PressPrimer_Quiz_Quiz $quiz      Quiz object.
-	 * @param bool                  $is_retake Whether this is a retake request.
-	 * @param array                 $display   Display options for controlling element visibility.
+	 * @param PressPrimer_Quiz_Quiz $quiz               Quiz object.
+	 * @param bool                  $is_retake          Whether this is a retake request.
+	 * @param array                 $instance_overrides Sparse map of display keys explicitly set
+	 *                                                   by the block or shortcode. Keys absent here
+	 *                                                   fall through to the quiz default, then to
+	 *                                                   the hard-coded default.
 	 * @return string Rendered HTML.
 	 */
-	public function render_landing( $quiz, $is_retake = false, $display = [] ) {
-		// Merge with defaults.
-		$display = wp_parse_args( $display, $this->get_default_start_display_options() );
+	public function render_landing( $quiz, $is_retake = false, $instance_overrides = [] ) {
+		// Resolve all 14 display options using the three-tier precedence:
+		// instance override > quiz default (display_settings_json) > hard default.
+		$display = $quiz->resolve_all_display_options( $instance_overrides );
 		// Enqueue assets
 		$this->enqueue_assets( $quiz );
 

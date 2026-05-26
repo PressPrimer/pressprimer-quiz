@@ -1316,6 +1316,35 @@ class PressPrimer_Quiz_Quiz extends PressPrimer_Quiz_Model {
 	}
 
 	/**
+	 * Extract instance display overrides from a raw attribute map
+	 *
+	 * Returns only the display keys that were EXPLICITLY present in the
+	 * input array. This is critical for the three-tier resolver: a key
+	 * that is absent should fall through to the quiz default, while a key
+	 * that is present (even set to false) should override. WordPress's
+	 * shortcode_atts() helper merges defaults into the attribute array,
+	 * which destroys this distinction — so callers must pass the RAW
+	 * shortcode attributes here before shortcode_atts() runs.
+	 *
+	 * Values are coerced to booleans via filter_var(FILTER_VALIDATE_BOOLEAN).
+	 *
+	 * @since 2.3.0
+	 *
+	 * @param array $raw_attributes Raw block or shortcode attributes (pre-merge).
+	 * @return array<string, bool> Sparse map of only the display keys that were explicitly set.
+	 */
+	public static function extract_display_overrides( array $raw_attributes ) {
+		$overrides = array();
+		foreach ( array_keys( self::$display_hard_defaults ) as $key ) {
+			if ( array_key_exists( $key, $raw_attributes ) ) {
+				$overrides[ $key ] = filter_var( $raw_attributes[ $key ], FILTER_VALIDATE_BOOLEAN );
+			}
+		}
+
+		return $overrides;
+	}
+
+	/**
 	 * Get effective display density for this quiz
 	 *
 	 * Returns the display density to use, accounting for per-quiz override

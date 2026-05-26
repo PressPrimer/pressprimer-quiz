@@ -97,12 +97,19 @@ class PressPrimer_Quiz_Results_Renderer {
 	 *
 	 * @since 1.0.0
 	 * @since 2.1.0 Added display options parameter.
+	 * @since 2.3.0 Second parameter is now a sparse map of instance overrides
+	 *              (block/shortcode attributes that were explicitly set). The
+	 *              final display map resolves through the quiz model so LMS
+	 *              embeds inherit the quiz's display_settings_json defaults
+	 *              with one resolution path.
 	 *
-	 * @param PressPrimer_Quiz_Attempt $attempt Attempt object.
-	 * @param array                    $display Display options for controlling element visibility.
+	 * @param PressPrimer_Quiz_Attempt $attempt            Attempt object.
+	 * @param array                    $instance_overrides Sparse map of display keys explicitly set
+	 *                                                      by the block or shortcode. Absent keys
+	 *                                                      fall through to quiz default, then hard default.
 	 * @return string HTML output.
 	 */
-	public function render_results( $attempt, $display = [] ) {
+	public function render_results( $attempt, $instance_overrides = [] ) {
 		if ( ! $attempt || 'submitted' !== $attempt->status ) {
 			return '<div class="ppq-error">' . esc_html__( 'Results not available.', 'pressprimer-quiz' ) . '</div>';
 		}
@@ -113,8 +120,10 @@ class PressPrimer_Quiz_Results_Renderer {
 			return '<div class="ppq-error">' . esc_html__( 'Quiz not found.', 'pressprimer-quiz' ) . '</div>';
 		}
 
-		// Merge display options with defaults and apply conflict rules.
-		$display       = wp_parse_args( $display, $this->get_default_results_display_options() );
+		// Resolve display options through the three-tier precedence on the
+		// quiz model: instance override > display_settings_json > hard default.
+		// Then apply conflict rules that depend on the actual attempt/quiz state.
+		$display       = $quiz->resolve_all_display_options( $instance_overrides );
 		$display       = $this->apply_conflict_rules( $display, $quiz, $attempt );
 		$this->display = $display;
 
@@ -767,15 +776,25 @@ class PressPrimer_Quiz_Results_Renderer {
 	 *
 	 * @since 1.0.0
 	 * @since 2.1.0 Added display options parameter.
+	 * @since 2.3.0 Second parameter is now a sparse map of instance overrides.
+	 *              Display resolution is reused from a prior render_results()
+	 *              call on the same instance; if absent, the quiz's resolver
+	 *              is consulted.
 	 *
-	 * @param PressPrimer_Quiz_Attempt $attempt Attempt object.
-	 * @param array                    $display Display options for controlling element visibility.
+	 * @param PressPrimer_Quiz_Attempt $attempt            Attempt object.
+	 * @param array                    $instance_overrides Sparse map of display keys explicitly set
+	 *                                                      by the block or shortcode.
 	 * @return string HTML output.
 	 */
-	public function render_question_review( $attempt, $display = [] ) {
-		// Merge with defaults if not already set from render_results.
+	public function render_question_review( $attempt, $instance_overrides = [] ) {
+		// Resolve display options if not already set from a prior render_results() call.
 		if ( empty( $this->display ) ) {
-			$this->display = wp_parse_args( $display, $this->get_default_results_display_options() );
+			$quiz = $attempt ? $attempt->get_quiz() : null;
+			if ( $quiz ) {
+				$this->display = $quiz->resolve_all_display_options( $instance_overrides );
+			} else {
+				$this->display = wp_parse_args( $instance_overrides, $this->get_default_results_display_options() );
+			}
 		}
 
 		// Check if question review should be displayed.

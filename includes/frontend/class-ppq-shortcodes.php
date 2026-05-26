@@ -56,11 +56,22 @@ class PressPrimer_Quiz_Shortcodes {
 	 * @return array Parsed attributes with quiz_id, context, and display options.
 	 */
 	public function parse_quiz_attributes( $atts ) {
+		// Extract instance overrides from the raw $atts BEFORE shortcode_atts()
+		// merges defaults. Once shortcode_atts() fills in defaults we lose the
+		// ability to tell "user explicitly set show_score=true" from "user did
+		// not pass show_score at all" — which is exactly what the three-tier
+		// resolver needs to distinguish. The renderer later resolves these
+		// overrides against the quiz's display_settings_json + hard defaults.
+		$raw_atts          = is_array( $atts ) ? $atts : array();
+		$display_overrides = PressPrimer_Quiz_Quiz::extract_display_overrides( $raw_atts );
+
 		$defaults = [
 			'id'                      => 0,
 			'context'                 => '', // Base64 encoded JSON for integration context (e.g., LearnDash)
 			'pre_test_id'             => 0, // Override pre-test linking (used by Educator addon).
-			// Start page display options.
+			// Display defaults retained for backward compatibility with any third-party
+			// filter hooking shortcode_atts_pressprimer_quiz. The renderer no longer
+			// reads these values directly — it consumes $display_overrides above.
 			'show_description'        => 'true',
 			'show_question_count'     => 'true',
 			'show_quiz_type'          => 'true',
@@ -68,7 +79,6 @@ class PressPrimer_Quiz_Shortcodes {
 			'show_pass_percentage'    => 'true',
 			'show_attempt_count'      => 'true',
 			'show_attempt_history'    => 'true',
-			// Results page display options.
 			'show_score'              => 'true',
 			'show_pass_fail'          => 'true',
 			'show_time_spent'         => 'true',
@@ -79,14 +89,6 @@ class PressPrimer_Quiz_Shortcodes {
 		];
 
 		$atts = shortcode_atts( $defaults, $atts, 'pressprimer_quiz' );
-
-		// Build display options array with boolean values.
-		$display = [];
-		foreach ( $atts as $key => $value ) {
-			if ( strpos( $key, 'show_' ) === 0 ) {
-				$display[ $key ] = $this->parse_boolean( $value );
-			}
-		}
 
 		// Decode context if provided (used by LMS integrations).
 		$context = [];
@@ -101,10 +103,10 @@ class PressPrimer_Quiz_Shortcodes {
 		}
 
 		return [
-			'quiz_id'     => absint( $atts['id'] ),
-			'context'     => $context,
-			'display'     => $display,
-			'pre_test_id' => absint( $atts['pre_test_id'] ),
+			'quiz_id'           => absint( $atts['id'] ),
+			'context'           => $context,
+			'display_overrides' => $display_overrides,
+			'pre_test_id'       => absint( $atts['pre_test_id'] ),
 		];
 	}
 
@@ -197,7 +199,7 @@ class PressPrimer_Quiz_Shortcodes {
 		// phpcs:enable WordPress.Security.NonceVerification.Recommended
 
 		if ( $attempt_id && ! $is_retake ) {
-			return $this->render_quiz_attempt( $attempt_id, $parsed['display'] );
+			return $this->render_quiz_attempt( $attempt_id, $parsed['display_overrides'] );
 		}
 
 		// Render quiz landing page.
@@ -206,7 +208,7 @@ class PressPrimer_Quiz_Shortcodes {
 		}
 
 		$renderer = new PressPrimer_Quiz_Quiz_Renderer();
-		return $renderer->render_landing( $quiz, $is_retake, $parsed['display'] );
+		return $renderer->render_landing( $quiz, $is_retake, $parsed['display_overrides'] );
 	}
 
 	/**
@@ -214,12 +216,14 @@ class PressPrimer_Quiz_Shortcodes {
 	 *
 	 * @since 1.0.0
 	 * @since 2.1.0 Added display options parameter.
+	 * @since 2.3.0 Second parameter is now a sparse map of instance overrides;
+	 *              the results renderer resolves against the quiz's defaults.
 	 *
-	 * @param int   $attempt_id Attempt ID.
-	 * @param array $display    Display options for results page.
+	 * @param int   $attempt_id         Attempt ID.
+	 * @param array $instance_overrides Sparse map of display keys explicitly set by the shortcode/block.
 	 * @return string Rendered HTML.
 	 */
-	private function render_quiz_attempt( $attempt_id, $display = [] ) {
+	private function render_quiz_attempt( $attempt_id, $instance_overrides = [] ) {
 		// Send no-cache headers for attempt pages to prevent Varnish/CDN caching
 		// This ensures users always see their current attempt state
 		if ( ! headers_sent() ) {
@@ -343,8 +347,8 @@ class PressPrimer_Quiz_Shortcodes {
 			);
 
 			$results_renderer = new PressPrimer_Quiz_Results_Renderer();
-			$output           = $results_renderer->render_results( $attempt, $display );
-			$output          .= $results_renderer->render_question_review( $attempt, $display );
+			$output           = $results_renderer->render_results( $attempt, $instance_overrides );
+			$output          .= $results_renderer->render_question_review( $attempt, $instance_overrides );
 
 			return $output;
 		}

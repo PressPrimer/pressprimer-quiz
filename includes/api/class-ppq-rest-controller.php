@@ -1434,6 +1434,36 @@ class PressPrimer_Quiz_REST_Controller {
 	}
 
 	/**
+	 * Sanitize a submitted ma_scoring_mode value
+	 *
+	 * Empty, null, or absent inputs map to NULL (meaning "use site default").
+	 * Whitelisted strings pass through unchanged. Any other value returns a
+	 * WP_Error with HTTP 400 so the caller can short-circuit the save.
+	 *
+	 * @since 2.3.0
+	 *
+	 * @param mixed $value Raw value from the request body.
+	 * @return string|null|WP_Error Sanitized mode, NULL for site default, or WP_Error on invalid input.
+	 */
+	private function sanitize_ma_scoring_mode( $value ) {
+		if ( null === $value || '' === $value ) {
+			return null;
+		}
+
+		$allowed_modes = array( 'right_minus_wrong', 'proportional', 'partial_no_wrong', 'all_or_nothing' );
+
+		if ( is_string( $value ) && in_array( $value, $allowed_modes, true ) ) {
+			return $value;
+		}
+
+		return new WP_Error(
+			'invalid_scoring_mode',
+			__( 'Invalid scoring mode. Allowed values: right_minus_wrong, proportional, partial_no_wrong, all_or_nothing.', 'pressprimer-quiz' ),
+			array( 'status' => 400 )
+		);
+	}
+
+	/**
 	 * Get single quiz
 	 *
 	 * @since 1.0.0
@@ -1487,6 +1517,7 @@ class PressPrimer_Quiz_REST_Controller {
 			'pool_size'             => $quiz->get_pool_size()['count'],
 			'enable_sr'             => (bool) $quiz->enable_sr,
 			'is_review_quiz'        => (bool) $quiz->is_review_quiz,
+			'ma_scoring_mode'       => $quiz->ma_scoring_mode,
 		];
 
 		return new WP_REST_Response( $data, 200 );
@@ -1502,6 +1533,13 @@ class PressPrimer_Quiz_REST_Controller {
 	 */
 	public function create_quiz( $request ) {
 		$data = $request->get_json_params();
+
+		// Validate ma_scoring_mode: empty/null/absent → NULL ("use site default"),
+		// whitelisted string → accepted, anything else → 400.
+		$ma_scoring_mode = $this->sanitize_ma_scoring_mode( $data['ma_scoring_mode'] ?? null );
+		if ( is_wp_error( $ma_scoring_mode ) ) {
+			return $ma_scoring_mode;
+		}
 
 		global $wpdb;
 		$wpdb->query( 'START TRANSACTION' );
@@ -1542,6 +1580,7 @@ class PressPrimer_Quiz_REST_Controller {
 					'max_questions'         => isset( $data['max_questions'] ) && '' !== $data['max_questions'] && null !== $data['max_questions'] ? absint( $data['max_questions'] ) : null,
 					'enable_sr'             => ! empty( $data['enable_sr'] ),
 					'is_review_quiz'        => ! empty( $data['is_review_quiz'] ),
+					'ma_scoring_mode'       => $ma_scoring_mode,
 				]
 			);
 
@@ -1610,6 +1649,13 @@ class PressPrimer_Quiz_REST_Controller {
 			return new WP_Error( 'forbidden', __( 'You do not have permission.', 'pressprimer-quiz' ), [ 'status' => 403 ] );
 		}
 
+		// Validate ma_scoring_mode: empty/null/absent → NULL ("use site default"),
+		// whitelisted string → accepted, anything else → 400.
+		$ma_scoring_mode = $this->sanitize_ma_scoring_mode( $data['ma_scoring_mode'] ?? null );
+		if ( is_wp_error( $ma_scoring_mode ) ) {
+			return $ma_scoring_mode;
+		}
+
 		global $wpdb;
 		$wpdb->query( 'START TRANSACTION' );
 
@@ -1645,6 +1691,7 @@ class PressPrimer_Quiz_REST_Controller {
 			$quiz->max_questions         = isset( $data['max_questions'] ) && '' !== $data['max_questions'] && null !== $data['max_questions'] ? absint( $data['max_questions'] ) : null;
 			$quiz->enable_sr             = ! empty( $data['enable_sr'] );
 			$quiz->is_review_quiz        = ! empty( $data['is_review_quiz'] );
+			$quiz->ma_scoring_mode       = $ma_scoring_mode;
 
 			$result = $quiz->save();
 

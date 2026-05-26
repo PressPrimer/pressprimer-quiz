@@ -30,6 +30,30 @@ const { TextArea } = Input;
 const { Title, Text } = Typography;
 
 /**
+ * Internal mode value → human-readable label for the MA scoring radios.
+ * Used both for the per-quiz options and to build the "Use site default
+ * (currently: ...)" label from the quizData.default_ma_scoring string.
+ */
+const MA_SCORING_LABELS = {
+	right_minus_wrong: __('Right Minus Wrong', 'pressprimer-quiz'),
+	proportional: __('Partial Credit', 'pressprimer-quiz'),
+	partial_no_wrong: __('Partial Credit, No Wrong Answers', 'pressprimer-quiz'),
+	all_or_nothing: __('All or Nothing', 'pressprimer-quiz'),
+};
+
+/**
+ * Description + worked example shown next to each MA scoring radio.
+ * Visible at all times (not a tooltip) so authors can compare modes
+ * side by side, matching the v2.3 spec.
+ */
+const MA_SCORING_DESCRIPTIONS = {
+	right_minus_wrong: __('Each wrong selection cancels out one correct selection. Score never goes below zero. Example: 2 correct + 1 wrong on a 3-correct question = 0.33 points.', 'pressprimer-quiz'),
+	proportional: __('Each correct selection earns proportional credit. Wrong selections are ignored. Example: 2 correct + 1 wrong on a 3-correct question = 0.67 points.', 'pressprimer-quiz'),
+	partial_no_wrong: __('Each correct selection earns proportional credit, but any wrong selection results in zero. Example: 2 correct + 1 wrong on a 3-correct question = 0.00 points; 2 correct + 0 wrong = 0.67.', 'pressprimer-quiz'),
+	all_or_nothing: __('Full credit only when every correct answer is selected and no wrong answers are selected. Example: 2 correct + 0 wrong on a 3-correct question = 0.00 points; only 3 of 3 correct + 0 wrong earns the full 1.00.', 'pressprimer-quiz'),
+};
+
+/**
  * Settings Panel Component
  *
  * @param {Object} props Component props
@@ -329,6 +353,78 @@ const SettingsPanel = ({ form, generationMode, setGenerationMode, quizData = {} 
 						</Form.Item>
 					</Col>
 				</Row>
+			</Card>
+
+			{/* Scoring */}
+			<Card
+				title={
+					<Space>
+						<Title level={4} style={{ margin: 0 }}>
+							{__('Scoring', 'pressprimer-quiz')}
+						</Title>
+						<Tooltip title={__('How multiple-answer questions are scored for this quiz', 'pressprimer-quiz')}>
+							<QuestionCircleOutlined style={{ color: '#8c8c8c' }} />
+						</Tooltip>
+					</Space>
+				}
+				style={{ marginBottom: 24 }}
+			>
+				<Text type="secondary" style={{ display: 'block', marginBottom: 16 }}>
+					{__('Choose how multiple-answer (MA) questions are scored. Single-answer (MC, true/false) questions are always all-or-nothing.', 'pressprimer-quiz')}
+				</Text>
+
+				<Form.Item name="ma_scoring_mode" style={{ marginBottom: 0 }}>
+					<Radio.Group style={{ width: '100%' }}>
+						<Space direction="vertical" style={{ width: '100%' }} size="middle">
+							<Radio value="">
+								<div>
+									<div style={{ fontWeight: 600 }}>
+										{sprintf(
+											/* translators: %s: the resolved site-default scoring label. */
+											__('Use site default (currently: %s)', 'pressprimer-quiz'),
+											MA_SCORING_LABELS[quizData.default_ma_scoring] || MA_SCORING_LABELS.right_minus_wrong
+										)}
+									</div>
+									<Text type="secondary" style={{ fontSize: 14 }}>
+										{__('Match the site-wide setting at Settings → General → Scoring.', 'pressprimer-quiz')}
+									</Text>
+								</div>
+							</Radio>
+							<Radio value="right_minus_wrong">
+								<div>
+									<div style={{ fontWeight: 600 }}>{MA_SCORING_LABELS.right_minus_wrong}</div>
+									<Text type="secondary" style={{ fontSize: 14 }}>
+										{MA_SCORING_DESCRIPTIONS.right_minus_wrong}
+									</Text>
+								</div>
+							</Radio>
+							<Radio value="proportional">
+								<div>
+									<div style={{ fontWeight: 600 }}>{MA_SCORING_LABELS.proportional}</div>
+									<Text type="secondary" style={{ fontSize: 14 }}>
+										{MA_SCORING_DESCRIPTIONS.proportional}
+									</Text>
+								</div>
+							</Radio>
+							<Radio value="partial_no_wrong">
+								<div>
+									<div style={{ fontWeight: 600 }}>{MA_SCORING_LABELS.partial_no_wrong}</div>
+									<Text type="secondary" style={{ fontSize: 14 }}>
+										{MA_SCORING_DESCRIPTIONS.partial_no_wrong}
+									</Text>
+								</div>
+							</Radio>
+							<Radio value="all_or_nothing">
+								<div>
+									<div style={{ fontWeight: 600 }}>{MA_SCORING_LABELS.all_or_nothing}</div>
+									<Text type="secondary" style={{ fontSize: 14 }}>
+										{MA_SCORING_DESCRIPTIONS.all_or_nothing}
+									</Text>
+								</div>
+							</Radio>
+						</Space>
+					</Radio.Group>
+				</Form.Item>
 			</Card>
 
 			{/* Navigation & Attempts */}

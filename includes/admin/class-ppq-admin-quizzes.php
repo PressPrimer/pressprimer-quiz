@@ -596,16 +596,25 @@ class PressPrimer_Quiz_Admin_Quizzes {
 					'max_questions'         => $quiz->max_questions,
 					'pool_size'             => $quiz->get_pool_size()['count'],
 					'enable_sr'             => (bool) $quiz->enable_sr,
+					'ma_scoring_mode'       => $quiz->ma_scoring_mode,
 				];
 			}
 		} else {
 			// For new quizzes, load defaults from settings
 			$settings  = get_option( 'pressprimer_quiz_settings', [] );
 			$quiz_data = [
-				'mode'         => isset( $settings['default_quiz_mode'] ) ? $settings['default_quiz_mode'] : 'tutorial',
-				'pass_percent' => isset( $settings['default_passing_score'] ) ? (float) $settings['default_passing_score'] : 70,
+				'mode'            => isset( $settings['default_quiz_mode'] ) ? $settings['default_quiz_mode'] : 'tutorial',
+				'pass_percent'    => isset( $settings['default_passing_score'] ) ? (float) $settings['default_passing_score'] : 70,
+				'ma_scoring_mode' => null,
 			];
 		}
+
+		// Site-wide MA scoring default — used by the editor to render the
+		// "Use site default (currently: ...)" label without re-fetching.
+		$quiz_data['default_ma_scoring'] = get_option(
+			'pressprimer_quiz_default_ma_scoring',
+			'right_minus_wrong'
+		);
 
 		/**
 		 * Filter quiz editor data before passing to React

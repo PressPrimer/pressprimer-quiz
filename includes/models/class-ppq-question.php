@@ -478,15 +478,135 @@ class PressPrimer_Quiz_Question extends PressPrimer_Quiz_Model {
 	/**
 	 * Permanently delete question
 	 *
-	 * Removes the question record from the database.
-	 * Use with caution - this cannot be undone.
+	 * Removes the question record from the database. Use with caution — this
+	 * cannot be undone. Before deletion, the question's owned image
+	 * attachments are refcounted via the `_ppq_question_id` post meta and
+	 * any attachment with no remaining owner is removed from disk and the
+	 * Media Library. Cleanup failures are caught so they cannot block the
+	 * question deletion itself.
 	 *
 	 * @since 1.0.0
+	 * @since 2.3.0 Cleans up `_ppq_question_id`-tagged image attachments.
 	 *
 	 * @return bool|WP_Error True on success, WP_Error on failure.
 	 */
 	public function force_delete() {
+		if ( ! empty( $this->id ) ) {
+			try {
+				$this->cleanup_owned_images();
+			} catch ( Exception $e ) {
+				// Cleanup must not block the question deletion. Log and
+				// continue — orphaned attachments are recoverable from the
+				// Media Library; a failed delete is not.
+				// phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log
+				error_log( sprintf( 'PressPrimer Quiz: image cleanup failed for question %d: %s', (int) $this->id, $e->getMessage() ) );
+			}
+		}
+
 		return parent::delete();
+	}
+
+	/**
+	 * Remove this question's row from each owned attachment's refcount meta;
+	 * delete the attachment outright if no other question still references it.
+	 *
+	 * The `_ppq_question_id` post meta key allows multiple rows per
+	 * attachment (one per owning question), so we use
+	 * `delete_post_meta( $att, $key, $this->id )` to remove just our row,
+	 * then count remaining rows to decide whether to delete the attachment.
+	 *
+	 * @since 2.3.0
+	 *
+	 * @return void
+	 */
+	private function cleanup_owned_images() {
+		$attachment_ids = get_posts(
+			array(
+				'post_type'        => 'attachment',
+				'meta_key'         => '_ppq_question_id', // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_key
+				'meta_value'       => (int) $this->id,    // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_value
+				'fields'           => 'ids',
+				'posts_per_page'   => -1,
+				'suppress_filters' => false,
+			)
+		);
+
+		if ( empty( $attachment_ids ) ) {
+			return;
+		}
+
+		foreach ( $attachment_ids as $attachment_id ) {
+			$attachment_id = (int) $attachment_id;
+
+			// Remove this question's refcount row only.
+			delete_post_meta( $attachment_id, '_ppq_question_id', (int) $this->id );
+
+			// Count remaining rows. If anything else owns this attachment,
+			// leave it alone — that question still needs it.
+			$remaining = get_post_meta( $attachment_id, '_ppq_question_id', false );
+			if ( empty( $remaining ) ) {
+				wp_delete_attachment( $attachment_id, true );
+			}
+		}
+	}
+
+	/**
+	 * Register this question as an owner of every attachment referenced in
+	 * the given HTML blob.
+	 *
+	 * Used by the question-duplicate flow so the duplicated question shares
+	 * refcount ownership of the original's images — deleting either one
+	 * leaves the file intact for the other. The HTML is expected to be the
+	 * full content the question references (stem + each answer text +
+	 * feedback fields concatenated).
+	 *
+	 * Attachment IDs are read from the `data-ppq-attachment-id` attribute
+	 * that the v2.3 image-upload modal writes on every inserted `<img>` tag.
+	 * Older images that predate the data attribute are not tracked — they
+	 * remain as orphan references in the original question and persist
+	 * naturally because their refcount was never decremented.
+	 *
+	 * @since 2.3.0
+	 *
+	 * @param int    $question_id Question that should be added as an owner.
+	 * @param string $html        Concatenated HTML to scan for attachment references.
+	 * @return int Number of attachment refcount rows added.
+	 */
+	public static function register_image_ownership( $question_id, $html ) {
+		$question_id = (int) $question_id;
+		if ( $question_id <= 0 || ! is_string( $html ) || '' === $html ) {
+			return 0;
+		}
+
+		$matched = preg_match_all( '/data-ppq-attachment-id=["\'](\d+)["\']/i', $html, $matches );
+		if ( ! $matched ) {
+			return 0;
+		}
+
+		$attachment_ids = array_unique( array_map( 'absint', $matches[1] ) );
+		$added          = 0;
+
+		foreach ( $attachment_ids as $attachment_id ) {
+			if ( $attachment_id <= 0 ) {
+				continue;
+			}
+			// Only register against existing attachments to avoid creating
+			// stale rows pointing at deleted media.
+			if ( 'attachment' !== get_post_type( $attachment_id ) ) {
+				continue;
+			}
+
+			// Skip if this question is already registered as an owner.
+			$existing = get_post_meta( $attachment_id, '_ppq_question_id', false );
+			if ( is_array( $existing ) && in_array( $question_id, array_map( 'intval', $existing ), true ) ) {
+				continue;
+			}
+
+			add_post_meta( $attachment_id, '_ppq_question_id', $question_id );
+			++$added;
+		}
+
+		return $added;
 	}
 
 	/**

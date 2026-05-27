@@ -645,6 +645,29 @@ class PressPrimer_Quiz_Admin_Questions {
 				throw new Exception( $result->get_error_message() );
 			}
 
+			// Register image ownership for the duplicate. Each <img> that the
+			// v2.3 upload modal inserted carries a data-ppq-attachment-id
+			// attribute, so the duplicate becomes a co-owner of the same
+			// attachments via an additional `_ppq_question_id` meta row.
+			// Deleting either the original or the duplicate now leaves the
+			// shared attachment intact for the surviving question.
+			$ownership_html = (string) $new_revision->stem;
+			foreach ( $new_answers as $new_answer ) {
+				if ( ! empty( $new_answer['text'] ) ) {
+					$ownership_html .= ' ' . $new_answer['text'];
+				}
+				if ( ! empty( $new_answer['feedback'] ) ) {
+					$ownership_html .= ' ' . $new_answer['feedback'];
+				}
+			}
+			if ( ! empty( $new_revision->feedback_correct ) ) {
+				$ownership_html .= ' ' . $new_revision->feedback_correct;
+			}
+			if ( ! empty( $new_revision->feedback_incorrect ) ) {
+				$ownership_html .= ' ' . $new_revision->feedback_incorrect;
+			}
+			PressPrimer_Quiz_Question::register_image_ownership( $new_question->id, $ownership_html );
+
 			// Duplicate categories
 			$categories = $question->get_categories();
 			if ( ! empty( $categories ) ) {

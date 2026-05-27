@@ -1434,6 +1434,124 @@ class PressPrimer_Quiz_REST_Controller {
 	}
 
 	/**
+	 * Sanitize a submitted max_answers_per_question value
+	 *
+	 * Accepts null/empty (meaning "show all answers"), or an integer in the
+	 * range [2, 20]. Out-of-range integers and non-numeric strings return a
+	 * WP_Error with HTTP 400 so the caller can short-circuit before any
+	 * database transaction opens.
+	 *
+	 * @since 2.3.0
+	 *
+	 * @param mixed $value Raw value from the request body.
+	 * @return int|null|WP_Error Integer 2-20, NULL for "show all", or WP_Error on out-of-range input.
+	 */
+	private function sanitize_max_answers_per_question( $value ) {
+		if ( null === $value || '' === $value ) {
+			return null;
+		}
+
+		if ( ! is_numeric( $value ) ) {
+			return new WP_Error(
+				'invalid_max_answers_per_question',
+				__( 'max_answers_per_question must be an integer between 2 and 20, or null.', 'pressprimer-quiz' ),
+				array( 'status' => 400 )
+			);
+		}
+
+		$intval = (int) $value;
+		if ( $intval < 2 || $intval > 20 ) {
+			return new WP_Error(
+				'invalid_max_answers_per_question',
+				__( 'max_answers_per_question must be between 2 and 20.', 'pressprimer-quiz' ),
+				array( 'status' => 400 )
+			);
+		}
+
+		return $intval;
+	}
+
+	/**
+	 * Compute informational warnings for the random distractor cap
+	 *
+	 * Returns a list of human-readable warning strings the REST client can
+	 * surface to the quiz author. None of these block the save. The cap is
+	 * only inspected for fixed-mode quizzes, where the assigned questions
+	 * are statically known; dynamic quizzes generate their question set at
+	 * attempt time and have no static "question list" to warn against.
+	 *
+	 * @since 2.3.0
+	 *
+	 * @param PressPrimer_Quiz_Quiz $quiz Quiz to inspect after save.
+	 * @return string[] Zero or more warning messages.
+	 */
+	private function compute_max_answers_warnings( $quiz ) {
+		$warnings = array();
+
+		if ( empty( $quiz->max_answers_per_question ) ) {
+			return $warnings;
+		}
+
+		if ( 'fixed' !== $quiz->generation_mode ) {
+			return $warnings;
+		}
+
+		$cap                            = (int) $quiz->max_answers_per_question;
+		$items                          = $quiz->get_items();
+		$any_question_exceeds_cap_total = false;
+
+		foreach ( $items as $item ) {
+			$question = PressPrimer_Quiz_Question::get( $item->question_id );
+			if ( ! $question ) {
+				continue;
+			}
+
+			$revision = $question->get_current_revision();
+			if ( ! $revision ) {
+				continue;
+			}
+
+			$answers = $revision->get_answers();
+			$total   = is_array( $answers ) ? count( $answers ) : 0;
+			$correct = 0;
+			if ( is_array( $answers ) ) {
+				foreach ( $answers as $answer ) {
+					if ( ! empty( $answer['is_correct'] ) ) {
+						++$correct;
+					}
+				}
+			}
+
+			if ( $total > $cap ) {
+				$any_question_exceeds_cap_total = true;
+			}
+
+			if ( $correct > $cap ) {
+				$stem         = is_object( $revision ) && ! empty( $revision->stem ) ? wp_strip_all_tags( $revision->stem ) : '';
+				$stem_preview = '' !== $stem ? mb_substr( $stem, 0, 60 ) : __( '(untitled)', 'pressprimer-quiz' );
+
+				$warnings[] = sprintf(
+					/* translators: 1: question stem preview, 2: number of correct answers, 3: configured cap */
+					__( 'Question "%1$s" has %2$d correct answers, more than your cap of %3$d. All correct answers will be shown for that question.', 'pressprimer-quiz' ),
+					$stem_preview,
+					(int) $correct,
+					$cap
+				);
+			}
+		}
+
+		if ( ! empty( $items ) && ! $any_question_exceeds_cap_total ) {
+			$warnings[] = sprintf(
+				/* translators: %d: configured cap */
+				__( 'No questions in this quiz have more than %d answers. This setting will not affect anything until you add a question with more options.', 'pressprimer-quiz' ),
+				$cap
+			);
+		}
+
+		return $warnings;
+	}
+
+	/**
 	 * Sanitize a submitted display_settings payload
 	 *
 	 * Accepts an object or associative array whose keys are a subset of the
@@ -1552,41 +1670,42 @@ class PressPrimer_Quiz_REST_Controller {
 		}
 
 		$data = [
-			'id'                    => $quiz->id,
-			'title'                 => $quiz->title,
-			'description'           => $quiz->description,
-			'featured_image_id'     => $quiz->featured_image_id,
-			'status'                => $quiz->status,
-			'mode'                  => $quiz->mode,
-			'time_limit_seconds'    => $quiz->time_limit_seconds,
-			'pass_percent'          => $quiz->pass_percent,
-			'allow_skip'            => $quiz->allow_skip,
-			'allow_backward'        => $quiz->allow_backward,
-			'allow_resume'          => $quiz->allow_resume,
-			'max_attempts'          => $quiz->max_attempts,
-			'attempt_delay_minutes' => $quiz->attempt_delay_minutes,
-			'randomize_questions'   => $quiz->randomize_questions,
-			'randomize_answers'     => $quiz->randomize_answers,
-			'page_mode'             => $quiz->page_mode,
-			'questions_per_page'    => $quiz->questions_per_page,
-			'show_answers'          => $quiz->show_answers,
-			'enable_confidence'     => $quiz->enable_confidence,
-			'show_points'           => (bool) $quiz->show_points,
-			'theme'                 => $quiz->theme,
-			'display_density'       => $quiz->display_density,
-			'theme_settings_json'   => $quiz->theme_settings_json,
-			'band_feedback_json'    => $quiz->band_feedback_json,
-			'generation_mode'       => $quiz->generation_mode,
-			'access_mode'           => $quiz->access_mode,
-			'login_message'         => $quiz->login_message,
-			'pool_enabled'          => (bool) $quiz->pool_enabled,
-			'max_questions'         => $quiz->max_questions ? (int) $quiz->max_questions : null,
-			'pool_size'             => $quiz->get_pool_size()['count'],
-			'enable_sr'             => (bool) $quiz->enable_sr,
-			'is_review_quiz'        => (bool) $quiz->is_review_quiz,
-			'ma_scoring_mode'       => $quiz->ma_scoring_mode,
+			'id'                       => $quiz->id,
+			'title'                    => $quiz->title,
+			'description'              => $quiz->description,
+			'featured_image_id'        => $quiz->featured_image_id,
+			'status'                   => $quiz->status,
+			'mode'                     => $quiz->mode,
+			'time_limit_seconds'       => $quiz->time_limit_seconds,
+			'pass_percent'             => $quiz->pass_percent,
+			'allow_skip'               => $quiz->allow_skip,
+			'allow_backward'           => $quiz->allow_backward,
+			'allow_resume'             => $quiz->allow_resume,
+			'max_attempts'             => $quiz->max_attempts,
+			'attempt_delay_minutes'    => $quiz->attempt_delay_minutes,
+			'randomize_questions'      => $quiz->randomize_questions,
+			'randomize_answers'        => $quiz->randomize_answers,
+			'page_mode'                => $quiz->page_mode,
+			'questions_per_page'       => $quiz->questions_per_page,
+			'show_answers'             => $quiz->show_answers,
+			'enable_confidence'        => $quiz->enable_confidence,
+			'show_points'              => (bool) $quiz->show_points,
+			'theme'                    => $quiz->theme,
+			'display_density'          => $quiz->display_density,
+			'theme_settings_json'      => $quiz->theme_settings_json,
+			'band_feedback_json'       => $quiz->band_feedback_json,
+			'generation_mode'          => $quiz->generation_mode,
+			'access_mode'              => $quiz->access_mode,
+			'login_message'            => $quiz->login_message,
+			'pool_enabled'             => (bool) $quiz->pool_enabled,
+			'max_questions'            => $quiz->max_questions ? (int) $quiz->max_questions : null,
+			'pool_size'                => $quiz->get_pool_size()['count'],
+			'enable_sr'                => (bool) $quiz->enable_sr,
+			'is_review_quiz'           => (bool) $quiz->is_review_quiz,
+			'ma_scoring_mode'          => $quiz->ma_scoring_mode,
 			// Cast to object so an empty sparse map serializes as {} rather than [].
-			'display_settings'      => (object) $quiz->get_display_settings(),
+			'display_settings'         => (object) $quiz->get_display_settings(),
+			'max_answers_per_question' => $quiz->max_answers_per_question ? (int) $quiz->max_answers_per_question : null,
 		];
 
 		return new WP_REST_Response( $data, 200 );
@@ -1620,6 +1739,12 @@ class PressPrimer_Quiz_REST_Controller {
 			}
 		}
 
+		// Validate max_answers_per_question: integer 2-20 or null.
+		$max_answers_per_question = $this->sanitize_max_answers_per_question( $data['max_answers_per_question'] ?? null );
+		if ( is_wp_error( $max_answers_per_question ) ) {
+			return $max_answers_per_question;
+		}
+
 		global $wpdb;
 		$wpdb->query( 'START TRANSACTION' );
 
@@ -1627,39 +1752,40 @@ class PressPrimer_Quiz_REST_Controller {
 			// Create quiz
 			$quiz_id = PressPrimer_Quiz_Quiz::create(
 				[
-					'uuid'                  => wp_generate_uuid4(),
-					'title'                 => sanitize_text_field( $data['title'] ),
-					'description'           => wp_kses_post( $data['description'] ?? '' ),
-					'featured_image_id'     => absint( $data['featured_image_id'] ?? 0 ),
-					'owner_id'              => get_current_user_id(),
-					'status'                => sanitize_key( $data['status'] ?? 'draft' ),
-					'mode'                  => sanitize_key( $data['mode'] ?? 'tutorial' ),
-					'time_limit_seconds'    => ! empty( $data['time_limit_seconds'] ) ? absint( $data['time_limit_seconds'] ) : null,
-					'pass_percent'          => floatval( $data['pass_percent'] ?? 70 ),
-					'allow_skip'            => ! empty( $data['allow_skip'] ),
-					'allow_backward'        => ! empty( $data['allow_backward'] ),
-					'allow_resume'          => ! empty( $data['allow_resume'] ),
-					'max_attempts'          => ! empty( $data['max_attempts'] ) ? absint( $data['max_attempts'] ) : null,
-					'attempt_delay_minutes' => absint( $data['attempt_delay_minutes'] ?? 0 ),
-					'randomize_questions'   => ! empty( $data['randomize_questions'] ),
-					'randomize_answers'     => ! empty( $data['randomize_answers'] ),
-					'page_mode'             => sanitize_key( $data['page_mode'] ?? 'single' ),
-					'questions_per_page'    => absint( $data['questions_per_page'] ?? 1 ),
-					'show_answers'          => sanitize_key( $data['show_answers'] ?? 'after_submit' ),
-					'enable_confidence'     => ! empty( $data['enable_confidence'] ),
-					'show_points'           => ! empty( $data['show_points'] ),
-					'theme'                 => sanitize_key( $data['theme'] ?? 'default' ),
-					'display_density'       => sanitize_key( $data['display_density'] ?? 'default' ),
-					'theme_settings_json'   => $data['theme_settings_json'] ?? null,
-					'band_feedback_json'    => $data['band_feedback_json'] ?? null,
-					'generation_mode'       => sanitize_key( $data['generation_mode'] ?? 'fixed' ),
-					'access_mode'           => sanitize_key( $data['access_mode'] ?? 'default' ),
-					'login_message'         => wp_kses_post( $data['login_message'] ?? '' ),
-					'pool_enabled'          => ! empty( $data['pool_enabled'] ),
-					'max_questions'         => isset( $data['max_questions'] ) && '' !== $data['max_questions'] && null !== $data['max_questions'] ? absint( $data['max_questions'] ) : null,
-					'enable_sr'             => ! empty( $data['enable_sr'] ),
-					'is_review_quiz'        => ! empty( $data['is_review_quiz'] ),
-					'ma_scoring_mode'       => $ma_scoring_mode,
+					'uuid'                     => wp_generate_uuid4(),
+					'title'                    => sanitize_text_field( $data['title'] ),
+					'description'              => wp_kses_post( $data['description'] ?? '' ),
+					'featured_image_id'        => absint( $data['featured_image_id'] ?? 0 ),
+					'owner_id'                 => get_current_user_id(),
+					'status'                   => sanitize_key( $data['status'] ?? 'draft' ),
+					'mode'                     => sanitize_key( $data['mode'] ?? 'tutorial' ),
+					'time_limit_seconds'       => ! empty( $data['time_limit_seconds'] ) ? absint( $data['time_limit_seconds'] ) : null,
+					'pass_percent'             => floatval( $data['pass_percent'] ?? 70 ),
+					'allow_skip'               => ! empty( $data['allow_skip'] ),
+					'allow_backward'           => ! empty( $data['allow_backward'] ),
+					'allow_resume'             => ! empty( $data['allow_resume'] ),
+					'max_attempts'             => ! empty( $data['max_attempts'] ) ? absint( $data['max_attempts'] ) : null,
+					'attempt_delay_minutes'    => absint( $data['attempt_delay_minutes'] ?? 0 ),
+					'randomize_questions'      => ! empty( $data['randomize_questions'] ),
+					'randomize_answers'        => ! empty( $data['randomize_answers'] ),
+					'page_mode'                => sanitize_key( $data['page_mode'] ?? 'single' ),
+					'questions_per_page'       => absint( $data['questions_per_page'] ?? 1 ),
+					'show_answers'             => sanitize_key( $data['show_answers'] ?? 'after_submit' ),
+					'enable_confidence'        => ! empty( $data['enable_confidence'] ),
+					'show_points'              => ! empty( $data['show_points'] ),
+					'theme'                    => sanitize_key( $data['theme'] ?? 'default' ),
+					'display_density'          => sanitize_key( $data['display_density'] ?? 'default' ),
+					'theme_settings_json'      => $data['theme_settings_json'] ?? null,
+					'band_feedback_json'       => $data['band_feedback_json'] ?? null,
+					'generation_mode'          => sanitize_key( $data['generation_mode'] ?? 'fixed' ),
+					'access_mode'              => sanitize_key( $data['access_mode'] ?? 'default' ),
+					'login_message'            => wp_kses_post( $data['login_message'] ?? '' ),
+					'pool_enabled'             => ! empty( $data['pool_enabled'] ),
+					'max_questions'            => isset( $data['max_questions'] ) && '' !== $data['max_questions'] && null !== $data['max_questions'] ? absint( $data['max_questions'] ) : null,
+					'enable_sr'                => ! empty( $data['enable_sr'] ),
+					'is_review_quiz'           => ! empty( $data['is_review_quiz'] ),
+					'ma_scoring_mode'          => $ma_scoring_mode,
+					'max_answers_per_question' => $max_answers_per_question,
 				]
 			);
 
@@ -1705,7 +1831,13 @@ class PressPrimer_Quiz_REST_Controller {
 				PressPrimer_Quiz_Statistics_Service::clear_dashboard_cache();
 			}
 
-			return new WP_REST_Response( [ 'id' => $quiz_id ], 201 );
+			return new WP_REST_Response(
+				array(
+					'id'       => $quiz_id,
+					'warnings' => $quiz ? $this->compute_max_answers_warnings( $quiz ) : array(),
+				),
+				201
+			);
 
 		} catch ( Exception $e ) {
 			$wpdb->query( 'ROLLBACK' );
@@ -1753,42 +1885,49 @@ class PressPrimer_Quiz_REST_Controller {
 			}
 		}
 
+		// Validate max_answers_per_question: integer 2-20 or null.
+		$max_answers_per_question = $this->sanitize_max_answers_per_question( $data['max_answers_per_question'] ?? null );
+		if ( is_wp_error( $max_answers_per_question ) ) {
+			return $max_answers_per_question;
+		}
+
 		global $wpdb;
 		$wpdb->query( 'START TRANSACTION' );
 
 		try {
 			// Update quiz fields
-			$quiz->title                 = sanitize_text_field( $data['title'] );
-			$quiz->description           = wp_kses_post( $data['description'] ?? '' );
-			$quiz->featured_image_id     = absint( $data['featured_image_id'] ?? 0 );
-			$quiz->status                = sanitize_key( $data['status'] ?? 'draft' );
-			$quiz->mode                  = sanitize_key( $data['mode'] ?? 'tutorial' );
-			$quiz->time_limit_seconds    = ! empty( $data['time_limit_seconds'] ) ? absint( $data['time_limit_seconds'] ) : null;
-			$quiz->pass_percent          = floatval( $data['pass_percent'] ?? 70 );
-			$quiz->allow_skip            = ! empty( $data['allow_skip'] );
-			$quiz->allow_backward        = ! empty( $data['allow_backward'] );
-			$quiz->allow_resume          = ! empty( $data['allow_resume'] );
-			$quiz->max_attempts          = ! empty( $data['max_attempts'] ) ? absint( $data['max_attempts'] ) : null;
-			$quiz->attempt_delay_minutes = absint( $data['attempt_delay_minutes'] ?? 0 );
-			$quiz->randomize_questions   = ! empty( $data['randomize_questions'] );
-			$quiz->randomize_answers     = ! empty( $data['randomize_answers'] );
-			$quiz->page_mode             = sanitize_key( $data['page_mode'] ?? 'single' );
-			$quiz->questions_per_page    = absint( $data['questions_per_page'] ?? 1 );
-			$quiz->show_answers          = sanitize_key( $data['show_answers'] ?? 'after_submit' );
-			$quiz->enable_confidence     = ! empty( $data['enable_confidence'] );
-			$quiz->show_points           = ! empty( $data['show_points'] );
-			$quiz->theme                 = sanitize_key( $data['theme'] ?? 'default' );
-			$quiz->display_density       = sanitize_key( $data['display_density'] ?? 'default' );
-			$quiz->theme_settings_json   = $data['theme_settings_json'] ?? null;
-			$quiz->band_feedback_json    = $data['band_feedback_json'] ?? null;
-			$quiz->generation_mode       = sanitize_key( $data['generation_mode'] ?? 'fixed' );
-			$quiz->access_mode           = sanitize_key( $data['access_mode'] ?? 'default' );
-			$quiz->login_message         = wp_kses_post( $data['login_message'] ?? '' );
-			$quiz->pool_enabled          = ! empty( $data['pool_enabled'] );
-			$quiz->max_questions         = isset( $data['max_questions'] ) && '' !== $data['max_questions'] && null !== $data['max_questions'] ? absint( $data['max_questions'] ) : null;
-			$quiz->enable_sr             = ! empty( $data['enable_sr'] );
-			$quiz->is_review_quiz        = ! empty( $data['is_review_quiz'] );
-			$quiz->ma_scoring_mode       = $ma_scoring_mode;
+			$quiz->title                    = sanitize_text_field( $data['title'] );
+			$quiz->description              = wp_kses_post( $data['description'] ?? '' );
+			$quiz->featured_image_id        = absint( $data['featured_image_id'] ?? 0 );
+			$quiz->status                   = sanitize_key( $data['status'] ?? 'draft' );
+			$quiz->mode                     = sanitize_key( $data['mode'] ?? 'tutorial' );
+			$quiz->time_limit_seconds       = ! empty( $data['time_limit_seconds'] ) ? absint( $data['time_limit_seconds'] ) : null;
+			$quiz->pass_percent             = floatval( $data['pass_percent'] ?? 70 );
+			$quiz->allow_skip               = ! empty( $data['allow_skip'] );
+			$quiz->allow_backward           = ! empty( $data['allow_backward'] );
+			$quiz->allow_resume             = ! empty( $data['allow_resume'] );
+			$quiz->max_attempts             = ! empty( $data['max_attempts'] ) ? absint( $data['max_attempts'] ) : null;
+			$quiz->attempt_delay_minutes    = absint( $data['attempt_delay_minutes'] ?? 0 );
+			$quiz->randomize_questions      = ! empty( $data['randomize_questions'] );
+			$quiz->randomize_answers        = ! empty( $data['randomize_answers'] );
+			$quiz->page_mode                = sanitize_key( $data['page_mode'] ?? 'single' );
+			$quiz->questions_per_page       = absint( $data['questions_per_page'] ?? 1 );
+			$quiz->show_answers             = sanitize_key( $data['show_answers'] ?? 'after_submit' );
+			$quiz->enable_confidence        = ! empty( $data['enable_confidence'] );
+			$quiz->show_points              = ! empty( $data['show_points'] );
+			$quiz->theme                    = sanitize_key( $data['theme'] ?? 'default' );
+			$quiz->display_density          = sanitize_key( $data['display_density'] ?? 'default' );
+			$quiz->theme_settings_json      = $data['theme_settings_json'] ?? null;
+			$quiz->band_feedback_json       = $data['band_feedback_json'] ?? null;
+			$quiz->generation_mode          = sanitize_key( $data['generation_mode'] ?? 'fixed' );
+			$quiz->access_mode              = sanitize_key( $data['access_mode'] ?? 'default' );
+			$quiz->login_message            = wp_kses_post( $data['login_message'] ?? '' );
+			$quiz->pool_enabled             = ! empty( $data['pool_enabled'] );
+			$quiz->max_questions            = isset( $data['max_questions'] ) && '' !== $data['max_questions'] && null !== $data['max_questions'] ? absint( $data['max_questions'] ) : null;
+			$quiz->enable_sr                = ! empty( $data['enable_sr'] );
+			$quiz->is_review_quiz           = ! empty( $data['is_review_quiz'] );
+			$quiz->ma_scoring_mode          = $ma_scoring_mode;
+			$quiz->max_answers_per_question = $max_answers_per_question;
 
 			// Apply display_settings via the model setter using the
 			// pre-validated payload from sanitize_display_settings() above.
@@ -1834,7 +1973,13 @@ class PressPrimer_Quiz_REST_Controller {
 
 			$wpdb->query( 'COMMIT' );
 
-			return new WP_REST_Response( [ 'id' => $quiz->id ], 200 );
+			return new WP_REST_Response(
+				array(
+					'id'       => $quiz->id,
+					'warnings' => $this->compute_max_answers_warnings( $quiz ),
+				),
+				200
+			);
 
 		} catch ( Exception $e ) {
 			$wpdb->query( 'ROLLBACK' );

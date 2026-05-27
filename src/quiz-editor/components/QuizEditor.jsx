@@ -50,6 +50,8 @@ const QuizEditor = ({ quizData = {} }) => {
 	const [activeTab, setActiveTab] = useState('settings');
 	const [currentQuizId, setCurrentQuizId] = useState(quizData.id || null);
 	const [feedbackBands, setFeedbackBands] = useState([]);
+	// Inline warnings returned by the REST save (e.g., random distractor cap edge cases).
+	const [maxAnswersWarnings, setMaxAnswersWarnings] = useState([]);
 
 	const isNew = !currentQuizId;
 
@@ -97,6 +99,7 @@ const QuizEditor = ({ quizData = {} }) => {
 				display_settings: quizData.display_settings && typeof quizData.display_settings === 'object' && ! Array.isArray(quizData.display_settings)
 					? { ...quizData.display_settings }
 					: {},
+				max_answers_per_question: quizData.max_answers_per_question || null,
 			};
 
 			// Add pre_test_id if Educator addon is active.
@@ -212,6 +215,11 @@ const QuizEditor = ({ quizData = {} }) => {
 
 			message.success(__('Quiz saved successfully!', 'pressprimer-quiz'));
 
+			// Capture any informational warnings returned by the save
+			// (e.g., random distractor cap edge cases) so the SettingsPanel
+			// can render them inline.
+			setMaxAnswersWarnings(Array.isArray(response.warnings) ? response.warnings : []);
+
 			// Update URL to edit page if this was a new quiz
 			if (!quizId && response.id) {
 				window.history.replaceState({}, '', `${window.pressprimerQuizAdmin.adminUrl}admin.php?page=pressprimer-quiz-quizzes&action=edit&quiz=${response.id}`);
@@ -276,6 +284,9 @@ const QuizEditor = ({ quizData = {} }) => {
 				);
 			}
 
+			// Capture inline save warnings (e.g., random distractor cap edge cases).
+			setMaxAnswersWarnings(Array.isArray(response.warnings) ? response.warnings : []);
+
 			message.success(__('Quiz saved successfully!', 'pressprimer-quiz'));
 			return true;
 
@@ -324,7 +335,7 @@ const QuizEditor = ({ quizData = {} }) => {
 		{
 			key: 'settings',
 			label: __('Settings', 'pressprimer-quiz'),
-			children: <SettingsPanel form={form} generationMode={generationMode} setGenerationMode={setGenerationMode} quizData={quizData} />,
+			children: <SettingsPanel form={form} generationMode={generationMode} setGenerationMode={setGenerationMode} quizData={quizData} maxAnswersWarnings={maxAnswersWarnings} />,
 		},
 		hasPremiumAddons && {
 			key: 'premium',
@@ -385,6 +396,7 @@ const QuizEditor = ({ quizData = {} }) => {
 						display_settings: quizData.display_settings && typeof quizData.display_settings === 'object' && ! Array.isArray(quizData.display_settings)
 							? { ...quizData.display_settings }
 							: {},
+						max_answers_per_question: quizData.max_answers_per_question || null,
 					}}
 				>
 					{/* Header */}

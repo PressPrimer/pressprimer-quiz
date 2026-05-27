@@ -112,13 +112,16 @@ const MA_SCORING_OPTIONS = [
 /**
  * Settings Panel Component
  *
- * @param {Object} props Component props
- * @param {Object} props.form Ant Design form instance
- * @param {string} props.generationMode Current generation mode
- * @param {Function} props.setGenerationMode Function to update generation mode
- * @param {Object} props.quizData Initial quiz data (includes educator addon fields)
+ * @param {Object}   props                     Component props
+ * @param {Object}   props.form                Ant Design form instance
+ * @param {string}   props.generationMode      Current generation mode
+ * @param {Function} props.setGenerationMode   Function to update generation mode
+ * @param {Object}   props.quizData            Initial quiz data (includes educator addon fields)
+ * @param {string[]} props.maxAnswersWarnings  Informational warnings returned from the save endpoint
+ *                                              for the random distractor cap (e.g., questions whose
+ *                                              correct count exceeds the cap).
  */
-const SettingsPanel = ({ form, generationMode, setGenerationMode, quizData = {} }) => {
+const SettingsPanel = ({ form, generationMode, setGenerationMode, quizData = {}, maxAnswersWarnings = [] }) => {
 	// Watch access_mode to show/hide login message field
 	const accessMode = Form.useWatch('access_mode', form);
 
@@ -789,6 +792,26 @@ const SettingsPanel = ({ form, generationMode, setGenerationMode, quizData = {} 
 							>
 								<Switch size="small" />
 							</Form.Item>
+							<Form.Item
+								label={
+									<Space>
+										<span>{__('Maximum Answers per Question', 'pressprimer-quiz')}</span>
+										<Tooltip title={__('Limit how many answer options each question shows per attempt. Correct answers are always included; remaining slots are filled with random distractors. Different attempts may see different subsets.', 'pressprimer-quiz')}>
+											<QuestionCircleOutlined style={{ fontSize: 12, color: '#8c8c8c' }} />
+										</Tooltip>
+									</Space>
+								}
+								name="max_answers_per_question"
+								help={__('Leave empty to show all answers. Range: 2 to 20.', 'pressprimer-quiz')}
+							>
+								<InputNumber
+									min={2}
+									max={20}
+									size="small"
+									style={{ width: 150 }}
+									placeholder={__('All answers', 'pressprimer-quiz')}
+								/>
+							</Form.Item>
 						</Space>
 					</Col>
 					<Col span={12}>
@@ -860,6 +883,14 @@ const SettingsPanel = ({ form, generationMode, setGenerationMode, quizData = {} 
 						</Space>
 					</Col>
 				</Row>
+
+				{maxAnswersWarnings.length > 0 && (
+					<Space direction="vertical" style={{ width: '100%', marginTop: 12 }} size={8}>
+						{maxAnswersWarnings.map((warning, i) => (
+							<Alert key={i} type="warning" message={warning} showIcon />
+						))}
+					</Space>
+				)}
 
 				<Divider />
 

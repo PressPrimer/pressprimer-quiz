@@ -409,9 +409,16 @@ class PressPrimer_Quiz_Attempt extends PressPrimer_Quiz_Model {
 			];
 			$formats   = [ '%d', '%d', '%d', '%s' ];
 
-			// Generate randomized answer order if quiz setting enabled
-			if ( $quiz->randomize_answers ) {
-				$answer_order = static::generate_answer_order( $question_data['revision_id'] );
+			// Generate answer_order_json when the quiz randomizes answer order
+			// or when a max_answers_per_question cap forces a per-attempt subset.
+			// Both paths route through generate_answer_order, which handles the
+			// "all correct answers always shown" rule and falls back to a full
+			// shuffled range when the cap is null or larger than the question.
+			if ( $quiz->randomize_answers || ! empty( $quiz->max_answers_per_question ) ) {
+				$answer_order = static::generate_answer_order(
+					$question_data['revision_id'],
+					empty( $quiz->max_answers_per_question ) ? null : (int) $quiz->max_answers_per_question
+				);
 				if ( $answer_order ) {
 					$item_data['answer_order_json'] = $answer_order;
 					$formats[]                      = '%s';
@@ -645,9 +652,16 @@ class PressPrimer_Quiz_Attempt extends PressPrimer_Quiz_Model {
 			];
 			$formats   = [ '%d', '%d', '%d', '%s' ];
 
-			// Generate randomized answer order if quiz setting enabled
-			if ( $quiz->randomize_answers ) {
-				$answer_order = static::generate_answer_order( $question_data['revision_id'] );
+			// Generate answer_order_json when the quiz randomizes answer order
+			// or when a max_answers_per_question cap forces a per-attempt subset.
+			// Both paths route through generate_answer_order, which handles the
+			// "all correct answers always shown" rule and falls back to a full
+			// shuffled range when the cap is null or larger than the question.
+			if ( $quiz->randomize_answers || ! empty( $quiz->max_answers_per_question ) ) {
+				$answer_order = static::generate_answer_order(
+					$question_data['revision_id'],
+					empty( $quiz->max_answers_per_question ) ? null : (int) $quiz->max_answers_per_question
+				);
 				if ( $answer_order ) {
 					$item_data['answer_order_json'] = $answer_order;
 					$formats[]                      = '%s';
@@ -1403,13 +1417,27 @@ class PressPrimer_Quiz_Attempt extends PressPrimer_Quiz_Model {
 	 * Generate randomized answer order for a question
 	 *
 	 * Creates a shuffled array of answer indices to use for display order.
+	 * When $max_answers is set and the question has more answers than the
+	 * cap, the returned array is a subset: every correct answer is always
+	 * included, and distractors are randomly sampled to fill up to the cap.
+	 * The combined subset is then shuffled.
+	 *
+	 * Edge cases:
+	 * - $max_answers null or >= total: full range shuffled (existing behavior).
+	 * - correct_count >= $max_answers: all correct answers shown, no
+	 *   distractors. The subset length exceeds the cap because the spec
+	 *   forbids hiding a correct answer.
+	 * - Fewer than 2 total answers: returns null (nothing to randomize).
 	 *
 	 * @since 1.0.0
+	 * @since 2.3.0 Added $max_answers parameter for random distractor subsets.
 	 *
-	 * @param int $revision_id Question revision ID.
-	 * @return string|null JSON-encoded answer order, or null if not needed.
+	 * @param int      $revision_id Question revision ID.
+	 * @param int|null $max_answers Optional. Maximum answers to include in the
+	 *                               subset. NULL means use the full range.
+	 * @return string|null JSON-encoded answer order, or null if not applicable.
 	 */
-	private static function generate_answer_order( int $revision_id ) {
+	private static function generate_answer_order( int $revision_id, $max_answers = null ) {
 		$revision = PressPrimer_Quiz_Question_Revision::get( $revision_id );
 		if ( ! $revision ) {
 			return null;
@@ -1420,13 +1448,47 @@ class PressPrimer_Quiz_Attempt extends PressPrimer_Quiz_Model {
 			return null;
 		}
 
-		// Create array of indices [0, 1, 2, ...]
-		$order = range( 0, count( $answers ) - 1 );
+		$total_answers = count( $answers );
+		$cap           = ( null === $max_answers ) ? null : (int) $max_answers;
 
-		// Shuffle the order
-		shuffle( $order );
+		// No cap, or cap covers everything: full range shuffled.
+		if ( null === $cap || $cap >= $total_answers ) {
+			$order = range( 0, $total_answers - 1 );
+			shuffle( $order );
+			return wp_json_encode( $order );
+		}
 
-		return wp_json_encode( $order );
+		// Build correct vs distractor index buckets.
+		$correct_indices    = array();
+		$distractor_indices = array();
+		foreach ( $answers as $index => $answer ) {
+			if ( ! empty( $answer['is_correct'] ) ) {
+				$correct_indices[] = (int) $index;
+			} else {
+				$distractor_indices[] = (int) $index;
+			}
+		}
+
+		$correct_count = count( $correct_indices );
+
+		// If the question has at least as many correct answers as the cap,
+		// show all corrects and skip distractors. The subset may exceed the
+		// cap; the spec forbids hiding a correct answer.
+		if ( $correct_count >= $cap ) {
+			shuffle( $correct_indices );
+			return wp_json_encode( $correct_indices );
+		}
+
+		// Sample the distractors needed to reach the cap.
+		$distractors_needed = $cap - $correct_count;
+		shuffle( $distractor_indices );
+		$sampled_distractors = array_slice( $distractor_indices, 0, $distractors_needed );
+
+		// Combine corrects + sampled distractors, then shuffle the union.
+		$subset = array_merge( $correct_indices, $sampled_distractors );
+		shuffle( $subset );
+
+		return wp_json_encode( $subset );
 	}
 
 	/**

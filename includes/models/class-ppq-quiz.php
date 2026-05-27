@@ -258,6 +258,20 @@ class PressPrimer_Quiz_Quiz extends PressPrimer_Quiz_Model {
 	public $display_settings_json;
 
 	/**
+	 * Maximum answers shown per question
+	 *
+	 * Cap on the number of answer options presented for each question on a
+	 * given attempt. NULL means show all answers (existing behavior). When
+	 * set, the attempt creator generates a random subset that always
+	 * includes every correct answer plus sampled distractors up to the cap.
+	 * Range: 2-20 when set.
+	 *
+	 * @since 2.3.0
+	 * @var int|null
+	 */
+	public $max_answers_per_question;
+
+	/**
 	 * Display density
 	 *
 	 * @since 2.0.0
@@ -432,6 +446,7 @@ class PressPrimer_Quiz_Quiz extends PressPrimer_Quiz_Model {
 			'login_message',
 			'ma_scoring_mode',
 			'display_settings_json',
+			'max_answers_per_question',
 			'display_density',
 			'pool_enabled',
 			'max_questions',

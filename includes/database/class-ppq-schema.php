@@ -267,6 +267,7 @@ class PressPrimer_Quiz_Schema {
 			login_message TEXT DEFAULT NULL,
 			ma_scoring_mode VARCHAR(32) DEFAULT NULL,
 			display_settings_json TEXT DEFAULT NULL,
+			max_answers_per_question SMALLINT UNSIGNED DEFAULT NULL,
 			display_density VARCHAR(20) NOT NULL DEFAULT 'default',
 			pool_enabled TINYINT(1) NOT NULL DEFAULT 0,
 			max_questions INT UNSIGNED DEFAULT NULL,

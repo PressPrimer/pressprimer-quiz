@@ -691,10 +691,10 @@ const SettingsPanel = ({ form, generationMode, setGenerationMode, quizData = {},
 						size="small"
 						style={{ width: 300 }}
 						options={[
-							{ value: 'default', label: __('Use global default', 'pressprimer-quiz') },
-							{ value: 'guest_optional', label: __('Allow guests (email optional)', 'pressprimer-quiz') },
-							{ value: 'guest_required', label: __('Allow guests (email required)', 'pressprimer-quiz') },
-							{ value: 'login_required', label: __('Require login', 'pressprimer-quiz') },
+							{ value: 'default', label: __('Use Global Default', 'pressprimer-quiz') },
+							{ value: 'guest_optional', label: __('Allow Guests (Email Optional)', 'pressprimer-quiz') },
+							{ value: 'guest_required', label: __('Allow Guests (Email Required)', 'pressprimer-quiz') },
+							{ value: 'login_required', label: __('Require Login', 'pressprimer-quiz') },
 						]}
 					/>
 				</Form.Item>
@@ -792,26 +792,6 @@ const SettingsPanel = ({ form, generationMode, setGenerationMode, quizData = {},
 							>
 								<Switch size="small" />
 							</Form.Item>
-							<Form.Item
-								label={
-									<Space>
-										<span>{__('Maximum Answers per Question', 'pressprimer-quiz')}</span>
-										<Tooltip title={__('Limit how many answer options each question shows per attempt. Correct answers are always included; remaining slots are filled with random distractors. Different attempts may see different subsets.', 'pressprimer-quiz')}>
-											<QuestionCircleOutlined style={{ fontSize: 12, color: '#8c8c8c' }} />
-										</Tooltip>
-									</Space>
-								}
-								name="max_answers_per_question"
-								help={__('Leave empty to show all answers. Range: 2 to 20.', 'pressprimer-quiz')}
-							>
-								<InputNumber
-									min={2}
-									max={20}
-									size="small"
-									style={{ width: 150 }}
-									placeholder={__('All answers', 'pressprimer-quiz')}
-								/>
-							</Form.Item>
 						</Space>
 					</Col>
 					<Col span={12}>
@@ -884,14 +864,6 @@ const SettingsPanel = ({ form, generationMode, setGenerationMode, quizData = {},
 					</Col>
 				</Row>
 
-				{maxAnswersWarnings.length > 0 && (
-					<Space direction="vertical" style={{ width: '100%', marginTop: 12 }} size={8}>
-						{maxAnswersWarnings.map((warning, i) => (
-							<Alert key={i} type="warning" message={warning} showIcon />
-						))}
-					</Space>
-				)}
-
 				<Divider />
 
 				<Row gutter={16}>
@@ -949,110 +921,144 @@ const SettingsPanel = ({ form, generationMode, setGenerationMode, quizData = {},
 					{__('Randomly select a subset of questions for each attempt', 'pressprimer-quiz')}
 				</Text>
 
-				{(() => {
-					const poolSize = Number(quizData.pool_size) || 0;
+				<Row gutter={24}>
+					<Col xs={24} sm={12}>
+						{(() => {
+							const poolSize = Number(quizData.pool_size) || 0;
 
-					if (poolSize === 0 && !quizData.id) {
-						return (
-							<Alert
-								type="info"
-								message={__('Add questions to enable pooling.', 'pressprimer-quiz')}
-								showIcon
-							/>
-						);
-					}
-
-					return (
-						<>
-							<div style={{ display: 'flex', alignItems: 'flex-start', gap: 16, flexWrap: 'wrap' }}>
-								<Form.Item
-									label={
-										<Space>
-											<span>{__('Limit questions per attempt', 'pressprimer-quiz')}</span>
-											<Tooltip title={__('When enabled, each attempt randomly selects a subset of questions from the full pool', 'pressprimer-quiz')}>
-												<QuestionCircleOutlined style={{ fontSize: 12, color: '#8c8c8c' }} />
-											</Tooltip>
-										</Space>
-									}
-									name="pool_enabled"
-									valuePropName="checked"
-									style={{ marginBottom: 0 }}
-								>
-									<Switch size="small" />
-								</Form.Item>
-
-								{poolEnabled && (
-									<Form.Item
-										label={__('Questions per attempt', 'pressprimer-quiz')}
-										name="max_questions"
-										help={
-											poolSize > 0
-												? sprintf(
-													/* translators: %d: total number of questions in pool */
-													__('From a pool of %d available questions', 'pressprimer-quiz'),
-													poolSize
-												)
-												: __('Save quiz and add questions to see pool size', 'pressprimer-quiz')
-										}
-										rules={[
-											{
-												validator: (_, value) => {
-													if (value && Number(poolSize) > 0 && Number(value) > Number(poolSize)) {
-														return Promise.reject(
-															sprintf(
-																/* translators: %d: pool size */
-																__('Cannot exceed pool size (%d).', 'pressprimer-quiz'),
-																poolSize
-															)
-														);
-													}
-													return Promise.resolve();
-												},
-											},
-										]}
-										validateTrigger={['onChange', 'onBlur']}
-										style={{ marginBottom: 0 }}
-									>
-										<InputNumber
-											min={1}
-											max={poolSize > 0 ? poolSize : undefined}
-											placeholder={poolSize > 0 ? String(poolSize) : ''}
-											style={{ width: 150 }}
-											size="small"
-										/>
-									</Form.Item>
-								)}
-							</div>
-
-							{poolEnabled && (
-								<>
-
-									{maxQuestions && maxQuestions > 0 && maxQuestions <= 100 && passPercent > 0 && (
-										<Alert
-											type="warning"
-											message={sprintf(
-												/* translators: 1: number of questions, 2: pass percentage, 3: number of correct answers needed */
-												__('With %1$d questions and a %2$d%% pass rate, students need at least %3$d correct answers to pass.', 'pressprimer-quiz'),
-												maxQuestions,
-												passPercent,
-												Math.ceil((maxQuestions * passPercent) / 100)
-											)}
-											showIcon
-											style={{ marginBottom: 16 }}
-										/>
-									)}
-
+							if (poolSize === 0 && !quizData.id) {
+								return (
 									<Alert
 										type="info"
-										message={__('Each attempt randomly selects from the full pool. Students may see different questions on retakes.', 'pressprimer-quiz')}
+										message={__('Add questions to enable pooling.', 'pressprimer-quiz')}
 										showIcon
-										style={{ marginBottom: 0 }}
 									/>
+								);
+							}
+
+							return (
+								<>
+									<div style={{ display: 'flex', alignItems: 'flex-start', gap: 16, flexWrap: 'wrap' }}>
+										<Form.Item
+											label={
+												<Space>
+													<span>{__('Limit Questions Per Attempt', 'pressprimer-quiz')}</span>
+													<Tooltip title={__('When enabled, each attempt randomly selects a subset of questions from the full pool', 'pressprimer-quiz')}>
+														<QuestionCircleOutlined style={{ fontSize: 12, color: '#8c8c8c' }} />
+													</Tooltip>
+												</Space>
+											}
+											name="pool_enabled"
+											valuePropName="checked"
+											style={{ marginBottom: 0 }}
+										>
+											<Switch size="small" />
+										</Form.Item>
+
+										{poolEnabled && (
+											<Form.Item
+												label={__('Questions Per Attempt', 'pressprimer-quiz')}
+												name="max_questions"
+												help={
+													poolSize > 0
+														? sprintf(
+															/* translators: %d: total number of questions in pool */
+															__('From a pool of %d available questions', 'pressprimer-quiz'),
+															poolSize
+														)
+														: __('Save quiz and add questions to see pool size', 'pressprimer-quiz')
+												}
+												rules={[
+													{
+														validator: (_, value) => {
+															if (value && Number(poolSize) > 0 && Number(value) > Number(poolSize)) {
+																return Promise.reject(
+																	sprintf(
+																		/* translators: %d: pool size */
+																		__('Cannot exceed pool size (%d).', 'pressprimer-quiz'),
+																		poolSize
+																	)
+																);
+															}
+															return Promise.resolve();
+														},
+													},
+												]}
+												validateTrigger={['onChange', 'onBlur']}
+												style={{ marginBottom: 0 }}
+											>
+												<InputNumber
+													min={1}
+													max={poolSize > 0 ? poolSize : undefined}
+													placeholder={poolSize > 0 ? String(poolSize) : ''}
+													style={{ width: 150 }}
+													size="small"
+												/>
+											</Form.Item>
+										)}
+									</div>
+
+									{poolEnabled && (
+										<>
+
+											{maxQuestions && maxQuestions > 0 && maxQuestions <= 100 && passPercent > 0 && (
+												<Alert
+													type="warning"
+													message={sprintf(
+														/* translators: 1: number of questions, 2: pass percentage, 3: number of correct answers needed */
+														__('With %1$d questions and a %2$d%% pass rate, students need at least %3$d correct answers to pass.', 'pressprimer-quiz'),
+														maxQuestions,
+														passPercent,
+														Math.ceil((maxQuestions * passPercent) / 100)
+													)}
+													showIcon
+													style={{ marginTop: 12, marginBottom: 0 }}
+												/>
+											)}
+
+											<Alert
+												type="info"
+												message={__('Each attempt randomly selects from the full pool. Students may see different questions on retakes.', 'pressprimer-quiz')}
+												showIcon
+												style={{ marginTop: 12, marginBottom: 0 }}
+											/>
+										</>
+									)}
 								</>
-							)}
-						</>
-					);
-				})()}
+							);
+						})()}
+					</Col>
+					<Col xs={24} sm={12}>
+						<Form.Item
+							label={
+								<Space>
+									<span>{__('Maximum Answers Per Question', 'pressprimer-quiz')}</span>
+									<Tooltip title={__('Limit how many answer options each question shows per attempt. Correct answers are always included; remaining slots are filled with random distractors. Different attempts may see different subsets. If the number exceeds the available answers for a question, all answers will be shown.', 'pressprimer-quiz')}>
+										<QuestionCircleOutlined style={{ fontSize: 12, color: '#8c8c8c' }} />
+								</Tooltip>
+								</Space>
+							}
+							name="max_answers_per_question"
+							help={__('Leave empty to show all answers. Range: 2 to 8.', 'pressprimer-quiz')}
+							style={{ marginBottom: 0 }}
+						>
+							<InputNumber
+								min={2}
+								max={8}
+								size="small"
+								style={{ width: 150 }}
+								placeholder={__('All answers', 'pressprimer-quiz')}
+							/>
+						</Form.Item>
+						{maxAnswersWarnings.length > 0 && (
+							<Space direction="vertical" style={{ width: '100%', marginTop: 12 }} size={8}>
+								{maxAnswersWarnings.map((warning, i) => (
+									<Alert key={i} type="warning" message={warning} showIcon />
+								))}
+							</Space>
+						)}
+					</Col>
+				</Row>
 
 				<Divider />
 

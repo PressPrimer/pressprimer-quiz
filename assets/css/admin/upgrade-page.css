@@ -81,7 +81,7 @@
 .ppq-upgrade-intro {
 	font-size: 16px;
 	line-height: 1.6;
-	color: rgba(255, 255, 255, 0.88);
+	color: rgba(255, 255, 255, 0.92);
 	max-width: 640px;
 	margin: 0 0 28px;
 }
@@ -239,7 +239,7 @@
 	top: -14px;
 	left: 50%;
 	transform: translateX(-50%);
-	background: #14b8a6;
+	background: #0f766e;
 	color: #fff;
 	font-size: 12px;
 	font-weight: 700;
@@ -247,7 +247,7 @@
 	letter-spacing: 0.5px;
 	padding: 6px 14px;
 	border-radius: 999px;
-	box-shadow: 0 3px 8px rgba(20, 184, 166, 0.35);
+	box-shadow: 0 3px 8px rgba(15, 118, 110, 0.35);
 	white-space: nowrap;
 }
 
@@ -262,7 +262,7 @@
 	margin: 0 0 16px;
 	font-size: 14px;
 	font-weight: 500;
-	color: #14b8a6;
+	color: #0f766e;
 }
 
 .ppq-upgrade-tier-card.ppq-upgrade-tier-educator .ppq-upgrade-tier-tagline {
@@ -327,6 +327,10 @@
 	font-weight: 600;
 	border-radius: 6px;
 	line-height: 1.2;
+}
+
+.ppq-upgrade-tier-link.button.button-secondary:focus {
+	box-shadow: 0 0 0 1px #fff, 0 0 0 3px #2271b1;
 }
 
 .ppq-upgrade-tier-link.button.button-primary {
@@ -416,7 +420,7 @@
 .ppq-upgrade-col-pill {
 	display: inline-block;
 	margin-top: 4px;
-	background: #14b8a6;
+	background: #0f766e;
 	color: #fff;
 	font-size: 10px;
 	font-weight: 700;
@@ -426,16 +430,23 @@
 	border-radius: 999px;
 }
 
-.ppq-upgrade-table tbody td {
+.ppq-upgrade-table tbody td,
+.ppq-upgrade-table tbody th {
 	padding: 12px 16px;
 	border-bottom: 1px solid #f1f5f9;
 	font-size: 14px;
 	color: #1e293b;
 	vertical-align: middle;
+	background: transparent;
 }
 
+/* Row-header cells (`<th scope="row">`) match the visual weight of
+   regular data cells — the scope attribute is for screen readers, not
+   a cue to bold the text. */
 .ppq-upgrade-cell-label {
 	text-align: left;
+	font-weight: 400;
+	color: #1e293b;
 }
 
 .ppq-upgrade-cell {
@@ -471,7 +482,7 @@
 }
 
 .ppq-upgrade-cell-no {
-	color: #cbd5e1;
+	color: #64748b;
 	font-size: 18px;
 	line-height: 1;
 }
@@ -764,5 +775,20 @@
 
 	.ppq-upgrade-sticky-bar-cta.button.button-primary {
 		width: 100%;
+	}
+}
+
+/* =============================================================
+   Reduced motion — strip transitions, transforms, and the
+   featured-card lift for users who prefer reduced motion.
+   ============================================================= */
+
+@media (prefers-reduced-motion: reduce) {
+	.ppq-upgrade-tier-card,
+	.ppq-upgrade-tier-card.is-featured,
+	.ppq-upgrade-tier-card.is-featured:hover,
+	.ppq-upgrade-tier-card:hover {
+		transform: none;
+		transition: none;
 	}
 }

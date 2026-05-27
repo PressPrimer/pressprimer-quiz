@@ -51,9 +51,9 @@ if ( ! defined( 'ABSPATH' ) ) {
 		<?php endif; ?>
 	</section>
 
-	<section class="ppq-upgrade-tiers">
+	<section class="ppq-upgrade-tiers" aria-labelledby="ppq-upgrade-tiers-heading">
 		<header class="ppq-upgrade-section-header">
-			<h2><?php esc_html_e( 'Choose the Plan That Fits Your Program', 'pressprimer-quiz' ); ?></h2>
+			<h2 id="ppq-upgrade-tiers-heading"><?php esc_html_e( 'Choose the Plan That Fits Your Program', 'pressprimer-quiz' ); ?></h2>
 			<p><?php esc_html_e( 'Every premium tier includes a year of updates, priority support, and a 14-day money-back guarantee.', 'pressprimer-quiz' ); ?></p>
 		</header>
 
@@ -105,9 +105,9 @@ if ( ! defined( 'ABSPATH' ) ) {
 		</div>
 	</section>
 
-	<section class="ppq-upgrade-comparison">
+	<section class="ppq-upgrade-comparison" aria-labelledby="ppq-upgrade-comparison-heading">
 		<header class="ppq-upgrade-section-header">
-			<h2><?php esc_html_e( 'Compare Every Feature', 'pressprimer-quiz' ); ?></h2>
+			<h2 id="ppq-upgrade-comparison-heading"><?php esc_html_e( 'Compare Every Feature', 'pressprimer-quiz' ); ?></h2>
 			<p><?php esc_html_e( 'A complete side-by-side of what\'s in each plan.', 'pressprimer-quiz' ); ?></p>
 		</header>
 
@@ -152,9 +152,9 @@ if ( ! defined( 'ABSPATH' ) ) {
 						endif;
 						?>
 						<tr>
-							<td class="ppq-upgrade-cell-label">
+							<th scope="row" class="ppq-upgrade-cell-label">
 								<?php echo esc_html( isset( $row['feature'] ) ? (string) $row['feature'] : '' ); ?>
-							</td>
+							</th>
 							<?php foreach ( array( 'free', 'educator', 'school', 'enterprise' ) as $tier_key ) : ?>
 								<td class="ppq-upgrade-cell ppq-upgrade-cell-<?php echo esc_attr( $tier_key ); ?>">
 									<?php
@@ -171,7 +171,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 		</div>
 	</section>
 
-	<section class="ppq-upgrade-footer-cta">
+	<section class="ppq-upgrade-footer-cta" aria-labelledby="ppq-upgrade-footer-heading">
 		<?php if ( $footer_mascot_url ) : ?>
 			<div class="ppq-upgrade-footer-mascot-wrap" aria-hidden="true">
 				<img src="<?php echo esc_url( $footer_mascot_url ); ?>"
@@ -181,7 +181,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 			</div>
 		<?php endif; ?>
 		<div class="ppq-upgrade-footer-content">
-			<h2><?php esc_html_e( 'Try Risk-Free for 14 Days', 'pressprimer-quiz' ); ?></h2>
+			<h2 id="ppq-upgrade-footer-heading"><?php esc_html_e( 'Try Risk-Free for 14 Days', 'pressprimer-quiz' ); ?></h2>
 			<p>
 				<?php esc_html_e( 'Every premium plan comes with a 14-day money-back guarantee. If PressPrimer Quiz isn\'t the right fit, we\'ll refund your purchase — no questions asked.', 'pressprimer-quiz' ); ?>
 			</p>

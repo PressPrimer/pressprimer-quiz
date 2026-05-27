@@ -323,6 +323,16 @@ class PressPrimer_Quiz_Shortcodes {
 				PressPrimer_Quiz_Theme_Loader::enqueue_theme( 'default' );
 			}
 
+			// Enqueue image lightbox (v2.3). Same vanilla script used on the
+			// active quiz; opens any embedded image at full size.
+			wp_enqueue_script(
+				'ppq-lightbox',
+				PRESSPRIMER_QUIZ_PLUGIN_URL . 'assets/js/lightbox.js',
+				[],
+				PRESSPRIMER_QUIZ_VERSION,
+				true
+			);
+
 			// Enqueue results JavaScript
 			wp_enqueue_script(
 				'ppq-results',

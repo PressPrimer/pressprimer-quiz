@@ -1753,3 +1753,78 @@
 [dir="rtl"] .ppq-confidence-rating {
 	flex-direction: row-reverse;
 }
+
+/* =============================================================
+   v2.3 Image Support — Containment and Click-to-Zoom Lightbox
+   ============================================================= */
+
+/* Images in question stem, answer options, and feedback are constrained
+   to 80% of their container width and centered horizontally. Clicking
+   opens the lightbox (see assets/js/lightbox.js). */
+.ppq-question-text img,
+.ppq-answer-text img,
+.ppq-answer-feedback img,
+.ppq-feedback-text img,
+.ppq-question-review-container img {
+	max-width: 80%;
+	height: auto;
+	display: block;
+	margin: 12px auto;
+	cursor: zoom-in;
+	border-radius: 4px;
+}
+
+/* Lightbox overlay — fixed full-viewport backdrop with the zoomed image
+   centered. Hidden by default via the `hidden` attribute; the JS toggles
+   visibility. */
+.ppq-lightbox-overlay {
+	position: fixed;
+	inset: 0;
+	background: rgba(0, 0, 0, 0.85);
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	z-index: 100000;
+	cursor: zoom-out;
+}
+
+.ppq-lightbox-overlay[hidden] {
+	display: none;
+}
+
+.ppq-lightbox-image {
+	max-width: 90vw;
+	max-height: 90vh;
+	object-fit: contain;
+	cursor: default;
+	box-shadow: 0 4px 24px rgba(0, 0, 0, 0.4);
+	border-radius: 4px;
+}
+
+.ppq-lightbox-close {
+	position: absolute;
+	top: 16px;
+	right: 16px;
+	background: rgba(255, 255, 255, 0.15);
+	color: #fff;
+	border: 1px solid rgba(255, 255, 255, 0.4);
+	border-radius: 50%;
+	width: 40px;
+	height: 40px;
+	font-size: 24px;
+	line-height: 1;
+	cursor: pointer;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	transition: background 0.15s ease, transform 0.15s ease;
+	padding: 0;
+}
+
+.ppq-lightbox-close:hover,
+.ppq-lightbox-close:focus {
+	background: rgba(255, 255, 255, 0.3);
+	transform: scale(1.05);
+	outline: 2px solid rgba(255, 255, 255, 0.6);
+	outline-offset: 2px;
+}

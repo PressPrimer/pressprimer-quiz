@@ -1270,6 +1270,17 @@ class PressPrimer_Quiz_Quiz_Renderer {
 			true
 		);
 
+		// Enqueue image lightbox (v2.3). Vanilla JS, no jQuery dependency.
+		// Registered first so its capture-phase click handler can preempt
+		// the answer-option click handler in quiz.js.
+		wp_enqueue_script(
+			'ppq-lightbox',
+			PRESSPRIMER_QUIZ_PLUGIN_URL . 'assets/js/lightbox.js',
+			[],
+			PRESSPRIMER_QUIZ_VERSION,
+			true
+		);
+
 		// Build strings array with core strings.
 		$strings = [
 			'startingQuiz'              => __( 'Starting quiz...', 'pressprimer-quiz' ),

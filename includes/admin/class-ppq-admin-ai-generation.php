@@ -391,9 +391,16 @@ class PressPrimer_Quiz_Admin_AI_Generation {
 			wp_send_json_error( [ 'message' => __( 'OpenAI API key is not configured.', 'pressprimer-quiz' ) ] );
 		}
 
-		// Get parameters
-		$content = isset( $_POST['content'] ) ? sanitize_textarea_field( wp_unslash( $_POST['content'] ) ) : '';
-		$count   = isset( $_POST['count'] ) ? absint( wp_unslash( $_POST['count'] ) ) : 5;
+		// Get parameters. v2.3 image support: substitute any embedded <img>
+		// tags with the literal "(image)" token BEFORE sanitize_textarea_field
+		// strips all HTML, so the AI model sees a clear marker rather than
+		// raw image markup or empty space. The model never receives image
+		// data; it only learns that an image was present at that position.
+		// phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- Sanitized by preg_replace + sanitize_textarea_field below.
+		$content_raw = isset( $_POST['content'] ) ? wp_unslash( $_POST['content'] ) : '';
+		$content_raw = preg_replace( '/<img\b[^>]*>/i', '(image)', $content_raw );
+		$content     = sanitize_textarea_field( $content_raw );
+		$count       = isset( $_POST['count'] ) ? absint( wp_unslash( $_POST['count'] ) ) : 5;
 		// phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- Values sanitized with sanitize_key via array_map
 		$types = isset( $_POST['types'] ) ? array_map( 'sanitize_key', (array) wp_unslash( $_POST['types'] ) ) : [ 'mc' ];
 		// phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- Values sanitized with sanitize_key via array_map

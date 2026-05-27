@@ -105,6 +105,20 @@ class PressPrimer_Quiz_Email_Service {
 		// Replace tokens in body
 		$body_text = str_replace( array_keys( $tokens ), array_values( $tokens ), $body_template );
 
+		// v2.3 image support — strip embedded <img> tags from the body so
+		// uploaded question images are not sent as inline image references.
+		// Recipients behind paywalls or with strict email clients would
+		// otherwise see broken images; instead we substitute an "[Image]"
+		// placeholder linking back to the site for full content. Only the
+		// body content is affected — the email scaffold's logo and other
+		// plugin-controlled imagery added by build_html_email() below are
+		// untouched because they are inserted after this substitution.
+		$body_text = preg_replace(
+			'/<img\b[^>]*>/i',
+			'<em>[' . esc_html__( 'Image', 'pressprimer-quiz' ) . ']</em>',
+			$body_text
+		);
+
 		// Build HTML email
 		$html_body = self::build_html_email( $body_text, $attempt, $quiz, $tokens );
 

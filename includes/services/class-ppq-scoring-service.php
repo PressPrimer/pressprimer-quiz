@@ -35,6 +35,11 @@ class PressPrimer_Quiz_Scoring_Service {
 	 * @since 1.0.0
 	 * @since 2.3.0 Added $quiz parameter for MA scoring mode resolution and
 	 *              the unified pressprimer_quiz_question_score filter.
+	 * @since 2.3.0 Added $shown_indices for subset-aware scoring under
+	 *              max_answers_per_question. When provided, correct_indices
+	 *              and selected_answers are both intersected with the shown
+	 *              subset so the student is scored only on answers they
+	 *              could actually see (and select).
 	 *
 	 * @param PressPrimer_Quiz_Question          $question         Question object.
 	 * @param PressPrimer_Quiz_Question_Revision $revision         Question revision.
@@ -43,20 +48,40 @@ class PressPrimer_Quiz_Scoring_Service {
 	 *                                                              When provided, the quiz's resolved MA scoring mode is used
 	 *                                                              for multiple-answer questions. When omitted, the site default
 	 *                                                              applies.
+	 * @param array|null                         $shown_indices    Optional. Integer indices that were actually presented to the
+	 *                                                              student for this attempt item. NULL means "all answers were
+	 *                                                              shown" (the pre-v2.3 default). When provided, correct_indices
+	 *                                                              and selected_answers are filtered against this subset before
+	 *                                                              the per-type scoring method runs.
 	 * @return array Scoring result with is_correct, score, max_points.
 	 */
-	public function score_response( $question, $revision, array $selected_answers, $quiz = null ) {
+	public function score_response( $question, $revision, array $selected_answers, $quiz = null, $shown_indices = null ) {
 		$answers = $revision->get_answers();
 
 		// Ensure selected_answers are integers for consistent comparison
 		$selected_answers = array_map( 'intval', $selected_answers );
 
-		// Get correct answer indices
-		$correct_indices = [];
+		// Get every correct index from the revision (the full set).
+		$all_correct_indices = array();
 		foreach ( $answers as $index => $answer ) {
 			if ( ! empty( $answer['is_correct'] ) ) {
-				$correct_indices[] = (int) $index;
+				$all_correct_indices[] = (int) $index;
 			}
+		}
+
+		// Subset-aware scoring (v2.3 random distractors). When the attempt
+		// item only showed a subset of answers, the student could not have
+		// missed (or wrongly selected) anything outside that subset. Reduce
+		// correct_indices to the corrects that were shown, and defensively
+		// drop any submitted indices that were not in the stored subset so
+		// a tampered submission cannot claim credit for answers off-screen.
+		// NULL preserves the pre-v2.3 behavior where every index counts.
+		if ( null === $shown_indices ) {
+			$correct_indices = $all_correct_indices;
+		} else {
+			$shown_indices    = array_map( 'intval', $shown_indices );
+			$correct_indices  = array_values( array_intersect( $all_correct_indices, $shown_indices ) );
+			$selected_answers = array_values( array_intersect( $selected_answers, $shown_indices ) );
 		}
 
 		// Route to appropriate scoring method
@@ -340,8 +365,14 @@ class PressPrimer_Quiz_Scoring_Service {
 			// Get selected answers
 			$selected = $item->get_selected_answers();
 
+			// Read the per-attempt-item answer_order so the scoring service
+			// can intersect correct_indices and selected_answers against the
+			// subset actually shown (v2.3 random distractor support). Returns
+			// null for pre-v2.3 attempts, preserving the original scoring.
+			$shown_indices = $item->get_answer_order();
+
 			// Score the response
-			$result = $this->score_response( $question, $revision, $selected, $quiz );
+			$result = $this->score_response( $question, $revision, $selected, $quiz, $shown_indices );
 
 			// Update attempt item with score
 			global $wpdb;

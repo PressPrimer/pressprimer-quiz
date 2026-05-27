@@ -71,6 +71,19 @@ class PressPrimer_Quiz_REST_Controller {
 			]
 		);
 
+		// Question image upload endpoint (v2.3 image support feature).
+		register_rest_route(
+			'ppq/v1',
+			'/questions/(?P<id>\d+)/upload-image',
+			[
+				[
+					'methods'             => WP_REST_Server::CREATABLE,
+					'callback'            => [ $this, 'upload_question_image' ],
+					'permission_callback' => [ $this, 'check_permission' ],
+				],
+			]
+		);
+
 		// Taxonomies endpoints
 		register_rest_route(
 			'ppq/v1',
@@ -1007,6 +1020,184 @@ class PressPrimer_Quiz_REST_Controller {
 	}
 
 	/**
+	 * Upload an image to a question
+	 *
+	 * Accepts a single image file from the Question Editor's private upload
+	 * widget and runs it through the standard WordPress upload pipeline. The
+	 * resulting attachment is tagged with a non-unique `_ppq_question_id`
+	 * post meta row so its lifecycle can be refcounted against the question
+	 * (see PressPrimer_Quiz_Question::delete() and the question-duplicate
+	 * flow for cleanup).
+	 *
+	 * This endpoint deliberately does NOT use wp.media() or expose the
+	 * WordPress media library to the caller. Each upload creates a fresh
+	 * attachment that only the owning question references.
+	 *
+	 * @since 2.3.0
+	 *
+	 * @param WP_REST_Request $request Request object. URL param `id` is the question ID.
+	 * @return WP_REST_Response|WP_Error Image metadata on success, WP_Error on validation failure.
+	 */
+	public function upload_question_image( $request ) {
+		$question_id = absint( $request['id'] );
+
+		// Verify the question exists.
+		$question = PressPrimer_Quiz_Question::get( $question_id );
+		if ( ! $question ) {
+			return new WP_Error(
+				'invalid_question_id',
+				__( 'Question not found.', 'pressprimer-quiz' ),
+				array( 'status' => 404 )
+			);
+		}
+
+		// Ownership: same pattern used by update_quiz — managers bypass the
+		// owner check, everyone else must own the question.
+		if ( ! current_user_can( 'pressprimer_quiz_manage_all' ) && absint( $question->author_id ) !== get_current_user_id() ) {
+			return new WP_Error(
+				'insufficient_permissions',
+				__( 'You do not have permission to upload images to this question.', 'pressprimer-quiz' ),
+				array( 'status' => 403 )
+			);
+		}
+
+		// Validate $_FILES.
+		// phpcs:ignore WordPress.Security.NonceVerification.Missing -- Permission check above; nonce handled by REST framework.
+		if ( empty( $_FILES['file'] ) || ! is_array( $_FILES['file'] ) ) {
+			return new WP_Error(
+				'missing_file',
+				__( 'No file was uploaded.', 'pressprimer-quiz' ),
+				array( 'status' => 400 )
+			);
+		}
+
+		// phpcs:ignore WordPress.Security.NonceVerification.Missing
+		$upload_error = isset( $_FILES['file']['error'] ) ? (int) $_FILES['file']['error'] : UPLOAD_ERR_NO_FILE;
+		if ( UPLOAD_ERR_OK !== $upload_error ) {
+			$status = ( UPLOAD_ERR_INI_SIZE === $upload_error || UPLOAD_ERR_FORM_SIZE === $upload_error ) ? 413 : 400;
+			return new WP_Error(
+				'upload_error',
+				__( 'Upload failed.', 'pressprimer-quiz' ),
+				array( 'status' => $status )
+			);
+		}
+
+		// Sanitize incoming file metadata early.
+		// phpcs:ignore WordPress.Security.NonceVerification.Missing,WordPress.Security.ValidatedSanitizedInput.InputNotValidated
+		$file_name = sanitize_file_name( wp_unslash( $_FILES['file']['name'] ?? '' ) );
+		// phpcs:ignore WordPress.Security.NonceVerification.Missing,WordPress.Security.ValidatedSanitizedInput.InputNotValidated
+		$file_size = isset( $_FILES['file']['size'] ) ? absint( $_FILES['file']['size'] ) : 0;
+		// tmp_name is a PHP-generated server path, not user-controlled content; passing it through wp_check_filetype_and_ext() below validates the actual file contents.
+		// phpcs:ignore WordPress.Security.NonceVerification.Missing,WordPress.Security.ValidatedSanitizedInput.InputNotValidated,WordPress.Security.ValidatedSanitizedInput.InputNotSanitized
+		$file_tmp = isset( $_FILES['file']['tmp_name'] ) ? wp_unslash( $_FILES['file']['tmp_name'] ) : '';
+
+		// Enforce the size cap (default 8 MB, filterable).
+		$max_size = (int) apply_filters( 'pressprimer_quiz_image_upload_max_size', 8 * 1024 * 1024 );
+		if ( $file_size > $max_size ) {
+			return new WP_Error(
+				'file_too_large',
+				sprintf(
+					/* translators: %s: maximum file size in MB */
+					__( 'File too large. Maximum allowed: %s MB.', 'pressprimer-quiz' ),
+					number_format_i18n( $max_size / ( 1024 * 1024 ), 1 )
+				),
+				array( 'status' => 413 )
+			);
+		}
+
+		// MIME whitelist. SVG is excluded by default — see security note in
+		// docs/versions/v2.x/v2.3/features/005-image-support.md.
+		$allowed_mimes = (array) apply_filters(
+			'pressprimer_quiz_image_upload_allowed_mimes',
+			array( 'image/jpeg', 'image/png', 'image/gif', 'image/webp' )
+		);
+
+		// Build an extension → mime map for the wp_handle_upload overrides
+		// from the (possibly filtered) allowed mime set.
+		$ext_to_mime  = array();
+		$mime_ext_map = array(
+			'image/jpeg' => 'jpg|jpeg|jpe',
+			'image/png'  => 'png',
+			'image/gif'  => 'gif',
+			'image/webp' => 'webp',
+		);
+		foreach ( $allowed_mimes as $mime ) {
+			if ( isset( $mime_ext_map[ $mime ] ) ) {
+				$ext_to_mime[ $mime_ext_map[ $mime ] ] = $mime;
+			}
+		}
+
+		// Verify the actual file contents match an allowed image MIME.
+		// wp_check_filetype_and_ext inspects the file (via finfo) and rejects
+		// extension/MIME spoofing.
+		$detected = wp_check_filetype_and_ext( $file_tmp, $file_name, $ext_to_mime );
+		if ( empty( $detected['type'] ) || ! in_array( $detected['type'], $allowed_mimes, true ) ) {
+			return new WP_Error(
+				'unsupported_mime_type',
+				__( 'Unsupported file type. Allowed: JPG, PNG, GIF, WebP.', 'pressprimer-quiz' ),
+				array( 'status' => 415 )
+			);
+		}
+
+		// Load the WP upload pipeline (not auto-loaded on REST requests).
+		require_once ABSPATH . 'wp-admin/includes/file.php';
+		require_once ABSPATH . 'wp-admin/includes/image.php';
+		require_once ABSPATH . 'wp-admin/includes/media.php';
+
+		// Run the upload. test_form=false because REST is not a classic form.
+		$overrides = array(
+			'test_form' => false,
+			'mimes'     => $ext_to_mime,
+		);
+
+		// phpcs:ignore WordPress.Security.NonceVerification.Missing,WordPress.Security.ValidatedSanitizedInput.InputNotValidated
+		$upload = wp_handle_upload( $_FILES['file'], $overrides );
+
+		if ( ! empty( $upload['error'] ) ) {
+			return new WP_Error(
+				'upload_failed',
+				$upload['error'],
+				array( 'status' => 500 )
+			);
+		}
+
+		// Insert the attachment record.
+		$attachment_id = wp_insert_attachment(
+			array(
+				'post_mime_type' => $upload['type'],
+				'post_title'     => sanitize_file_name( pathinfo( $upload['file'], PATHINFO_FILENAME ) ),
+				'post_content'   => '',
+				'post_status'    => 'inherit',
+			),
+			$upload['file']
+		);
+
+		if ( is_wp_error( $attachment_id ) ) {
+			return $attachment_id;
+		}
+
+		// Generate image metadata (sizes, etc.).
+		$attachment_metadata = wp_generate_attachment_metadata( $attachment_id, $upload['file'] );
+		wp_update_attachment_metadata( $attachment_id, $attachment_metadata );
+
+		// Tag for refcount cleanup. Use add_post_meta (not update_post_meta)
+		// so duplicating a question can add a SECOND row referencing the
+		// same attachment without overwriting the original ownership.
+		add_post_meta( $attachment_id, '_ppq_question_id', $question_id );
+
+		return new WP_REST_Response(
+			array(
+				'id'     => (int) $attachment_id,
+				'url'    => wp_get_attachment_url( $attachment_id ),
+				'alt'    => '',
+				'width'  => isset( $attachment_metadata['width'] ) ? (int) $attachment_metadata['width'] : 0,
+				'height' => isset( $attachment_metadata['height'] ) ? (int) $attachment_metadata['height'] : 0,
+			),
+			200
+		);
+	}
+
+	/**
 	 * Get taxonomies
 	 *
 	 * @since 1.0.0
@@ -1437,14 +1628,16 @@ class PressPrimer_Quiz_REST_Controller {
 	 * Sanitize a submitted max_answers_per_question value
 	 *
 	 * Accepts null/empty (meaning "show all answers"), or an integer in the
-	 * range [2, 20]. Out-of-range integers and non-numeric strings return a
-	 * WP_Error with HTTP 400 so the caller can short-circuit before any
-	 * database transaction opens.
+	 * range [2, 8]. The upper bound matches the per-question answer-option
+	 * limit enforced by the Question editor (8 for MC/MA, 2 for true/false).
+	 * Out-of-range integers and non-numeric strings return a WP_Error with
+	 * HTTP 400 so the caller can short-circuit before any database
+	 * transaction opens.
 	 *
 	 * @since 2.3.0
 	 *
 	 * @param mixed $value Raw value from the request body.
-	 * @return int|null|WP_Error Integer 2-20, NULL for "show all", or WP_Error on out-of-range input.
+	 * @return int|null|WP_Error Integer 2-8, NULL for "show all", or WP_Error on out-of-range input.
 	 */
 	private function sanitize_max_answers_per_question( $value ) {
 		if ( null === $value || '' === $value ) {
@@ -1454,16 +1647,16 @@ class PressPrimer_Quiz_REST_Controller {
 		if ( ! is_numeric( $value ) ) {
 			return new WP_Error(
 				'invalid_max_answers_per_question',
-				__( 'max_answers_per_question must be an integer between 2 and 20, or null.', 'pressprimer-quiz' ),
+				__( 'max_answers_per_question must be an integer between 2 and 8, or null.', 'pressprimer-quiz' ),
 				array( 'status' => 400 )
 			);
 		}
 
 		$intval = (int) $value;
-		if ( $intval < 2 || $intval > 20 ) {
+		if ( $intval < 2 || $intval > 8 ) {
 			return new WP_Error(
 				'invalid_max_answers_per_question',
-				__( 'max_answers_per_question must be between 2 and 20.', 'pressprimer-quiz' ),
+				__( 'max_answers_per_question must be between 2 and 8.', 'pressprimer-quiz' ),
 				array( 'status' => 400 )
 			);
 		}

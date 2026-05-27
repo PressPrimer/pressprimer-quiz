@@ -293,8 +293,11 @@ class PressPrimer_Quiz_Question_Revision extends PressPrimer_Quiz_Model {
 				);
 			}
 
-			// Check text length
-			if ( mb_strlen( $answer['text'] ) > 2000 ) {
+			// Check text length against visible characters only. Counting raw
+			// HTML would mean an embedded <img> tag (added in v2.3) ate the
+			// budget; wp_strip_all_tags reduces the value to what the student
+			// actually sees.
+			if ( mb_strlen( wp_strip_all_tags( $answer['text'] ) ) > 2000 ) {
 				return new WP_Error(
 					'ppq_answer_too_long',
 					__( 'Answer text cannot exceed 2,000 characters.', 'pressprimer-quiz' )
@@ -314,15 +317,17 @@ class PressPrimer_Quiz_Question_Revision extends PressPrimer_Quiz_Model {
 			);
 		}
 
-		// Validate feedback lengths
-		if ( ! empty( $data['feedback_correct'] ) && mb_strlen( $data['feedback_correct'] ) > 2000 ) {
+		// Validate feedback lengths. Same wp_strip_all_tags() rationale as the
+		// answer text check above — image markup does not count against the
+		// 2,000-character budget.
+		if ( ! empty( $data['feedback_correct'] ) && mb_strlen( wp_strip_all_tags( $data['feedback_correct'] ) ) > 2000 ) {
 			return new WP_Error(
 				'ppq_feedback_too_long',
 				__( 'Feedback cannot exceed 2,000 characters.', 'pressprimer-quiz' )
 			);
 		}
 
-		if ( ! empty( $data['feedback_incorrect'] ) && mb_strlen( $data['feedback_incorrect'] ) > 2000 ) {
+		if ( ! empty( $data['feedback_incorrect'] ) && mb_strlen( wp_strip_all_tags( $data['feedback_incorrect'] ) ) > 2000 ) {
 			return new WP_Error(
 				'ppq_feedback_too_long',
 				__( 'Feedback cannot exceed 2,000 characters.', 'pressprimer-quiz' )

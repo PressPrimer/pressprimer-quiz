@@ -1,0 +1,294 @@
+/**
+ * PressPrimer Quiz - Upgrade Page Styles
+ *
+ * Styles for the in-product Upgrade page shown to free-only users.
+ * Uses the WordPress admin palette where possible so the page feels
+ * like a native part of the admin rather than a marketing landing.
+ *
+ * @package PressPrimer_Quiz
+ * @since 2.3.0
+ */
+
+/* =============================================================
+   Layout container
+   ============================================================= */
+
+.ppq-upgrade-page {
+	max-width: 1200px;
+	margin: 20px auto 40px;
+}
+
+.ppq-upgrade-page section {
+	background: #fff;
+	border: 1px solid #c3c4c7;
+	border-radius: 4px;
+	padding: 32px;
+	margin-bottom: 24px;
+}
+
+.ppq-upgrade-page h2 {
+	margin-top: 0;
+	margin-bottom: 20px;
+	font-size: 20px;
+	font-weight: 600;
+	color: #1d2327;
+}
+
+/* =============================================================
+   Hero section
+   ============================================================= */
+
+.ppq-upgrade-hero {
+	text-align: center;
+	padding: 48px 32px;
+}
+
+.ppq-upgrade-hero h1 {
+	font-size: 32px;
+	font-weight: 600;
+	color: #1d2327;
+	margin: 0 0 16px;
+	padding: 0;
+}
+
+.ppq-upgrade-intro {
+	font-size: 16px;
+	line-height: 1.6;
+	color: #50575e;
+	max-width: 640px;
+	margin: 0 auto 24px;
+}
+
+/* Primary CTA button — larger than the WP default button-hero,
+   uses the same green family as the menu-item highlight to tie
+   the in-admin "Upgrade" path together visually. */
+.ppq-upgrade-cta.button.button-primary {
+	background: #00a32a;
+	border-color: #008a20;
+	color: #fff;
+	padding: 8px 32px;
+	height: auto;
+	font-size: 15px;
+	line-height: 1.4;
+	font-weight: 600;
+	text-shadow: none;
+	box-shadow: none;
+}
+
+.ppq-upgrade-cta.button.button-primary:hover,
+.ppq-upgrade-cta.button.button-primary:focus {
+	background: #008a20;
+	border-color: #006b18;
+	color: #fff;
+	outline: 2px solid #1d4d0d;
+	outline-offset: 2px;
+}
+
+/* =============================================================
+   Comparison table
+   ============================================================= */
+
+/* Scroll container for narrow viewports — the table itself stays
+   at its natural width and scrolls horizontally inside this div. */
+.ppq-upgrade-table-scroller {
+	overflow-x: auto;
+	-webkit-overflow-scrolling: touch;
+}
+
+.ppq-upgrade-table {
+	width: 100%;
+	border-collapse: collapse;
+	margin: 0;
+}
+
+.ppq-upgrade-table thead th {
+	background: #f6f7f7;
+	border-bottom: 2px solid #c3c4c7;
+	color: #1d2327;
+	font-weight: 600;
+	font-size: 14px;
+	text-align: center;
+	padding: 12px 16px;
+}
+
+.ppq-upgrade-table thead th.ppq-upgrade-col-feature {
+	text-align: left;
+	min-width: 280px;
+}
+
+.ppq-upgrade-table thead th.ppq-upgrade-col-tier {
+	min-width: 110px;
+}
+
+.ppq-upgrade-table tbody td {
+	padding: 10px 16px;
+	border-bottom: 1px solid #f0f0f1;
+	font-size: 14px;
+	color: #1d2327;
+	vertical-align: middle;
+}
+
+.ppq-upgrade-cell-label {
+	text-align: left;
+}
+
+.ppq-upgrade-cell {
+	text-align: center;
+}
+
+/* Striped rows on non-category rows. The category rows reset this
+   via the override below. */
+.ppq-upgrade-table tbody tr:nth-child(even):not(.ppq-upgrade-category-row) td {
+	background: #f9fafb;
+}
+
+/* Category header rows visually distinct from the data rows. */
+.ppq-upgrade-category-row th {
+	background: #f0f6fc !important;
+	color: #1d2327 !important;
+	text-align: left !important;
+	padding: 8px 16px !important;
+	font-size: 12px !important;
+	font-weight: 600 !important;
+	text-transform: uppercase !important;
+	letter-spacing: 0.5px !important;
+	border-top: 1px solid #c3c4c7;
+	border-bottom: 1px solid #c3c4c7;
+}
+
+/* Inline checkmark / dash / note styling inside the data cells. */
+.ppq-upgrade-cell-yes {
+	color: #00a32a;
+	font-size: 18px;
+	font-weight: 700;
+	line-height: 1;
+}
+
+.ppq-upgrade-cell-no {
+	color: #c3c4c7;
+	font-size: 18px;
+	line-height: 1;
+}
+
+.ppq-upgrade-cell-note {
+	color: #1d2327;
+	font-size: 13px;
+	font-style: italic;
+}
+
+/* =============================================================
+   Tier cards
+   ============================================================= */
+
+.ppq-upgrade-tier-cards {
+	display: grid;
+	grid-template-columns: repeat(3, 1fr);
+	gap: 20px;
+}
+
+.ppq-upgrade-tier-card {
+	background: #fff;
+	border: 1px solid #c3c4c7;
+	border-top: 4px solid #c3c4c7;
+	border-radius: 4px;
+	padding: 24px;
+	display: flex;
+	flex-direction: column;
+}
+
+/* Tier-keyed top borders. The colors are intentionally distinct so a
+   skim-reader can tell the three cards apart at a glance. */
+.ppq-upgrade-tier-card.ppq-upgrade-tier-educator {
+	border-top-color: #2271b1;
+}
+
+.ppq-upgrade-tier-card.ppq-upgrade-tier-school {
+	border-top-color: #dba617;
+}
+
+.ppq-upgrade-tier-card.ppq-upgrade-tier-enterprise {
+	border-top-color: #7c3aed;
+}
+
+.ppq-upgrade-tier-name {
+	margin: 0 0 8px;
+	font-size: 20px;
+	font-weight: 600;
+	color: #1d2327;
+}
+
+.ppq-upgrade-tier-tagline {
+	margin: 0 0 12px;
+	font-size: 14px;
+	font-weight: 500;
+	color: #50575e;
+}
+
+.ppq-upgrade-tier-description {
+	margin: 0 0 20px;
+	font-size: 14px;
+	line-height: 1.5;
+	color: #50575e;
+	flex-grow: 1;
+}
+
+.ppq-upgrade-tier-link.button {
+	align-self: flex-start;
+}
+
+/* =============================================================
+   Footer CTA
+   ============================================================= */
+
+.ppq-upgrade-footer-cta {
+	text-align: center;
+	padding: 40px 32px;
+}
+
+.ppq-upgrade-footer-cta h2 {
+	font-size: 24px;
+	margin-bottom: 12px;
+}
+
+.ppq-upgrade-footer-cta p {
+	font-size: 15px;
+	line-height: 1.6;
+	color: #50575e;
+	max-width: 560px;
+	margin: 0 auto 24px;
+}
+
+/* =============================================================
+   Responsive — stack tier cards under 768px, tighten the hero
+   ============================================================= */
+
+@media screen and (max-width: 782px) {
+	.ppq-upgrade-page section {
+		padding: 24px 20px;
+	}
+
+	.ppq-upgrade-hero {
+		padding: 32px 20px;
+	}
+
+	.ppq-upgrade-hero h1 {
+		font-size: 24px;
+	}
+
+	.ppq-upgrade-intro {
+		font-size: 15px;
+	}
+
+	.ppq-upgrade-tier-cards {
+		grid-template-columns: 1fr;
+		gap: 16px;
+	}
+
+	.ppq-upgrade-footer-cta h2 {
+		font-size: 20px;
+	}
+
+	.ppq-upgrade-table thead th.ppq-upgrade-col-feature {
+		min-width: 200px;
+	}
+}

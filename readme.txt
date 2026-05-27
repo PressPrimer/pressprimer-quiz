@@ -2,8 +2,8 @@
 Contributors: pressprimer
 Tags: quiz, learndash, assessment, lms, elearning
 Requires at least: 6.4
-Tested up to: 6.9
-Stable tag: 2.2.2
+Tested up to: 7.0
+Stable tag: 2.3.0
 Requires PHP: 7.4
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -209,6 +209,15 @@ This plugin offers optional AI-powered question generation using the OpenAI API.
 
 == Changelog ==
 
+= 2.3.0 =
+* Added: Four multiple-answer scoring modes — Right Minus Wrong (default), Proportional, Partial No Wrong, and All-or-Nothing. Set the default for your site under Settings > General, and override per quiz when needed.
+* Added: Set per-quiz default display options that apply across every shortcode and block for that quiz. The Quiz block has a "Use Quiz Defaults" toggle so individual placements can still override.
+* Added: Maximum Answers Per Question — show students a random subset of distractors while always showing every correct answer. Scoring is subset-aware, so students are never penalized for answers they did not see.
+* Added: Insert images in question stems and answer options via a private drag-and-drop uploader. Front-end images include a click-to-zoom lightbox.
+* Added: Images uploaded to a question are automatically cleaned up when the question is permanently deleted, and duplicated when the question is duplicated. The WordPress media library is never exposed to authors.
+* Added: New "Upgrade" menu page for users on the free plugin or Educator/School tier, with a side-by-side comparison of every plan and a 14-day money-back guarantee.
+* Improved: Answer-text and feedback character limits now count visible text only, so embedded images no longer eat the budget.
+
 = 2.2.2 =
 * Fixed: Pasting formatted content from Word, Google Docs, or other rich-text sources could break the answer layout by separating the radio button from its text. Links inside answers now always open in a new tab so students do not lose their progress.
 * Fixed: Drag-and-drop reordering of rules in the Rules tab of a dynamic quiz now saves the new order
@@ -298,6 +307,9 @@ This plugin offers optional AI-powered question generation using the OpenAI API.
 * Full internationalization support
 
 == Upgrade Notice ==
+
+= 2.3.0 =
+New: Four multiple-answer scoring modes, per-quiz display defaults, random distractor subsets, image support with click-to-zoom, and a new Upgrade page in the admin menu.
 
 = 2.2.2 =
 Fixes a quiz layout issue with formatted answer text, plus four smaller admin bug fixes.

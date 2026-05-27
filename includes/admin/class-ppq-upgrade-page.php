@@ -174,7 +174,7 @@ class PressPrimer_Quiz_Upgrade_Page {
 
 		$features          = self::get_comparison_features();
 		$tiers             = self::get_tiers();
-		$pricing_url       = 'https://pressprimer.com/pressprimer-quiz-pricing/';
+		$pricing_url       = 'https://pressprimer.com/pressprimer-quiz-pricing/#pricing';
 		$logo_url          = PRESSPRIMER_QUIZ_PLUGIN_URL . 'assets/images/PressPrimer-Logo-White.svg';
 		$hero_mascot_url   = PRESSPRIMER_QUIZ_PLUGIN_URL . 'assets/images/mascot-waving.png';
 		$footer_mascot_url = PRESSPRIMER_QUIZ_PLUGIN_URL . 'assets/images/mascot-celebrating-confetti.png';

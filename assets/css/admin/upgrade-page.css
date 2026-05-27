@@ -502,14 +502,14 @@
 
 .ppq-upgrade-footer-cta {
 	box-sizing: border-box;
-	background: linear-gradient(135deg, #faf5ff 0%, #e9d5ff 100%);
-	border: 1px solid #ddd6fe;
+	background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+	border: 1px solid #bfdbfe;
 	border-radius: 12px;
 	padding: 32px 36px;
 	display: flex;
 	align-items: center;
 	gap: 28px;
-	box-shadow: 0 4px 16px rgba(124, 58, 237, 0.10);
+	box-shadow: 0 4px 16px rgba(59, 130, 246, 0.10);
 }
 
 .ppq-upgrade-footer-mascot-wrap {
@@ -519,7 +519,7 @@
 	background: #fff;
 	border-radius: 50%;
 	overflow: hidden;
-	box-shadow: 0 4px 12px rgba(124, 58, 237, 0.2), 0 0 0 6px rgba(255, 255, 255, 0.7);
+	box-shadow: 0 4px 12px rgba(59, 130, 246, 0.2), 0 0 0 6px rgba(255, 255, 255, 0.7);
 }
 
 .ppq-upgrade-footer-mascot {

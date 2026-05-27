@@ -152,6 +152,13 @@ class PressPrimer_Quiz_Plugin {
 			$review_notice = new PressPrimer_Quiz_Review_Notice();
 			$review_notice->init();
 		}
+
+		// Initialize Upgrade page (v2.3). Only shown to free-only users —
+		// the class registers nothing when any premium addon is active.
+		if ( class_exists( 'PressPrimer_Quiz_Upgrade_Page' ) ) {
+			$upgrade_page = new PressPrimer_Quiz_Upgrade_Page();
+			$upgrade_page->init();
+		}
 	}
 
 	/**

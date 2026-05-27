@@ -150,7 +150,6 @@ const AnswerRow = ({
 								placeholder={__('Explain why this answer is correct or incorrect...', 'pressprimer-quiz')}
 								maxChars={maxChars}
 								rows={2}
-								questionId={questionId || 0}
 							/>
 						</Space>
 					</Panel>

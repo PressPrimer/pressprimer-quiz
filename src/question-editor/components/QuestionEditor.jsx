@@ -304,6 +304,7 @@ const QuestionEditor = ({ questionData = {} }) => {
 														setStem(value);
 														form.setFieldsValue({ stem: value });
 													}}
+													questionId={questionData.id || 0}
 												/>
 												<AnswersList
 													answers={answers}
@@ -390,6 +391,7 @@ const QuestionEditor = ({ questionData = {} }) => {
 										setStem(value);
 										form.setFieldsValue({ stem: value });
 									}}
+									questionId={questionData.id || 0}
 								/>
 
 								{/* Answers */}

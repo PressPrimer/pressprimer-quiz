@@ -54,7 +54,7 @@ const StemEditor = ({ value, onChange, questionId = 0 }) => {
 					// is wired to a known question (we need the ID for the upload
 					// REST path). Falls back to the v2.2 toolbar otherwise.
 					const toolbar = imageEnabledRef.current
-						? 'formatselect,bold,italic,bullist,numlist,link,forecolor,removeformat,ppq_image'
+						? 'formatselect,bold,italic,bullist,numlist,link,forecolor,ppq_image,removeformat'
 						: 'formatselect,bold,italic,bullist,numlist,link,forecolor,removeformat';
 
 					// Initialize editor
@@ -139,33 +139,19 @@ const StemEditor = ({ value, onChange, questionId = 0 }) => {
 		}
 	}, [value, isInitialized]);
 
-	// Handle a successful image upload: insert the <img> at the editor caret,
-	// then ask the author for alt text. The data-ppq-attachment-id attribute
-	// lets the alt-text update target the exact element without URL grepping.
+	// Handle a successful image upload: insert the <img> at the editor caret.
+	// The inline style centers the image horizontally so editor preview and
+	// frontend rendering match. The data-ppq-attachment-id attribute lets
+	// the refcount cleanup target the exact element on duplicate / delete
+	// without URL parsing.
 	const handleImageUpload = ({ id, url }) => {
 		setImageModalOpen(false);
 
 		const editor = editorInstanceRef.current;
 		if (!editor) return;
 
-		const html = `<img src="${url}" alt="" data-ppq-attachment-id="${id}" />`;
+		const html = `<img src="${url}" alt="" data-ppq-attachment-id="${id}" style="display: block; margin: 0 auto;" />`;
 		editor.execCommand('mceInsertContent', false, html);
-
-		// Prompt for alt text. Lightweight native prompt is intentional — the
-		// v2.3 spec treats this as a follow-up nudge rather than a hard block,
-		// and a second Ant Modal would feel heavy on top of the upload one.
-		// eslint-disable-next-line no-alert
-		const altText = window.prompt(
-			__('Describe this image for accessibility (optional)', 'pressprimer-quiz'),
-			''
-		);
-		if (altText) {
-			const inserted = editor.dom.select(`img[data-ppq-attachment-id="${id}"]`)[0];
-			if (inserted) {
-				editor.dom.setAttrib(inserted, 'alt', altText);
-				onChangeRef.current(editor.getContent());
-			}
-		}
 	};
 
 	const percentUsed = (charCount / maxChars) * 100;

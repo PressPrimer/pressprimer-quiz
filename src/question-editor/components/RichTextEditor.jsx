@@ -53,7 +53,7 @@ const RichTextEditor = ({ value, onChange, placeholder, maxChars = 2000, rows = 
 					// is wired to a known question (we need the ID for the upload
 					// REST path). Falls back to the v2.2 toolbar otherwise.
 					const toolbar = imageEnabledRef.current
-						? 'bold,italic,bullist,numlist,link,forecolor,removeformat,ppq_image'
+						? 'bold,italic,bullist,numlist,link,forecolor,ppq_image,removeformat'
 						: 'bold,italic,bullist,numlist,link,forecolor,removeformat';
 
 					// Initialize editor
@@ -131,34 +131,19 @@ const RichTextEditor = ({ value, onChange, placeholder, maxChars = 2000, rows = 
 		};
 	}, [editorId]);
 
-	// Handle a successful image upload: insert the <img> at the editor caret,
-	// then ask the author for alt text. We tag the inserted img with a
-	// data-ppq-attachment-id attribute so the alt-text update can find the
-	// exact element to mutate without grepping URLs.
+	// Handle a successful image upload: insert the <img> at the editor caret.
+	// The image is centered horizontally via an inline style so both the
+	// editor preview and the frontend render the same alignment. The
+	// data-ppq-attachment-id attribute lets the refcount cleanup target
+	// the exact element on duplicate / delete without URL parsing.
 	const handleImageUpload = ({ id, url }) => {
 		setImageModalOpen(false);
 
 		const editor = editorInstanceRef.current;
 		if (!editor) return;
 
-		const html = `<img src="${url}" alt="" data-ppq-attachment-id="${id}" />`;
+		const html = `<img src="${url}" alt="" data-ppq-attachment-id="${id}" style="display: block; margin: 0 auto;" />`;
 		editor.execCommand('mceInsertContent', false, html);
-
-		// Prompt for alt text. Window.prompt is intentionally simple here —
-		// the v2.3 spec calls this out as a follow-up dialog, not a blocking
-		// requirement, so the lightweight native prompt avoids a second Modal.
-		// eslint-disable-next-line no-alert
-		const altText = window.prompt(
-			__('Describe this image for accessibility (optional)', 'pressprimer-quiz'),
-			''
-		);
-		if (altText) {
-			const inserted = editor.dom.select(`img[data-ppq-attachment-id="${id}"]`)[0];
-			if (inserted) {
-				editor.dom.setAttrib(inserted, 'alt', altText);
-				onChangeRef.current(editor.getContent());
-			}
-		}
 	};
 
 	const percentUsed = (charCount / maxChars) * 100;

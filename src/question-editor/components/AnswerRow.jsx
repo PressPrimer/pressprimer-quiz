@@ -32,6 +32,7 @@ const AnswerRow = ({
 	answer,
 	index,
 	questionType,
+	questionId,
 	canRemove,
 	dragHandleProps,
 	onUpdate,
@@ -115,6 +116,7 @@ const AnswerRow = ({
 					placeholder={__('Enter answer text...', 'pressprimer-quiz')}
 					maxChars={maxChars}
 					rows={3}
+					questionId={questionId || 0}
 				/>
 
 				{/* Feedback Section */}
@@ -148,6 +150,7 @@ const AnswerRow = ({
 								placeholder={__('Explain why this answer is correct or incorrect...', 'pressprimer-quiz')}
 								maxChars={maxChars}
 								rows={2}
+								questionId={questionId || 0}
 							/>
 						</Space>
 					</Panel>

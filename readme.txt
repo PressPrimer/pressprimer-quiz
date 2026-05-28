@@ -216,7 +216,10 @@ This plugin offers optional AI-powered question generation using the OpenAI API.
 * Added: Insert images in question stems and answer options via a private drag-and-drop uploader. Front-end images include a click-to-zoom lightbox.
 * Added: Images uploaded to a question are automatically cleaned up when the question is permanently deleted, and duplicated when the question is duplicated. The WordPress media library is never exposed to authors.
 * Added: New "Upgrade" menu page for users on the free plugin or Educator/School tier, with a side-by-side comparison of every plan and a 14-day money-back guarantee.
+* Added: Sticky Table of Contents on the Quiz Editor Settings tab with a Save Quiz button, so you can jump between sections and save without scrolling. Hidden on browsers narrower than 1100 pixels.
 * Improved: Answer-text and feedback character limits now count visible text only, so embedded images no longer eat the budget.
+* Fixed: Duplicating a quiz now copies the multiple-answer scoring mode, quiz-level display defaults, Maximum Answers Per Question setting, and Show Points Per Question toggle to the new quiz. Previously these settings reverted to defaults on the copy.
+* Fixed: The Attempt Details modal in the Recent Attempts report now displays images embedded in question stems and answer options. Images in the admin Quiz Preview are also now sized to fit within the layout.
 
 = 2.2.2 =
 * Fixed: Pasting formatted content from Word, Google Docs, or other rich-text sources could break the answer layout by separating the radio button from its text. Links inside answers now always open in a new tab so students do not lose their progress.

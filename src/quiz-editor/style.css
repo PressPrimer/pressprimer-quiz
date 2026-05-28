@@ -71,3 +71,75 @@ tbody tr[data-rbd-dragging-over-with] {
 	color: #1890ff !important;
 	transform: scale(1.1);
 }
+
+/* =============================================================
+   Settings tab — right-rail Table of Contents (Anchor)
+
+   Custom 1100px breakpoint (rather than Ant's 992px `lg`) because
+   below ~1100px the content column gets too cramped for our form
+   fields. Below the breakpoint the TOC is hidden and the content
+   takes the full width.
+   ============================================================= */
+
+.ppq-settings-layout {
+	display: flex;
+	gap: 24px;
+	align-items: flex-start;
+}
+
+.ppq-settings-content {
+	flex: 1 1 auto;
+	min-width: 0;
+}
+
+/* The whole TOC card sticks together (heading + Save button + anchor
+   links) by using `position: sticky` on the wrap. offsetTop accounts
+   for the WP admin bar (32px) plus a 25px buffer below it. */
+.ppq-settings-toc-wrap {
+	flex: 0 0 260px;
+	position: sticky;
+	top: 57px;
+}
+
+/* Each settings section sets scroll-margin-top so the WP admin
+   bar (32px) plus a small breathing room doesn't crowd the
+   section title when the Anchor scrolls to it. */
+.ppq-settings-section {
+	scroll-margin-top: 80px;
+}
+
+/* TOC card visual treatment. */
+.ppq-settings-toc-card .ant-card-head-title {
+	text-align: center;
+}
+
+.ppq-settings-toc-card .ant-card-body {
+	padding: 16px;
+}
+
+.ppq-settings-toc-card .ant-anchor-link {
+	padding: 6px 0 6px 16px;
+}
+
+.ppq-settings-toc-card .ant-anchor-link-title {
+	font-size: 13px;
+	color: #475569;
+	transition: color 0.15s ease;
+}
+
+.ppq-settings-toc-card .ant-anchor-link-active > .ant-anchor-link-title {
+	color: #1890ff;
+	font-weight: 600;
+}
+
+.ppq-settings-toc-card .ant-anchor-link-title:hover {
+	color: #1890ff;
+}
+
+/* Hide TOC at viewports below 1100px — the content column then
+   takes the full width naturally because the flex item is gone. */
+@media (max-width: 1099px) {
+	.ppq-settings-toc-wrap {
+		display: none;
+	}
+}

@@ -24,13 +24,29 @@ import {
 	Tag,
 	Button,
 	Checkbox,
+	Anchor,
 } from 'antd';
 import {
 	QuestionCircleOutlined,
+	SaveOutlined,
 } from '@ant-design/icons';
 
 const { TextArea } = Input;
 const { Title, Text } = Typography;
+
+/**
+ * Sections rendered on the Settings tab, in display order. Used to drive
+ * the right-rail Anchor (table of contents). The `id` here must match the
+ * `id` on the section wrapper div.
+ */
+const TOC_SECTIONS = [
+	{ id: 'ppq-settings-basic-info', label: __('Basic Information', 'pressprimer-quiz') },
+	{ id: 'ppq-settings-question-generation', label: __('Question Generation', 'pressprimer-quiz') },
+	{ id: 'ppq-settings-quiz-behavior', label: __('Quiz Behavior', 'pressprimer-quiz') },
+	{ id: 'ppq-settings-scoring', label: __('Scoring', 'pressprimer-quiz') },
+	{ id: 'ppq-settings-navigation-attempts', label: __('Navigation & Attempts', 'pressprimer-quiz') },
+	{ id: 'ppq-settings-display-presentation', label: __('Display & Presentation', 'pressprimer-quiz') },
+];
 
 /**
  * MA scoring modes, ordered lenient → strict. Each entry has a short
@@ -120,8 +136,10 @@ const MA_SCORING_OPTIONS = [
  * @param {string[]} props.maxAnswersWarnings  Informational warnings returned from the save endpoint
  *                                              for the random distractor cap (e.g., questions whose
  *                                              correct count exceeds the cap).
+ * @param {boolean}  props.saving              Whether a save is currently in progress (drives the
+ *                                              loading state on the TOC's Save button).
  */
-const SettingsPanel = ({ form, generationMode, setGenerationMode, quizData = {}, maxAnswersWarnings = [] }) => {
+const SettingsPanel = ({ form, generationMode, setGenerationMode, quizData = {}, maxAnswersWarnings = [], saving = false }) => {
 	// Watch access_mode to show/hide login message field
 	const accessMode = Form.useWatch('access_mode', form);
 
@@ -188,6 +206,8 @@ const SettingsPanel = ({ form, generationMode, setGenerationMode, quizData = {},
 	const branchingTooltip = __('This setting is locked because branching rules are active on this quiz.', 'pressprimer-quiz');
 
 	return (
+		<div className="ppq-settings-layout">
+			<div className="ppq-settings-content">
 		<Space direction="vertical" size="large" style={{ width: '100%' }}>
 			{hasBranchingRules && (
 				<Alert
@@ -198,6 +218,7 @@ const SettingsPanel = ({ form, generationMode, setGenerationMode, quizData = {},
 				/>
 			)}
 			{/* Basic Information */}
+			<div id="ppq-settings-basic-info" className="ppq-settings-section">
 			<Card
 				title={
 					<Space>
@@ -294,8 +315,10 @@ const SettingsPanel = ({ form, generationMode, setGenerationMode, quizData = {},
 					</Col>
 				</Row>
 			</Card>
+			</div>
 
 			{/* Question Generation */}
+			<div id="ppq-settings-question-generation" className="ppq-settings-section">
 			<Card
 				title={
 					<Space>
@@ -362,8 +385,10 @@ const SettingsPanel = ({ form, generationMode, setGenerationMode, quizData = {},
 					</Radio.Group>
 				</Form.Item>
 			</Card>
+			</div>
 
 			{/* Quiz Behavior */}
+			<div id="ppq-settings-quiz-behavior" className="ppq-settings-section">
 			<Card
 				title={
 					<Space>
@@ -470,8 +495,10 @@ const SettingsPanel = ({ form, generationMode, setGenerationMode, quizData = {},
 					</Col>
 				</Row>
 			</Card>
+			</div>
 
 			{/* Scoring */}
+			<div id="ppq-settings-scoring" className="ppq-settings-section">
 			<Card
 				title={
 					<Space>
@@ -554,8 +581,10 @@ const SettingsPanel = ({ form, generationMode, setGenerationMode, quizData = {},
 					</Radio.Group>
 				</Form.Item>
 			</Card>
+			</div>
 
 			{/* Navigation & Attempts */}
+			<div id="ppq-settings-navigation-attempts" className="ppq-settings-section">
 			<Card
 				title={
 					<Space>
@@ -728,8 +757,10 @@ const SettingsPanel = ({ form, generationMode, setGenerationMode, quizData = {},
 					</Form.Item>
 				)}
 			</Card>
+			</div>
 
 			{/* Display Options */}
+			<div id="ppq-settings-display-presentation" className="ppq-settings-section">
 			<Card
 				title={
 					<Space>
@@ -1128,8 +1159,42 @@ const SettingsPanel = ({ form, generationMode, setGenerationMode, quizData = {},
 					))}
 				</Row>
 			</Card>
+			</div>
 
 		</Space>
+			</div>
+			<aside className="ppq-settings-toc-wrap" aria-label={__('Settings sections', 'pressprimer-quiz')}>
+				<Card
+					size="small"
+					title={
+						<Text strong style={{ fontSize: 13 }}>
+							{__('Table of Contents', 'pressprimer-quiz')}
+						</Text>
+					}
+					className="ppq-settings-toc-card"
+				>
+					<Anchor
+						affix={false}
+						targetOffset={80}
+						items={TOC_SECTIONS.map((s) => ({
+							key: s.id,
+							href: `#${s.id}`,
+							title: s.label,
+						}))}
+					/>
+					<Button
+						type="primary"
+						icon={<SaveOutlined />}
+						htmlType="submit"
+						loading={saving}
+						block
+						style={{ marginTop: 12 }}
+					>
+						{__('Save Quiz', 'pressprimer-quiz')}
+					</Button>
+				</Card>
+			</aside>
+		</div>
 	);
 };
 

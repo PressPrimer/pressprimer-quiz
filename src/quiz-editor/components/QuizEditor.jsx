@@ -335,7 +335,7 @@ const QuizEditor = ({ quizData = {} }) => {
 		{
 			key: 'settings',
 			label: __('Settings', 'pressprimer-quiz'),
-			children: <SettingsPanel form={form} generationMode={generationMode} setGenerationMode={setGenerationMode} quizData={quizData} maxAnswersWarnings={maxAnswersWarnings} />,
+			children: <SettingsPanel form={form} generationMode={generationMode} setGenerationMode={setGenerationMode} quizData={quizData} maxAnswersWarnings={maxAnswersWarnings} saving={saving} />,
 		},
 		hasPremiumAddons && {
 			key: 'premium',

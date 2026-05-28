@@ -48,26 +48,26 @@ const DISPLAY_OPTION_SECTIONS = [
 		key: 'start',
 		title: __('Start Page', 'pressprimer-quiz'),
 		options: [
-			{ key: 'show_description', label: __('Show description', 'pressprimer-quiz') },
-			{ key: 'show_question_count', label: __('Show question count', 'pressprimer-quiz') },
-			{ key: 'show_quiz_type', label: __('Show quiz type', 'pressprimer-quiz') },
-			{ key: 'show_time_limit', label: __('Show time limit', 'pressprimer-quiz') },
-			{ key: 'show_pass_percentage', label: __('Show pass percentage', 'pressprimer-quiz') },
-			{ key: 'show_attempt_count', label: __('Show attempt count', 'pressprimer-quiz') },
-			{ key: 'show_attempt_history', label: __('Show attempt history', 'pressprimer-quiz') },
+			{ key: 'show_description', label: __('Show description', 'pressprimer-quiz'), tooltip: __('Show the quiz description on the landing page before the student starts an attempt.', 'pressprimer-quiz') },
+			{ key: 'show_question_count', label: __('Show question count', 'pressprimer-quiz'), tooltip: __('Show the total number of questions in the quiz on the landing page.', 'pressprimer-quiz') },
+			{ key: 'show_quiz_type', label: __('Show quiz type', 'pressprimer-quiz'), tooltip: __('Show whether the quiz is a fixed-question or dynamic (rule-based) quiz.', 'pressprimer-quiz') },
+			{ key: 'show_time_limit', label: __('Show time limit', 'pressprimer-quiz'), tooltip: __('Show the quiz time limit (when one is set) on the landing page.', 'pressprimer-quiz') },
+			{ key: 'show_pass_percentage', label: __('Show pass percentage', 'pressprimer-quiz'), tooltip: __('Show the score required to pass the quiz on the landing page.', 'pressprimer-quiz') },
+			{ key: 'show_attempt_count', label: __('Show attempt count', 'pressprimer-quiz'), tooltip: __('Show how many times the student has attempted this quiz already.', 'pressprimer-quiz') },
+			{ key: 'show_attempt_history', label: __('Show attempt history', 'pressprimer-quiz'), tooltip: __('Show a list of the student\'s previous attempts (date, score, pass/fail) on the landing page.', 'pressprimer-quiz') },
 		],
 	},
 	{
 		key: 'results',
 		title: __('Results Page', 'pressprimer-quiz'),
 		options: [
-			{ key: 'show_score', label: __('Show score', 'pressprimer-quiz') },
-			{ key: 'show_pass_fail', label: __('Show pass/fail status', 'pressprimer-quiz') },
-			{ key: 'show_time_spent', label: __('Show time spent', 'pressprimer-quiz') },
-			{ key: 'show_average', label: __('Show average score', 'pressprimer-quiz') },
-			{ key: 'show_category_breakdown', label: __('Show category breakdown', 'pressprimer-quiz') },
-			{ key: 'show_question_review', label: __('Show question review', 'pressprimer-quiz') },
-			{ key: 'show_retake_button', label: __('Show retake button', 'pressprimer-quiz') },
+			{ key: 'show_score', label: __('Show score', 'pressprimer-quiz'), tooltip: __('Show the student\'s final score on the results page.', 'pressprimer-quiz') },
+			{ key: 'show_pass_fail', label: __('Show pass/fail status', 'pressprimer-quiz'), tooltip: __('Show whether the student passed or failed the quiz on the results page.', 'pressprimer-quiz') },
+			{ key: 'show_time_spent', label: __('Show time spent', 'pressprimer-quiz'), tooltip: __('Show how long the student took to complete the attempt.', 'pressprimer-quiz') },
+			{ key: 'show_average', label: __('Show average score', 'pressprimer-quiz'), tooltip: __('Show the average score across all attempts of this quiz, for comparison.', 'pressprimer-quiz') },
+			{ key: 'show_category_breakdown', label: __('Show category breakdown', 'pressprimer-quiz'), tooltip: __('Show per-category performance when the quiz\'s questions are organized by category.', 'pressprimer-quiz') },
+			{ key: 'show_question_review', label: __('Show question review', 'pressprimer-quiz'), tooltip: __('Allow the student to review each question, their answer, and any feedback after submitting.', 'pressprimer-quiz') },
+			{ key: 'show_retake_button', label: __('Show retake button', 'pressprimer-quiz'), tooltip: __('Show a button to retake the quiz when retakes are allowed on the results page.', 'pressprimer-quiz') },
 		],
 	},
 ];
@@ -226,6 +226,7 @@ const SettingsPanel = ({ form, generationMode, setGenerationMode, quizData = {},
 					<Input
 						placeholder={__('e.g., "Chapter 5 Assessment" or "Final Exam"', 'pressprimer-quiz')}
 						size="small"
+						style={{ maxWidth: 500 }}
 					/>
 				</Form.Item>
 
@@ -244,6 +245,7 @@ const SettingsPanel = ({ form, generationMode, setGenerationMode, quizData = {},
 						rows={4}
 						placeholder={__('Enter instructions, learning objectives, or any context students need...', 'pressprimer-quiz')}
 						size="small"
+						style={{ maxWidth: 600 }}
 					/>
 				</Form.Item>
 
@@ -259,14 +261,15 @@ const SettingsPanel = ({ form, generationMode, setGenerationMode, quizData = {},
 								</Space>
 							}
 							name="status"
+							style={{ marginBottom: 0 }}
 						>
-							<Select size="small" options={[
+							<Select size="small" style={{ width: 240 }} options={[
 								{ value: 'draft', label: __('Draft', 'pressprimer-quiz') },
 								{ value: 'published', label: __('Published', 'pressprimer-quiz') },
 								{ value: 'archived', label: __('Archived', 'pressprimer-quiz') },
 							]} />
 						</Form.Item>
-						<Text type="secondary" style={{ fontSize: 10, display: 'block', marginTop: -8 }}>
+						<Text type="secondary" style={{ fontSize: 13, display: 'block', marginTop: 4, marginBottom: 24 }}>
 							{__('Draft for editing, Published for students, Archived to hide', 'pressprimer-quiz')}
 						</Text>
 					</Col>
@@ -282,7 +285,7 @@ const SettingsPanel = ({ form, generationMode, setGenerationMode, quizData = {},
 							}
 							name="theme"
 						>
-							<Select size="small" options={[
+							<Select size="small" style={{ width: 240 }} options={[
 								{ value: 'default', label: __('Default', 'pressprimer-quiz') },
 								{ value: 'modern', label: __('Modern', 'pressprimer-quiz') },
 								{ value: 'minimal', label: __('Minimal', 'pressprimer-quiz') },
@@ -326,7 +329,7 @@ const SettingsPanel = ({ form, generationMode, setGenerationMode, quizData = {},
 										<div style={{ fontWeight: 600, fontSize: 16 }}>
 											{__('Fixed Questions', 'pressprimer-quiz')}
 										</div>
-										<Text type="secondary" style={{ fontSize: 14 }}>
+										<Text type="secondary" style={{ fontSize: 13 }}>
 											{__('Manually select specific questions - same for every student', 'pressprimer-quiz')}
 										</Text>
 									</div>
@@ -349,7 +352,7 @@ const SettingsPanel = ({ form, generationMode, setGenerationMode, quizData = {},
 										<div style={{ fontWeight: 600, fontSize: 16 }}>
 											{__('Dynamic Rules', 'pressprimer-quiz')}
 										</div>
-										<Text type="secondary" style={{ fontSize: 14 }}>
+										<Text type="secondary" style={{ fontSize: 13 }}>
 											{__('Define rules to randomly select questions from banks - different for each student', 'pressprimer-quiz')}
 										</Text>
 									</div>
@@ -392,7 +395,7 @@ const SettingsPanel = ({ form, generationMode, setGenerationMode, quizData = {},
 									<div style={{ fontWeight: 600 }}>
 										{__('Tutorial Mode', 'pressprimer-quiz')}
 									</div>
-									<Text type="secondary" style={{ fontSize: 14 }}>
+									<Text type="secondary" style={{ fontSize: 13 }}>
 										{__('Show feedback immediately after each question - best for learning', 'pressprimer-quiz')}
 									</Text>
 								</div>
@@ -402,7 +405,7 @@ const SettingsPanel = ({ form, generationMode, setGenerationMode, quizData = {},
 									<div style={{ fontWeight: 600 }}>
 										{__('Test Mode', 'pressprimer-quiz')}
 									</div>
-									<Text type="secondary" style={{ fontSize: 14 }}>
+									<Text type="secondary" style={{ fontSize: 13 }}>
 										{__('Show feedback only after submission - best for assessments', 'pressprimer-quiz')}
 									</Text>
 								</div>
@@ -425,20 +428,21 @@ const SettingsPanel = ({ form, generationMode, setGenerationMode, quizData = {},
 								</Space>
 							}
 							name="time_limit_seconds"
+							style={{ marginBottom: 0 }}
 						>
 							<InputNumber
 								min={60}
 								max={86400}
 								step={60}
 								size="small"
-								style={{ width: '100%' }}
+								style={{ width: 200 }}
 								placeholder={__('Unlimited', 'pressprimer-quiz')}
 								formatter={value => value ? Math.round(value / 60) : ''}
 								parser={value => value ? value * 60 : null}
 								addonAfter={__('min', 'pressprimer-quiz')}
 							/>
 						</Form.Item>
-						<Text type="secondary" style={{ fontSize: 10, display: 'block', marginTop: -8 }}>
+						<Text type="secondary" style={{ fontSize: 13, display: 'block', marginTop: 4, marginBottom: 24 }}>
 							{__('Leave empty for no time limit', 'pressprimer-quiz')}
 						</Text>
 					</Col>
@@ -459,7 +463,7 @@ const SettingsPanel = ({ form, generationMode, setGenerationMode, quizData = {},
 								max={100}
 								step={1}
 								size="small"
-								style={{ width: '100%' }}
+								style={{ width: 150 }}
 								addonAfter="%"
 							/>
 						</Form.Item>
@@ -481,10 +485,10 @@ const SettingsPanel = ({ form, generationMode, setGenerationMode, quizData = {},
 				}
 				style={{ marginBottom: 24 }}
 			>
-				<Text type="secondary" style={{ display: 'block', marginBottom: 12 }}>
+				<Text type="secondary" style={{ display: 'block', marginBottom: 12, fontSize: 13 }}>
 					{__('Choose how multiple-answer (MA) questions are scored. Single-answer (MC, true/false) questions are always all-or-nothing.', 'pressprimer-quiz')}
 				</Text>
-				<Text type="secondary" style={{ display: 'block', marginBottom: 16, fontSize: 12, fontStyle: 'italic' }}>
+				<Text type="secondary" style={{ display: 'block', marginBottom: 16, fontSize: 13 }}>
 					{__('Examples below assume a question worth 1 point where 3 of the answer options are marked correct.', 'pressprimer-quiz')}
 				</Text>
 
@@ -635,16 +639,17 @@ const SettingsPanel = ({ form, generationMode, setGenerationMode, quizData = {},
 									</Space>
 								}
 								name="max_attempts"
+								style={{ marginBottom: 0 }}
 							>
 								<InputNumber
 									min={1}
 									max={100}
 									size="small"
-									style={{ width: '100%' }}
+									style={{ width: 150 }}
 									placeholder={__('Unlimited', 'pressprimer-quiz')}
 								/>
 							</Form.Item>
-							<Text type="secondary" style={{ fontSize: 10, display: 'block', marginTop: -8 }}>
+							<Text type="secondary" style={{ fontSize: 13, display: 'block', marginTop: 4, marginBottom: 24 }}>
 								{__('Empty for unlimited attempts', 'pressprimer-quiz')}
 							</Text>
 							<Form.Item
@@ -662,7 +667,7 @@ const SettingsPanel = ({ form, generationMode, setGenerationMode, quizData = {},
 									min={0}
 									max={10080}
 									size="small"
-									style={{ width: '100%' }}
+									style={{ width: 200 }}
 									placeholder="0"
 									addonAfter={__('min', 'pressprimer-quiz')}
 								/>
@@ -685,7 +690,7 @@ const SettingsPanel = ({ form, generationMode, setGenerationMode, quizData = {},
 						</Space>
 					}
 					name="access_mode"
-					style={{ marginTop: 12 }}
+					style={{ marginTop: 12, marginBottom: 0 }}
 				>
 					<Select
 						size="small"
@@ -698,7 +703,7 @@ const SettingsPanel = ({ form, generationMode, setGenerationMode, quizData = {},
 						]}
 					/>
 				</Form.Item>
-				<Text type="secondary" style={{ fontSize: 10, display: 'block', marginTop: -8, marginBottom: 16 }}>
+				<Text type="secondary" style={{ fontSize: 13, display: 'block', marginTop: 4, marginBottom: 24 }}>
 					{__('Override the global access setting for this specific quiz', 'pressprimer-quiz')}
 				</Text>
 
@@ -837,7 +842,7 @@ const SettingsPanel = ({ form, generationMode, setGenerationMode, quizData = {},
 									min={1}
 									max={100}
 									size="small"
-									style={{ width: '100%' }}
+									style={{ width: 150 }}
 								/>
 							</Form.Item>
 							<Form.Item
@@ -853,6 +858,7 @@ const SettingsPanel = ({ form, generationMode, setGenerationMode, quizData = {},
 							>
 								<Select
 									size="small"
+									style={{ width: 240 }}
 									options={[
 										{ value: 'default', label: __('Use Global Default', 'pressprimer-quiz') },
 										{ value: 'standard', label: __('Standard', 'pressprimer-quiz') },
@@ -878,9 +884,11 @@ const SettingsPanel = ({ form, generationMode, setGenerationMode, quizData = {},
 								</Space>
 							}
 							name="show_answers"
+							style={{ marginBottom: 0 }}
 						>
 							<Select
 								size="small"
+								style={{ width: 240 }}
 								options={[
 									{ value: 'never', label: __('Never', 'pressprimer-quiz') },
 									{ value: 'after_submit', label: __('After Submit', 'pressprimer-quiz') },
@@ -888,7 +896,7 @@ const SettingsPanel = ({ form, generationMode, setGenerationMode, quizData = {},
 								]}
 							/>
 						</Form.Item>
-						<Text type="secondary" style={{ fontSize: 10, display: 'block', marginTop: -8 }}>
+						<Text type="secondary" style={{ fontSize: 13, display: 'block', marginTop: 4, marginBottom: 24 }}>
 							{__('When students can view correct answers', 'pressprimer-quiz')}
 						</Text>
 					</Col>
@@ -904,10 +912,11 @@ const SettingsPanel = ({ form, generationMode, setGenerationMode, quizData = {},
 							}
 							name="enable_confidence"
 							valuePropName="checked"
+							style={{ marginBottom: 0 }}
 						>
 							<Switch size="small" />
 						</Form.Item>
-						<Text type="secondary" style={{ fontSize: 10, display: 'block', marginTop: -8 }}>
+						<Text type="secondary" style={{ fontSize: 13, display: 'block', marginTop: 4, marginBottom: 24 }}>
 							{__('Helps identify knowledge gaps', 'pressprimer-quiz')}
 						</Text>
 					</Col>
@@ -917,7 +926,7 @@ const SettingsPanel = ({ form, generationMode, setGenerationMode, quizData = {},
 
 				{/* Question Pool */}
 				<Text strong>{__('Question Pool', 'pressprimer-quiz')}</Text>
-				<Text type="secondary" style={{ fontSize: 12, display: 'block', marginBottom: 12 }}>
+				<Text type="secondary" style={{ fontSize: 13, display: 'block', marginBottom: 12 }}>
 					{__('Randomly select a subset of questions for each attempt', 'pressprimer-quiz')}
 				</Text>
 
@@ -956,45 +965,54 @@ const SettingsPanel = ({ form, generationMode, setGenerationMode, quizData = {},
 										</Form.Item>
 
 										{poolEnabled && (
-											<Form.Item
-												label={__('Questions Per Attempt', 'pressprimer-quiz')}
-												name="max_questions"
-												help={
-													poolSize > 0
+											<>
+												<Form.Item
+													label={
+														<Space>
+															<span>{__('Questions Per Attempt', 'pressprimer-quiz')}</span>
+															<Tooltip title={__('How many questions to randomly draw from the pool for each attempt', 'pressprimer-quiz')}>
+																<QuestionCircleOutlined style={{ fontSize: 12, color: '#8c8c8c' }} />
+															</Tooltip>
+														</Space>
+													}
+													name="max_questions"
+													rules={[
+														{
+															validator: (_, value) => {
+																if (value && Number(poolSize) > 0 && Number(value) > Number(poolSize)) {
+																	return Promise.reject(
+																		sprintf(
+																			/* translators: %d: pool size */
+																			__('Cannot exceed pool size (%d).', 'pressprimer-quiz'),
+																			poolSize
+																		)
+																	);
+																}
+																return Promise.resolve();
+															},
+														},
+													]}
+													validateTrigger={['onChange', 'onBlur']}
+													style={{ marginBottom: 0 }}
+												>
+													<InputNumber
+														min={1}
+														max={poolSize > 0 ? poolSize : undefined}
+														placeholder={poolSize > 0 ? String(poolSize) : ''}
+														style={{ width: 150 }}
+														size="small"
+													/>
+												</Form.Item>
+												<Text type="secondary" style={{ fontSize: 13, display: 'block', marginTop: 4, marginBottom: 24 }}>
+													{poolSize > 0
 														? sprintf(
 															/* translators: %d: total number of questions in pool */
 															__('From a pool of %d available questions', 'pressprimer-quiz'),
 															poolSize
 														)
-														: __('Save quiz and add questions to see pool size', 'pressprimer-quiz')
-												}
-												rules={[
-													{
-														validator: (_, value) => {
-															if (value && Number(poolSize) > 0 && Number(value) > Number(poolSize)) {
-																return Promise.reject(
-																	sprintf(
-																		/* translators: %d: pool size */
-																		__('Cannot exceed pool size (%d).', 'pressprimer-quiz'),
-																		poolSize
-																	)
-																);
-															}
-															return Promise.resolve();
-														},
-													},
-												]}
-												validateTrigger={['onChange', 'onBlur']}
-												style={{ marginBottom: 0 }}
-											>
-												<InputNumber
-													min={1}
-													max={poolSize > 0 ? poolSize : undefined}
-													placeholder={poolSize > 0 ? String(poolSize) : ''}
-													style={{ width: 150 }}
-													size="small"
-												/>
-											</Form.Item>
+														: __('Save quiz and add questions to see pool size', 'pressprimer-quiz')}
+												</Text>
+											</>
 										)}
 									</div>
 
@@ -1039,7 +1057,6 @@ const SettingsPanel = ({ form, generationMode, setGenerationMode, quizData = {},
 								</Space>
 							}
 							name="max_answers_per_question"
-							help={__('Leave empty to show all answers. Range: 2 to 8.', 'pressprimer-quiz')}
 							style={{ marginBottom: 0 }}
 						>
 							<InputNumber
@@ -1050,6 +1067,9 @@ const SettingsPanel = ({ form, generationMode, setGenerationMode, quizData = {},
 								placeholder={__('All answers', 'pressprimer-quiz')}
 							/>
 						</Form.Item>
+						<Text type="secondary" style={{ fontSize: 13, display: 'block', marginTop: 4, marginBottom: 24 }}>
+							{__('Leave empty to show all answers. Range: 2 to 8.', 'pressprimer-quiz')}
+						</Text>
 						{maxAnswersWarnings.length > 0 && (
 							<Space direction="vertical" style={{ width: '100%', marginTop: 12 }} size={8}>
 								{maxAnswersWarnings.map((warning, i) => (
@@ -1070,7 +1090,7 @@ const SettingsPanel = ({ form, generationMode, setGenerationMode, quizData = {},
 				<Text strong style={{ display: 'block', marginBottom: 4 }}>
 					{__('Quiz-Level Display Defaults', 'pressprimer-quiz')}
 				</Text>
-				<Text type="secondary" style={{ display: 'block', marginBottom: 12, fontSize: 12 }}>
+				<Text type="secondary" style={{ display: 'block', marginBottom: 12, fontSize: 13 }}>
 					{__('Toggle which sections appear by default on the Start and Results pages for this quiz. Block and shortcode attributes can override these per instance.', 'pressprimer-quiz')}
 				</Text>
 				<Row gutter={24}>
@@ -1081,13 +1101,19 @@ const SettingsPanel = ({ form, generationMode, setGenerationMode, quizData = {},
 							</Text>
 							<Space direction="vertical" style={{ width: '100%' }} size={4}>
 								{section.options.map((opt) => (
-									<Checkbox
-										key={opt.key}
-										checked={getDisplayValue(opt.key)}
-										onChange={(e) => setDisplayValue(opt.key, e.target.checked)}
-									>
-										{opt.label}
-									</Checkbox>
+									<Space key={opt.key} size={6} align="center">
+										<Checkbox
+											checked={getDisplayValue(opt.key)}
+											onChange={(e) => setDisplayValue(opt.key, e.target.checked)}
+										>
+											{opt.label}
+										</Checkbox>
+										{opt.tooltip && (
+											<Tooltip title={opt.tooltip}>
+												<QuestionCircleOutlined style={{ fontSize: 12, color: '#8c8c8c' }} />
+											</Tooltip>
+										)}
+									</Space>
 								))}
 							</Space>
 							<Button

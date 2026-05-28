@@ -167,6 +167,7 @@ const PremiumSettingsPanel = ({ form, quizData = {} }) => {
 							</Space>
 						}
 						name="pre_test_id"
+						style={{ marginBottom: 0 }}
 					>
 						<Select
 							size="small"
@@ -183,7 +184,7 @@ const PremiumSettingsPanel = ({ form, quizData = {} }) => {
 							notFoundContent={preTestLoading ? __('Loading...', 'pressprimer-quiz') : __('No quizzes found', 'pressprimer-quiz')}
 						/>
 					</Form.Item>
-					<Text type="secondary" style={{ fontSize: 10, display: 'block', marginTop: -8 }}>
+					<Text type="secondary" style={{ fontSize: 13, display: 'block', marginTop: 4, marginBottom: 24 }}>
 						{__('Select a quiz to use as the pre-test for this quiz', 'pressprimer-quiz')}
 					</Text>
 				</Card>
@@ -286,6 +287,7 @@ const PremiumSettingsPanel = ({ form, quizData = {} }) => {
 					<Form.Item
 						name="proctoring_require_desktop"
 						valuePropName="checked"
+						style={{ marginBottom: 0 }}
 					>
 						<Space>
 							<Switch size="small" />
@@ -295,7 +297,7 @@ const PremiumSettingsPanel = ({ form, quizData = {} }) => {
 							</Tooltip>
 						</Space>
 					</Form.Item>
-					<Text type="secondary" style={{ fontSize: 10, display: 'block', marginTop: -8 }}>
+					<Text type="secondary" style={{ fontSize: 13, display: 'block', marginTop: 4, marginBottom: 24 }}>
 						{__('Mobile devices have limited proctoring support. Enable this to restrict quizzes to desktop browsers only.', 'pressprimer-quiz')}
 					</Text>
 				</Card>

@@ -744,6 +744,17 @@
 	line-height: 1.5;
 }
 
+/* Constrain images embedded in stem / answer HTML (v2.3 image support).
+   Mirrors the 80% width clamp used on the student-facing quiz pages so
+   admins reviewing an attempt see images at a similar relative size. */
+.ppq-attempt-question-stem-full img,
+.ppq-attempt-answer-text img {
+	max-width: 80%;
+	height: auto;
+	display: block;
+	margin: 8px 0;
+}
+
 .ppq-attempt-question-footer {
 	display: flex;
 	align-items: center;

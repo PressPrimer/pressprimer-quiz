@@ -779,11 +779,14 @@ class PressPrimer_Quiz_Statistics_Service {
 			$answers          = json_decode( $item->answers_json ?? '[]', true ) ?: [];
 			$selected_indexes = json_decode( $item->selected_answers_json ?? '[]', true ) ?: [];
 
-			// Build answer display data
+			// Build answer display data. Stem and answer text pass through
+			// wp_kses_post() so embedded <img> tags from the v2.3 image
+			// support feature survive into the Attempt Details modal. The
+			// React side renders this via dangerouslySetInnerHTML.
 			$answer_options = [];
 			foreach ( $answers as $idx => $answer ) {
 				$answer_options[] = [
-					'text'         => wp_strip_all_tags( $answer['text'] ?? '' ),
+					'text'         => wp_kses_post( $answer['text'] ?? '' ),
 					'is_correct'   => (bool) ( $answer['is_correct'] ?? false ),
 					'was_selected' => in_array( $idx, $selected_indexes, true ),
 				];
@@ -792,7 +795,7 @@ class PressPrimer_Quiz_Statistics_Service {
 			$formatted_items[] = [
 				'id'            => (int) $item->id,
 				'question_id'   => (int) $item->question_id,
-				'stem'          => wp_strip_all_tags( $item->stem ?? '' ),
+				'stem'          => wp_kses_post( $item->stem ?? '' ),
 				'is_correct'    => (bool) $item->is_correct,
 				'points_earned' => (float) ( $item->points_earned ?? 0 ),
 				'time_spent_ms' => (int) ( $item->time_spent_ms ?? 0 ),

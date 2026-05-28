@@ -139,9 +139,16 @@ const AttemptDetailModal = ({ visible, attempt, onClose }) => {
 												</Tag>
 											)}
 										</div>
-										<div className="ppq-attempt-question-stem-full">
-											{item.stem || __('Question', 'pressprimer-quiz')}
-										</div>
+										{item.stem ? (
+											<div
+												className="ppq-attempt-question-stem-full"
+												dangerouslySetInnerHTML={{ __html: item.stem }}
+											/>
+										) : (
+											<div className="ppq-attempt-question-stem-full">
+												{__('Question', 'pressprimer-quiz')}
+											</div>
+										)}
 										{item.answers?.length > 0 && (
 											<div className="ppq-attempt-answers-list">
 												{item.answers.map((answer, ansIdx) => (
@@ -154,7 +161,10 @@ const AttemptDetailModal = ({ visible, attempt, onClose }) => {
 															{answer.was_selected && !answer.is_correct && <CloseCircleOutlined style={{ color: '#ff4d4f' }} />}
 															{!answer.was_selected && answer.is_correct && <CheckCircleOutlined style={{ color: '#52c41a', opacity: 0.5 }} />}
 														</span>
-														<span className="ppq-attempt-answer-text">{answer.text}</span>
+														<span
+															className="ppq-attempt-answer-text"
+															dangerouslySetInnerHTML={{ __html: answer.text }}
+														/>
 													</div>
 												))}
 											</div>

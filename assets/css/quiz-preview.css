@@ -85,6 +85,18 @@
 	border-radius: 8px;
 }
 
+/* Constrain images embedded in stem / answer HTML (v2.3 image support)
+   to match the 80% clamp used on the frontend quiz pages. Without this,
+   author-uploaded images render at native size in admin Quiz Preview
+   and can break the layout. */
+.ppq-question-stem img,
+.ppq-answer-text img {
+	max-width: 80%;
+	height: auto;
+	display: block;
+	margin: 8px 0;
+}
+
 .ppq-quiz-info {
 	display: grid;
 	grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));

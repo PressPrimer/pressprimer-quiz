@@ -82,6 +82,17 @@ class PressPrimer_Quiz_Upgrade_Page {
 	 * @return bool True when the Enterprise addon is active.
 	 */
 	public function enterprise_addon_active() {
+		// Constant fallback: the Enterprise plugin defines
+		// PRESSPRIMER_QUIZ_ENTERPRISE_VERSION on load (before its addon
+		// manager registration runs). This catches the rare case where
+		// addon registration fires late or is skipped — e.g., a third
+		// party hooks `pressprimer_quiz_register_addons` to remove
+		// Enterprise's registration, or load ordering shifts. The constant
+		// is the simplest "is the plugin loaded?" signal we can rely on.
+		if ( defined( 'PRESSPRIMER_QUIZ_ENTERPRISE_VERSION' ) ) {
+			return true;
+		}
+
 		if ( ! function_exists( 'pressprimer_quiz_addon_active' ) ) {
 			// Defensive — if the helper is missing, show the page.
 			return false;

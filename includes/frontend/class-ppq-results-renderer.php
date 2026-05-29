@@ -339,7 +339,42 @@ class PressPrimer_Quiz_Results_Renderer {
 			<?php if ( $this->display['show_score'] ) : ?>
 			<div class="ppq-score-display">
 				<div class="ppq-score-percentage">
-					<?php echo esc_html( round( (float) $attempt->score_percent, 1 ) ); ?>%
+					<?php
+					$score_default = esc_html( round( (float) $attempt->score_percent, 1 ) ) . '%';
+
+					/**
+					 * Filters the score string displayed on the results page.
+					 *
+					 * Default value is the rounded percentage followed by a `%`
+					 * symbol (already escaped). Themes and addons can return
+					 * any HTML — common uses include hiding the percent symbol,
+					 * switching to a custom label (e.g., "12.5 star points"),
+					 * or rendering the absolute score instead. The returned
+					 * value is passed through `wp_kses_post()` before output,
+					 * so safe HTML is preserved and scripts/styles are stripped.
+					 *
+					 * Callbacks merging user input into the returned string
+					 * must escape that input themselves; the default value is
+					 * escape-safe.
+					 *
+					 * @since 2.3.0
+					 *
+					 * @param string                       $score_html Default escaped score string (e.g., "12.5%").
+					 * @param PressPrimer_Quiz_Attempt     $attempt    Attempt object.
+					 * @param PressPrimer_Quiz_Quiz        $quiz       Quiz object.
+					 * @param array                        $results    Calculated results data, including score_percent,
+					 *                                                 correct_count, and total_count.
+					 */
+					$score_display = apply_filters(
+						'pressprimer_quiz_results_score_html',
+						$score_default,
+						$attempt,
+						$quiz,
+						$results
+					);
+
+					echo wp_kses_post( $score_display );
+					?>
 				</div>
 				<div class="ppq-score-details">
 					<?php

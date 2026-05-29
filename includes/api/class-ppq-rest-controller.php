@@ -2711,11 +2711,23 @@ class PressPrimer_Quiz_REST_Controller {
 		// rather than inside the settings bundle, so the scoring service can
 		// resolve it cheaply via get_option(). Validate the whitelist here and
 		// silently keep the existing value when an unknown mode is submitted.
+		// When the value actually changes, the change is tracked separately
+		// (in $extra_changes below) and merged into the settings_updated hook
+		// payload so audit-log consumers see it like any other setting.
+		$extra_changes = array();
 		if ( isset( $data['default_ma_scoring'] ) ) {
 			$allowed_ma_modes = array( 'right_minus_wrong', 'proportional', 'partial_no_wrong', 'all_or_nothing' );
 			$submitted_mode   = is_string( $data['default_ma_scoring'] ) ? $data['default_ma_scoring'] : '';
 			if ( in_array( $submitted_mode, $allowed_ma_modes, true ) ) {
-				update_option( 'pressprimer_quiz_default_ma_scoring', $submitted_mode );
+				$old_ma_default = get_option( 'pressprimer_quiz_default_ma_scoring', 'right_minus_wrong' );
+				if ( $old_ma_default !== $submitted_mode ) {
+					update_option( 'pressprimer_quiz_default_ma_scoring', $submitted_mode );
+					$extra_changes[] = array(
+						'field'  => 'default_ma_scoring',
+						'before' => $old_ma_default,
+						'after'  => $submitted_mode,
+					);
+				}
 			}
 		}
 
@@ -2767,6 +2779,13 @@ class PressPrimer_Quiz_REST_Controller {
 					'after'  => $new_value,
 				);
 			}
+		}
+
+		// Append any standalone option changes (e.g., default_ma_scoring,
+		// which is stored outside the settings bundle but should still surface
+		// in the settings_updated payload for audit-log consumers).
+		if ( ! empty( $extra_changes ) ) {
+			$actual_changes = array_merge( $actual_changes, $extra_changes );
 		}
 
 		// Only fire the hook if something actually changed.

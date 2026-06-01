@@ -13,7 +13,7 @@ import ImageUploadModal from './ImageUploadModal';
 
 const { Title, Text } = Typography;
 
-const StemEditor = ({ value, onChange, questionId = 0 }) => {
+const StemEditor = ({ value, onChange }) => {
 	const [charCount, setCharCount] = useState(0);
 	const [imageModalOpen, setImageModalOpen] = useState(false);
 	const editorRef = useRef(null);
@@ -22,19 +22,11 @@ const StemEditor = ({ value, onChange, questionId = 0 }) => {
 	const editorId = 'ppq-stem-editor';
 	const [isInitialized, setIsInitialized] = useState(false);
 	const onChangeRef = useRef(onChange);
-	const imageEnabledRef = useRef(questionId > 0);
 
 	// Always keep the ref updated with the latest onChange callback
 	useEffect(() => {
 		onChangeRef.current = onChange;
 	}, [onChange]);
-
-	// TinyMCE's setup callback closes over the initial questionId value, so
-	// route the toggle through a ref to handle the case where the question
-	// is saved (gets an ID) after the editor mounts.
-	useEffect(() => {
-		imageEnabledRef.current = questionId > 0;
-	}, [questionId]);
 
 	// Initialize TinyMCE when component mounts
 	useEffect(() => {
@@ -50,30 +42,21 @@ const StemEditor = ({ value, onChange, questionId = 0 }) => {
 						window.wp.editor.remove(editorId);
 					}
 
-					// Toolbar: add the custom image button only when this editor
-					// is wired to a known question (we need the ID for the upload
-					// REST path). Falls back to the v2.2 toolbar otherwise.
-					const toolbar = imageEnabledRef.current
-						? 'formatselect,bold,italic,bullist,numlist,link,forecolor,ppq_image,removeformat'
-						: 'formatselect,bold,italic,bullist,numlist,link,forecolor,removeformat';
-
 					// Initialize editor
 					window.wp.editor.initialize(editorId, {
 						tinymce: {
 							wpautop: true,
 							plugins: 'lists,link,textcolor,paste,wordpress,wplink',
-							toolbar1: toolbar,
+							toolbar1: 'formatselect,bold,italic,bullist,numlist,link,forecolor,ppq_image,removeformat',
 							height: 300,
 							setup: (editor) => {
-								if (imageEnabledRef.current) {
-									editor.addButton('ppq_image', {
-										icon: 'image',
-										tooltip: __('Insert image', 'pressprimer-quiz'),
-										onclick: () => {
-											setImageModalOpen(true);
-										},
-									});
-								}
+								editor.addButton('ppq_image', {
+									icon: 'image',
+									tooltip: __('Insert image', 'pressprimer-quiz'),
+									onclick: () => {
+										setImageModalOpen(true);
+									},
+								});
 							},
 							init_instance_callback: (editor) => {
 								editorInstanceRef.current = editor;
@@ -204,14 +187,11 @@ const StemEditor = ({ value, onChange, questionId = 0 }) => {
 					defaultValue={value || ''}
 				/>
 			</div>
-			{questionId > 0 && (
-				<ImageUploadModal
-					isOpen={imageModalOpen}
-					onClose={() => setImageModalOpen(false)}
-					onUpload={handleImageUpload}
-					questionId={questionId}
-				/>
-			)}
+			<ImageUploadModal
+				isOpen={imageModalOpen}
+				onClose={() => setImageModalOpen(false)}
+				onUpload={handleImageUpload}
+			/>
 		</Card>
 	);
 };

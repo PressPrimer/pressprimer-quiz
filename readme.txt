@@ -222,6 +222,7 @@ This plugin offers optional AI-powered question generation using the OpenAI API.
 * Fixed: Duplicating a quiz now copies the multiple-answer scoring mode, quiz-level display defaults, Maximum Answers Per Question setting, and Show Points Per Question toggle to the new quiz. Previously these settings reverted to defaults on the copy.
 * Fixed: The Attempt Details modal in the Recent Attempts report now displays images embedded in question stems and answer options. Images in the admin Quiz Preview are also now sized to fit within the layout.
 * Fixed: When a quiz uses Maximum Answers Per Question, the results page now reviews only the answers the student actually saw (in the same order they were presented), instead of revealing distractors that were never shown.
+* Fixed: The image upload button is now available in the question stem and answer editors immediately when creating a new question, not only after the question has been saved.
 
 = 2.2.2 =
 * Fixed: Pasting formatted content from Word, Google Docs, or other rich-text sources could break the answer layout by separating the radio button from its text. Links inside answers now always open in a new tab so students do not lose their progress.

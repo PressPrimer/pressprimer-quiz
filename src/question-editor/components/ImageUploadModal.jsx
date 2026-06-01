@@ -28,12 +28,11 @@ const MAX_FILE_SIZE = 8 * 1024 * 1024;
  * Image Upload Modal
  *
  * @param {Object}   props
- * @param {boolean}  props.isOpen     Whether the modal is visible.
- * @param {Function} props.onClose    Called when the user dismisses the modal.
- * @param {Function} props.onUpload   Called with `{ id, url, alt }` after a successful upload.
- * @param {number}   props.questionId The owning question ID (used in the REST path).
+ * @param {boolean}  props.isOpen   Whether the modal is visible.
+ * @param {Function} props.onClose  Called when the user dismisses the modal.
+ * @param {Function} props.onUpload Called with `{ id, url, alt }` after a successful upload.
  */
-const ImageUploadModal = ({ isOpen, onClose, onUpload, questionId }) => {
+const ImageUploadModal = ({ isOpen, onClose, onUpload }) => {
 	const [dragging, setDragging] = useState(false);
 	const [uploading, setUploading] = useState(false);
 	const [error, setError] = useState('');
@@ -74,8 +73,12 @@ const ImageUploadModal = ({ isOpen, onClose, onUpload, questionId }) => {
 			const formData = new FormData();
 			formData.append('file', file);
 
+			// Decoupled endpoint (since 2.3.0): upload returns an attachment
+			// without binding it to a specific question. The question editor's
+			// save handler runs register_image_ownership over the saved HTML
+			// to establish ownership for refcounted cleanup.
 			const response = await apiFetch({
-				path: `/ppq/v1/questions/${questionId}/upload-image`,
+				path: '/ppq/v1/upload-image',
 				method: 'POST',
 				body: formData,
 			});

@@ -176,7 +176,6 @@ const AnswersList = ({ answers, questionType, questionId, onChange }) => {
 														answer={answer}
 														index={index}
 														questionType={questionType}
-														questionId={questionId}
 														canRemove={answers.length > minAnswers}
 														dragHandleProps={provided.dragHandleProps}
 														onUpdate={(updates) => handleUpdateAnswer(answer.id, updates)}

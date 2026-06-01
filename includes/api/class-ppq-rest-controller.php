@@ -84,6 +84,25 @@ class PressPrimer_Quiz_REST_Controller {
 			]
 		);
 
+		// Decoupled upload endpoint (since 2.3.0). Uploads an image to the
+		// media library without binding it to a specific question — ownership
+		// is registered at question save time via register_image_ownership.
+		// Lets the Question Editor's image button work on brand-new questions
+		// (where the question ID doesn't exist yet) without an auto-draft
+		// hack. The older `/questions/{id}/upload-image` is preserved for any
+		// integrator that depended on the upload-time ownership tagging.
+		register_rest_route(
+			'ppq/v1',
+			'/upload-image',
+			[
+				[
+					'methods'             => WP_REST_Server::CREATABLE,
+					'callback'            => [ $this, 'upload_image' ],
+					'permission_callback' => [ $this, 'check_permission' ],
+				],
+			]
+		);
+
 		// Taxonomies endpoints
 		register_rest_route(
 			'ppq/v1',
@@ -826,6 +845,28 @@ class PressPrimer_Quiz_REST_Controller {
 			$question->current_revision_id = $revision->id;
 			$question->save();
 
+			// Register image ownership for any `data-ppq-attachment-id`
+			// markers in the saved content. With the 2.3 decoupled upload
+			// endpoint, the /upload-image route creates attachments without
+			// binding them — this is where they get attached to the saved
+			// question. The helper is idempotent (skips attachment IDs that
+			// already own this question), so it's safe even when no new
+			// attachments were added.
+			$ownership_html = implode(
+				"\n",
+				array_merge(
+					array( $revision->stem ),
+					array_map(
+						static function ( $answer ) {
+							return isset( $answer['text'] ) ? (string) $answer['text'] : '';
+						},
+						$answers
+					),
+					array( $revision->feedback_correct, $revision->feedback_incorrect )
+				)
+			);
+			PressPrimer_Quiz_Question::register_image_ownership( $question->id, $ownership_html );
+
 			// Set taxonomies
 			if ( ! empty( $data['categories'] ) ) {
 				$question->set_categories( array_map( 'absint', $data['categories'] ) );
@@ -976,6 +1017,25 @@ class PressPrimer_Quiz_REST_Controller {
 				// Update question with new revision ID
 				$question->current_revision_id = $revision->id;
 				$question->save();
+
+				// Register image ownership for any `data-ppq-attachment-id`
+				// markers in the new revision (free 2.3 decoupled-upload
+				// flow). Same idempotent helper as create_question; only
+				// runs when a new revision was actually saved.
+				$ownership_html = implode(
+					"\n",
+					array_merge(
+						array( $revision->stem ),
+						array_map(
+							static function ( $answer ) {
+								return isset( $answer['text'] ) ? (string) $answer['text'] : '';
+							},
+							$answers
+						),
+						array( $revision->feedback_correct, $revision->feedback_incorrect )
+					)
+				);
+				PressPrimer_Quiz_Question::register_image_ownership( $question->id, $ownership_html );
 			}
 
 			// Update taxonomies
@@ -1184,6 +1244,152 @@ class PressPrimer_Quiz_REST_Controller {
 		// so duplicating a question can add a SECOND row referencing the
 		// same attachment without overwriting the original ownership.
 		add_post_meta( $attachment_id, '_ppq_question_id', $question_id );
+
+		return new WP_REST_Response(
+			array(
+				'id'     => (int) $attachment_id,
+				'url'    => wp_get_attachment_url( $attachment_id ),
+				'alt'    => '',
+				'width'  => isset( $attachment_metadata['width'] ) ? (int) $attachment_metadata['width'] : 0,
+				'height' => isset( $attachment_metadata['height'] ) ? (int) $attachment_metadata['height'] : 0,
+			),
+			200
+		);
+	}
+
+	/**
+	 * Upload an image without binding to a specific question
+	 *
+	 * Decoupled counterpart to upload_question_image(). Runs the same upload
+	 * pipeline (size, MIME, content-type validation, wp_handle_upload,
+	 * attachment insert) but does not tag the new attachment with
+	 * `_ppq_question_id` — ownership is registered at question save time
+	 * via PressPrimer_Quiz_Question::register_image_ownership, scanning the
+	 * saved stem/answers/feedback for `data-ppq-attachment-id` markers.
+	 *
+	 * This lets the Question Editor's image button work on a brand-new
+	 * question that doesn't have an ID yet, with no auto-draft hack.
+	 *
+	 * @since 2.3.0
+	 *
+	 * @param WP_REST_Request $request Request object.
+	 * @return WP_REST_Response|WP_Error Image metadata on success, WP_Error on validation failure.
+	 */
+	public function upload_image( $request ) {
+		unset( $request );
+
+		// Validate $_FILES.
+		// phpcs:ignore WordPress.Security.NonceVerification.Missing -- Permission check on the route; nonce handled by REST framework.
+		if ( empty( $_FILES['file'] ) || ! is_array( $_FILES['file'] ) ) {
+			return new WP_Error(
+				'missing_file',
+				__( 'No file was uploaded.', 'pressprimer-quiz' ),
+				array( 'status' => 400 )
+			);
+		}
+
+		// phpcs:ignore WordPress.Security.NonceVerification.Missing
+		$upload_error = isset( $_FILES['file']['error'] ) ? (int) $_FILES['file']['error'] : UPLOAD_ERR_NO_FILE;
+		if ( UPLOAD_ERR_OK !== $upload_error ) {
+			$status = ( UPLOAD_ERR_INI_SIZE === $upload_error || UPLOAD_ERR_FORM_SIZE === $upload_error ) ? 413 : 400;
+			return new WP_Error(
+				'upload_error',
+				__( 'Upload failed.', 'pressprimer-quiz' ),
+				array( 'status' => $status )
+			);
+		}
+
+		// Sanitize incoming file metadata early.
+		// phpcs:ignore WordPress.Security.NonceVerification.Missing,WordPress.Security.ValidatedSanitizedInput.InputNotValidated
+		$file_name = sanitize_file_name( wp_unslash( $_FILES['file']['name'] ?? '' ) );
+		// phpcs:ignore WordPress.Security.NonceVerification.Missing,WordPress.Security.ValidatedSanitizedInput.InputNotValidated
+		$file_size = isset( $_FILES['file']['size'] ) ? absint( $_FILES['file']['size'] ) : 0;
+		// tmp_name is a PHP-generated server path, not user-controlled content; passing it through wp_check_filetype_and_ext() below validates the actual file contents.
+		// phpcs:ignore WordPress.Security.NonceVerification.Missing,WordPress.Security.ValidatedSanitizedInput.InputNotValidated,WordPress.Security.ValidatedSanitizedInput.InputNotSanitized
+		$file_tmp = isset( $_FILES['file']['tmp_name'] ) ? wp_unslash( $_FILES['file']['tmp_name'] ) : '';
+
+		// Enforce the size cap (default 8 MB, filterable).
+		$max_size = (int) apply_filters( 'pressprimer_quiz_image_upload_max_size', 8 * 1024 * 1024 );
+		if ( $file_size > $max_size ) {
+			return new WP_Error(
+				'file_too_large',
+				sprintf(
+					/* translators: %s: maximum file size in MB */
+					__( 'File too large. Maximum allowed: %s MB.', 'pressprimer-quiz' ),
+					number_format_i18n( $max_size / ( 1024 * 1024 ), 1 )
+				),
+				array( 'status' => 413 )
+			);
+		}
+
+		// MIME whitelist.
+		$allowed_mimes = (array) apply_filters(
+			'pressprimer_quiz_image_upload_allowed_mimes',
+			array( 'image/jpeg', 'image/png', 'image/gif', 'image/webp' )
+		);
+
+		$ext_to_mime  = array();
+		$mime_ext_map = array(
+			'image/jpeg' => 'jpg|jpeg|jpe',
+			'image/png'  => 'png',
+			'image/gif'  => 'gif',
+			'image/webp' => 'webp',
+		);
+		foreach ( $allowed_mimes as $mime ) {
+			if ( isset( $mime_ext_map[ $mime ] ) ) {
+				$ext_to_mime[ $mime_ext_map[ $mime ] ] = $mime;
+			}
+		}
+
+		$detected = wp_check_filetype_and_ext( $file_tmp, $file_name, $ext_to_mime );
+		if ( empty( $detected['type'] ) || ! in_array( $detected['type'], $allowed_mimes, true ) ) {
+			return new WP_Error(
+				'unsupported_mime_type',
+				__( 'Unsupported file type. Allowed: JPG, PNG, GIF, WebP.', 'pressprimer-quiz' ),
+				array( 'status' => 415 )
+			);
+		}
+
+		require_once ABSPATH . 'wp-admin/includes/file.php';
+		require_once ABSPATH . 'wp-admin/includes/image.php';
+		require_once ABSPATH . 'wp-admin/includes/media.php';
+
+		$overrides = array(
+			'test_form' => false,
+			'mimes'     => $ext_to_mime,
+		);
+
+		// phpcs:ignore WordPress.Security.NonceVerification.Missing,WordPress.Security.ValidatedSanitizedInput.InputNotValidated
+		$upload = wp_handle_upload( $_FILES['file'], $overrides );
+
+		if ( ! empty( $upload['error'] ) ) {
+			return new WP_Error(
+				'upload_failed',
+				$upload['error'],
+				array( 'status' => 500 )
+			);
+		}
+
+		$attachment_id = wp_insert_attachment(
+			array(
+				'post_mime_type' => $upload['type'],
+				'post_title'     => sanitize_file_name( pathinfo( $upload['file'], PATHINFO_FILENAME ) ),
+				'post_content'   => '',
+				'post_status'    => 'inherit',
+			),
+			$upload['file']
+		);
+
+		if ( is_wp_error( $attachment_id ) ) {
+			return $attachment_id;
+		}
+
+		$attachment_metadata = wp_generate_attachment_metadata( $attachment_id, $upload['file'] );
+		wp_update_attachment_metadata( $attachment_id, $attachment_metadata );
+
+		// No _ppq_question_id tagging here — ownership is registered at
+		// question save time by the create_question / update_question
+		// handlers calling register_image_ownership.
 
 		return new WP_REST_Response(
 			array(

@@ -8,7 +8,7 @@ Requires PHP: 7.4
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
-Enterprise-grade quiz builder plugin with AI question generation, LMS integration, and beautiful themes. Free forever.
+Enterprise-grade quiz and assessment platform for educators with AI question generation, LMS integration, and modern themes.
 
 == Description ==
 

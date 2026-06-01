@@ -2,7 +2,7 @@
 /**
  * Plugin Name:       PressPrimer Quiz
  * Plugin URI:        https://pressprimer.com/quiz
- * Description:       Enterprise-grade quiz and assessment platform for WordPress educators.
+ * Description:       Enterprise-grade quiz and assessment platform for educators with AI question generation, LMS integration, and modern themes.
  * Version:           2.3.0
  * Requires at least: 6.4
  * Requires PHP:      7.4

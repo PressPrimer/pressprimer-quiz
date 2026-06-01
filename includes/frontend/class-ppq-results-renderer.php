@@ -916,7 +916,7 @@ class PressPrimer_Quiz_Results_Renderer {
 			return;
 		}
 
-		$answers          = $revision->get_answers();
+		$answers          = $this->resolve_displayed_answers( $revision->get_answers(), $item );
 		$selected_answers = $item->get_selected_answers();
 
 		// Determine status
@@ -1140,6 +1140,61 @@ class PressPrimer_Quiz_Results_Renderer {
 			</div>
 		</div>
 		<?php
+	}
+
+	/**
+	 * Resolve the answers actually shown to the student for this attempt item.
+	 *
+	 * When a quiz uses random distractor selection (free 2.3
+	 * `max_answers_per_question`), the attempt item's `answer_order_json`
+	 * stores the indices and order of the answers actually displayed during
+	 * the attempt. Reviewing the full revision set on the results page would
+	 * surface answers the student never saw, which is confusing and
+	 * pedagogically wrong (the score is subset-aware; the review should be
+	 * too). The student also expects to see the answers in the same order
+	 * they were presented during the attempt.
+	 *
+	 * When `answer_order_json` is empty, NULL, or malformed, this falls back
+	 * to the full answer set so pre-2.3 attempts and attempts on uncapped
+	 * quizzes render exactly as before.
+	 *
+	 * The original answer index is preserved as the array key so downstream
+	 * callers (selected-answer matching by index, is_correct lookups, per-
+	 * answer feedback) keep working without modification.
+	 *
+	 * @since 2.3.0
+	 *
+	 * @param array                         $all_answers Full answer set from the revision.
+	 * @param PressPrimer_Quiz_Attempt_Item $item        Attempt item.
+	 * @return array Subset of $all_answers preserving the shown order; keys
+	 *               are the original revision indices.
+	 */
+	private function resolve_displayed_answers( $all_answers, $item ) {
+		if ( empty( $item->answer_order_json ) ) {
+			return $all_answers;
+		}
+
+		$shown_indices = json_decode( $item->answer_order_json, true );
+		if ( ! is_array( $shown_indices ) || empty( $shown_indices ) ) {
+			return $all_answers;
+		}
+
+		$displayed = array();
+		foreach ( $shown_indices as $shown_index ) {
+			$shown_index = (int) $shown_index;
+			if ( isset( $all_answers[ $shown_index ] ) ) {
+				$displayed[ $shown_index ] = $all_answers[ $shown_index ];
+			}
+		}
+
+		// Defensive fallback: if the decode yielded zero usable matches
+		// (e.g., stored against a different revision), show the full set so
+		// the student sees something rather than nothing.
+		if ( empty( $displayed ) ) {
+			return $all_answers;
+		}
+
+		return $displayed;
 	}
 
 	/**

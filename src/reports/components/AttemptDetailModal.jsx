@@ -27,6 +27,23 @@ import {
 import { formatTime, formatDate } from '../utils/dateUtils';
 
 /**
+ * Strip HTML for the collapsed one-line question summary. Images become a
+ * "[image]" marker so image-only questions don't render as a blank line, and
+ * the user can see at a glance that the expanded view contains an image.
+ *
+ * @param {string} html The raw stem HTML.
+ * @return {string} Plain-text summary.
+ */
+const stemToSummary = (html) => {
+	if (!html) {
+		return '';
+	}
+	const withImagePlaceholder = String(html).replace(/<img\b[^>]*>/gi, ' [image] ');
+	const doc = new DOMParser().parseFromString(withImagePlaceholder, 'text/html');
+	return (doc.body.textContent || '').replace(/\s+/g, ' ').trim();
+};
+
+/**
  * Attempt Detail Modal Component
  *
  * @param {Object} props Component props
@@ -210,7 +227,7 @@ const AttemptDetailModal = ({ visible, attempt, onClose }) => {
 								{index + 1}.
 							</span>
 							<span className="ppq-attempt-question-stem">
-								{item.stem || __('Question', 'pressprimer-quiz')}
+								{stemToSummary(item.stem) || __('Question', 'pressprimer-quiz')}
 							</span>
 						</div>
 						<div className="ppq-attempt-question-meta">

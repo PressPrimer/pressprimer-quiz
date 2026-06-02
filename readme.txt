@@ -223,6 +223,7 @@ This plugin offers optional AI-powered question generation using the OpenAI API.
 * Fixed: The Attempt Details modal in the Recent Attempts report now displays images embedded in question stems and answer options. Images in the admin Quiz Preview are also now sized to fit within the layout.
 * Fixed: When a quiz uses Maximum Answers Per Question, the results page now reviews only the answers the student actually saw (in the same order they were presented), instead of revealing distractors that were never shown.
 * Fixed: The image upload button is now available in the question stem and answer editors immediately when creating a new question, not only after the question has been saved.
+* Fixed: The collapsed question list in the Recent Attempts report's Attempt Details modal no longer shows raw HTML when a question contains formatting or an image. Images are summarized as "[image]" and the formatted version remains available under Show Details.
 
 = 2.2.2 =
 * Fixed: Pasting formatted content from Word, Google Docs, or other rich-text sources could break the answer layout by separating the radio button from its text. Links inside answers now always open in a new tab so students do not lose their progress.

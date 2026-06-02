@@ -218,12 +218,14 @@ This plugin offers optional AI-powered question generation using the OpenAI API.
 * Added: New "Upgrade" menu page for users on the free plugin or Educator/School tier, with a side-by-side comparison of every plan and a 14-day money-back guarantee.
 * Added: Sticky Table of Contents on the Quiz Editor Settings tab with a Save Quiz button, so you can jump between sections and save without scrolling. Hidden on browsers narrower than 1100 pixels.
 * Improved: Answer-text and feedback character limits now count visible text only, so embedded images no longer eat the budget.
+* Improved: The Quiz Editor Settings tab now uses consistent field widths, helper text spacing, tooltips, and font sizes across every section for a cleaner, more readable layout.
 * Added: Developers and theme authors can customize how the score is displayed on the results page via the new `pressprimer_quiz_results_score_html` filter — useful for hiding the percent symbol, switching to a custom label like "star points", or rendering the absolute score.
 * Fixed: Duplicating a quiz now copies the multiple-answer scoring mode, quiz-level display defaults, Maximum Answers Per Question setting, and Show Points Per Question toggle to the new quiz. Previously these settings reverted to defaults on the copy.
 * Fixed: The Attempt Details modal in the Recent Attempts report now displays images embedded in question stems and answer options. Images in the admin Quiz Preview are also now sized to fit within the layout.
 * Fixed: When a quiz uses Maximum Answers Per Question, the results page now reviews only the answers the student actually saw (in the same order they were presented), instead of revealing distractors that were never shown.
 * Fixed: The image upload button is now available in the question stem and answer editors immediately when creating a new question, not only after the question has been saved.
 * Fixed: The collapsed question list in the Recent Attempts report's Attempt Details modal no longer shows raw HTML when a question contains formatting or an image. Images are summarized as "[image]" and the formatted version remains available under Show Details.
+* Fixed: LMS integration meta-box dropdowns (LearnDash, Tutor LMS, LifterLMS, LearnPress) now show every published quiz to administrators, instead of limiting the list to quizzes they personally authored.
 
 = 2.2.2 =
 * Fixed: Pasting formatted content from Word, Google Docs, or other rich-text sources could break the answer layout by separating the radio button from its text. Links inside answers now always open in a new tab so students do not lose their progress.

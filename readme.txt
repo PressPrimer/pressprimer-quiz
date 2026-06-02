@@ -20,16 +20,17 @@ https://www.youtube.com/watch?v=YHyooYXKLo0
 
 = Why Choose PressPrimer Quiz? =
 
-Most WordPress quiz plugins were built for BuzzFeed-style trivia and basic scoring, not serious assessment. Meanwhile, built-in LMS quiz tools are afterthoughts with limited reporting, basic features, and dated interfaces. Enterprise LMS platforms cost $10,000-$100,000 per year with per-user fees.
+Most WordPress quiz plugins were built for BuzzFeed-style trivia and basic scoring, not serious assessment. Quiz features in LMS plugins are often afterthoughts with limited reporting, basic features, and dated interfaces. Enterprise quiz platforms can cost thousands per year.
 
-PressPrimer Quiz delivers enterprise-grade assessment and includes all of the critical features you normally expect in premium plugins at no cost:
+PressPrimer Quiz delivers enterprise-grade assessment and includes all of the critical features you get in premium plugins at no cost:
 
 * **AI-Powered Question Generation** – Use your own OpenAI API key to generate questions from text, PDFs, or Word documents. No credits to buy, no middleware fees, no limits.
 * **Deep LMS Integration** – Native integration with popular WordPress LMS plugins, including LearnDash, Tutor LMS, LifterLMS, and LearnPress. Quizzes appear in lessons or topics, trigger completions, and respect enrollment—automatically.
-* **Modern, Beautiful Design** – Three professional themes that rival SaaS products. Your quizzes won't look like forms from 2005.
+* **Modern, Beautiful Design** – Three professional themes that rival SaaS products.
 * **Real Reporting** – Score distribution, category breakdowns, time analytics, confidence reporting, and attempt history. 
 * **Built to Prevent Cheating** – Server-side answer validation means correct answers are never exposed in page source. You can also limit attempts and force delays between retries.
 * **Server-Side Resume That Works Everywhere** – Every answer is instantly saved to the server. Students can pause on their phone and resume on their laptop without losing a single response.
+* **Designed for Real Assessment** – Four multiple-answer scoring modes for every context and institutional grading system. Embed images directly in question stems and answer options with a drag-and-drop uploader.
 
 = Free Features That Cost Money Elsewhere =
 
@@ -42,13 +43,16 @@ PressPrimer Quiz includes features in the free version that competitors charge f
 * **Dynamic quiz generation** – Pull random questions based on category, difficulty, and question bank
 * **Server-side save and resume** – Students can pause and continue later from any device
 * **Guest support** – Optional email capture for non-registered users
-* **Quiz access controls** – Require login, allow guests, or let the quiz settings decide
 * **Score-banded feedback** – Different messages based on performance
+* **Four multiple-answer scoring modes** – Right Minus Wrong, Proportional, Partial No Wrong, and All-or-Nothing
 * **Per-question and per-answer feedback** – Explain correct and incorrect answers
+* **Images in questions and answers** – Drag-and-drop uploader with a click-to-zoom lightbox on the frontend
 * **Confidence ratings** – Optional checkbox for students to indicate certainty
 * **Three professional themes** – Default, Modern, and Minimal
 * **Question pool** – Limit the number of questions shown per attempt so each student gets a random subset from the full list
+* **Random distractor subsets** – Maximum Answers Per Question shows each student a random subset of distractors while always showing every correct answer
 * **Customizable Appearance** – Adjust fonts, colors, spacing, and other visual styles. Includes Condensed Mode for streamlined quizzes with reduced vertical spacing.
+* **Per-quiz display settings** – Choose display options (description, score, pass/fail status, category breakdown, retake button, and more) for every quiz
 * **Uncanny Automator integration** – Triggers for quiz completion, pass, and fail, with a comprehensive set of tokens for use in automations
 
 = Perfect For =
@@ -62,7 +66,7 @@ PressPrimer Quiz includes features in the free version that competitors charge f
 
 = Focused on What Matters for Learning =
 
-PressPrimer Quiz concentrates on multiple choice, multiple answer, and true/false question types to deliver the best possible experience for learning and performance assessment. By focusing on these core formats, we deliver enterprise-quality features, including massive question banks, anti-cheat protection, detailed analytics, and bulletproof reliability, rather than spreading thin across dozens of mediocre options.
+PressPrimer Quiz concentrates on multiple choice, multiple answer, and true/false question types to deliver the best possible experience for learning and performance assessment. By focusing on these core formats, we deliver enterprise-quality features, including massive question banks, anti-cheat protection, detailed analytics, and bulletproof reliability.
 
 = Built-in Integrations =
 
@@ -85,22 +89,22 @@ All integrations are bundled in the free version.
 Unlock additional premium features at [pressprimer.com](https://pressprimer.com/):
 
 * **Groups & Assignments** – Organize students into groups, assign quizzes with due dates, and track completion progress
+* **Spaced Repetition** – Schedule review sessions using the SM-2 algorithm with a student dashboard, email reminders, and educator tracking
 * **Import/Export** – Move questions between sites or migrate from other quiz plugins with CSV, JSON, and XML support
 * **Pre/Post Test Analysis** – Link quizzes as pre/post pairs and measure learning gain with score and category comparison charts
 * **Quiz Detail Reports** – Per-quiz analytics dashboard with score distribution, category performance, question difficulty analysis, and score trends over time
 * **Group Performance Reports** – Compare groups side by side, drill into individual member results, and track weekly score trends
-* **Question Quality Analytics** – Identify problem questions with difficulty indexes, discrimination analysis, and distractor effectiveness reports
+* **Question Quality Analytics** – Identify problem questions with difficulty indexes, discrimination analysis, and distractor effectiveness analysis
 * **LearnDash Quiz Import** – Migrate entire LearnDash quizzes with questions into PressPrimer Quiz individually or in batches
 * **Quiz Proctoring** – Monitor tab switches and fullscreen exits during quiz attempts with configurable flag thresholds, incident reports, per-quiz overrides, and desktop-only enforcement
-* **xAPI/LRS Integration** – Send detailed learning data to your Learning Record Store for compliance and analytics
-* **White-Label Branding** – Remove all PressPrimer branding and customize with your own logos, colors, and plugin name
-* **Audit Logging** – Immutable log of every quiz, question, settings, and attempt change for compliance and accountability
-* **Question Recovery & Version History** – Restore deleted questions and track every edit with one-click rollback to previous versions
-* **AI Distractor Generation** – Generate plausible wrong answers for multiple choice questions using OpenAI, with individual review and bulk generation across entire question banks
 * **Assignment Reminder Emails** – Automated reminder emails for students approaching assignment deadlines, with configurable timing windows and customizable templates
 * **Branching Logic** – Create rules that skip or jump to questions based on student answers, with path-through-quiz visualization in reports
 * **Curve Grading** – Apply grading curves to quiz scores with multiple methods
-* **Spaced Repetition** – Schedule review sessions using the SM-2 algorithm with a student dashboard, email reminders, and educator tracking
+* **xAPI/LRS Integration** – Send detailed learning data to your Learning Record Store for compliance and analytics
+* **White-Label Branding** – Remove all PressPrimer branding and customize with your own logos, colors, and plugin name
+* **Audit Logging** – Read-only log of every quiz, question, settings, and attempt change for compliance and accountability
+* **Question Recovery & Version History** – Restore deleted questions and track every edit with one-click rollback to previous versions
+* **AI Distractor Generation** – Generate plausible wrong answers for multiple choice questions using OpenAI, with individual review and bulk generation across entire question banks
 
 = Scale-Ready Architecture =
 
@@ -214,16 +218,11 @@ This plugin offers optional AI-powered question generation using the OpenAI API.
 * Added: Set per-quiz default display options that apply across every shortcode and block for that quiz. The Quiz block has a "Use Quiz Defaults" toggle so individual placements can still override.
 * Added: Maximum Answers Per Question — show students a random subset of distractors while always showing every correct answer. Scoring is subset-aware, so students are never penalized for answers they did not see.
 * Added: Insert images in question stems and answer options via a private drag-and-drop uploader. Front-end images include a click-to-zoom lightbox.
-* Added: Images uploaded to a question are automatically cleaned up when the question is permanently deleted, and duplicated when the question is duplicated. The WordPress media library is never exposed to authors.
 * Added: New "Upgrade" menu page for users on the free plugin or Educator/School tier, with a side-by-side comparison of every plan and a 14-day money-back guarantee.
 * Added: Sticky Table of Contents on the Quiz Editor Settings tab with a Save Quiz button, so you can jump between sections and save without scrolling. Hidden on browsers narrower than 1100 pixels.
-* Improved: Answer-text and feedback character limits now count visible text only, so embedded images no longer eat the budget.
 * Improved: The Quiz Editor Settings tab now uses consistent field widths, helper text spacing, tooltips, and font sizes across every section for a cleaner, more readable layout.
 * Added: Developers and theme authors can customize how the score is displayed on the results page via the new `pressprimer_quiz_results_score_html` filter — useful for hiding the percent symbol, switching to a custom label like "star points", or rendering the absolute score.
 * Fixed: Duplicating a quiz now copies the multiple-answer scoring mode, quiz-level display defaults, Maximum Answers Per Question setting, and Show Points Per Question toggle to the new quiz. Previously these settings reverted to defaults on the copy.
-* Fixed: The Attempt Details modal in the Recent Attempts report now displays images embedded in question stems and answer options. Images in the admin Quiz Preview are also now sized to fit within the layout.
-* Fixed: When a quiz uses Maximum Answers Per Question, the results page now reviews only the answers the student actually saw (in the same order they were presented), instead of revealing distractors that were never shown.
-* Fixed: The image upload button is now available in the question stem and answer editors immediately when creating a new question, not only after the question has been saved.
 * Fixed: The collapsed question list in the Recent Attempts report's Attempt Details modal no longer shows raw HTML when a question contains formatting or an image. Images are summarized as "[image]" and the formatted version remains available under Show Details.
 * Fixed: LMS integration meta-box dropdowns (LearnDash, Tutor LMS, LifterLMS, LearnPress) now show every published quiz to administrators, instead of limiting the list to quizzes they personally authored.
 

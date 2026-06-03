@@ -508,6 +508,22 @@ class PressPrimer_Quiz_Migrator {
 				)
 			);
 		}
+
+		// Pin every pre-2.3 quiz to right_minus_wrong. Under 2.2.x there was
+		// only one MA scoring behavior, equivalent to right_minus_wrong, so a
+		// NULL value here would otherwise resolve to the site default and
+		// silently rescore historic quizzes when an admin changes the default.
+		// The IS NULL guard makes this idempotent and a no-op for quizzes
+		// authored under 2.3 where the editor leaves the column NULL on
+		// purpose so they can inherit future site-default changes.
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching
+		$wpdb->query(
+			$wpdb->prepare(
+				'UPDATE %i SET ma_scoring_mode = %s WHERE ma_scoring_mode IS NULL',
+				$table_name,
+				'right_minus_wrong'
+			)
+		);
 	}
 
 	/**

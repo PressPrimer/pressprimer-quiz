@@ -744,6 +744,19 @@
 	line-height: 1.5;
 }
 
+/* Answer HTML is authored in TinyMCE, so it usually starts with a <p> whose
+   default top margin pushes the first line of text down. That misaligns the
+   text with the correct/incorrect indicator (which sits at the top of the
+   flex row). Strip the leading/trailing block margins so the first line of
+   answer text aligns with the indicator and there is no trailing whitespace. */
+.ppq-attempt-answer-text > *:first-child {
+	margin-top: 0;
+}
+
+.ppq-attempt-answer-text > *:last-child {
+	margin-bottom: 0;
+}
+
 /* Constrain images embedded in stem / answer HTML (v2.3 image support).
    Mirrors the 80% width clamp used on the student-facing quiz pages so
    admins reviewing an attempt see images at a similar relative size. */

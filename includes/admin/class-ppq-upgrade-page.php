@@ -373,7 +373,7 @@ class PressPrimer_Quiz_Upgrade_Page {
 			),
 			array(
 				'category'   => $reporting,
-				'feature'    => __( 'Item analysis (difficulty, discrimination)', 'pressprimer-quiz' ),
+				'feature'    => __( 'Question analysis (difficulty, discrimination)', 'pressprimer-quiz' ),
 				'free'       => false,
 				'educator'   => false,
 				'school'     => true,
@@ -433,7 +433,7 @@ class PressPrimer_Quiz_Upgrade_Page {
 			),
 			array(
 				'category'   => $advanced,
-				'feature'    => __( 'Browser-lockdown proctoring', 'pressprimer-quiz' ),
+				'feature'    => __( 'Proctoring tools', 'pressprimer-quiz' ),
 				'free'       => false,
 				'educator'   => false,
 				'school'     => false,
@@ -441,7 +441,7 @@ class PressPrimer_Quiz_Upgrade_Page {
 			),
 			array(
 				'category'   => $advanced,
-				'feature'    => __( 'Audit log of administrative actions', 'pressprimer-quiz' ),
+				'feature'    => __( 'Audit log', 'pressprimer-quiz' ),
 				'free'       => false,
 				'educator'   => false,
 				'school'     => false,
@@ -500,7 +500,7 @@ class PressPrimer_Quiz_Upgrade_Page {
 				'description' => __( 'Everything in Educator plus item analysis, xAPI/LRS, availability windows, and spaced repetition.', 'pressprimer-quiz' ),
 				'highlights'  => array(
 					__( 'Everything in Educator', 'pressprimer-quiz' ),
-					__( 'Item analysis & pre/post comparison', 'pressprimer-quiz' ),
+					__( 'Question analysis & pre/post comparison', 'pressprimer-quiz' ),
 					__( 'xAPI / LRS integration', 'pressprimer-quiz' ),
 					__( 'Spaced repetition scheduling', 'pressprimer-quiz' ),
 					__( 'LearnDash quiz import', 'pressprimer-quiz' ),
@@ -514,10 +514,10 @@ class PressPrimer_Quiz_Upgrade_Page {
 				'description' => __( 'Everything in School plus audit logging, white-label branding, branching logic, and proctoring.', 'pressprimer-quiz' ),
 				'highlights'  => array(
 					__( 'Everything in School', 'pressprimer-quiz' ),
+					__( 'Proctoring tools', 'pressprimer-quiz' ),
+					__( 'Branching logic', 'pressprimer-quiz' ),
 					__( 'White-label branding', 'pressprimer-quiz' ),
-					__( 'Branching / conditional questions', 'pressprimer-quiz' ),
-					__( 'Browser-lockdown proctoring', 'pressprimer-quiz' ),
-					__( 'Audit log of admin actions', 'pressprimer-quiz' ),
+					__( 'Audit log', 'pressprimer-quiz' ),
 				),
 				'url'         => 'https://pressprimer.com/pressprimer-quiz-enterprise/',
 			),

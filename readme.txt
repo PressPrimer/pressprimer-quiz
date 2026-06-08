@@ -20,7 +20,7 @@ https://www.youtube.com/watch?v=YHyooYXKLo0
 
 = Why Choose PressPrimer Quiz? =
 
-Most WordPress quiz plugins were built for BuzzFeed-style trivia and basic scoring, not serious assessment. Quiz features in LMS plugins are often afterthoughts with limited reporting, basic features, and dated interfaces. Enterprise quiz platforms can cost thousands per year.
+Most WordPress quiz plugins are built for BuzzFeed-style trivia and basic scoring, not serious assessment. Quiz features in LMS plugins are often afterthoughts with limited reporting, basic features, and dated interfaces. Enterprise quiz platforms can cost thousands per year.
 
 PressPrimer Quiz delivers enterprise-grade assessment and includes all of the critical features you get in premium plugins at no cost:
 
@@ -46,12 +46,12 @@ PressPrimer Quiz includes features in the free version that competitors charge f
 * **Score-banded feedback** – Different messages based on performance
 * **Four multiple-answer scoring modes** – Right Minus Wrong, Proportional, Partial No Wrong, and All-or-Nothing
 * **Per-question and per-answer feedback** – Explain correct and incorrect answers
-* **Images in questions and answers** – Drag-and-drop uploader with a click-to-zoom lightbox on the frontend
+* **Images in questions and answers** – Drag-and-drop uploader with a click-to-zoom lightbox on the front end
 * **Confidence ratings** – Optional checkbox for students to indicate certainty
 * **Three professional themes** – Default, Modern, and Minimal
 * **Question pool** – Limit the number of questions shown per attempt so each student gets a random subset from the full list
 * **Random distractor subsets** – Maximum Answers Per Question shows each student a random subset of distractors while always showing every correct answer
-* **Customizable Appearance** – Adjust fonts, colors, spacing, and other visual styles. Includes Condensed Mode for streamlined quizzes with reduced vertical spacing.
+* **Customizable Appearance** – Adjust fonts, colors, spacing, and other visual styles; includes Condensed Mode for streamlined quizzes with reduced vertical spacing
 * **Per-quiz display settings** – Choose display options (description, score, pass/fail status, category breakdown, retake button, and more) for every quiz
 * **Uncanny Automator integration** – Triggers for quiz completion, pass, and fail, with a comprehensive set of tokens for use in automations
 
@@ -91,7 +91,7 @@ Unlock additional premium features at [pressprimer.com](https://pressprimer.com/
 * **Groups & Assignments** – Organize students into groups, assign quizzes with due dates, and track completion progress
 * **Spaced Repetition** – Schedule review sessions using the SM-2 algorithm with a student dashboard, email reminders, and educator tracking
 * **Import/Export** – Move questions between sites or migrate from other quiz plugins with CSV, JSON, and XML support
-* **Pre/Post Test Analysis** – Link quizzes as pre/post pairs and measure learning gain with score and category comparison charts
+* **Pre-/Post-Test Analysis** – Link quizzes as pre/post pairs and measure learning gain with score and category comparison charts
 * **Quiz Detail Reports** – Per-quiz analytics dashboard with score distribution, category performance, question difficulty analysis, and score trends over time
 * **Group Performance Reports** – Compare groups side by side, drill into individual member results, and track weekly score trends
 * **Question Quality Analytics** – Identify problem questions with difficulty indexes, discrimination analysis, and distractor effectiveness analysis

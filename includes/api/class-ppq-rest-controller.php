@@ -479,6 +479,31 @@ class PressPrimer_Quiz_REST_Controller {
 	}
 
 	/**
+	 * Load a quiz by ID and verify the current user owns it.
+	 *
+	 * Centralizes the ownership pattern so every per-quiz handler shares
+	 * the same check. Admins with pressprimer_quiz_manage_all bypass the
+	 * owner test. Returns 404 when the quiz does not exist and 403 when
+	 * the requester does not own it.
+	 *
+	 * @since 2.3.1
+	 *
+	 * @param int $quiz_id Quiz ID.
+	 * @return PressPrimer_Quiz_Quiz|WP_Error Quiz on success, error otherwise.
+	 */
+	private function get_owned_quiz_or_error( $quiz_id ) {
+		$quiz = PressPrimer_Quiz_Quiz::get( absint( $quiz_id ) );
+		if ( ! $quiz ) {
+			return new WP_Error( 'not_found', __( 'Quiz not found.', 'pressprimer-quiz' ), [ 'status' => 404 ] );
+		}
+		if ( ! current_user_can( 'pressprimer_quiz_manage_all' )
+			&& absint( $quiz->owner_id ) !== get_current_user_id() ) {
+			return new WP_Error( 'forbidden', __( 'You do not have permission.', 'pressprimer-quiz' ), [ 'status' => 403 ] );
+		}
+		return $quiz;
+	}
+
+	/**
 	 * Check editor permission for block usage
 	 *
 	 * Allows users who can edit posts to see the list of published quizzes
@@ -2396,7 +2421,13 @@ class PressPrimer_Quiz_REST_Controller {
 	 */
 	public function get_quiz_items( $request ) {
 		$quiz_id = absint( $request['quiz_id'] );
-		$items   = PressPrimer_Quiz_Quiz_Item::get_for_quiz( $quiz_id );
+
+		$quiz = $this->get_owned_quiz_or_error( $quiz_id );
+		if ( is_wp_error( $quiz ) ) {
+			return $quiz;
+		}
+
+		$items = PressPrimer_Quiz_Quiz_Item::get_for_quiz( $quiz_id );
 
 		$data = array_map(
 			function ( $item ) {
@@ -2438,6 +2469,11 @@ class PressPrimer_Quiz_REST_Controller {
 		$data         = $request->get_json_params();
 		$question_ids = $data['question_ids'] ?? [];
 
+		$quiz = $this->get_owned_quiz_or_error( $quiz_id );
+		if ( is_wp_error( $quiz ) ) {
+			return $quiz;
+		}
+
 		if ( empty( $question_ids ) ) {
 			return new WP_Error( 'no_questions', __( 'No questions provided.', 'pressprimer-quiz' ), [ 'status' => 400 ] );
 		}
@@ -2478,12 +2514,18 @@ class PressPrimer_Quiz_REST_Controller {
 	 * @return WP_REST_Response|WP_Error Response object or error.
 	 */
 	public function update_quiz_item( $request ) {
+		$quiz_id = absint( $request['quiz_id'] );
 		$item_id = absint( $request['item_id'] );
 		$data    = $request->get_json_params();
 
+		$quiz = $this->get_owned_quiz_or_error( $quiz_id );
+		if ( is_wp_error( $quiz ) ) {
+			return $quiz;
+		}
+
 		$item = PressPrimer_Quiz_Quiz_Item::get( $item_id );
 
-		if ( ! $item ) {
+		if ( ! $item || absint( $item->quiz_id ) !== absint( $quiz->id ) ) {
 			return new WP_Error( 'not_found', __( 'Quiz item not found.', 'pressprimer-quiz' ), [ 'status' => 404 ] );
 		}
 
@@ -2505,11 +2547,17 @@ class PressPrimer_Quiz_REST_Controller {
 	 * @return WP_REST_Response|WP_Error Response object or error.
 	 */
 	public function delete_quiz_item( $request ) {
+		$quiz_id = absint( $request['quiz_id'] );
 		$item_id = absint( $request['item_id'] );
+
+		$quiz = $this->get_owned_quiz_or_error( $quiz_id );
+		if ( is_wp_error( $quiz ) ) {
+			return $quiz;
+		}
 
 		$item = PressPrimer_Quiz_Quiz_Item::get( $item_id );
 
-		if ( ! $item ) {
+		if ( ! $item || absint( $item->quiz_id ) !== absint( $quiz->id ) ) {
 			return new WP_Error( 'not_found', __( 'Quiz item not found.', 'pressprimer-quiz' ), [ 'status' => 404 ] );
 		}
 
@@ -2527,11 +2575,26 @@ class PressPrimer_Quiz_REST_Controller {
 	 * @return WP_REST_Response|WP_Error Response object or error.
 	 */
 	public function reorder_quiz_items( $request ) {
+		$quiz_id  = absint( $request['quiz_id'] );
 		$data     = $request->get_json_params();
 		$item_ids = $data['item_ids'] ?? [];
 
+		$quiz = $this->get_owned_quiz_or_error( $quiz_id );
+		if ( is_wp_error( $quiz ) ) {
+			return $quiz;
+		}
+
 		if ( empty( $item_ids ) ) {
 			return new WP_Error( 'no_items', __( 'No items provided.', 'pressprimer-quiz' ), [ 'status' => 400 ] );
+		}
+
+		// Every supplied item must belong to the URL's quiz so the
+		// reorder cannot reach across into another teacher's items.
+		foreach ( $item_ids as $item_id ) {
+			$item = PressPrimer_Quiz_Quiz_Item::get( absint( $item_id ) );
+			if ( ! $item || absint( $item->quiz_id ) !== absint( $quiz->id ) ) {
+				return new WP_Error( 'not_found', __( 'Quiz item not found.', 'pressprimer-quiz' ), [ 'status' => 404 ] );
+			}
 		}
 
 		$result = PressPrimer_Quiz_Quiz_Item::reorder( $item_ids );
@@ -2553,7 +2616,13 @@ class PressPrimer_Quiz_REST_Controller {
 	 */
 	public function get_quiz_rules( $request ) {
 		$quiz_id = absint( $request['quiz_id'] );
-		$rules   = PressPrimer_Quiz_Quiz_Rule::get_for_quiz( $quiz_id );
+
+		$quiz = $this->get_owned_quiz_or_error( $quiz_id );
+		if ( is_wp_error( $quiz ) ) {
+			return $quiz;
+		}
+
+		$rules = PressPrimer_Quiz_Quiz_Rule::get_for_quiz( $quiz_id );
 
 		$data = array_map(
 			function ( $rule ) {
@@ -2588,6 +2657,11 @@ class PressPrimer_Quiz_REST_Controller {
 		$quiz_id = absint( $request['quiz_id'] );
 		$data    = $request->get_json_params();
 
+		$quiz = $this->get_owned_quiz_or_error( $quiz_id );
+		if ( is_wp_error( $quiz ) ) {
+			return $quiz;
+		}
+
 		$rule_id = PressPrimer_Quiz_Quiz_Rule::create(
 			[
 				'quiz_id'        => $quiz_id,
@@ -2615,12 +2689,18 @@ class PressPrimer_Quiz_REST_Controller {
 	 * @return WP_REST_Response|WP_Error Response object or error.
 	 */
 	public function update_quiz_rule( $request ) {
+		$quiz_id = absint( $request['quiz_id'] );
 		$rule_id = absint( $request['rule_id'] );
 		$data    = $request->get_json_params();
 
+		$quiz = $this->get_owned_quiz_or_error( $quiz_id );
+		if ( is_wp_error( $quiz ) ) {
+			return $quiz;
+		}
+
 		$rule = PressPrimer_Quiz_Quiz_Rule::get( $rule_id );
 
-		if ( ! $rule ) {
+		if ( ! $rule || absint( $rule->quiz_id ) !== absint( $quiz->id ) ) {
 			return new WP_Error( 'not_found', __( 'Quiz rule not found.', 'pressprimer-quiz' ), [ 'status' => 404 ] );
 		}
 
@@ -2655,11 +2735,17 @@ class PressPrimer_Quiz_REST_Controller {
 	 * @return WP_REST_Response|WP_Error Response object or error.
 	 */
 	public function delete_quiz_rule( $request ) {
+		$quiz_id = absint( $request['quiz_id'] );
 		$rule_id = absint( $request['rule_id'] );
+
+		$quiz = $this->get_owned_quiz_or_error( $quiz_id );
+		if ( is_wp_error( $quiz ) ) {
+			return $quiz;
+		}
 
 		$rule = PressPrimer_Quiz_Quiz_Rule::get( $rule_id );
 
-		if ( ! $rule ) {
+		if ( ! $rule || absint( $rule->quiz_id ) !== absint( $quiz->id ) ) {
 			return new WP_Error( 'not_found', __( 'Quiz rule not found.', 'pressprimer-quiz' ), [ 'status' => 404 ] );
 		}
 
@@ -2677,8 +2763,14 @@ class PressPrimer_Quiz_REST_Controller {
 	 * @return WP_REST_Response|WP_Error Response object or error.
 	 */
 	public function reorder_quiz_rules( $request ) {
+		$quiz_id    = absint( $request['quiz_id'] );
 		$data       = $request->get_json_params();
 		$rule_order = isset( $data['rule_order'] ) && is_array( $data['rule_order'] ) ? $data['rule_order'] : [];
+
+		$quiz = $this->get_owned_quiz_or_error( $quiz_id );
+		if ( is_wp_error( $quiz ) ) {
+			return $quiz;
+		}
 
 		if ( empty( $rule_order ) ) {
 			return new WP_Error( 'no_rules', __( 'No rules provided.', 'pressprimer-quiz' ), [ 'status' => 400 ] );
@@ -2686,7 +2778,16 @@ class PressPrimer_Quiz_REST_Controller {
 
 		$order_map = [];
 		foreach ( $rule_order as $index => $rule_id ) {
-			$order_map[ absint( $rule_id ) ] = (int) $index;
+			$rule_id = absint( $rule_id );
+
+			// Every supplied rule must belong to the URL's quiz so the
+			// reorder cannot reach across into another teacher's rules.
+			$rule = PressPrimer_Quiz_Quiz_Rule::get( $rule_id );
+			if ( ! $rule || absint( $rule->quiz_id ) !== absint( $quiz->id ) ) {
+				return new WP_Error( 'not_found', __( 'Quiz rule not found.', 'pressprimer-quiz' ), [ 'status' => 404 ] );
+			}
+
+			$order_map[ $rule_id ] = (int) $index;
 		}
 
 		$result = PressPrimer_Quiz_Quiz_Rule::reorder( $order_map );

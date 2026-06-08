@@ -3,7 +3,7 @@ Contributors: pressprimer
 Tags: quiz, learndash, assessment, lms, elearning
 Requires at least: 6.4
 Tested up to: 7.0
-Stable tag: 2.3.0
+Stable tag: 2.3.1
 Requires PHP: 7.4
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -213,6 +213,9 @@ This plugin offers optional AI-powered question generation using the OpenAI API.
 
 == Changelog ==
 
+= 2.3.1 =
+* Improved: Tightened permission checks on the quiz items and quiz rules REST endpoints so teachers can only view, add, edit, reorder, or remove items and rules on quizzes they own. Single-teacher sites and sites without the Educator addon are unaffected.
+
 = 2.3.0 =
 * Added: Four multiple-answer scoring modes — Right Minus Wrong (default), Proportional, Partial No Wrong, and All-or-Nothing. Set the default for your site under Settings > General, and override per quiz when needed.
 * Added: Set per-quiz default display options that apply across every shortcode and block for that quiz. The Quiz block has a "Use Quiz Defaults" toggle so individual placements can still override.
@@ -315,6 +318,9 @@ This plugin offers optional AI-powered question generation using the OpenAI API.
 * Full internationalization support
 
 == Upgrade Notice ==
+
+= 2.3.1 =
+Tightens permission checks on quiz items and rules so teachers can only manage their own quizzes. No impact on single-teacher sites.
 
 = 2.3.0 =
 New: Four multiple-answer scoring modes, per-quiz display defaults, random distractor subsets, image support with click-to-zoom, and a new Upgrade page in the admin menu.

@@ -1860,6 +1860,12 @@ Good luck with your studies!',
 				'extractionCapabilities' => PressPrimer_Quiz_File_Processor::get_extraction_capabilities(),
 			],
 			'databaseTables' => $table_status,
+			'schemaHealth'   => class_exists( 'PressPrimer_Quiz_Schema_Verifier' )
+				? [
+					'report' => PressPrimer_Quiz_Schema_Verifier::check(),
+					'log'    => PressPrimer_Quiz_Schema_Verifier::get_log(),
+				]
+				: null,
 			'nonces'         => [
 				'repairTables' => wp_create_nonce( 'pressprimer_quiz_repair_tables_nonce' ),
 			],

@@ -142,6 +142,12 @@ class PressPrimer_Quiz_Plugin {
 			$admin->init();
 		}
 
+		// Initialize schema self-healing (v3.0): daily admin_init check/repair
+		// plus a persistent notice when auto-repair is exhausted.
+		if ( class_exists( 'PressPrimer_Quiz_Schema_Verifier' ) ) {
+			PressPrimer_Quiz_Schema_Verifier::init();
+		}
+
 		// Initialize onboarding
 		if ( class_exists( 'PressPrimer_Quiz_Onboarding' ) ) {
 			PressPrimer_Quiz_Onboarding::get_instance();

@@ -454,6 +454,29 @@ class PressPrimer_Quiz_REST_Controller {
 				'permission_callback' => [ $this, 'check_settings_permission' ],
 			]
 		);
+
+		// Schema integrity endpoints (v3.0). Power the Status tab's schema
+		// health section: run a presence-only check and repair missing
+		// tables/columns from the canonical schema map.
+		register_rest_route(
+			'ppq/v1',
+			'/status/schema',
+			[
+				'methods'             => WP_REST_Server::READABLE,
+				'callback'            => [ $this, 'get_schema_status' ],
+				'permission_callback' => [ $this, 'check_settings_permission' ],
+			]
+		);
+
+		register_rest_route(
+			'ppq/v1',
+			'/status/schema/repair',
+			[
+				'methods'             => WP_REST_Server::CREATABLE,
+				'callback'            => [ $this, 'repair_schema_status' ],
+				'permission_callback' => [ $this, 'check_settings_permission' ],
+			]
+		);
 	}
 
 	/**
@@ -3536,5 +3559,60 @@ class PressPrimer_Quiz_REST_Controller {
 		} else {
 			return new WP_Error( 'send_failed', __( 'Failed to send test email. Please check your email configuration.', 'pressprimer-quiz' ), [ 'status' => 500 ] );
 		}
+	}
+
+	/**
+	 * Get database schema health.
+	 *
+	 * Runs a presence-only schema check and returns the report plus the rolling
+	 * check/repair log tail for the Status tab.
+	 *
+	 * @since 3.0.0
+	 *
+	 * @param WP_REST_Request $request Request object.
+	 * @return WP_REST_Response|WP_Error Response object or error.
+	 */
+	public function get_schema_status( $request ) {
+		if ( ! class_exists( 'PressPrimer_Quiz_Schema_Verifier' ) ) {
+			return new WP_Error( 'schema_verifier_unavailable', __( 'Schema verifier is unavailable.', 'pressprimer-quiz' ), [ 'status' => 500 ] );
+		}
+
+		return new WP_REST_Response(
+			[
+				'report' => PressPrimer_Quiz_Schema_Verifier::check(),
+				'log'    => PressPrimer_Quiz_Schema_Verifier::get_log(),
+			],
+			200
+		);
+	}
+
+	/**
+	 * Repair database schema findings.
+	 *
+	 * Repairs missing tables/columns from the canonical schema map (manual
+	 * action, so the auto-repair attempt cap is overridden), then returns the
+	 * repair outcome alongside a fresh check report and log so the Status tab
+	 * re-renders from a single request.
+	 *
+	 * @since 3.0.0
+	 *
+	 * @param WP_REST_Request $request Request object.
+	 * @return WP_REST_Response|WP_Error Response object or error.
+	 */
+	public function repair_schema_status( $request ) {
+		if ( ! class_exists( 'PressPrimer_Quiz_Schema_Verifier' ) ) {
+			return new WP_Error( 'schema_verifier_unavailable', __( 'Schema verifier is unavailable.', 'pressprimer-quiz' ), [ 'status' => 500 ] );
+		}
+
+		$result = PressPrimer_Quiz_Schema_Verifier::repair_findings();
+
+		return new WP_REST_Response(
+			[
+				'result' => $result,
+				'report' => PressPrimer_Quiz_Schema_Verifier::check(),
+				'log'    => PressPrimer_Quiz_Schema_Verifier::get_log(),
+			],
+			200
+		);
 	}
 }

@@ -61,18 +61,43 @@ class PressPrimer_Quiz_Migrator {
 	 * @param string $to_version   Target database version.
 	 */
 	private static function run_migrations( $from_version, $to_version ) {
-		global $wpdb;
-
-		// Run schema updates (includes dbDelta call)
+		// Create or update all tables (idempotent). dbDelta adds any new tables;
+		// the verified per-step data migrations below handle column adds, which
+		// dbDelta cannot be relied upon to perform.
 		self::update_schema();
 
-		// Run version-specific data migrations
-		self::run_data_migrations( $from_version, $to_version );
+		// Apply data-migration steps, verifying each and advancing the stored
+		// version one step at a time. A step that fails verification leaves the
+		// version at the last verified step so the chain retries from there on the
+		// next load, instead of stranding the site on an advanced version with a
+		// half-applied schema (FR-004).
+		$result = self::run_data_migrations( $from_version, $to_version );
 
-		// Update database version
-		update_option( self::DB_VERSION_OPTION, $to_version );
+		if ( ! $result['ok'] ) {
+			// Verification failed mid-chain: do not finalize and do not re-arm
+			// self-healing. The next load retries the failed step.
+			return;
+		}
 
-		// Log migration
+		// A target bump may add only tables (no data step). Advance to the exact
+		// target version only after confirming the full schema is healthy.
+		if ( version_compare( $result['version'], $to_version, '<' ) ) {
+			$report = PressPrimer_Quiz_Schema_Verifier::check();
+
+			if ( ! $report['healthy'] ) {
+				PressPrimer_Quiz_Schema_Verifier::record_migration_problem(
+					$to_version,
+					self::missing_from_report( $report )
+				);
+				return;
+			}
+
+			update_option( self::DB_VERSION_OPTION, $to_version );
+		}
+
+		// Whole chain complete: re-verify immediately on the next admin load and
+		// record the migration in the history log.
+		PressPrimer_Quiz_Schema_Verifier::clear_self_heal_throttle();
 		self::log_migration( $from_version, $to_version );
 	}
 
@@ -108,40 +133,126 @@ class PressPrimer_Quiz_Migrator {
 	 * @param string $to_version   Version migrating to.
 	 */
 	private static function run_data_migrations( $from_version, $to_version ) {
-		// Version 2.0.1: Add access_mode and login_message columns
-		if ( version_compare( $from_version, '2.0.1', '<' ) ) {
-			self::migrate_to_2_0_1();
+		$current = $from_version;
+
+		foreach ( self::get_migration_steps() as $step ) {
+			// Skip steps already applied.
+			if ( version_compare( $current, $step['version'], '>=' ) ) {
+				continue;
+			}
+
+			// Run the (idempotent) step.
+			call_user_func( $step['callback'] );
+
+			// Verify the tables/columns this step adds BEFORE advancing the version.
+			$missing = PressPrimer_Quiz_Schema_Verifier::verify_targets( $step['targets'] );
+
+			if ( ! empty( $missing ) ) {
+				// Do not advance. Log the cause and bail; the chain retries from
+				// $current (this same step) on the next load.
+				PressPrimer_Quiz_Schema_Verifier::record_migration_problem( $step['version'], $missing );
+
+				return array(
+					'ok'      => false,
+					'version' => $current,
+				);
+			}
+
+			// Step verified: advance the stored DB version to this step.
+			$current = $step['version'];
+			update_option( self::DB_VERSION_OPTION, $current );
 		}
 
-		// Version 2.2.0: Add pool_enabled and max_questions columns
-		if ( version_compare( $from_version, '2.2.0', '<' ) ) {
-			self::migrate_to_2_2_0();
+		return array(
+			'ok'      => true,
+			'version' => $current,
+		);
+	}
+
+	/**
+	 * Get the ordered data-migration chain.
+	 *
+	 * Each step pairs a target version with its (idempotent) migration callback
+	 * and the tables/columns it must produce. run_data_migrations() runs and
+	 * verifies them in order, advancing the stored DB version one verified step
+	 * at a time. A new schema version appends a step here.
+	 *
+	 * @since 3.0.0
+	 *
+	 * @return array[] Ordered steps, each [ 'version', 'callback', 'targets' ].
+	 */
+	private static function get_migration_steps() {
+		global $wpdb;
+
+		$quizzes       = $wpdb->prefix . 'ppq_quizzes';
+		$attempts      = $wpdb->prefix . 'ppq_attempts';
+		$attempt_items = $wpdb->prefix . 'ppq_attempt_items';
+
+		return array(
+			array(
+				'version'  => '2.0.1',
+				'callback' => array( __CLASS__, 'migrate_to_2_0_1' ),
+				'targets'  => array( $quizzes => array( 'access_mode', 'login_message' ) ),
+			),
+			array(
+				'version'  => '2.2.0',
+				'callback' => array( __CLASS__, 'migrate_to_2_2_0' ),
+				'targets'  => array( $quizzes => array( 'pool_enabled', 'max_questions' ) ),
+			),
+			array(
+				'version'  => '2.2.1',
+				'callback' => array( __CLASS__, 'migrate_to_2_2_1' ),
+				'targets'  => array( $attempt_items => array( 'answer_checked_at' ) ),
+			),
+			array(
+				'version'  => '2.2.2',
+				'callback' => array( __CLASS__, 'migrate_to_2_2_2' ),
+				'targets'  => array( $quizzes => array( 'show_points' ) ),
+			),
+			array(
+				'version'  => '2.2.3',
+				'callback' => array( __CLASS__, 'migrate_to_2_2_3' ),
+				'targets'  => array( $quizzes => array( 'enable_sr', 'is_review_quiz' ) ),
+			),
+			array(
+				'version'  => '2.2.4',
+				'callback' => array( __CLASS__, 'migrate_to_2_2_4' ),
+				'targets'  => array( $attempts => array( 'curved_score' ) ),
+			),
+			array(
+				'version'  => '2.3.0',
+				'callback' => array( __CLASS__, 'migrate_to_2_3_0' ),
+				'targets'  => array( $quizzes => array( 'ma_scoring_mode', 'display_settings_json', 'max_answers_per_question' ) ),
+			),
+		);
+	}
+
+	/**
+	 * Convert a verifier check() report into a [ table => missing columns ] map.
+	 *
+	 * @since 3.0.0
+	 *
+	 * @param array $report A PressPrimer_Quiz_Schema_Verifier::check() report.
+	 * @return array Map of table => [ missing columns ] ('*' = missing table).
+	 */
+	private static function missing_from_report( $report ) {
+		$missing = array();
+
+		if ( empty( $report['tables'] ) || ! is_array( $report['tables'] ) ) {
+			return $missing;
 		}
 
-		// Version 2.2.1: Add answer_checked_at column to attempt items
-		if ( version_compare( $from_version, '2.2.1', '<' ) ) {
-			self::migrate_to_2_2_1();
+		foreach ( $report['tables'] as $table => $entry ) {
+			$status = isset( $entry['status'] ) ? $entry['status'] : '';
+
+			if ( 'missing_table' === $status ) {
+				$missing[ $table ] = array( '*' );
+			} elseif ( 'missing_columns' === $status ) {
+				$missing[ $table ] = isset( $entry['missing_columns'] ) ? $entry['missing_columns'] : array();
+			}
 		}
 
-		// Version 2.2.2: Add show_points column to quizzes
-		if ( version_compare( $from_version, '2.2.2', '<' ) ) {
-			self::migrate_to_2_2_2();
-		}
-
-		// Version 2.2.3: Add enable_sr and is_review_quiz columns to quizzes
-		if ( version_compare( $from_version, '2.2.3', '<' ) ) {
-			self::migrate_to_2_2_3();
-		}
-
-		// Version 2.2.4: Add curved_score column to attempts table
-		if ( version_compare( $from_version, '2.2.4', '<' ) ) {
-			self::migrate_to_2_2_4();
-		}
-
-		// Version 2.3.0: Add ma_scoring_mode column to quizzes table
-		if ( version_compare( $from_version, '2.3.0', '<' ) ) {
-			self::migrate_to_2_3_0();
-		}
+		return $missing;
 	}
 
 	/**

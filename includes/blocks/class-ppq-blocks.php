@@ -84,6 +84,9 @@ class PressPrimer_Quiz_Blocks {
 
 		// Register My Attempts block
 		$this->register_my_attempts_block();
+
+		// Register Dashboard block (v3.0)
+		$this->register_dashboard_block();
 	}
 
 	/**
@@ -385,6 +388,87 @@ class PressPrimer_Quiz_Blocks {
 
 		// Wrap in block div
 		return '<div class="wp-block-pressprimer-quiz-my-attempts">' . $output . '</div>';
+	}
+
+	/**
+	 * Register Dashboard block
+	 *
+	 * @since 3.0.0
+	 */
+	private function register_dashboard_block() {
+		// Get asset file for dependencies and version (editor placeholder).
+		$asset_file = PRESSPRIMER_QUIZ_PLUGIN_PATH . 'build/blocks/dashboard/index.asset.php';
+
+		if ( ! file_exists( $asset_file ) ) {
+			return;
+		}
+
+		$asset = require $asset_file;
+
+		// Register block script
+		wp_register_script(
+			'pressprimer-quiz-dashboard-block-editor',
+			PRESSPRIMER_QUIZ_PLUGIN_URL . 'build/blocks/dashboard/index.js',
+			$asset['dependencies'],
+			$asset['version']
+		);
+
+		// Register editor style
+		wp_register_style(
+			'pressprimer-quiz-dashboard-block-editor-style',
+			PRESSPRIMER_QUIZ_PLUGIN_URL . 'blocks/dashboard/editor.css',
+			[],
+			PRESSPRIMER_QUIZ_VERSION
+		);
+
+		// Register frontend style
+		wp_register_style(
+			'pressprimer-quiz-dashboard-block-style',
+			PRESSPRIMER_QUIZ_PLUGIN_URL . 'blocks/dashboard/style.css',
+			[],
+			PRESSPRIMER_QUIZ_VERSION
+		);
+
+		// Register block type
+		register_block_type(
+			'pressprimer-quiz/dashboard',
+			[
+				'api_version'     => 3,
+				'title'           => __( 'PPQ Dashboard', 'pressprimer-quiz' ),
+				'description'     => __( 'Front-end dashboard for PressPrimer Quiz.', 'pressprimer-quiz' ),
+				'category'        => 'pressprimer-quiz',
+				'icon'            => 'dashboard',
+				'supports'        => [
+					'html'     => false,
+					'multiple' => false,
+				],
+				'editor_script'   => 'pressprimer-quiz-dashboard-block-editor',
+				'editor_style'    => 'pressprimer-quiz-dashboard-block-editor-style',
+				'style'           => 'pressprimer-quiz-dashboard-block-style',
+				'render_callback' => [ $this, 'render_dashboard_block' ],
+			]
+		);
+	}
+
+	/**
+	 * Render Dashboard block
+	 *
+	 * Delegates to the shell, which renders the mount container only within the
+	 * main query's singular content and enforces one instance per page.
+	 *
+	 * @since 3.0.0
+	 *
+	 * @param array $attributes Block attributes (unused).
+	 * @return string Rendered block HTML, or '' when nothing should render.
+	 */
+	public function render_dashboard_block( $attributes ) {
+		unset( $attributes );
+
+		if ( ! class_exists( 'PressPrimer_Quiz_Shell' ) ) {
+			return '';
+		}
+
+		return PressPrimer_Quiz_Shell::render();
 	}
 
 	/**

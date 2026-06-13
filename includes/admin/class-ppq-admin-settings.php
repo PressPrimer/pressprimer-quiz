@@ -1746,6 +1746,10 @@ Good luck with your studies!',
 		// Use integer for wp_localize_script compatibility (0 or 1)
 		$settings['remove_data_on_uninstall'] = $remove_data_value ? 1 : 0;
 
+		// Front-end dashboard page (v3.0): a standalone option, exposed in the
+		// settings bundle so the General tab preselects it on first render.
+		$settings['dashboard_page_id'] = (int) get_option( 'pressprimer_quiz_dashboard_page_id', 0 );
+
 		/**
 		 * Filter the settings tabs displayed on the settings page.
 		 *
@@ -1866,6 +1870,7 @@ Good luck with your studies!',
 					'log'    => PressPrimer_Quiz_Schema_Verifier::get_log(),
 				]
 				: null,
+			'dashboard'      => $this->get_dashboard_settings_data(),
 			'nonces'         => [
 				'repairTables' => wp_create_nonce( 'pressprimer_quiz_repair_tables_nonce' ),
 			],
@@ -1906,6 +1911,82 @@ Good luck with your studies!',
 		 * @param array $data Settings data including settings, apiKeyStatus, systemInfo, etc.
 		 */
 		return apply_filters( 'pressprimer_quiz_settings_data', $data );
+	}
+
+	/**
+	 * Build the front-end dashboard facts for the settings UI.
+	 *
+	 * Provides the published-page list for the selector plus the site's static
+	 * front-page configuration so the General and Status tabs can warn — fully
+	 * client-side — when the designated page is the front page or is missing/
+	 * unpublished. The currently designated page is always included in the list
+	 * (even past the cap) so it stays selectable.
+	 *
+	 * @since 3.0.0
+	 *
+	 * @return array {
+	 *     @type array  $pages       List of [ id, title ] for published pages.
+	 *     @type int    $frontPageId The static front page ID (0 if none).
+	 *     @type string $showOnFront 'posts' or 'page'.
+	 *     @type string $editUrl     Edit link for the designated page ('' if none).
+	 *     @type string $viewUrl     Permalink for the designated page ('' if unavailable).
+	 * }
+	 */
+	private function get_dashboard_settings_data() {
+		$current_id = (int) get_option( 'pressprimer_quiz_dashboard_page_id', 0 );
+
+		$pages = get_pages(
+			[
+				'post_status' => 'publish',
+				'sort_column' => 'post_title',
+				'sort_order'  => 'ASC',
+				'number'      => 200,
+			]
+		);
+
+		$page_list   = [];
+		$has_current = false;
+
+		if ( is_array( $pages ) ) {
+			foreach ( $pages as $page ) {
+				$page_list[] = [
+					'id'    => (int) $page->ID,
+					'title' => '' !== $page->post_title
+						? $page->post_title
+						/* translators: %d: page ID. */
+						: sprintf( __( '(no title) #%d', 'pressprimer-quiz' ), (int) $page->ID ),
+				];
+
+				if ( (int) $page->ID === $current_id ) {
+					$has_current = true;
+				}
+			}
+		}
+
+		// Keep the designated page selectable even if it falls outside the cap.
+		if ( $current_id > 0 && ! $has_current ) {
+			$current_page = get_post( $current_id );
+			if ( $current_page && 'page' === $current_page->post_type && 'publish' === $current_page->post_status ) {
+				array_unshift(
+					$page_list,
+					[
+						'id'    => $current_id,
+						'title' => $current_page->post_title,
+					]
+				);
+			}
+		}
+
+		$edit_url = $current_id > 0 ? get_edit_post_link( $current_id, 'raw' ) : '';
+		$view_url = ( $current_id > 0 && 'publish' === get_post_status( $current_id ) ) ? get_permalink( $current_id ) : '';
+
+		return [
+			'pages'       => $page_list,
+			'frontPageId' => (int) get_option( 'page_on_front', 0 ),
+			'showOnFront' => (string) get_option( 'show_on_front', 'posts' ),
+			'editUrl'     => $edit_url ? $edit_url : '',
+			'viewUrl'     => $view_url ? $view_url : '',
+		];
 	}
 
 	/**

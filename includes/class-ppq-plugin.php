@@ -181,6 +181,11 @@ class PressPrimer_Quiz_Plugin {
 			$shortcodes->init();
 		}
 
+		// Initialize the front-end app shell (v3.0): conditional asset enqueue.
+		if ( class_exists( 'PressPrimer_Quiz_Shell' ) ) {
+			PressPrimer_Quiz_Shell::init();
+		}
+
 		// Initialize AJAX handlers
 		if ( class_exists( 'PressPrimer_Quiz_AJAX_Handler' ) ) {
 			$ajax_handler = new PressPrimer_Quiz_AJAX_Handler();

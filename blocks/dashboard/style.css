@@ -1,0 +1,12 @@
+/**
+ * Dashboard block — front-end styles.
+ *
+ * The shell mounts into #ppq-shell. Full shell styling (chrome, nav, screens,
+ * --ppq-* token theming) ships in build/shell.css from Prompt 2.4; this file
+ * only reserves space so the empty mount container has presence before the app
+ * boots.
+ */
+
+.ppq-shell {
+	min-height: 200px;
+}

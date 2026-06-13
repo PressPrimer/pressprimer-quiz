@@ -43,6 +43,30 @@ class PressPrimer_Quiz_Shortcodes {
 	public function register_shortcodes() {
 		add_shortcode( 'pressprimer_quiz', [ $this, 'render_quiz' ] );
 		add_shortcode( 'pressprimer_quiz_my_attempts', [ $this, 'render_my_attempts' ] );
+
+		// Front-end dashboard shell (v3.0). Short tag plus a full-prefix alias.
+		add_shortcode( 'ppq_dashboard', [ $this, 'render_dashboard' ] );
+		add_shortcode( 'pressprimer_quiz_dashboard', [ $this, 'render_dashboard' ] );
+	}
+
+	/**
+	 * Render the front-end dashboard shell.
+	 *
+	 * Both [ppq_dashboard] and [pressprimer_quiz_dashboard] route here. The shell
+	 * renders the mount container only in the main query's singular content and
+	 * enforces one instance per page.
+	 *
+	 * @since 3.0.0
+	 *
+	 * @param array $atts Shortcode attributes (unused in 2.2).
+	 * @return string Mount container HTML, or '' when nothing should render.
+	 */
+	public function render_dashboard( $atts = [] ) {
+		if ( ! class_exists( 'PressPrimer_Quiz_Shell' ) ) {
+			return '';
+		}
+
+		return PressPrimer_Quiz_Shell::render( (array) $atts );
 	}
 
 	/**

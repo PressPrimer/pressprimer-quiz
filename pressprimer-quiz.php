@@ -39,6 +39,9 @@ if ( file_exists( PRESSPRIMER_QUIZ_PLUGIN_PATH . 'vendor/autoload.php' ) ) {
 require_once PRESSPRIMER_QUIZ_PLUGIN_PATH . 'includes/class-ppq-autoloader.php';
 PressPrimer_Quiz_Autoloader::register();
 
+// Front-end shell companion functions (global helpers, not autoloaded).
+require_once PRESSPRIMER_QUIZ_PLUGIN_PATH . 'includes/frontend/ppq-shell-functions.php';
+
 // Activation/Deactivation hooks
 register_activation_hook( __FILE__, [ 'PressPrimer_Quiz_Activator', 'activate' ] );
 register_deactivation_hook( __FILE__, [ 'PressPrimer_Quiz_Deactivator', 'deactivate' ] );
@@ -115,6 +118,38 @@ function pressprimer_quiz_register_addon( $slug, $config ) {
  */
 function pressprimer_quiz_addon_active( $slug ) {
 	return pressprimer_quiz_addon_manager()->is_active( $slug );
+}
+
+/**
+ * Check whether a premium addon for a given tier is active.
+ *
+ * Tier-based companion to {@see pressprimer_quiz_addon_active()} (which checks a
+ * single slug). Used by upsell surfaces — e.g. the front-end shell's locked nav
+ * entries — to decide whether a tier's real screens have replaced its upsell
+ * placeholder. Falls back to the addon's load-time constant, mirroring the
+ * Upgrade page, so late or skipped addon registration still reads correctly.
+ *
+ * @since 3.0.0
+ *
+ * @param string $tier Tier name: 'educator', 'school', or 'enterprise'.
+ * @return bool True when an addon for that tier is active.
+ */
+function pressprimer_quiz_has_addon( $tier ) {
+	$manager = pressprimer_quiz_addon_manager();
+
+	foreach ( array_keys( $manager->get_by_tier( $tier ) ) as $slug ) {
+		if ( $manager->is_active( $slug ) ) {
+			return true;
+		}
+	}
+
+	$constants = array(
+		'educator'   => 'PRESSPRIMER_QUIZ_EDUCATOR_VERSION',
+		'school'     => 'PRESSPRIMER_QUIZ_SCHOOL_VERSION',
+		'enterprise' => 'PRESSPRIMER_QUIZ_ENTERPRISE_VERSION',
+	);
+
+	return isset( $constants[ $tier ] ) && defined( $constants[ $tier ] );
 }
 
 /**

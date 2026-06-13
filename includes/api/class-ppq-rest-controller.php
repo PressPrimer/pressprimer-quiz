@@ -477,6 +477,41 @@ class PressPrimer_Quiz_REST_Controller {
 				'permission_callback' => [ $this, 'check_settings_permission' ],
 			]
 		);
+
+		// Front-end dashboard page helper (v3.0). Creates a published page
+		// containing the dashboard block and designates it.
+		register_rest_route(
+			'ppq/v1',
+			'/dashboard-page',
+			[
+				'methods'             => WP_REST_Server::CREATABLE,
+				'callback'            => [ $this, 'create_dashboard_page' ],
+				'permission_callback' => [ $this, 'check_settings_permission' ],
+			]
+		);
+
+		// Current user's own quiz attempts (v3.0 shell My Results).
+		register_rest_route(
+			'ppq/v1',
+			'/my-attempts',
+			[
+				'methods'             => WP_REST_Server::READABLE,
+				'callback'            => [ $this, 'get_my_attempts' ],
+				'permission_callback' => [ $this, 'check_own_attempts_permission' ],
+			]
+		);
+	}
+
+	/**
+	 * Permission for the current user's own attempts.
+	 *
+	 * @since 3.0.0
+	 *
+	 * @return bool True if the user may view their own attempts.
+	 */
+	public function check_own_attempts_permission() {
+		return current_user_can( 'pressprimer_quiz_take_quiz' )
+			|| current_user_can( 'pressprimer_quiz_view_results_own' );
 	}
 
 	/**
@@ -2842,6 +2877,10 @@ class PressPrimer_Quiz_REST_Controller {
 			'right_minus_wrong'
 		);
 
+		// Designated front-end dashboard page (v3.0) is its own option; expose it
+		// in the same bundle so the General tab can select it like any field.
+		$settings['dashboard_page_id'] = (int) get_option( 'pressprimer_quiz_dashboard_page_id', 0 );
+
 		return new WP_REST_Response(
 			[
 				'success'  => true,
@@ -3056,6 +3095,33 @@ class PressPrimer_Quiz_REST_Controller {
 						'field'  => 'default_ma_scoring',
 						'before' => $old_ma_default,
 						'after'  => $submitted_mode,
+					);
+				}
+			}
+		}
+
+		// Front-end dashboard page (v3.0) is also a standalone option. 0 clears
+		// the designation; any other value must be a real page. Invalid IDs are
+		// ignored so a bad submission never points the option at a non-page.
+		if ( isset( $data['dashboard_page_id'] ) ) {
+			$submitted_page = absint( $data['dashboard_page_id'] );
+			$page_valid     = false;
+
+			if ( 0 === $submitted_page ) {
+				$page_valid = true;
+			} else {
+				$page       = get_post( $submitted_page );
+				$page_valid = ( $page && 'page' === $page->post_type );
+			}
+
+			if ( $page_valid ) {
+				$old_page = (int) get_option( 'pressprimer_quiz_dashboard_page_id', 0 );
+				if ( $old_page !== $submitted_page ) {
+					update_option( 'pressprimer_quiz_dashboard_page_id', $submitted_page );
+					$extra_changes[] = array(
+						'field'  => 'dashboard_page_id',
+						'before' => $old_page,
+						'after'  => $submitted_page,
 					);
 				}
 			}
@@ -3614,5 +3680,258 @@ class PressPrimer_Quiz_REST_Controller {
 			],
 			200
 		);
+	}
+
+	/**
+	 * Create and designate a front-end dashboard page.
+	 *
+	 * Publishes a page containing the dashboard block and stores its ID in the
+	 * pressprimer_quiz_dashboard_page_id option. Requires the publish_pages
+	 * capability in addition to the route's manage_settings permission.
+	 *
+	 * @since 3.0.0
+	 *
+	 * @param WP_REST_Request $request Request object.
+	 * @return WP_REST_Response|WP_Error Response object or error.
+	 */
+	public function create_dashboard_page( $request ) {
+		if ( ! current_user_can( 'publish_pages' ) ) {
+			return new WP_Error( 'cannot_publish_pages', __( 'You do not have permission to create pages.', 'pressprimer-quiz' ), [ 'status' => 403 ] );
+		}
+
+		/**
+		 * Filters the title of the auto-created dashboard page.
+		 *
+		 * @since 3.0.0
+		 *
+		 * @param string $title Default page title.
+		 */
+		$title = apply_filters( 'pressprimer_quiz_dashboard_page_title', __( 'Dashboard', 'pressprimer-quiz' ) );
+
+		/**
+		 * Filters the slug of the auto-created dashboard page.
+		 *
+		 * @since 3.0.0
+		 *
+		 * @param string $slug Default page slug.
+		 */
+		$slug = apply_filters( 'pressprimer_quiz_dashboard_page_slug', 'dashboard' );
+
+		$page_id = wp_insert_post(
+			[
+				'post_title'   => $title,
+				'post_name'    => sanitize_title( $slug ),
+				'post_content' => '<!-- wp:pressprimer-quiz/dashboard /-->',
+				'post_status'  => 'publish',
+				'post_type'    => 'page',
+			],
+			true
+		);
+
+		if ( is_wp_error( $page_id ) ) {
+			return new WP_Error( 'create_failed', $page_id->get_error_message(), [ 'status' => 500 ] );
+		}
+
+		update_option( 'pressprimer_quiz_dashboard_page_id', (int) $page_id );
+
+		return new WP_REST_Response(
+			[
+				'success'   => true,
+				'pageId'    => (int) $page_id,
+				'pageTitle' => $title,
+				'editUrl'   => get_edit_post_link( $page_id, 'raw' ),
+				'viewUrl'   => get_permalink( $page_id ),
+			],
+			200
+		);
+	}
+
+	/**
+	 * Get the current user's own quiz attempts (paginated).
+	 *
+	 * Hard-scoped to the authenticated user. A user_id parameter is rejected
+	 * (400) so cross-user scope violations are impossible rather than merely
+	 * checked (SR-002); cross-user listings are addon reporting territory.
+	 *
+	 * @since 3.0.0
+	 *
+	 * @param WP_REST_Request $request Request object.
+	 * @return WP_REST_Response|WP_Error Response object or error.
+	 */
+	public function get_my_attempts( $request ) {
+		// SR-002: never accept a user_id; the user is the session, full stop.
+		if ( null !== $request->get_param( 'user_id' ) ) {
+			return new WP_Error( 'user_id_not_allowed', __( 'The user_id parameter is not allowed on this endpoint.', 'pressprimer-quiz' ), [ 'status' => 400 ] );
+		}
+
+		$user_id = get_current_user_id();
+
+		// Pagination.
+		$page     = max( 1, absint( $request->get_param( 'page' ) ) );
+		$per_page = absint( $request->get_param( 'per_page' ) );
+		$per_page = $per_page > 0 ? min( 50, $per_page ) : 20;
+
+		// Optional quiz filter.
+		$quiz_id = absint( $request->get_param( 'quiz_id' ) );
+
+		// Optional status filter: completed | in_progress -> DB status.
+		$status_param = $request->get_param( 'status' );
+		$db_status    = '';
+		if ( null !== $status_param && '' !== $status_param ) {
+			$status_map = [
+				'completed'   => 'submitted',
+				'in_progress' => 'in_progress',
+			];
+			if ( ! isset( $status_map[ $status_param ] ) ) {
+				return new WP_Error( 'invalid_status', __( 'Invalid status filter.', 'pressprimer-quiz' ), [ 'status' => 400 ] );
+			}
+			$db_status = $status_map[ $status_param ];
+		}
+
+		// orderby whitelist (SECURITY.md: validate field against a whitelist).
+		$orderby_param = $request->get_param( 'orderby' );
+		if ( null === $orderby_param || '' === $orderby_param ) {
+			$orderby_param = 'date';
+		}
+		$orderby_map = [
+			'date'  => 'started_at',
+			'score' => 'score_percent',
+		];
+		if ( ! isset( $orderby_map[ $orderby_param ] ) ) {
+			return new WP_Error( 'invalid_orderby', __( 'Invalid orderby value.', 'pressprimer-quiz' ), [ 'status' => 400 ] );
+		}
+		$order_column = $orderby_map[ $orderby_param ];
+
+		// Direction defaults to descending; invalid values fall back to it.
+		$is_asc = 'asc' === strtolower( (string) $request->get_param( 'order' ) );
+
+		global $wpdb;
+		$table = $wpdb->prefix . 'ppq_attempts';
+
+		// WHERE fragments are prepared individually then composed — the same
+		// pattern the my-attempts shortcode uses. user_id is always bound here.
+		$where = [ $wpdb->prepare( 'user_id = %d', $user_id ) ];
+		if ( $quiz_id ) {
+			$where[] = $wpdb->prepare( 'quiz_id = %d', $quiz_id );
+		}
+		if ( '' !== $db_status ) {
+			$where[] = $wpdb->prepare( 'status = %s', $db_status );
+		}
+		$where_clause = implode( ' AND ', $where );
+
+		// Total count.
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- $where_clause is composed from prepared fragments; user history is not cacheable.
+		$total = (int) $wpdb->get_var( "SELECT COUNT(*) FROM {$table} WHERE {$where_clause}" );
+
+		$total_pages = (int) ceil( $total / $per_page );
+		$offset      = ( $page - 1 ) * $per_page;
+
+		// Data query. ORDER direction via hardcoded branches and the column via
+		// %i (SECURITY.md), never interpolated; the composed WHERE carries
+		// already-prepared values.
+		if ( $is_asc ) {
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- $where_clause is composed from prepared fragments; user history is not cacheable.
+			$rows = $wpdb->get_results( $wpdb->prepare( "SELECT * FROM {$table} WHERE {$where_clause} ORDER BY %i ASC, id ASC LIMIT %d OFFSET %d", $order_column, $per_page, $offset ) );
+		} else {
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- $where_clause is composed from prepared fragments; user history is not cacheable.
+			$rows = $wpdb->get_results( $wpdb->prepare( "SELECT * FROM {$table} WHERE {$where_clause} ORDER BY %i DESC, id DESC LIMIT %d OFFSET %d", $order_column, $per_page, $offset ) );
+		}
+
+		$items = $this->format_my_attempts( is_array( $rows ) ? $rows : [] );
+
+		return new WP_REST_Response(
+			[
+				'items'       => $items,
+				'total'       => $total,
+				'total_pages' => $total_pages,
+				'quizzes'     => $this->get_attempted_quizzes( $user_id ),
+			],
+			200
+		);
+	}
+
+	/**
+	 * Get the distinct quizzes a user has attempted (for the My Results filter).
+	 *
+	 * @since 3.0.0
+	 *
+	 * @param int $user_id User ID.
+	 * @return array List of [ id, title ].
+	 */
+	private function get_attempted_quizzes( $user_id ) {
+		global $wpdb;
+
+		$attempts = $wpdb->prefix . 'ppq_attempts';
+		$quizzes  = $wpdb->prefix . 'ppq_quizzes';
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Table names from prefix; user_id bound; filter options for the user's own attempts are not cacheable.
+		$rows = $wpdb->get_results( $wpdb->prepare( "SELECT DISTINCT a.quiz_id AS id, q.title AS title FROM {$attempts} a LEFT JOIN {$quizzes} q ON a.quiz_id = q.id WHERE a.user_id = %d ORDER BY q.title ASC", $user_id ) );
+
+		$out = [];
+		foreach ( (array) $rows as $row ) {
+			$out[] = [
+				'id'    => (int) $row->id,
+				'title' => $row->title ? $row->title : '',
+			];
+		}
+
+		return $out;
+	}
+
+	/**
+	 * Format attempt rows into My Results response items.
+	 *
+	 * Resolves quiz titles in one query (no N+1) and builds the per-attempt
+	 * results/resume URLs from the stored source page.
+	 *
+	 * @since 3.0.0
+	 *
+	 * @param array $rows Attempt rows.
+	 * @return array Response items.
+	 */
+	private function format_my_attempts( $rows ) {
+		global $wpdb;
+
+		// Resolve quiz titles for this page's attempts in a single query.
+		$quiz_ids = [];
+		foreach ( $rows as $row ) {
+			$quiz_ids[ (int) $row->quiz_id ] = true;
+		}
+		$quiz_ids = array_keys( $quiz_ids );
+
+		$quiz_titles = [];
+		if ( ! empty( $quiz_ids ) ) {
+			$placeholders  = implode( ', ', array_fill( 0, count( $quiz_ids ), '%d' ) );
+			$quizzes_table = $wpdb->prefix . 'ppq_quizzes';
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- $placeholders is a literal %d list bound via spread $quiz_ids.
+			$title_rows = $wpdb->get_results( $wpdb->prepare( "SELECT id, title FROM {$quizzes_table} WHERE id IN ($placeholders)", ...$quiz_ids ) );
+			foreach ( $title_rows as $title_row ) {
+				$quiz_titles[ (int) $title_row->id ] = $title_row->title;
+			}
+		}
+
+		$datetime_format = get_option( 'date_format' ) . ' ' . get_option( 'time_format' );
+		$items           = [];
+
+		foreach ( $rows as $row ) {
+			$db_status = $row->status;
+			$base      = ! empty( $row->source_url ) ? $row->source_url : home_url( '/' );
+			$action    = add_query_arg( 'attempt', (int) $row->id, $base );
+
+			$items[] = [
+				'attempt_id'    => (int) $row->id,
+				'quiz_id'       => (int) $row->quiz_id,
+				'quiz_title'    => isset( $quiz_titles[ (int) $row->quiz_id ] ) ? $quiz_titles[ (int) $row->quiz_id ] : '',
+				'started_at'    => $row->started_at ? wp_date( $datetime_format, strtotime( $row->started_at ) ) : null,
+				'completed_at'  => $row->finished_at ? wp_date( $datetime_format, strtotime( $row->finished_at ) ) : null,
+				'score_percent' => ( null !== $row->score_percent ) ? (float) $row->score_percent : null,
+				'passed'        => ( null !== $row->passed ) ? (bool) (int) $row->passed : null,
+				'status'        => ( 'submitted' === $db_status ) ? 'completed' : $db_status,
+				'results_url'   => ( 'submitted' === $db_status ) ? $action : '',
+				'resume_url'    => ( 'in_progress' === $db_status ) ? $action : '',
+			];
+		}
+
+		return $items;
 	}
 }

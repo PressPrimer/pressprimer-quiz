@@ -70,6 +70,18 @@ const StatusTab = ({ settingsData }) => {
 	const schemaHasProblems = !!schemaReport && schemaReport.healthy === false;
 
 	/**
+	 * Front-end dashboard page derived state
+	 */
+	const dashboardData = settingsData.dashboard || {};
+	const dashboardPageId = (settingsData.settings && settingsData.settings.dashboard_page_id) || 0;
+	const dashboardPageEntry = (dashboardData.pages || []).find((p) => p.id === dashboardPageId);
+	const dashboardPageTitle = dashboardPageEntry ? dashboardPageEntry.title : '';
+	const dashboardIsFrontPage = dashboardPageId > 0
+		&& dashboardPageId === (dashboardData.frontPageId || 0)
+		&& dashboardData.showOnFront === 'page';
+	const dashboardIsMissing = dashboardPageId > 0 && !dashboardPageEntry;
+
+	/**
 	 * Run a fresh schema check via REST.
 	 */
 	const handleSchemaCheck = async () => {
@@ -180,6 +192,34 @@ const StatusTab = ({ settingsData }) => {
 				</Tag>
 				{cols && <code style={{ fontSize: 12 }}>{cols}</code>}
 			</Space>
+		);
+	};
+
+	/**
+	 * Render the status tag for the front-end dashboard page.
+	 */
+	const renderDashboardStatus = () => {
+		if (dashboardPageId === 0) {
+			return <Tag>{__('Not set', 'pressprimer-quiz')}</Tag>;
+		}
+		if (dashboardIsFrontPage) {
+			return (
+				<Tag icon={<CloseCircleOutlined />} color="error">
+					{__('Set as front page (not supported)', 'pressprimer-quiz')}
+				</Tag>
+			);
+		}
+		if (dashboardIsMissing) {
+			return (
+				<Tag icon={<ExclamationCircleOutlined />} color="warning">
+					{__('Missing or unpublished', 'pressprimer-quiz')}
+				</Tag>
+			);
+		}
+		return (
+			<Tag icon={<CheckCircleOutlined />} color="success">
+				{__('OK', 'pressprimer-quiz')}
+			</Tag>
 		);
 	};
 
@@ -784,6 +824,46 @@ const StatusTab = ({ settingsData }) => {
 					)}
 				</div>
 			)}
+
+			{/* Front-End Dashboard */}
+			<div className="ppq-settings-section">
+				<Title level={4} className="ppq-settings-section-title">
+					{__('Front-End Dashboard', 'pressprimer-quiz')}
+				</Title>
+
+				<table className="ppq-system-info">
+					<tbody>
+						<tr>
+							<th>{__('Designated Page', 'pressprimer-quiz')}</th>
+							<td>{dashboardPageTitle || __('Not set', 'pressprimer-quiz')}</td>
+						</tr>
+						<tr>
+							<th>{__('Status', 'pressprimer-quiz')}</th>
+							<td>{renderDashboardStatus()}</td>
+						</tr>
+					</tbody>
+				</table>
+
+				{dashboardIsFrontPage && (
+					<Alert
+						type="error"
+						showIcon
+						style={{ marginTop: 12 }}
+						message={__('Dashboard page is set as the static front page', 'pressprimer-quiz')}
+						description={__('This is not supported. Choose a different page in Settings → General → Dashboard.', 'pressprimer-quiz')}
+					/>
+				)}
+
+				{dashboardIsMissing && (
+					<Alert
+						type="warning"
+						showIcon
+						style={{ marginTop: 12 }}
+						message={__('Dashboard page is missing or unpublished', 'pressprimer-quiz')}
+						description={__('Links to the dashboard are hidden until a published page is selected in Settings → General → Dashboard.', 'pressprimer-quiz')}
+					/>
+				)}
+			</div>
 
 			{/* Active Plugins */}
 			{systemInfo.activePlugins && systemInfo.activePlugins.length > 0 && (

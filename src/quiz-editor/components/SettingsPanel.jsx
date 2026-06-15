@@ -30,6 +30,7 @@ import {
 	QuestionCircleOutlined,
 	SaveOutlined,
 } from '@ant-design/icons';
+import ApplyTemplateButton from '../templates/ApplyTemplateButton';
 
 const { TextArea } = Input;
 const { Title, Text } = Typography;
@@ -138,8 +139,10 @@ const MA_SCORING_OPTIONS = [
  *                                              correct count exceeds the cap).
  * @param {boolean}  props.saving              Whether a save is currently in progress (drives the
  *                                              loading state on the TOC's Save button).
+ * @param {Function} props.applyTemplate       Applies a settings template to the editor form
+ *                                              (client-side only; nothing persists until save).
  */
-const SettingsPanel = ({ form, generationMode, setGenerationMode, quizData = {}, maxAnswersWarnings = [], saving = false }) => {
+const SettingsPanel = ({ form, generationMode, setGenerationMode, quizData = {}, maxAnswersWarnings = [], saving = false, applyTemplate }) => {
 	// Watch access_mode to show/hide login message field
 	const accessMode = Form.useWatch('access_mode', form);
 
@@ -208,6 +211,11 @@ const SettingsPanel = ({ form, generationMode, setGenerationMode, quizData = {},
 	return (
 		<div className="ppq-settings-layout">
 			<div className="ppq-settings-content">
+		{applyTemplate && (
+			<div className="ppq-settings-toolbar">
+				<ApplyTemplateButton form={form} quizData={quizData} onApply={applyTemplate} />
+			</div>
+		)}
 		<Space direction="vertical" size="large" style={{ width: '100%' }}>
 			{hasBranchingRules && (
 				<Alert

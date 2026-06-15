@@ -235,6 +235,85 @@ const QuizEditor = ({ quizData = {} }) => {
 	};
 
 	/**
+	 * Apply a settings template to the editor (client-side only).
+	 *
+	 * Fills the form fields from the template's sanitized settings; nothing is
+	 * persisted until the author saves the quiz. Booleans are converted to the
+	 * Switch's boolean form value; display_settings and feedback bands are
+	 * replaced (not merged); keys with no editable field are skipped.
+	 *
+	 * @param {Object} settings  Sanitized settings map from the template.
+	 * @param {Array}  reminders Preset reminders to surface after apply.
+	 */
+	const applyTemplate = (settings = {}, reminders = []) => {
+		const booleanKeys = [
+			'allow_skip', 'allow_backward', 'allow_resume',
+			'randomize_questions', 'randomize_answers',
+			'enable_confidence', 'show_points', 'pool_enabled', 'enable_sr',
+		];
+
+		const parseJson = (value) => {
+			if (value === null || value === undefined || value === '') {
+				return null;
+			}
+			if (typeof value === 'object') {
+				return value;
+			}
+			try {
+				return JSON.parse(value);
+			} catch (error) {
+				return null;
+			}
+		};
+
+		const patch = {};
+		let nextBands = null;
+		let nextDisplaySettings;
+
+		Object.entries(settings).forEach(([key, value]) => {
+			if (key === 'theme_settings_json') {
+				return; // No editor field for this key.
+			}
+			if (key === 'band_feedback_json') {
+				const bands = parseJson(value);
+				if (Array.isArray(bands)) {
+					nextBands = bands;
+				}
+				return;
+			}
+			if (key === 'display_settings_json') {
+				const obj = parseJson(value);
+				if (obj && typeof obj === 'object' && !Array.isArray(obj)) {
+					nextDisplaySettings = obj;
+				}
+				return;
+			}
+			if (key === 'enable_sr' && !quizData.schoolActive) {
+				return; // School addon inactive.
+			}
+			if (booleanKeys.includes(key)) {
+				patch[key] = !! Number(value);
+				return;
+			}
+			patch[key] = value;
+		});
+
+		form.setFieldsValue(patch);
+
+		// setFieldsValue deep-merges objects, so replace display_settings wholesale.
+		if (nextDisplaySettings !== undefined) {
+			form.setFields([{ name: 'display_settings', value: nextDisplaySettings }]);
+		}
+
+		if (Array.isArray(nextBands)) {
+			setFeedbackBands(nextBands);
+		}
+
+		reminders.forEach((reminder) => message.warning(reminder));
+		message.success(__('Template applied. Review the settings and save the quiz to keep them.', 'pressprimer-quiz'));
+	};
+
+	/**
 	 * Handle cancel
 	 */
 	const handleCancel = () => {
@@ -335,7 +414,7 @@ const QuizEditor = ({ quizData = {} }) => {
 		{
 			key: 'settings',
 			label: __('Settings', 'pressprimer-quiz'),
-			children: <SettingsPanel form={form} generationMode={generationMode} setGenerationMode={setGenerationMode} quizData={quizData} maxAnswersWarnings={maxAnswersWarnings} saving={saving} />,
+			children: <SettingsPanel form={form} generationMode={generationMode} setGenerationMode={setGenerationMode} quizData={quizData} maxAnswersWarnings={maxAnswersWarnings} saving={saving} applyTemplate={applyTemplate} />,
 		},
 		hasPremiumAddons && {
 			key: 'premium',

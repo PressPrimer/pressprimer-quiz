@@ -139,7 +139,51 @@ tbody tr[data-rbd-dragging-over-with] {
 /* Hide TOC at viewports below 1100px — the content column then
    takes the full width naturally because the flex item is gone. */
 @media (max-width: 1099px) {
+
 	.ppq-settings-toc-wrap {
 		display: none;
 	}
+}
+
+/* Apply-template toolbar above the settings cards. */
+.ppq-settings-toolbar {
+	display: flex;
+	gap: 8px;
+	margin-bottom: 16px;
+}
+
+/* Apply-template preview dialog. */
+.ppq-template-preview-list {
+	margin: 0;
+	padding: 0;
+	list-style: none;
+}
+
+.ppq-template-preview-row {
+	display: flex;
+	justify-content: space-between;
+	gap: 16px;
+	padding: 6px 0;
+	border-bottom: 1px solid #f0f0f0;
+}
+
+.ppq-template-preview-label {
+	font-weight: 500;
+}
+
+.ppq-template-preview-from {
+	color: #8c8c8c;
+}
+
+.ppq-template-preview-to {
+	font-weight: 600;
+}
+
+.ppq-template-preview-skipped {
+	margin-top: 12px;
+}
+
+.ppq-template-preview-skip-reason {
+	color: #faad14;
+	font-size: 13px;
 }

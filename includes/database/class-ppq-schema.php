@@ -72,6 +72,7 @@ class PressPrimer_Quiz_Schema {
 			$wpdb->prefix . 'ppq_attempts'           => self::get_attempts_table( $charset_collate ),
 			$wpdb->prefix . 'ppq_attempt_items'      => self::get_attempt_items_table( $charset_collate ),
 			$wpdb->prefix . 'ppq_events'             => self::get_events_table( $charset_collate ),
+			$wpdb->prefix . 'ppq_quiz_templates'     => self::get_quiz_templates_table( $charset_collate ),
 		);
 	}
 
@@ -715,6 +716,34 @@ class PressPrimer_Quiz_Schema {
 			KEY attempt_id (attempt_id),
 			KEY event_type (event_type),
 			KEY created_at (created_at)
+		) $charset_collate;\n";
+	}
+
+	/**
+	 * Get quiz settings templates table schema
+	 *
+	 * Stores named, partial snapshots of quiz settings (feature 003). Presets
+	 * are code/filter only and are never rows here. settings_json is a JSON
+	 * object of quiz-level settings keys, sanitized key-by-key on write.
+	 *
+	 * @since 3.0.0
+	 *
+	 * @param string $charset_collate Character set and collation.
+	 * @return string SQL for quiz templates table.
+	 */
+	private static function get_quiz_templates_table( $charset_collate ) {
+		global $wpdb;
+
+		return "CREATE TABLE {$wpdb->prefix}ppq_quiz_templates (
+			id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+			name VARCHAR(100) NOT NULL,
+			description TEXT DEFAULT NULL,
+			settings_json LONGTEXT NOT NULL,
+			created_by BIGINT UNSIGNED NOT NULL,
+			created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+			updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+			PRIMARY KEY  (id),
+			KEY created_by (created_by)
 		) $charset_collate;\n";
 	}
 }

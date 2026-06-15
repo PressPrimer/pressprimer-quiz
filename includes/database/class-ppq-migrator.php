@@ -187,6 +187,7 @@ class PressPrimer_Quiz_Migrator {
 		$quizzes       = $wpdb->prefix . 'ppq_quizzes';
 		$attempts      = $wpdb->prefix . 'ppq_attempts';
 		$attempt_items = $wpdb->prefix . 'ppq_attempt_items';
+		$templates     = $wpdb->prefix . 'ppq_quiz_templates';
 
 		return array(
 			array(
@@ -223,6 +224,12 @@ class PressPrimer_Quiz_Migrator {
 				'version'  => '2.3.0',
 				'callback' => array( __CLASS__, 'migrate_to_2_3_0' ),
 				'targets'  => array( $quizzes => array( 'ma_scoring_mode', 'display_settings_json', 'max_answers_per_question' ) ),
+			),
+			array(
+				'version'  => '3.0.0',
+				'callback' => array( __CLASS__, 'migrate_to_3_0_0' ),
+				// Empty column list = "verify the table exists" (see verify_targets()).
+				'targets'  => array( $templates => array() ),
 			),
 		);
 	}
@@ -638,6 +645,34 @@ class PressPrimer_Quiz_Migrator {
 	}
 
 	/**
+	 * Migration to version 3.0.0
+	 *
+	 * Creates the quiz settings templates table (wp_ppq_quiz_templates). The
+	 * full-schema dbDelta in update_schema() already creates the table during an
+	 * upgrade; this step re-runs dbDelta on the single CREATE TABLE statement so
+	 * it is self-contained and idempotent. verify-before-advance then confirms
+	 * the table exists before the stored DB version moves to 3.0.0.
+	 *
+	 * @since 3.0.0
+	 */
+	private static function migrate_to_3_0_0() {
+		global $wpdb;
+
+		if ( ! class_exists( 'PressPrimer_Quiz_Schema' ) ) {
+			return;
+		}
+
+		$sql = PressPrimer_Quiz_Schema::get_table_sql( $wpdb->prefix . 'ppq_quiz_templates' );
+
+		if ( '' === $sql ) {
+			return;
+		}
+
+		require_once ABSPATH . 'wp-admin/includes/upgrade.php';
+		dbDelta( $sql );
+	}
+
+	/**
 	 * Verify tables exist
 	 *
 	 * Checks that all critical database tables were created successfully.
@@ -665,6 +700,7 @@ class PressPrimer_Quiz_Migrator {
 			$wpdb->prefix . 'ppq_attempts',
 			$wpdb->prefix . 'ppq_attempt_items',
 			$wpdb->prefix . 'ppq_events',
+			$wpdb->prefix . 'ppq_quiz_templates',
 		];
 
 		$missing_tables = [];
@@ -790,6 +826,7 @@ class PressPrimer_Quiz_Migrator {
 			$wpdb->prefix . 'ppq_attempts',
 			$wpdb->prefix . 'ppq_attempt_items',
 			$wpdb->prefix . 'ppq_events',
+			$wpdb->prefix . 'ppq_quiz_templates',
 		];
 	}
 

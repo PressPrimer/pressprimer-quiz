@@ -456,6 +456,189 @@ class PressPrimer_Quiz_Quiz extends PressPrimer_Quiz_Model {
 	}
 
 	/**
+	 * Get the canonical per-field sanitizers for quiz settings keys.
+	 *
+	 * Single source of truth for how each quiz-level *settings* value is
+	 * normalized to its stored form. Returns a map of setting key => callable;
+	 * each callable takes one raw value and returns the sanitized value
+	 * (clamping or defaulting — never a WP_Error), mirroring the exact rules the
+	 * quiz editor applies in the REST create/update handlers.
+	 *
+	 * Settings Templates (feature 003) reuse this so a template payload is
+	 * sanitized identically to the editor, with no second validation table to
+	 * drift. Identity and content columns (id, uuid, title, owner_id, status,
+	 * timestamps, …) are deliberately absent: templates store settings only.
+	 *
+	 * @since 3.0.0
+	 *
+	 * @return array<string,callable> Map of setting key => sanitizer callable.
+	 */
+	public static function get_settings_sanitizers() {
+		// Normalize any truthy/falsy value to a stored 1/0, matching the model's
+		// boolean_fields handling in create().
+		$bool = static function ( $value ) {
+			return absint( $value ) ? 1 : 0;
+		};
+
+		// Accept an array or a JSON string; store normalized JSON, or NULL when
+		// empty or unparseable (defense in depth against a hand-edited row).
+		$json = static function ( $value ) {
+			if ( null === $value || '' === $value ) {
+				return null;
+			}
+
+			if ( is_array( $value ) ) {
+				$encoded = wp_json_encode( $value );
+				return false !== $encoded ? $encoded : null;
+			}
+
+			if ( is_string( $value ) ) {
+				$decoded = json_decode( $value, true );
+				if ( null === $decoded ) {
+					return null;
+				}
+				$encoded = wp_json_encode( $decoded );
+				return false !== $encoded ? $encoded : null;
+			}
+
+			return null;
+		};
+
+		return array(
+			'mode'                     => static function ( $value ) {
+				$value = sanitize_key( (string) $value );
+				return in_array( $value, array( 'tutorial', 'timed' ), true ) ? $value : 'tutorial';
+			},
+			'time_limit_seconds'       => static function ( $value ) {
+				if ( null === $value || '' === $value || 0 === (int) $value ) {
+					return null;
+				}
+				return min( 86400, max( 60, absint( $value ) ) );
+			},
+			'pass_percent'             => static function ( $value ) {
+				if ( ! is_numeric( $value ) ) {
+					return 70.0;
+				}
+				return (float) min( 100, max( 0, (float) $value ) );
+			},
+			'allow_skip'               => $bool,
+			'allow_backward'           => $bool,
+			'allow_resume'             => $bool,
+			'max_attempts'             => static function ( $value ) {
+				if ( null === $value || '' === $value || 0 === (int) $value ) {
+					return null;
+				}
+				return min( 100, max( 1, absint( $value ) ) );
+			},
+			'attempt_delay_minutes'    => static function ( $value ) {
+				return min( 10080, max( 0, absint( $value ) ) );
+			},
+			'randomize_questions'      => $bool,
+			'randomize_answers'        => $bool,
+			'page_mode'                => static function ( $value ) {
+				$value = sanitize_key( (string) $value );
+				return in_array( $value, array( 'single', 'paged' ), true ) ? $value : 'single';
+			},
+			'questions_per_page'       => static function ( $value ) {
+				$value = absint( $value );
+				return ( $value >= 1 && $value <= 100 ) ? $value : 1;
+			},
+			'show_answers'             => static function ( $value ) {
+				$value = sanitize_key( (string) $value );
+				return in_array( $value, array( 'never', 'after_submit', 'after_pass' ), true ) ? $value : 'after_submit';
+			},
+			'enable_confidence'        => $bool,
+			'show_points'              => $bool,
+			'theme'                    => static function ( $value ) {
+				$value = sanitize_key( (string) $value );
+				return '' !== $value ? $value : 'default';
+			},
+			'theme_settings_json'      => $json,
+			'band_feedback_json'       => $json,
+			'access_mode'              => static function ( $value ) {
+				$value = sanitize_key( (string) $value );
+				$valid = array( 'default', 'guest_optional', 'guest_required', 'login_required' );
+				return in_array( $value, $valid, true ) ? $value : 'default';
+			},
+			'login_message'            => static function ( $value ) {
+				return wp_kses_post( (string) $value );
+			},
+			'ma_scoring_mode'          => static function ( $value ) {
+				if ( null === $value || '' === $value ) {
+					return null;
+				}
+				$valid = array( 'right_minus_wrong', 'proportional', 'partial_no_wrong', 'all_or_nothing' );
+				return ( is_string( $value ) && in_array( $value, $valid, true ) ) ? $value : null;
+			},
+			'display_settings_json'    => $json,
+			'max_answers_per_question' => static function ( $value ) {
+				if ( null === $value || '' === $value || ! is_numeric( $value ) ) {
+					return null;
+				}
+				$intval = (int) $value;
+				return ( $intval >= 2 && $intval <= 8 ) ? $intval : null;
+			},
+			'display_density'          => static function ( $value ) {
+				$value = sanitize_key( (string) $value );
+				return in_array( $value, array( 'default', 'standard', 'condensed' ), true ) ? $value : 'default';
+			},
+			'pool_enabled'             => $bool,
+			'max_questions'            => static function ( $value ) {
+				if ( null === $value || '' === $value ) {
+					return null;
+				}
+				$value = absint( $value );
+				return $value >= 1 ? $value : null;
+			},
+			'enable_sr'                => $bool,
+		);
+	}
+
+	/**
+	 * Get the list of quiz-level settings keys a template may store.
+	 *
+	 * Derived from get_settings_sanitizers() so the include list and the
+	 * sanitizers cannot drift. Consumed by Settings Templates for the apply
+	 * preview and by the template model. (The filter that lets addons add their
+	 * own settings keys is introduced in feature 003, Prompt 3.3.)
+	 *
+	 * @since 3.0.0
+	 *
+	 * @return string[] Settings key names.
+	 */
+	public static function get_settings_keys() {
+		return array_keys( static::get_settings_sanitizers() );
+	}
+
+	/**
+	 * Sanitize a partial map of quiz settings against the canonical sanitizers.
+	 *
+	 * Drops any key that is not a recognized settings key and runs every
+	 * recognized key through its sanitizer. Templates are partial: only the keys
+	 * present in $settings are returned. This is the single entry point callers
+	 * should use; the raw sanitizer map is exposed only so the apply preview can
+	 * enumerate keys.
+	 *
+	 * @since 3.0.0
+	 *
+	 * @param array $settings Raw settings key => value pairs.
+	 * @return array Sanitized settings (recognized keys only).
+	 */
+	public static function sanitize_settings( array $settings ) {
+		$sanitizers = static::get_settings_sanitizers();
+		$clean      = array();
+
+		foreach ( $settings as $key => $value ) {
+			if ( ! is_string( $key ) || ! isset( $sanitizers[ $key ] ) ) {
+				continue;
+			}
+			$clean[ $key ] = call_user_func( $sanitizers[ $key ], $value );
+		}
+
+		return $clean;
+	}
+
+	/**
 	 * Get quiz by UUID
 	 *
 	 * @since 1.0.0

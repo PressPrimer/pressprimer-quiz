@@ -80,6 +80,11 @@ class PressPrimer_Quiz_Plugin {
 		// Initialize addon manager (allows premium addons to register)
 		$this->init_addon_manager();
 
+		// Register built-in quiz settings template presets (front + admin + REST).
+		if ( class_exists( 'PressPrimer_Quiz_Template_Presets' ) ) {
+			PressPrimer_Quiz_Template_Presets::register();
+		}
+
 		// Initialize components
 		$this->init_admin();
 		$this->init_frontend();

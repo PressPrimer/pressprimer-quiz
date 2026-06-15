@@ -595,26 +595,56 @@ class PressPrimer_Quiz_Quiz extends PressPrimer_Quiz_Model {
 	}
 
 	/**
-	 * Get the list of quiz-level settings keys a template may store.
+	 * Get the list of quiz-level settings keys a template may store (include map).
 	 *
-	 * Derived from get_settings_sanitizers() so the include list and the
-	 * sanitizers cannot drift. Consumed by Settings Templates for the apply
-	 * preview and by the template model. (The filter that lets addons add their
-	 * own settings keys is introduced in feature 003, Prompt 3.3.)
+	 * Defaults to the keys of get_settings_sanitizers() so the include list and
+	 * the core sanitizers cannot drift, then runs the
+	 * pressprimer_quiz_template_settings_keys filter so addons can register their
+	 * own quiz-level settings keys. This is the single include map consumed by
+	 * the model sanitizer (sanitize_settings) and by the apply preview.
 	 *
 	 * @since 3.0.0
 	 *
 	 * @return string[] Settings key names.
 	 */
 	public static function get_settings_keys() {
-		return array_keys( static::get_settings_sanitizers() );
+		$keys = array_keys( static::get_settings_sanitizers() );
+
+		/**
+		 * Filters the quiz settings keys a template may include.
+		 *
+		 * Addons add their own quiz-level settings keys here so those keys are
+		 * captured into and applied from templates. A key registered without a
+		 * matching core sanitizer is stored as sanitized text on write. Keys not
+		 * present in this map are dropped on save (and, when an addon that
+		 * registered a key is later inactive, that key is simply absent here and
+		 * is skipped on apply).
+		 *
+		 * @since 3.0.0
+		 *
+		 * @param string[] $keys Settings key names.
+		 */
+		$keys = apply_filters( 'pressprimer_quiz_template_settings_keys', $keys );
+
+		if ( ! is_array( $keys ) ) {
+			return array();
+		}
+
+		$normalized = array();
+		foreach ( $keys as $key ) {
+			if ( is_string( $key ) && '' !== $key && ! in_array( $key, $normalized, true ) ) {
+				$normalized[] = $key;
+			}
+		}
+
+		return $normalized;
 	}
 
 	/**
 	 * Sanitize a partial map of quiz settings against the canonical sanitizers.
 	 *
-	 * Drops any key that is not a recognized settings key and runs every
-	 * recognized key through its sanitizer. Templates are partial: only the keys
+	 * Drops any key not present in the include map (get_settings_keys) and runs
+	 * every kept key through its sanitizer. Templates are partial: only the keys
 	 * present in $settings are returned. This is the single entry point callers
 	 * should use; the raw sanitizer map is exposed only so the apply preview can
 	 * enumerate keys.
@@ -622,17 +652,25 @@ class PressPrimer_Quiz_Quiz extends PressPrimer_Quiz_Model {
 	 * @since 3.0.0
 	 *
 	 * @param array $settings Raw settings key => value pairs.
-	 * @return array Sanitized settings (recognized keys only).
+	 * @return array Sanitized settings (include-map keys only).
 	 */
 	public static function sanitize_settings( array $settings ) {
+		$allowed    = static::get_settings_keys();
 		$sanitizers = static::get_settings_sanitizers();
 		$clean      = array();
 
 		foreach ( $settings as $key => $value ) {
-			if ( ! is_string( $key ) || ! isset( $sanitizers[ $key ] ) ) {
+			if ( ! is_string( $key ) || ! in_array( $key, $allowed, true ) ) {
 				continue;
 			}
-			$clean[ $key ] = call_user_func( $sanitizers[ $key ], $value );
+
+			if ( isset( $sanitizers[ $key ] ) ) {
+				$clean[ $key ] = call_user_func( $sanitizers[ $key ], $value );
+			} else {
+				// Addon-registered key without a core sanitizer: keep scalars as
+				// sanitized text; drop anything non-scalar.
+				$clean[ $key ] = is_scalar( $value ) ? sanitize_text_field( (string) $value ) : null;
+			}
 		}
 
 		return $clean;

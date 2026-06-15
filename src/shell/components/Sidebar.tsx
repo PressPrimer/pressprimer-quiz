@@ -55,19 +55,21 @@ export default function Sidebar( {
 			className={ 'ppq-shell-nav' + ( open ? ' is-open' : '' ) }
 			aria-label={ __( 'Dashboard navigation', 'pressprimer-quiz' ) }
 		>
-			<div className="ppq-shell-brand">
-				{ branding.logoUrl ? (
-					<img
-						className="ppq-shell-brand-logo"
-						src={ branding.logoUrl }
-						alt=""
-					/>
-				) : (
-					<span className="ppq-shell-brand-name">
-						{ branding.productName }
-					</span>
-				) }
-			</div>
+			{ ( branding.logoUrl || branding.productName ) && (
+				<div className="ppq-shell-brand">
+					{ branding.logoUrl ? (
+						<img
+							className="ppq-shell-brand-logo"
+							src={ branding.logoUrl }
+							alt={ branding.productName }
+						/>
+					) : (
+						<span className="ppq-shell-brand-name">
+							{ branding.productName }
+						</span>
+					) }
+				</div>
+			) }
 
 			{ groupOrder.map( ( groupKey ) => {
 				const groupScreens = screens.filter(

@@ -623,8 +623,9 @@ class PressPrimer_Quiz_Shell {
 		/**
 		 * Filters the front-end shell branding.
 		 *
-		 * Enterprise white-label replaces the logo and product name; the defaults
-		 * render otherwise.
+		 * Both values default to empty: the shell shows no brand on the front end
+		 * and suffixes document titles with the site name. Enterprise white-label
+		 * sets a logo and/or product name to brand the chrome.
 		 *
 		 * @since 3.0.0
 		 *
@@ -634,16 +635,17 @@ class PressPrimer_Quiz_Shell {
 			'pressprimer_quiz_shell_branding',
 			array(
 				'logo_url'     => '',
-				'product_name' => 'PressPrimer Quiz',
+				'product_name' => '',
 			)
 		);
 
 		$logo_url     = ( is_array( $branding ) && isset( $branding['logo_url'] ) ) ? esc_url_raw( $branding['logo_url'] ) : '';
-		$product_name = ( is_array( $branding ) && isset( $branding['product_name'] ) && '' !== $branding['product_name'] ) ? (string) $branding['product_name'] : 'PressPrimer Quiz';
+		$product_name = ( is_array( $branding ) && isset( $branding['product_name'] ) ) ? sanitize_text_field( $branding['product_name'] ) : '';
 
 		return array(
 			'logoUrl'     => $logo_url,
 			'productName' => $product_name,
+			'siteName'    => get_bloginfo( 'name' ),
 		);
 	}
 

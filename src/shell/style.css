@@ -75,7 +75,10 @@
 	color: var(--ppq-text);
 }
 
-.ppq-shell-screen-title:focus {
+/* The heading is a programmatic focus target for screen readers, not an
+   interactive control, so it never shows a visible focus ring. */
+.ppq-shell-screen-title:focus,
+.ppq-shell-screen-title:focus-visible {
 	outline: none;
 }
 

@@ -26,6 +26,7 @@ export interface ShellUser {
 export interface ShellBranding {
 	logoUrl: string;
 	productName: string;
+	siteName: string;
 }
 
 export interface ScreenManifestEntry {

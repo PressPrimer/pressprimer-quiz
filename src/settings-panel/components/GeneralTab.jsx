@@ -53,6 +53,13 @@ const GeneralTab = ({ settings, updateSetting, settingsData = {} }) => {
 	const dashboardPageId = settings.dashboard_page_id || 0;
 	const [dashboardPages, setDashboardPages] = useState(dashboardData.pages || []);
 	const [creatingPage, setCreatingPage] = useState(false);
+	// View/Edit links for the page these links belong to (forId). Cleared when a
+	// different page is selected, since its permalink isn't known client-side.
+	const [dashboardLinks, setDashboardLinks] = useState({
+		view: dashboardData.viewUrl || '',
+		edit: dashboardData.editUrl || '',
+		forId: dashboardPageId,
+	});
 
 	const isFrontPage = dashboardPageId > 0
 		&& dashboardPageId === (dashboardData.frontPageId || 0)
@@ -86,6 +93,11 @@ const GeneralTab = ({ settings, updateSetting, settingsData = {} }) => {
 						: [{ id: res.pageId, title: res.pageTitle || __('Dashboard', 'pressprimer-quiz') }, ...prev]
 				));
 				updateSetting('dashboard_page_id', res.pageId);
+				setDashboardLinks({
+					view: res.viewUrl || '',
+					edit: res.editUrl || '',
+					forId: res.pageId,
+				});
 				message.success(__('Dashboard page created and selected.', 'pressprimer-quiz'));
 			} else {
 				message.error(__('Could not create the dashboard page.', 'pressprimer-quiz'));
@@ -268,6 +280,21 @@ const GeneralTab = ({ settings, updateSetting, settingsData = {} }) => {
 						</Space>
 					</Form.Item>
 				</div>
+
+				{dashboardLinks.view && dashboardLinks.forId === dashboardPageId && (
+					<div className="ppq-settings-field">
+						<Space size="middle">
+							<a href={dashboardLinks.view} target="_blank" rel="noopener noreferrer">
+								{__('View page', 'pressprimer-quiz')}
+							</a>
+							{dashboardLinks.edit && (
+								<a href={dashboardLinks.edit} target="_blank" rel="noopener noreferrer">
+									{__('Edit page', 'pressprimer-quiz')}
+								</a>
+							)}
+						</Space>
+					</div>
+				)}
 
 				<Paragraph className="ppq-settings-section-description" style={{ marginTop: 8 }}>
 					{__('Tip: if your site uses page caching, exclude the dashboard page from the cache so it always loads fresh. Most caching plugins skip logged-in users automatically.', 'pressprimer-quiz')}

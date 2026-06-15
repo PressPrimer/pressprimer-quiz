@@ -47,6 +47,7 @@ export default function ShellApp( { boot }: ShellAppProps ) {
 	const [ menuOpen, setMenuOpen ] = useState( false );
 	const [ announce, setAnnounce ] = useState( '' );
 	const headingRef = useRef< HTMLHeadingElement | null >( null );
+	const isFirstRoute = useRef( true );
 
 	const manifest = Array.isArray( boot.screens ) ? boot.screens : [];
 	const ids = manifest.map( ( screen ) => screen.id );
@@ -60,13 +61,28 @@ export default function ShellApp( { boot }: ShellAppProps ) {
 
 	// Title, focus, and live-region announcement on route change.
 	useEffect( () => {
-		document.title = activeLabel + ' – ' + boot.branding.productName;
+		const titleSuffix = boot.branding.productName || boot.branding.siteName;
+		document.title = activeLabel + ' – ' + titleSuffix;
+
+		// On the initial render, don't move focus or announce — only react to
+		// real route changes. Otherwise the page jumps focus to the heading on
+		// load (and briefly outlines it).
+		if ( isFirstRoute.current ) {
+			isFirstRoute.current = false;
+			return;
+		}
+
 		if ( headingRef.current ) {
 			headingRef.current.focus();
 		}
 		setAnnounce( activeLabel );
 		setMenuOpen( false );
-	}, [ activeId, activeLabel, boot.branding.productName ] );
+	}, [
+		activeId,
+		activeLabel,
+		boot.branding.productName,
+		boot.branding.siteName,
+	] );
 
 	// Escape closes the mobile navigation menu.
 	useEffect( () => {
@@ -146,7 +162,7 @@ export default function ShellApp( { boot }: ShellAppProps ) {
 							alt={ boot.branding.productName }
 						/>
 					) : (
-						boot.branding.productName
+						boot.branding.productName || activeLabel
 					) }
 				</span>
 			</header>
@@ -162,8 +178,13 @@ export default function ShellApp( { boot }: ShellAppProps ) {
 				/>
 
 				<main className="ppq-shell-main">
+					{ /* Home is the hub; its greeting reads as the heading, so the
+					     "Home" title is kept for screen readers but hidden visually. */ }
 					<h1
-						className="ppq-shell-screen-title"
+						className={
+							'ppq-shell-screen-title' +
+							( 'home' === activeId ? ' screen-reader-text' : '' )
+						}
 						tabIndex={ -1 }
 						ref={ headingRef }
 					>

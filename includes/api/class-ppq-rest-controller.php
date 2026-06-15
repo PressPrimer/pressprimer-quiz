@@ -500,6 +500,43 @@ class PressPrimer_Quiz_REST_Controller {
 				'permission_callback' => [ $this, 'check_own_attempts_permission' ],
 			]
 		);
+
+		// Quiz settings templates (feature 003). Listing is open to any
+		// quiz-editing user (they can apply templates); mutations require the
+		// settings capability since templates are a site-wide policy object.
+		register_rest_route(
+			'ppq/v1',
+			'/quiz-templates',
+			[
+				[
+					'methods'             => WP_REST_Server::READABLE,
+					'callback'            => [ $this, 'get_quiz_templates' ],
+					'permission_callback' => [ $this, 'check_permission' ],
+				],
+				[
+					'methods'             => WP_REST_Server::CREATABLE,
+					'callback'            => [ $this, 'create_quiz_template' ],
+					'permission_callback' => [ $this, 'check_settings_permission' ],
+				],
+			]
+		);
+
+		register_rest_route(
+			'ppq/v1',
+			'/quiz-templates/(?P<id>\d+)',
+			[
+				[
+					'methods'             => WP_REST_Server::EDITABLE,
+					'callback'            => [ $this, 'update_quiz_template' ],
+					'permission_callback' => [ $this, 'check_settings_permission' ],
+				],
+				[
+					'methods'             => WP_REST_Server::DELETABLE,
+					'callback'            => [ $this, 'delete_quiz_template' ],
+					'permission_callback' => [ $this, 'check_settings_permission' ],
+				],
+			]
+		);
 	}
 
 	/**
@@ -3933,5 +3970,280 @@ class PressPrimer_Quiz_REST_Controller {
 		}
 
 		return $items;
+	}
+
+	/**
+	 * List quiz settings templates (presets + saved).
+	 *
+	 * Merges built-in/addon presets (registered behind the
+	 * pressprimer_quiz_settings_template_presets filter; see feature 003,
+	 * Prompt 3.3) with saved template rows. Each item carries a `source` of
+	 * 'preset' or 'template'. Open to any quiz-editing user so they can apply.
+	 *
+	 * @since 3.0.0
+	 *
+	 * @param WP_REST_Request $request Request object.
+	 * @return WP_REST_Response Response with the merged template list.
+	 */
+	public function get_quiz_templates( $request ) {
+		$items = $this->get_template_presets();
+
+		$templates = PressPrimer_Quiz_Quiz_Template::find(
+			array(
+				'order_by' => 'updated_at',
+				'order'    => 'DESC',
+			)
+		);
+
+		foreach ( $templates as $template ) {
+			$items[] = $this->format_quiz_template( $template );
+		}
+
+		return new WP_REST_Response( array( 'items' => $items ), 200 );
+	}
+
+	/**
+	 * Create a quiz settings template.
+	 *
+	 * @since 3.0.0
+	 *
+	 * @param WP_REST_Request $request Request object.
+	 * @return WP_REST_Response|WP_Error Response object or error.
+	 */
+	public function create_quiz_template( $request ) {
+		$data = $request->get_json_params();
+		if ( ! is_array( $data ) ) {
+			$data = array();
+		}
+
+		$name = isset( $data['name'] ) ? sanitize_text_field( $data['name'] ) : '';
+		if ( '' === $name ) {
+			return new WP_Error(
+				'rest_template_name_required',
+				__( 'Template name is required.', 'pressprimer-quiz' ),
+				array( 'status' => 400 )
+			);
+		}
+
+		$settings = isset( $data['settings'] ) && is_array( $data['settings'] ) ? $data['settings'] : array();
+
+		$template_id = PressPrimer_Quiz_Quiz_Template::create(
+			array(
+				'name'        => $name,
+				'description' => isset( $data['description'] ) ? $data['description'] : '',
+				'settings'    => $settings,
+			)
+		);
+
+		if ( is_wp_error( $template_id ) ) {
+			$status = 'ppq_template_too_large' === $template_id->get_error_code() ? 400 : 500;
+			return new WP_Error( $template_id->get_error_code(), $template_id->get_error_message(), array( 'status' => $status ) );
+		}
+
+		$response = array(
+			'id'                => absint( $template_id ),
+			'duplicate_warning' => $this->template_name_in_use( $name, $template_id ),
+		);
+
+		$template = PressPrimer_Quiz_Quiz_Template::get( $template_id );
+		if ( $template ) {
+			$response['template'] = $this->format_quiz_template( $template );
+		}
+
+		return new WP_REST_Response( $response, 201 );
+	}
+
+	/**
+	 * Update a quiz settings template (rename, description, overwrite payload).
+	 *
+	 * @since 3.0.0
+	 *
+	 * @param WP_REST_Request $request Request object.
+	 * @return WP_REST_Response|WP_Error Response object or error.
+	 */
+	public function update_quiz_template( $request ) {
+		$template_id = absint( $request['id'] );
+		$data        = $request->get_json_params();
+		if ( ! is_array( $data ) ) {
+			$data = array();
+		}
+
+		$template = PressPrimer_Quiz_Quiz_Template::get( $template_id );
+		if ( ! $template ) {
+			return new WP_Error( 'not_found', __( 'Template not found.', 'pressprimer-quiz' ), array( 'status' => 404 ) );
+		}
+
+		if ( isset( $data['name'] ) ) {
+			$name = sanitize_text_field( $data['name'] );
+			if ( '' === $name ) {
+				return new WP_Error(
+					'rest_template_name_required',
+					__( 'Template name is required.', 'pressprimer-quiz' ),
+					array( 'status' => 400 )
+				);
+			}
+			$template->name = $name;
+		}
+
+		if ( array_key_exists( 'description', $data ) ) {
+			$template->description = $data['description'];
+		}
+
+		if ( isset( $data['settings'] ) && is_array( $data['settings'] ) ) {
+			$template->set_settings( $data['settings'] );
+		}
+
+		$result = $template->save();
+		if ( is_wp_error( $result ) ) {
+			$status = 'ppq_template_too_large' === $result->get_error_code() ? 400 : 500;
+			return new WP_Error( $result->get_error_code(), $result->get_error_message(), array( 'status' => $status ) );
+		}
+
+		$template = PressPrimer_Quiz_Quiz_Template::get( $template_id );
+
+		$response = array(
+			'success'           => true,
+			'duplicate_warning' => $template ? $this->template_name_in_use( $template->name, $template_id ) : false,
+		);
+		if ( $template ) {
+			$response['template'] = $this->format_quiz_template( $template );
+		}
+
+		return new WP_REST_Response( $response, 200 );
+	}
+
+	/**
+	 * Delete a quiz settings template.
+	 *
+	 * @since 3.0.0
+	 *
+	 * @param WP_REST_Request $request Request object.
+	 * @return WP_REST_Response|WP_Error Response object or error.
+	 */
+	public function delete_quiz_template( $request ) {
+		$template_id = absint( $request['id'] );
+
+		$template = PressPrimer_Quiz_Quiz_Template::get( $template_id );
+		if ( ! $template ) {
+			return new WP_Error( 'not_found', __( 'Template not found.', 'pressprimer-quiz' ), array( 'status' => 404 ) );
+		}
+
+		$result = $template->delete();
+		if ( is_wp_error( $result ) ) {
+			return new WP_Error( 'delete_failed', $result->get_error_message(), array( 'status' => 500 ) );
+		}
+
+		return new WP_REST_Response( array( 'success' => true ), 200 );
+	}
+
+	/**
+	 * Get normalized preset entries for the template list.
+	 *
+	 * Presets are code/filter only (never rows). Each preset's settings pass
+	 * through the canonical Quiz sanitizers so a bad filter registration cannot
+	 * inject invalid values into the apply flow.
+	 *
+	 * @since 3.0.0
+	 *
+	 * @return array[] Normalized preset entries (source = 'preset').
+	 */
+	private function get_template_presets() {
+		/**
+		 * Filters the built-in quiz settings template presets.
+		 *
+		 * Each entry is keyed by a preset id and is an array with: label,
+		 * description, settings (a map of quiz settings keys), and optional
+		 * reminders (strings shown after apply). Built-in presets are registered
+		 * in feature 003, Prompt 3.3; addons may add their own.
+		 *
+		 * @since 3.0.0
+		 *
+		 * @param array $presets Map of preset id => preset definition.
+		 */
+		$presets = apply_filters( 'pressprimer_quiz_settings_template_presets', array() );
+
+		$normalized = array();
+
+		if ( ! is_array( $presets ) ) {
+			return $normalized;
+		}
+
+		foreach ( $presets as $key => $preset ) {
+			if ( ! is_string( $key ) || '' === $key || ! is_array( $preset ) ) {
+				continue;
+			}
+
+			$settings = isset( $preset['settings'] ) && is_array( $preset['settings'] )
+				? PressPrimer_Quiz_Quiz::sanitize_settings( $preset['settings'] )
+				: array();
+
+			$reminders = array();
+			if ( isset( $preset['reminders'] ) && is_array( $preset['reminders'] ) ) {
+				foreach ( $preset['reminders'] as $reminder ) {
+					$reminders[] = sanitize_text_field( $reminder );
+				}
+			}
+
+			$normalized[] = array(
+				'id'          => sanitize_key( $key ),
+				'source'      => 'preset',
+				'name'        => isset( $preset['label'] ) ? sanitize_text_field( $preset['label'] ) : sanitize_key( $key ),
+				'description' => isset( $preset['description'] ) ? sanitize_text_field( $preset['description'] ) : '',
+				'settings'    => $settings,
+				'reminders'   => $reminders,
+			);
+		}
+
+		return $normalized;
+	}
+
+	/**
+	 * Format a saved template row for the REST response.
+	 *
+	 * @since 3.0.0
+	 *
+	 * @param PressPrimer_Quiz_Quiz_Template $template Template instance.
+	 * @return array Response-ready template entry (source = 'template').
+	 */
+	private function format_quiz_template( $template ) {
+		$author = get_userdata( absint( $template->created_by ) );
+
+		return array(
+			'id'          => absint( $template->id ),
+			'source'      => 'template',
+			'name'        => $template->name,
+			'description' => (string) $template->description,
+			'settings'    => $template->get_settings(),
+			'created_by'  => absint( $template->created_by ),
+			'author_name' => $author ? $author->display_name : '',
+			'created_at'  => $template->created_at,
+			'updated_at'  => $template->updated_at,
+		);
+	}
+
+	/**
+	 * Whether a template name is already used by a different template.
+	 *
+	 * Names are labels, not identity, so duplicates are allowed; this only
+	 * powers the soft warning flag in the create/update response.
+	 *
+	 * @since 3.0.0
+	 *
+	 * @param string $name       Candidate name.
+	 * @param int    $exclude_id Template id to exclude (the one being saved).
+	 * @return bool True if another template already uses the name.
+	 */
+	private function template_name_in_use( $name, $exclude_id = 0 ) {
+		$matches = PressPrimer_Quiz_Quiz_Template::find(
+			array( 'where' => array( 'name' => $name ) )
+		);
+
+		foreach ( $matches as $match ) {
+			if ( absint( $match->id ) !== absint( $exclude_id ) ) {
+				return true;
+			}
+		}
+
+		return false;
 	}
 }

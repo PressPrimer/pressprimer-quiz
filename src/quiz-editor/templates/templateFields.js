@@ -55,6 +55,32 @@ const MA_SCORING_LABELS = {
 	all_or_nothing: __('All or Nothing', 'pressprimer-quiz'),
 };
 
+// Friendly summary for JSON-blob settings (display defaults, feedback bands):
+// empty/unset reads as "Default", anything else as "Customized" — never raw "[]".
+const jsonSummary = (value) => {
+	if (value === null || value === undefined || value === '') {
+		return __('Default', 'pressprimer-quiz');
+	}
+	let parsed = value;
+	if (typeof value === 'string') {
+		try {
+			parsed = JSON.parse(value);
+		} catch (e) {
+			return __('Customized', 'pressprimer-quiz');
+		}
+	}
+	if (parsed === null) {
+		return __('Default', 'pressprimer-quiz');
+	}
+	if (Array.isArray(parsed)) {
+		return parsed.length ? __('Customized', 'pressprimer-quiz') : __('Default', 'pressprimer-quiz');
+	}
+	if (typeof parsed === 'object') {
+		return Object.keys(parsed).length ? __('Customized', 'pressprimer-quiz') : __('Default', 'pressprimer-quiz');
+	}
+	return __('Customized', 'pressprimer-quiz');
+};
+
 const minutes = (value) =>
 	value
 		? sprintf(
@@ -96,11 +122,11 @@ export const TEMPLATE_FIELDS = [
 	{ key: 'max_answers_per_question', label: __('Maximum Answers Per Question', 'pressprimer-quiz'), type: 'number', format: (v) => ( v ? String(v) : __('All answers', 'pressprimer-quiz') ) },
 	{ key: 'pool_enabled', label: __('Limit Questions Per Attempt', 'pressprimer-quiz'), type: 'bool', format: yesNo },
 	{ key: 'max_questions', label: __('Questions Per Attempt', 'pressprimer-quiz'), type: 'number', format: (v) => ( v ? String(v) : __('Not limited', 'pressprimer-quiz') ) },
-	{ key: 'display_settings_json', label: __('Display Defaults', 'pressprimer-quiz'), type: 'json', formField: 'display_settings' },
-	{ key: 'band_feedback_json', label: __('Score Feedback Bands', 'pressprimer-quiz'), type: 'json' },
+	{ key: 'display_settings_json', label: __('Display Defaults', 'pressprimer-quiz'), type: 'json', format: jsonSummary, formField: 'display_settings' },
+	{ key: 'band_feedback_json', label: __('Score Feedback Bands', 'pressprimer-quiz'), type: 'json', format: jsonSummary },
 	{ key: 'enable_sr', label: __('Spaced Repetition', 'pressprimer-quiz'), type: 'bool', format: yesNo, requiresAddon: 'school' },
 	// Core key with no field in this builder, so it cannot be applied here.
-	{ key: 'theme_settings_json', label: __('Theme Settings', 'pressprimer-quiz'), type: 'json', unappliable: true },
+	{ key: 'theme_settings_json', label: __('Theme Settings', 'pressprimer-quiz'), type: 'json', format: jsonSummary, unappliable: true },
 ];
 
 export const TEMPLATE_FIELD_MAP = TEMPLATE_FIELDS.reduce((map, field) => {

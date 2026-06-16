@@ -4265,6 +4265,7 @@ class PressPrimer_Quiz_REST_Controller {
 			'settings'    => $template->get_settings(),
 			'created_by'  => absint( $template->created_by ),
 			'author_name' => $author ? $author->display_name : '',
+			'is_mine'     => absint( $template->created_by ) === get_current_user_id(),
 			'created_at'  => $template->created_at,
 			'updated_at'  => $template->updated_at,
 		);

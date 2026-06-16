@@ -78,18 +78,18 @@ const CORE_TABS = [
 		order: 30,
 	},
 	{
+		id: 'templates',
+		label: __('Templates', 'pressprimer-quiz'),
+		icon: <ProfileOutlined />,
+		component: TemplatesTab,
+		order: 25,
+	},
+	{
 		id: 'integrations',
 		label: __('Integrations', 'pressprimer-quiz'),
 		icon: <ApiOutlined />,
 		component: IntegrationsTab,
 		order: 50,
-	},
-	{
-		id: 'templates',
-		label: __('Templates', 'pressprimer-quiz'),
-		icon: <ProfileOutlined />,
-		component: TemplatesTab,
-		order: 60,
 	},
 	{
 		id: 'status',

@@ -143,6 +143,8 @@ const ApplyTemplateButton = ({ form, quizData = {}, onApply }) => {
 
 	const presets = items.filter((item) => 'preset' === item.source);
 	const saved = items.filter((item) => 'template' === item.source);
+	const myTemplates = saved.filter((item) => item.is_mine);
+	const otherTemplates = saved.filter((item) => !item.is_mine);
 
 	const menuItems = [];
 	if (presets.length) {
@@ -152,11 +154,18 @@ const ApplyTemplateButton = ({ form, quizData = {}, onApply }) => {
 			children: presets.map((p) => ({ key: `preset:${p.id}`, label: p.name })),
 		});
 	}
-	if (saved.length) {
+	if (myTemplates.length) {
 		menuItems.push({
 			type: 'group',
-			label: __('Saved Templates', 'pressprimer-quiz'),
-			children: saved.map((t) => ({ key: `template:${t.id}`, label: t.name })),
+			label: __('My Templates', 'pressprimer-quiz'),
+			children: myTemplates.map((t) => ({ key: `template:${t.id}`, label: t.name })),
+		});
+	}
+	if (otherTemplates.length) {
+		menuItems.push({
+			type: 'group',
+			label: __('Other Templates', 'pressprimer-quiz'),
+			children: otherTemplates.map((t) => ({ key: `template:${t.id}`, label: t.name })),
 		});
 	}
 	if (!menuItems.length) {

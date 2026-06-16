@@ -1,10 +1,10 @@
 /**
- * Templates Tab — manage saved quiz settings templates (FR-005).
+ * Templates Tab — quiz settings templates (FR-005, FR-006).
  *
- * Lists saved templates (name, description, author, updated) with rename/edit
- * description, delete (confirm), and a read-only payload viewer. Built-in
- * presets are code-only and are not listed here; they appear in the Quiz
- * Builder's Apply menu. This tab manages its own CRUD via REST.
+ * Shows the built-in presets (read-only, with a settings viewer) and saved
+ * templates grouped into "My Templates" and "Other Templates", with
+ * rename/edit-description, delete (confirm), and a read-only payload viewer.
+ * Also sets the default template for new quizzes. Manages its own CRUD via REST.
  *
  * @package PressPrimer_Quiz
  * @since 3.0.0
@@ -38,6 +38,8 @@ import {
 
 const { Title, Paragraph, Text } = Typography;
 const { TextArea } = Input;
+
+const emDash = () => <Text type="secondary">{__('—', 'pressprimer-quiz')}</Text>;
 
 /**
  * Templates management tab.
@@ -152,29 +154,43 @@ const TemplatesTab = () => {
 		}
 	};
 
-	const columns = [
+	const nameColumn = {
+		title: __('Name', 'pressprimer-quiz'),
+		dataIndex: 'name',
+		key: 'name',
+		render: (name) => <Text strong>{name}</Text>,
+	};
+
+	const descriptionColumn = {
+		title: __('Description', 'pressprimer-quiz'),
+		dataIndex: 'description',
+		key: 'description',
+		render: (description) => (description ? <Text>{description}</Text> : emDash()),
+	};
+
+	const presetColumns = [
+		nameColumn,
+		descriptionColumn,
 		{
-			title: __('Name', 'pressprimer-quiz'),
-			dataIndex: 'name',
-			key: 'name',
-			render: (name) => <Text strong>{name}</Text>,
+			title: __('Actions', 'pressprimer-quiz'),
+			key: 'actions',
+			width: 120,
+			render: (_, preset) => (
+				<Button size="small" icon={<EyeOutlined />} onClick={() => setViewTarget(preset)}>
+					{__('View', 'pressprimer-quiz')}
+				</Button>
+			),
 		},
-		{
-			title: __('Description', 'pressprimer-quiz'),
-			dataIndex: 'description',
-			key: 'description',
-			render: (description) =>
-				description ? (
-					<Text>{description}</Text>
-				) : (
-					<Text type="secondary">{__('—', 'pressprimer-quiz')}</Text>
-				),
-		},
+	];
+
+	const templateColumns = [
+		nameColumn,
+		descriptionColumn,
 		{
 			title: __('Author', 'pressprimer-quiz'),
 			dataIndex: 'author_name',
 			key: 'author_name',
-			render: (author) => author || <Text type="secondary">{__('—', 'pressprimer-quiz')}</Text>,
+			render: (author) => author || emDash(),
 		},
 		{
 			title: __('Updated', 'pressprimer-quiz'),
@@ -211,6 +227,9 @@ const TemplatesTab = () => {
 		},
 	];
 
+	const myTemplates = templates.filter((t) => t.is_mine);
+	const otherTemplates = templates.filter((t) => !t.is_mine);
+
 	const viewEntries =
 		viewTarget && viewTarget.settings && typeof viewTarget.settings === 'object'
 			? Object.entries(viewTarget.settings)
@@ -225,36 +244,17 @@ const TemplatesTab = () => {
 			options: presets.map((p) => ({ value: `preset:${p.id}`, label: p.name })),
 		});
 	}
-	if (templates.length) {
+	if (myTemplates.length) {
 		defaultOptions.push({
-			label: __('Saved Templates', 'pressprimer-quiz'),
-			options: templates.map((t) => ({ value: `template:${t.id}`, label: t.name })),
+			label: __('My Templates', 'pressprimer-quiz'),
+			options: myTemplates.map((t) => ({ value: `template:${t.id}`, label: t.name })),
 		});
 	}
-
-	let listContent;
-	if (loading) {
-		listContent = (
-			<div style={{ textAlign: 'center', padding: '48px' }}>
-				<Spin size="large" />
-			</div>
-		);
-	} else if (templates.length === 0) {
-		listContent = (
-			<Empty
-				description={__('No saved templates yet. Use “Save as template” in the Quiz Builder to create one.', 'pressprimer-quiz')}
-			/>
-		);
-	} else {
-		listContent = (
-			<Table
-				rowKey="id"
-				columns={columns}
-				dataSource={templates}
-				pagination={false}
-				size="middle"
-			/>
-		);
+	if (otherTemplates.length) {
+		defaultOptions.push({
+			label: __('Other Templates', 'pressprimer-quiz'),
+			options: otherTemplates.map((t) => ({ value: `template:${t.id}`, label: t.name })),
+		});
 	}
 
 	return (
@@ -263,7 +263,7 @@ const TemplatesTab = () => {
 				{__('Quiz Settings Templates', 'pressprimer-quiz')}
 			</Title>
 			<Paragraph className="ppq-settings-section-description">
-				{__('Saved templates capture a quiz’s settings so you can apply them to other quizzes from the Quiz Builder. Built-in presets (such as Exam Simulation) are always available there and are not listed here.', 'pressprimer-quiz')}
+				{__('Templates capture a quiz’s settings (not its title, questions, or banks) so you can reuse them across quizzes. Apply them from the Quiz Builder; the built-in presets below are always available, and you can save your own templates from a quiz. Click View on any row to see exactly which settings it sets.', 'pressprimer-quiz')}
 			</Paragraph>
 
 			{defaultCleared && (
@@ -292,7 +292,64 @@ const TemplatesTab = () => {
 				/>
 			</div>
 
-			{listContent}
+			{loading ? (
+				<div style={{ textAlign: 'center', padding: '48px' }}>
+					<Spin size="large" />
+				</div>
+			) : (
+				<>
+					{presets.length > 0 && (
+						<div style={{ marginBottom: 24 }}>
+							<Title level={5}>{__('Built-in presets', 'pressprimer-quiz')}</Title>
+							<Table
+								rowKey="id"
+								columns={presetColumns}
+								dataSource={presets}
+								pagination={false}
+								size="middle"
+							/>
+						</div>
+					)}
+
+					<Title level={5}>{__('Saved templates', 'pressprimer-quiz')}</Title>
+					{templates.length === 0 ? (
+						<Empty
+							description={__('No saved templates yet. Use “Save as template” in the Quiz Builder to create one.', 'pressprimer-quiz')}
+						/>
+					) : (
+						<>
+							{myTemplates.length > 0 && (
+								<div style={{ marginBottom: 24 }}>
+									<Text strong style={{ display: 'block', marginBottom: 8 }}>
+										{__('My Templates', 'pressprimer-quiz')}
+									</Text>
+									<Table
+										rowKey="id"
+										columns={templateColumns}
+										dataSource={myTemplates}
+										pagination={false}
+										size="middle"
+									/>
+								</div>
+							)}
+							{otherTemplates.length > 0 && (
+								<div>
+									<Text strong style={{ display: 'block', marginBottom: 8 }}>
+										{__('Other Templates', 'pressprimer-quiz')}
+									</Text>
+									<Table
+										rowKey="id"
+										columns={templateColumns}
+										dataSource={otherTemplates}
+										pagination={false}
+										size="middle"
+									/>
+								</div>
+							)}
+						</>
+					)}
+				</>
+			)}
 
 			{/* Edit (rename / description) */}
 			<Modal
@@ -334,6 +391,11 @@ const TemplatesTab = () => {
 				]}
 				width={560}
 			>
+				{viewTarget && viewTarget.description && (
+					<Paragraph type="secondary" style={{ marginTop: 0 }}>
+						{viewTarget.description}
+					</Paragraph>
+				)}
 				{viewEntries.length === 0 ? (
 					<Empty
 						image={Empty.PRESENTED_IMAGE_SIMPLE}

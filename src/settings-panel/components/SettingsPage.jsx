@@ -27,6 +27,7 @@ import {
 	AuditOutlined,
 	EyeOutlined,
 	ImportOutlined,
+	ProfileOutlined,
 } from '@ant-design/icons';
 
 import GeneralTab from './GeneralTab';
@@ -35,6 +36,7 @@ import IntegrationsTab from './IntegrationsTab';
 import EmailTab from './EmailTab';
 import StatusTab from './StatusTab';
 import AdvancedTab from './AdvancedTab';
+import TemplatesTab from './TemplatesTab';
 
 /**
  * Icon map for addon tabs
@@ -83,6 +85,13 @@ const CORE_TABS = [
 		order: 50,
 	},
 	{
+		id: 'templates',
+		label: __('Templates', 'pressprimer-quiz'),
+		icon: <ProfileOutlined />,
+		component: TemplatesTab,
+		order: 60,
+	},
+	{
 		id: 'status',
 		label: __('Status', 'pressprimer-quiz'),
 		icon: <InfoCircleOutlined />,
@@ -108,8 +117,9 @@ const IGNORED_SERVER_TABS = ['ai', 'integration'];
 
 /**
  * Tabs that are read-only and should not show the Save Settings button.
+ * (Templates manages its own CRUD, so the generic Save button is hidden.)
  */
-const READ_ONLY_TABS = ['status'];
+const READ_ONLY_TABS = ['status', 'templates'];
 
 /**
  * Settings Page Component

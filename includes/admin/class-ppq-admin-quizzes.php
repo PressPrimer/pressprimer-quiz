@@ -622,6 +622,12 @@ class PressPrimer_Quiz_Admin_Quizzes {
 			'right_minus_wrong'
 		);
 
+		// Whether the current user may manage site settings. Gates the builder's
+		// "Save as template" action — templates are a site-wide policy object, so
+		// only settings-capable users can create them. Applying remains available
+		// to any quiz editor.
+		$quiz_data['canManageSettings'] = current_user_can( 'pressprimer_quiz_manage_settings' );
+
 		/**
 		 * Filter quiz editor data before passing to React
 		 *

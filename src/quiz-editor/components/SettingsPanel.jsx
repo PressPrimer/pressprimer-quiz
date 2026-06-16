@@ -31,6 +31,7 @@ import {
 	SaveOutlined,
 } from '@ant-design/icons';
 import ApplyTemplateButton from '../templates/ApplyTemplateButton';
+import SaveAsTemplateButton from '../templates/SaveAsTemplateButton';
 
 const { TextArea } = Input;
 const { Title, Text } = Typography;
@@ -141,8 +142,10 @@ const MA_SCORING_OPTIONS = [
  *                                              loading state on the TOC's Save button).
  * @param {Function} props.applyTemplate       Applies a settings template to the editor form
  *                                              (client-side only; nothing persists until save).
+ * @param {Function} props.collectTemplateSettings Returns the editor's current settings as a
+ *                                              template payload (for "Save as template").
  */
-const SettingsPanel = ({ form, generationMode, setGenerationMode, quizData = {}, maxAnswersWarnings = [], saving = false, applyTemplate }) => {
+const SettingsPanel = ({ form, generationMode, setGenerationMode, quizData = {}, maxAnswersWarnings = [], saving = false, applyTemplate, collectTemplateSettings }) => {
 	// Watch access_mode to show/hide login message field
 	const accessMode = Form.useWatch('access_mode', form);
 
@@ -214,6 +217,9 @@ const SettingsPanel = ({ form, generationMode, setGenerationMode, quizData = {},
 		{applyTemplate && (
 			<div className="ppq-settings-toolbar">
 				<ApplyTemplateButton form={form} quizData={quizData} onApply={applyTemplate} />
+				{quizData.canManageSettings && collectTemplateSettings && (
+					<SaveAsTemplateButton onCollectSettings={collectTemplateSettings} />
+				)}
 			</div>
 		)}
 		<Space direction="vertical" size="large" style={{ width: '100%' }}>

@@ -28,6 +28,7 @@ import {
 } from '@ant-design/icons';
 
 import SettingsPanel from './SettingsPanel';
+import { buildTemplateSettings } from '../templates/templateFields';
 import PremiumSettingsPanel from './PremiumSettingsPanel';
 import QuestionsPanel from './QuestionsPanel';
 import RulesPanel from './RulesPanel';
@@ -314,6 +315,16 @@ const QuizEditor = ({ quizData = {} }) => {
 	};
 
 	/**
+	 * Collect the editor's current settings as a template payload.
+	 *
+	 * Used by "Save as template"; the server sanitizes every value on save.
+	 *
+	 * @return {Object} Settings payload keyed by settings key.
+	 */
+	const collectTemplateSettings = () =>
+		buildTemplateSettings(form.getFieldsValue(true), feedbackBands, quizData);
+
+	/**
 	 * Handle cancel
 	 */
 	const handleCancel = () => {
@@ -414,7 +425,7 @@ const QuizEditor = ({ quizData = {} }) => {
 		{
 			key: 'settings',
 			label: __('Settings', 'pressprimer-quiz'),
-			children: <SettingsPanel form={form} generationMode={generationMode} setGenerationMode={setGenerationMode} quizData={quizData} maxAnswersWarnings={maxAnswersWarnings} saving={saving} applyTemplate={applyTemplate} />,
+			children: <SettingsPanel form={form} generationMode={generationMode} setGenerationMode={setGenerationMode} quizData={quizData} maxAnswersWarnings={maxAnswersWarnings} saving={saving} applyTemplate={applyTemplate} collectTemplateSettings={collectTemplateSettings} />,
 		},
 		hasPremiumAddons && {
 			key: 'premium',

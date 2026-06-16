@@ -108,6 +108,52 @@ export const TEMPLATE_FIELD_MAP = TEMPLATE_FIELDS.reduce((map, field) => {
 	return map;
 }, {});
 
+/** All settings keys a template may carry (matches the server include map). */
+export const TEMPLATE_SETTINGS_KEYS = TEMPLATE_FIELDS.map((field) => field.key);
+
+/**
+ * Capture the editor's current values as a template settings payload.
+ *
+ * Full snapshot of the included settings keys: form fields map directly,
+ * feedback bands map to band_feedback_json, the display_settings object maps to
+ * display_settings_json. theme_settings_json has no editor field and is
+ * omitted; enable_sr is only captured when the School addon is active. The
+ * server sanitizes every value on save, so raw form values are sent as-is.
+ *
+ * @param {Object} values        Form values (form.getFieldsValue(true)).
+ * @param {Array}  feedbackBands Current feedback bands state.
+ * @param {Object} quizData      Quiz editor boot data (addon flags).
+ * @return {Object} Settings payload keyed by settings key.
+ */
+export function buildTemplateSettings(values = {}, feedbackBands = [], quizData = {}) {
+	const settings = {};
+
+	TEMPLATE_SETTINGS_KEYS.forEach((key) => {
+		if ('theme_settings_json' === key) {
+			return;
+		}
+		if ('band_feedback_json' === key) {
+			settings[key] = Array.isArray(feedbackBands) ? feedbackBands : [];
+			return;
+		}
+		if ('display_settings_json' === key) {
+			settings[key] =
+				values.display_settings && typeof values.display_settings === 'object'
+					? values.display_settings
+					: {};
+			return;
+		}
+		if ('enable_sr' === key && !quizData.schoolActive) {
+			return;
+		}
+		if (Object.prototype.hasOwnProperty.call(values, key) && values[key] !== undefined) {
+			settings[key] = values[key];
+		}
+	});
+
+	return settings;
+}
+
 /**
  * Whether the addon a key requires is active for this quiz.
  *

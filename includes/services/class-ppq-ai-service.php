@@ -64,6 +64,14 @@ class PressPrimer_Quiz_AI_Service {
 	const RATE_LIMIT_PER_HOUR = 100;
 
 	/**
+	 * Transient name for the site-wide AI request counter.
+	 *
+	 * @since 3.0.0
+	 * @var string
+	 */
+	const RATE_LIMIT_TRANSIENT = 'pressprimer_quiz_ai_requests';
+
+	/**
 	 * API timeout in seconds
 	 *
 	 * Extended timeout to handle large content and slow responses.
@@ -171,78 +179,54 @@ class PressPrimer_Quiz_AI_Service {
 	 * @return bool|WP_Error True on success, WP_Error on failure.
 	 */
 	public static function save_api_key( $user_id, $api_key ) {
-		$user_id = absint( $user_id );
+		// Keys are site-level (feature 004). $user_id is retained only for the
+		// backward-compatible signature; storage is no longer per-user.
+		return self::save_site_api_key( 'openai', $api_key );
+	}
 
-		if ( ! $user_id ) {
-			return new WP_Error(
-				'ppq_invalid_user',
-				__( 'Invalid user ID.', 'pressprimer-quiz' )
-			);
-		}
+	/**
+	 * Save a site-level API key for a provider.
+	 *
+	 * Stores the key encrypted in the per-provider site option (feature 004),
+	 * mirroring PressPrimer Assignment's site-level key model. An empty value
+	 * clears it.
+	 *
+	 * @since 3.0.0
+	 *
+	 * @param string $provider Provider id ('openai', 'anthropic').
+	 * @param string $api_key  API key to save (empty clears it).
+	 * @return bool|WP_Error True on success, WP_Error on encryption failure.
+	 */
+	public static function save_site_api_key( $provider, $api_key ) {
+		$provider = sanitize_key( $provider );
+		$option   = 'pressprimer_quiz_site_' . $provider . '_api_key';
 
-		// Allow clearing the key
 		if ( empty( $api_key ) ) {
-			delete_user_meta( $user_id, 'pressprimer_quiz_openai_api_key' );
-			delete_user_meta( $user_id, 'pressprimer_quiz_openai_model' );
+			delete_option( $option );
 			return true;
 		}
 
-		// Encrypt the key
 		$encrypted = PressPrimer_Quiz_Helpers::encrypt( $api_key );
 
 		if ( is_wp_error( $encrypted ) ) {
 			return $encrypted;
 		}
 
-		$result = update_user_meta( $user_id, 'pressprimer_quiz_openai_api_key', $encrypted );
+		update_option( $option, $encrypted );
 
-		return false !== $result;
+		return true;
 	}
 
 	/**
-	 * Get API key for user
-	 *
-	 * Retrieves and decrypts the API key from user meta.
+	 * Get the site-level OpenAI API key.
 	 *
 	 * @since 1.0.0
 	 *
-	 * @param int $user_id User ID.
-	 * @return string|WP_Error Decrypted API key or WP_Error.
+	 * @param int|null $user_id User ID (retained for signature compatibility).
+	 * @return string Decrypted API key, or '' when none.
 	 */
 	public static function get_api_key( $user_id = null ) {
-		// Get site-wide API key configured by admin in Settings
-		$site_key = get_option( 'pressprimer_quiz_site_openai_api_key', '' );
-
-		if ( ! empty( $site_key ) ) {
-			$decrypted = PressPrimer_Quiz_Helpers::decrypt( $site_key );
-
-			if ( ! is_wp_error( $decrypted ) && ! empty( $decrypted ) ) {
-				return $decrypted;
-			}
-		}
-
-		// Backwards compatibility: check legacy user_meta storage
-		// This supports existing installations where the key was stored per-user
-		$admin_users = get_users(
-			[
-				'role'   => 'administrator',
-				'number' => 1,
-			]
-		);
-		if ( ! empty( $admin_users ) ) {
-			$admin_id  = $admin_users[0]->ID;
-			$encrypted = get_user_meta( $admin_id, 'pressprimer_quiz_openai_api_key', true );
-
-			if ( ! empty( $encrypted ) ) {
-				$decrypted = PressPrimer_Quiz_Helpers::decrypt( $encrypted );
-
-				if ( ! is_wp_error( $decrypted ) && ! empty( $decrypted ) ) {
-					return $decrypted;
-				}
-			}
-		}
-
-		return '';
+		return self::get_api_key_for_provider( 'openai', $user_id );
 	}
 
 	/**
@@ -503,9 +487,10 @@ class PressPrimer_Quiz_AI_Service {
 	 * @return bool|WP_Error True if within limits, WP_Error if exceeded.
 	 */
 	public static function check_rate_limit( $user_id ) {
-		$user_id = absint( $user_id );
-		$key     = 'pressprimer_quiz_ai_requests_' . $user_id;
-		$count   = (int) get_transient( $key );
+		// Site-wide budget (feature 004): one shared pool across all users, since
+		// the API key is now site-level rather than per-user. The $user_id
+		// parameter is retained for backward-compatible call sites.
+		$count = (int) get_transient( self::RATE_LIMIT_TRANSIENT );
 
 		if ( $count >= self::RATE_LIMIT_PER_HOUR ) {
 			return new WP_Error(
@@ -526,14 +511,12 @@ class PressPrimer_Quiz_AI_Service {
 	 *
 	 * @since 1.0.0
 	 *
-	 * @param int $user_id User ID.
+	 * @param int $user_id User ID (retained for signature compatibility).
 	 */
 	private static function increment_rate_limit( $user_id ) {
-		$user_id = absint( $user_id );
-		$key     = 'pressprimer_quiz_ai_requests_' . $user_id;
-		$count   = (int) get_transient( $key );
+		$count = (int) get_transient( self::RATE_LIMIT_TRANSIENT );
 
-		set_transient( $key, $count + 1, HOUR_IN_SECONDS );
+		set_transient( self::RATE_LIMIT_TRANSIENT, $count + 1, HOUR_IN_SECONDS );
 	}
 
 	/**
@@ -1120,25 +1103,18 @@ class PressPrimer_Quiz_AI_Service {
 	}
 
 	/**
-	 * Resolve the active provider id for a user.
+	 * Resolve the active provider id.
 	 *
-	 * User active-provider meta → site default option → 'openai'.
+	 * Site-level: the pressprimer_quiz_default_ai_provider option, defaulting to
+	 * 'openai'. Keys and provider selection are site-wide (feature 004), so there
+	 * is no per-user override.
 	 *
 	 * @since 3.0.0
 	 *
-	 * @param int|null $user_id User ID (defaults to the current user).
+	 * @param int|null $user_id User ID (retained for signature compatibility).
 	 * @return string Provider id.
 	 */
 	public static function resolve_provider_id( $user_id = null ) {
-		$user_id = $user_id ? absint( $user_id ) : get_current_user_id();
-
-		if ( $user_id ) {
-			$pref = get_user_meta( $user_id, 'pressprimer_quiz_ai_provider', true );
-			if ( is_string( $pref ) && '' !== $pref ) {
-				return $pref;
-			}
-		}
-
 		$default = get_option( 'pressprimer_quiz_default_ai_provider', 'openai' );
 
 		return ( is_string( $default ) && '' !== $default ) ? $default : 'openai';
@@ -1827,58 +1803,37 @@ class PressPrimer_Quiz_AI_Service {
 	}
 
 	/**
-	 * Save the Anthropic API key for a user.
-	 *
-	 * Same storage treatment as the OpenAI key (feature 004, FR-004): encrypted
-	 * in user meta under the ppq_ prefix.
+	 * Get the site-level Anthropic API key.
 	 *
 	 * @since 3.0.0
 	 *
-	 * @param int    $user_id User ID.
-	 * @param string $api_key API key to save (empty clears it).
-	 * @return bool|WP_Error True on success, WP_Error on failure.
-	 */
-	public static function save_anthropic_api_key( $user_id, $api_key ) {
-		$user_id = absint( $user_id );
-
-		if ( ! $user_id ) {
-			return new WP_Error(
-				'ppq_invalid_user',
-				__( 'Invalid user ID.', 'pressprimer-quiz' )
-			);
-		}
-
-		// Allow clearing the key.
-		if ( empty( $api_key ) ) {
-			delete_user_meta( $user_id, 'pressprimer_quiz_anthropic_api_key' );
-			delete_user_meta( $user_id, 'pressprimer_quiz_anthropic_model' );
-			return true;
-		}
-
-		$encrypted = PressPrimer_Quiz_Helpers::encrypt( $api_key );
-
-		if ( is_wp_error( $encrypted ) ) {
-			return $encrypted;
-		}
-
-		$result = update_user_meta( $user_id, 'pressprimer_quiz_anthropic_api_key', $encrypted );
-
-		return false !== $result;
-	}
-
-	/**
-	 * Get the Anthropic API key.
-	 *
-	 * Mirrors get_api_key()'s resolution: a site-wide configured key first, then
-	 * the legacy admin user-meta location.
-	 *
-	 * @since 3.0.0
-	 *
-	 * @param int|null $user_id User ID (unused; mirrors get_api_key signature).
+	 * @param int|null $user_id User ID (retained for signature compatibility).
 	 * @return string Decrypted API key, or '' when none.
 	 */
 	public static function get_anthropic_api_key( $user_id = null ) {
-		$site_key = get_option( 'pressprimer_quiz_site_anthropic_api_key', '' );
+		return self::get_api_key_for_provider( 'anthropic', $user_id );
+	}
+
+	/**
+	 * Get the site-level API key for a provider.
+	 *
+	 * Reads the encrypted per-provider site option. For backward compatibility
+	 * with pre-3.0 installs that stored a key in the first admin's user meta, a
+	 * legacy key is used as a fallback and best-effort promoted to the site
+	 * option on read (so it works even if the promotion write fails).
+	 *
+	 * @since 3.0.0
+	 *
+	 * @param string|null $provider Provider id (defaults to the active provider).
+	 * @param int|null    $user_id  User ID (retained for signature compatibility).
+	 * @return string Decrypted API key, or '' when none.
+	 */
+	public static function get_api_key_for_provider( $provider = null, $user_id = null ) {
+		$provider = ( is_string( $provider ) && '' !== $provider ) ? $provider : self::resolve_provider_id( $user_id );
+		$provider = sanitize_key( $provider );
+
+		$option   = 'pressprimer_quiz_site_' . $provider . '_api_key';
+		$site_key = get_option( $option, '' );
 
 		if ( ! empty( $site_key ) ) {
 			$decrypted = PressPrimer_Quiz_Helpers::decrypt( $site_key );
@@ -1888,6 +1843,9 @@ class PressPrimer_Quiz_AI_Service {
 			}
 		}
 
+		// Legacy fallback: a key stored in the first admin's user meta (pre-3.0).
+		// Promote it to the site option on read (best-effort); if the write
+		// fails, the decrypted fallback value is still returned.
 		$admin_users = get_users(
 			[
 				'role'   => 'administrator',
@@ -1896,41 +1854,19 @@ class PressPrimer_Quiz_AI_Service {
 		);
 
 		if ( ! empty( $admin_users ) ) {
-			$admin_id  = $admin_users[0]->ID;
-			$encrypted = get_user_meta( $admin_id, 'pressprimer_quiz_anthropic_api_key', true );
+			$encrypted = get_user_meta( $admin_users[0]->ID, 'pressprimer_quiz_' . $provider . '_api_key', true );
 
 			if ( ! empty( $encrypted ) ) {
 				$decrypted = PressPrimer_Quiz_Helpers::decrypt( $encrypted );
 
 				if ( ! is_wp_error( $decrypted ) && ! empty( $decrypted ) ) {
+					update_option( $option, $encrypted );
 					return $decrypted;
 				}
 			}
 		}
 
 		return '';
-	}
-
-	/**
-	 * Get the API key for a given provider.
-	 *
-	 * Resolves to the active provider when none is supplied. Lets the generation
-	 * path send the correct key for whichever provider is active.
-	 *
-	 * @since 3.0.0
-	 *
-	 * @param string|null $provider Provider id (defaults to the active provider).
-	 * @param int|null    $user_id  User ID (defaults to the current user).
-	 * @return string Decrypted API key, or '' when none.
-	 */
-	public static function get_api_key_for_provider( $provider = null, $user_id = null ) {
-		$provider = ( is_string( $provider ) && '' !== $provider ) ? $provider : self::resolve_provider_id( $user_id );
-
-		if ( 'anthropic' === $provider ) {
-			return self::get_anthropic_api_key( $user_id );
-		}
-
-		return self::get_api_key( $user_id );
 	}
 
 	/**

@@ -294,17 +294,40 @@ class PressPrimer_Quiz_AI_Provider_Anthropic implements PressPrimer_Quiz_AI_Prov
 		$code = (int) wp_remote_retrieve_response_code( $response );
 		$body = json_decode( wp_remote_retrieve_body( $response ), true );
 
-		if ( 401 === $code ) {
+		// Normalized error classes (FR-006). Anthropic reports the class in
+		// error.type and a human message; some classes (billing/credit) only
+		// appear in the message text.
+		$err_type           = isset( $body['error']['type'] ) ? (string) $body['error']['type'] : '';
+		$err_message        = isset( $body['error']['message'] ) ? (string) $body['error']['message'] : '';
+		$looks_like_billing = ( false !== stripos( $err_message, 'credit' )
+			|| false !== stripos( $err_message, 'billing' )
+			|| false !== stripos( $err_message, 'quota' ) );
+
+		if ( 401 === $code || 'authentication_error' === $err_type ) {
 			return new WP_Error(
 				'ppq_invalid_key',
-				__( 'Invalid API key.', 'pressprimer-quiz' )
+				__( 'Anthropic rejected the API key. Check the key in Settings → AI.', 'pressprimer-quiz' )
 			);
 		}
 
-		if ( 429 === $code ) {
+		if ( $looks_like_billing ) {
 			return new WP_Error(
-				'ppq_rate_limited',
-				__( 'Anthropic API rate limit exceeded. Please try again later.', 'pressprimer-quiz' )
+				'ppq_quota_billing',
+				__( 'Your Anthropic account is out of credit or has a billing problem. Add credit or update billing in your Anthropic account, then try again.', 'pressprimer-quiz' )
+			);
+		}
+
+		if ( 429 === $code || 'rate_limit_error' === $err_type ) {
+			return new WP_Error(
+				'ppq_provider_rate_limited',
+				__( 'Anthropic is rate limiting requests right now. Please wait a moment and try again.', 'pressprimer-quiz' )
+			);
+		}
+
+		if ( 404 === $code || 'not_found_error' === $err_type ) {
+			return new WP_Error(
+				'ppq_model_not_found',
+				__( 'The selected Anthropic model is unavailable. Choose a different model in Settings → AI and try again.', 'pressprimer-quiz' )
 			);
 		}
 

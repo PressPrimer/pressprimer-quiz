@@ -201,17 +201,36 @@ class PressPrimer_Quiz_AI_Provider_OpenAI implements PressPrimer_Quiz_AI_Provide
 		$code = wp_remote_retrieve_response_code( $response );
 		$body = json_decode( wp_remote_retrieve_body( $response ), true );
 
+		// Normalized error classes (FR-006). OpenAI reports the specific class in
+		// error.type / error.code; map those before falling back to status codes.
+		$err_type = isset( $body['error']['type'] ) ? (string) $body['error']['type'] : '';
+		$err_code = isset( $body['error']['code'] ) ? (string) $body['error']['code'] : '';
+
 		if ( 401 === $code ) {
 			return new WP_Error(
 				'ppq_invalid_key',
-				__( 'Invalid API key.', 'pressprimer-quiz' )
+				__( 'OpenAI rejected the API key. Check the key in Settings → AI.', 'pressprimer-quiz' )
+			);
+		}
+
+		if ( 'insufficient_quota' === $err_type || 'insufficient_quota' === $err_code ) {
+			return new WP_Error(
+				'ppq_quota_billing',
+				__( 'Your OpenAI account is out of credit or has a billing problem. Add credit or update billing in your OpenAI account, then try again.', 'pressprimer-quiz' )
 			);
 		}
 
 		if ( 429 === $code ) {
 			return new WP_Error(
-				'ppq_rate_limited',
-				__( 'OpenAI API rate limit exceeded. Please try again later.', 'pressprimer-quiz' )
+				'ppq_provider_rate_limited',
+				__( 'OpenAI is rate limiting requests right now. Please wait a moment and try again.', 'pressprimer-quiz' )
+			);
+		}
+
+		if ( 'model_not_found' === $err_code || 404 === $code ) {
+			return new WP_Error(
+				'ppq_model_not_found',
+				__( 'The selected OpenAI model is unavailable. Choose a different model in Settings → AI and try again.', 'pressprimer-quiz' )
 			);
 		}
 

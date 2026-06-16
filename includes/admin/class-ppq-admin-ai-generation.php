@@ -149,8 +149,8 @@ class PressPrimer_Quiz_Admin_AI_Generation {
 					);
 					?>
 				</p>
-				<a href="<?php echo esc_url( admin_url( 'admin.php?page=pressprimer-quiz-settings' ) ); ?>" class="button button-primary">
-					<?php esc_html_e( 'Configure API Key in Settings', 'pressprimer-quiz' ); ?>
+				<a href="<?php echo esc_url( admin_url( 'admin.php?page=pressprimer-quiz-settings&tab=integrations' ) ); ?>" class="button button-primary">
+					<?php esc_html_e( 'Configure API Key in Settings → AI', 'pressprimer-quiz' ); ?>
 				</a>
 			</div>
 		</div>

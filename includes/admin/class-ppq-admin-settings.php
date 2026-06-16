@@ -1717,6 +1717,32 @@ Good luck with your studies!',
 			}
 		}
 
+		// Per-provider AI block (feature 004): key status, curated/live models, and
+		// model preference for each registered provider, plus the active provider.
+		// OpenAI reuses the status/models already fetched above.
+		$ai_active_provider = PressPrimer_Quiz_AI_Service::get_active_provider();
+		$ai_instances       = PressPrimer_Quiz_AI_Service::get_providers();
+		$ai_provider_data   = [];
+		foreach ( PressPrimer_Quiz_AI_Service::get_provider_labels() as $pid => $plabel ) {
+			if ( 'openai' === $pid ) {
+				$pstatus = $key_status;
+				$pmodels = $available_models;
+			} else {
+				$pstatus = PressPrimer_Quiz_AI_Service::get_api_key_status( $pid );
+				$pmodels = isset( $ai_instances[ $pid ] ) ? $ai_instances[ $pid ]->get_models() : [];
+			}
+			$ai_provider_data[ $pid ] = [
+				'label'     => $plabel,
+				'status'    => $pstatus,
+				'models'    => $pmodels,
+				'modelPref' => PressPrimer_Quiz_AI_Service::get_site_model( $pid ),
+			];
+		}
+		$ai_block = [
+			'activeProvider' => $ai_active_provider,
+			'providers'      => $ai_provider_data,
+		];
+
 		// Get statistics (only questions table has deleted_at column)
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Simple count queries for admin settings display
 		$total_quizzes = (int) $wpdb->get_var( "SELECT COUNT(*) FROM {$wpdb->prefix}ppq_quizzes" ); // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Table name safely constructed
@@ -1823,6 +1849,7 @@ Good luck with your studies!',
 			'apiKeyStatus'   => $key_status,
 			'apiModels'      => $available_models,
 			'modelPref'      => $model_pref,
+			'ai'             => $ai_block,
 			'usageData'      => $usage_data,
 			'defaults'       => [
 				'siteName'   => get_bloginfo( 'name' ),

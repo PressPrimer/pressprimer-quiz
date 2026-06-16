@@ -323,12 +323,12 @@ class PressPrimer_Quiz_REST_Controller {
 				[
 					'methods'             => WP_REST_Server::CREATABLE,
 					'callback'            => [ $this, 'save_api_key' ],
-					'permission_callback' => [ $this, 'check_permission' ],
+					'permission_callback' => [ $this, 'check_settings_permission' ],
 				],
 				[
 					'methods'             => WP_REST_Server::DELETABLE,
 					'callback'            => [ $this, 'delete_api_key' ],
-					'permission_callback' => [ $this, 'check_permission' ],
+					'permission_callback' => [ $this, 'check_settings_permission' ],
 				],
 			]
 		);
@@ -339,7 +339,7 @@ class PressPrimer_Quiz_REST_Controller {
 			[
 				'methods'             => WP_REST_Server::CREATABLE,
 				'callback'            => [ $this, 'validate_api_key' ],
-				'permission_callback' => [ $this, 'check_permission' ],
+				'permission_callback' => [ $this, 'check_settings_permission' ],
 			]
 		);
 
@@ -349,7 +349,7 @@ class PressPrimer_Quiz_REST_Controller {
 			[
 				'methods'             => WP_REST_Server::CREATABLE,
 				'callback'            => [ $this, 'delete_api_key' ],
-				'permission_callback' => [ $this, 'check_permission' ],
+				'permission_callback' => [ $this, 'check_settings_permission' ],
 			]
 		);
 
@@ -369,7 +369,18 @@ class PressPrimer_Quiz_REST_Controller {
 			[
 				'methods'             => WP_REST_Server::CREATABLE,
 				'callback'            => [ $this, 'save_api_model' ],
-				'permission_callback' => [ $this, 'check_permission' ],
+				'permission_callback' => [ $this, 'check_settings_permission' ],
+			]
+		);
+
+		// Active AI provider (site-level). Settings-capable users only.
+		register_rest_route(
+			'ppq/v1',
+			'/settings/ai-provider',
+			[
+				'methods'             => WP_REST_Server::CREATABLE,
+				'callback'            => [ $this, 'set_ai_provider' ],
+				'permission_callback' => [ $this, 'check_settings_permission' ],
 			]
 		);
 
@@ -3275,41 +3286,38 @@ class PressPrimer_Quiz_REST_Controller {
 	 * @return WP_REST_Response|WP_Error Response object or error.
 	 */
 	public function save_api_key( $request ) {
-		$data    = $request->get_json_params();
-		$api_key = sanitize_text_field( $data['api_key'] ?? '' );
+		$provider = $this->resolve_request_provider_id( $request );
+		$data     = $request->get_json_params();
+		$api_key  = sanitize_text_field( is_array( $data ) && isset( $data['api_key'] ) ? $data['api_key'] : '' );
 
 		if ( empty( $api_key ) ) {
 			return new WP_Error( 'invalid_key', __( 'Please provide an API key.', 'pressprimer-quiz' ), [ 'status' => 400 ] );
 		}
 
-		if ( strpos( $api_key, 'sk-' ) !== 0 ) {
-			return new WP_Error( 'invalid_key', __( 'Invalid API key format.', 'pressprimer-quiz' ), [ 'status' => 400 ] );
+		$providers = PressPrimer_Quiz_AI_Service::get_providers();
+		if ( ! isset( $providers[ $provider ] ) ) {
+			return new WP_Error( 'invalid_provider', __( 'Unknown AI provider.', 'pressprimer-quiz' ), [ 'status' => 400 ] );
 		}
 
-		// Validate the key with OpenAI before saving
-		$validation = PressPrimer_Quiz_AI_Service::validate_api_key( $api_key );
-
+		// Validate the key with the provider before saving (the key is never logged).
+		$validation = $providers[ $provider ]->validate_key( $api_key );
 		if ( is_wp_error( $validation ) ) {
 			return new WP_Error( 'invalid_key', $validation->get_error_message(), [ 'status' => 400 ] );
 		}
 
-		// Encrypt and save the site-wide key
-		$encrypted = PressPrimer_Quiz_Helpers::encrypt( $api_key );
-
-		if ( is_wp_error( $encrypted ) ) {
-			return new WP_Error( 'encryption_failed', $encrypted->get_error_message(), [ 'status' => 500 ] );
+		$saved = PressPrimer_Quiz_AI_Service::save_site_api_key( $provider, $api_key );
+		if ( is_wp_error( $saved ) ) {
+			return new WP_Error( 'encryption_failed', $saved->get_error_message(), [ 'status' => 500 ] );
 		}
 
-		update_option( 'pressprimer_quiz_site_openai_api_key', $encrypted );
-
-		// Get status for response
-		$status = PressPrimer_Quiz_AI_Service::get_api_key_status();
+		$status = PressPrimer_Quiz_AI_Service::get_api_key_status( $provider );
 
 		return new WP_REST_Response(
 			[
 				'success'    => true,
+				'provider'   => $provider,
 				'message'    => __( 'API key saved and validated successfully.', 'pressprimer-quiz' ),
-				'masked_key' => $status['masked_key'] ?? 'sk-****',
+				'masked_key' => $status['masked_key'] ?? '',
 			],
 			200
 		);
@@ -3318,7 +3326,7 @@ class PressPrimer_Quiz_REST_Controller {
 	/**
 	 * Delete API key
 	 *
-	 * Removes the site-wide OpenAI API key.
+	 * Removes the site-wide API key for the requested (or active) provider.
 	 *
 	 * @since 1.0.0
 	 *
@@ -3326,13 +3334,15 @@ class PressPrimer_Quiz_REST_Controller {
 	 * @return WP_REST_Response Response object.
 	 */
 	public function delete_api_key( $request ) {
-		// Delete the site-wide API key
-		delete_option( 'pressprimer_quiz_site_openai_api_key' );
+		$provider = $this->resolve_request_provider_id( $request );
+
+		PressPrimer_Quiz_AI_Service::save_site_api_key( $provider, '' );
 
 		return new WP_REST_Response(
 			[
-				'success' => true,
-				'message' => __( 'API key removed successfully.', 'pressprimer-quiz' ),
+				'success'  => true,
+				'provider' => $provider,
+				'message'  => __( 'API key removed successfully.', 'pressprimer-quiz' ),
 			],
 			200
 		);
@@ -3341,7 +3351,8 @@ class PressPrimer_Quiz_REST_Controller {
 	/**
 	 * Validate API key
 	 *
-	 * Validates the currently configured site-wide API key.
+	 * Validates the configured site-wide key for the requested (or active)
+	 * provider against that provider.
 	 *
 	 * @since 1.0.0
 	 *
@@ -3349,15 +3360,15 @@ class PressPrimer_Quiz_REST_Controller {
 	 * @return WP_REST_Response|WP_Error Response object or error.
 	 */
 	public function validate_api_key( $request ) {
-		// Get the site-wide API key (get_api_key checks site option first)
-		$api_key = PressPrimer_Quiz_AI_Service::get_api_key();
+		$provider  = $this->resolve_request_provider_id( $request );
+		$providers = PressPrimer_Quiz_AI_Service::get_providers();
+		$api_key   = PressPrimer_Quiz_AI_Service::get_api_key_for_provider( $provider );
 
-		if ( is_wp_error( $api_key ) || empty( $api_key ) ) {
+		if ( empty( $api_key ) ) {
 			return new WP_Error( 'no_key', __( 'No API key configured.', 'pressprimer-quiz' ), [ 'status' => 400 ] );
 		}
 
-		// Validate the key against the OpenAI API.
-		$result = PressPrimer_Quiz_AI_Service::validate_api_key( $api_key );
+		$result = $providers[ $provider ]->validate_key( $api_key );
 
 		if ( is_wp_error( $result ) ) {
 			return new WP_Error( 'invalid_key', $result->get_error_message(), [ 'status' => 400 ] );
@@ -3365,8 +3376,9 @@ class PressPrimer_Quiz_REST_Controller {
 
 		return new WP_REST_Response(
 			[
-				'success' => true,
-				'message' => __( 'API key is valid.', 'pressprimer-quiz' ),
+				'success'  => true,
+				'provider' => $provider,
+				'message'  => __( 'API key is valid.', 'pressprimer-quiz' ),
 			],
 			200
 		);
@@ -3375,7 +3387,8 @@ class PressPrimer_Quiz_REST_Controller {
 	/**
 	 * Get API models
 	 *
-	 * Returns available OpenAI models for the configured site-wide API key.
+	 * Returns selectable models for the requested (or active) provider: OpenAI's
+	 * live account list, or the provider's curated list otherwise.
 	 *
 	 * @since 1.0.0
 	 *
@@ -3383,24 +3396,30 @@ class PressPrimer_Quiz_REST_Controller {
 	 * @return WP_REST_Response|WP_Error Response object or error.
 	 */
 	public function get_api_models( $request ) {
-		// Get the site-wide API key
-		$api_key = PressPrimer_Quiz_AI_Service::get_api_key();
+		$provider  = $this->resolve_request_provider_id( $request );
+		$providers = PressPrimer_Quiz_AI_Service::get_providers();
 
-		if ( is_wp_error( $api_key ) || empty( $api_key ) ) {
-			return new WP_Error( 'no_key', __( 'No API key configured.', 'pressprimer-quiz' ), [ 'status' => 400 ] );
-		}
+		if ( 'openai' === $provider ) {
+			$api_key = PressPrimer_Quiz_AI_Service::get_api_key_for_provider( 'openai' );
 
-		// Fetch models
-		$models = PressPrimer_Quiz_AI_Service::get_available_models( $api_key );
+			if ( empty( $api_key ) ) {
+				return new WP_Error( 'no_key', __( 'No API key configured.', 'pressprimer-quiz' ), [ 'status' => 400 ] );
+			}
 
-		if ( is_wp_error( $models ) ) {
-			return new WP_Error( 'fetch_failed', $models->get_error_message(), [ 'status' => 500 ] );
+			$models = PressPrimer_Quiz_AI_Service::get_available_models( $api_key );
+
+			if ( is_wp_error( $models ) ) {
+				return new WP_Error( 'fetch_failed', $models->get_error_message(), [ 'status' => 500 ] );
+			}
+		} else {
+			$models = $providers[ $provider ]->get_models();
 		}
 
 		return new WP_REST_Response(
 			[
-				'success' => true,
-				'models'  => $models,
+				'success'  => true,
+				'provider' => $provider,
+				'models'   => $models,
 			],
 			200
 		);
@@ -3415,20 +3434,76 @@ class PressPrimer_Quiz_REST_Controller {
 	 * @return WP_REST_Response Response object.
 	 */
 	public function save_api_model( $request ) {
-		$data    = $request->get_json_params();
-		$model   = sanitize_text_field( $data['model'] ?? '' );
-		$user_id = get_current_user_id();
+		$provider = $this->resolve_request_provider_id( $request );
+		$data     = $request->get_json_params();
+		$model    = sanitize_text_field( is_array( $data ) && isset( $data['model'] ) ? $data['model'] : '' );
 
-		// Save model preference
-		PressPrimer_Quiz_AI_Service::save_model_preference( $user_id, $model );
+		PressPrimer_Quiz_AI_Service::save_site_model( $provider, $model );
 
 		return new WP_REST_Response(
 			[
-				'success' => true,
-				'message' => __( 'Model preference saved.', 'pressprimer-quiz' ),
+				'success'  => true,
+				'provider' => $provider,
+				'message'  => __( 'Model preference saved.', 'pressprimer-quiz' ),
 			],
 			200
 		);
+	}
+
+	/**
+	 * Set the active AI provider (site-level).
+	 *
+	 * @since 3.0.0
+	 *
+	 * @param WP_REST_Request $request Request object.
+	 * @return WP_REST_Response|WP_Error Response object or error.
+	 */
+	public function set_ai_provider( $request ) {
+		$data     = $request->get_json_params();
+		$provider = sanitize_key( is_array( $data ) && isset( $data['provider'] ) ? (string) $data['provider'] : '' );
+
+		if ( ! PressPrimer_Quiz_AI_Service::set_active_provider( $provider ) ) {
+			return new WP_Error( 'invalid_provider', __( 'Unknown AI provider.', 'pressprimer-quiz' ), [ 'status' => 400 ] );
+		}
+
+		return new WP_REST_Response(
+			[
+				'success'  => true,
+				'provider' => $provider,
+			],
+			200
+		);
+	}
+
+	/**
+	 * Resolve the provider id for an AI settings request.
+	 *
+	 * Reads `provider` from the JSON body or query, validates it against the
+	 * registered providers, and falls back to the active provider.
+	 *
+	 * @since 3.0.0
+	 *
+	 * @param WP_REST_Request $request Request object.
+	 * @return string Registered provider id.
+	 */
+	private function resolve_request_provider_id( $request ) {
+		$json     = $request->get_json_params();
+		$provider = '';
+
+		if ( is_array( $json ) && isset( $json['provider'] ) && is_string( $json['provider'] ) ) {
+			$provider = $json['provider'];
+		} elseif ( null !== $request->get_param( 'provider' ) ) {
+			$provider = (string) $request->get_param( 'provider' );
+		}
+
+		$provider  = sanitize_key( $provider );
+		$providers = PressPrimer_Quiz_AI_Service::get_providers();
+
+		if ( '' === $provider || ! isset( $providers[ $provider ] ) ) {
+			$provider = PressPrimer_Quiz_AI_Service::get_active_provider();
+		}
+
+		return $provider;
 	}
 
 	/**

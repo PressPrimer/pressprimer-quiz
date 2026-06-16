@@ -230,43 +230,108 @@ class PressPrimer_Quiz_AI_Service {
 	}
 
 	/**
-	 * Save model preference for user
+	 * Save model preference (site-level per provider).
 	 *
 	 * @since 1.0.0
 	 *
-	 * @param int    $user_id User ID.
-	 * @param string $model   Model identifier.
+	 * @param int    $user_id  User ID (retained for signature compatibility).
+	 * @param string $model    Model identifier.
+	 * @param string $provider Provider id.
 	 * @return bool True on success.
 	 */
-	public static function save_model_preference( $user_id, $model ) {
-		$user_id = absint( $user_id );
-		$model   = sanitize_text_field( $model );
-
-		if ( ! $user_id ) {
-			return false;
-		}
-
-		return false !== update_user_meta( $user_id, 'pressprimer_quiz_openai_model', $model );
+	public static function save_model_preference( $user_id, $model, $provider = 'openai' ) {
+		return self::save_site_model( $provider, $model );
 	}
 
 	/**
-	 * Get model preference for user
+	 * Get model preference
+	 *
+	 * Site-level per provider (feature 004). $user_id is retained for the
+	 * backward-compatible signature only.
 	 *
 	 * @since 1.0.0
 	 *
-	 * @param int $user_id User ID.
+	 * @param int    $user_id  User ID (retained for signature compatibility).
+	 * @param string $provider Provider id (defaults to the active provider).
 	 * @return string Model identifier.
 	 */
-	public static function get_model_preference( $user_id ) {
-		$user_id = absint( $user_id );
+	public static function get_model_preference( $user_id, $provider = '' ) {
+		return self::get_site_model( $provider );
+	}
 
-		if ( ! $user_id ) {
-			return self::DEFAULT_MODEL;
+	/**
+	 * Save the site-level model preference for a provider.
+	 *
+	 * @since 3.0.0
+	 *
+	 * @param string $provider Provider id.
+	 * @param string $model    Model identifier (empty clears it).
+	 * @return bool True on success.
+	 */
+	public static function save_site_model( $provider, $model ) {
+		$provider = sanitize_key( $provider );
+		$model    = sanitize_text_field( $model );
+		$option   = 'pressprimer_quiz_site_' . $provider . '_model';
+
+		if ( '' === $model ) {
+			delete_option( $option );
+			return true;
 		}
 
-		$model = get_user_meta( $user_id, 'pressprimer_quiz_openai_model', true );
+		update_option( $option, $model );
+		return true;
+	}
 
-		return $model ? $model : self::DEFAULT_MODEL;
+	/**
+	 * Get the site-level model preference for a provider.
+	 *
+	 * Falls back to the provider's default model when none is stored.
+	 *
+	 * @since 3.0.0
+	 *
+	 * @param string $provider Provider id (defaults to the active provider).
+	 * @return string Model identifier.
+	 */
+	public static function get_site_model( $provider = '' ) {
+		$provider  = ( is_string( $provider ) && '' !== $provider ) ? sanitize_key( $provider ) : self::resolve_provider_id();
+		$model     = get_option( 'pressprimer_quiz_site_' . $provider . '_model', '' );
+		$providers = self::get_providers();
+		$default   = isset( $providers[ $provider ] ) ? $providers[ $provider ]->get_default_model() : self::DEFAULT_MODEL;
+
+		return ( is_string( $model ) && '' !== $model ) ? $model : $default;
+	}
+
+	/**
+	 * Get / set the active AI provider id (site-level).
+	 *
+	 * @since 3.0.0
+	 *
+	 * @return string Active provider id.
+	 */
+	public static function get_active_provider() {
+		return self::resolve_provider_id();
+	}
+
+	/**
+	 * Set the active AI provider (site-level).
+	 *
+	 * Only a registered provider id is accepted.
+	 *
+	 * @since 3.0.0
+	 *
+	 * @param string $provider Provider id.
+	 * @return bool True if stored, false if not a registered provider.
+	 */
+	public static function set_active_provider( $provider ) {
+		$provider  = sanitize_key( $provider );
+		$providers = self::get_providers();
+
+		if ( ! isset( $providers[ $provider ] ) ) {
+			return false;
+		}
+
+		update_option( 'pressprimer_quiz_default_ai_provider', $provider );
+		return true;
 	}
 
 	/**
@@ -1761,23 +1826,22 @@ class PressPrimer_Quiz_AI_Service {
 	/**
 	 * Get API key status
 	 *
-	 * Returns the status of site-wide API key configuration.
+	 * Returns the configuration status of a provider's site-level API key.
 	 *
 	 * @since 1.0.0
 	 *
-	 * @param int $user_id Deprecated. User ID is no longer used.
+	 * @param int|string $user_id  Deprecated user id, OR a provider id string.
+	 * @param string     $provider Provider id (defaults to the active provider).
 	 * @return array Status information.
 	 */
-	public static function get_api_key_status( $user_id = null ) {
-		$api_key = self::get_api_key();
-
-		if ( is_wp_error( $api_key ) ) {
-			return [
-				'configured' => false,
-				'valid'      => false,
-				'message'    => $api_key->get_error_message(),
-			];
+	public static function get_api_key_status( $user_id = null, $provider = '' ) {
+		// Back-compat: callers historically passed a user id (now ignored). Allow
+		// passing the provider id as the first argument too.
+		if ( '' === $provider && is_string( $user_id ) && '' !== $user_id ) {
+			$provider = $user_id;
 		}
+
+		$api_key = self::get_api_key_for_provider( ( '' !== $provider ) ? $provider : null );
 
 		if ( empty( $api_key ) ) {
 			return [
@@ -1787,7 +1851,7 @@ class PressPrimer_Quiz_AI_Service {
 			];
 		}
 
-		// Key is configured, check if masked for display
+		// Key is configured, masked for display.
 		$masked = substr( $api_key, 0, 7 ) . '...' . substr( $api_key, -4 );
 
 		return [
@@ -1800,6 +1864,25 @@ class PressPrimer_Quiz_AI_Service {
 			),
 			'masked_key' => $masked,
 		];
+	}
+
+	/**
+	 * Get the registered providers as an id => label map.
+	 *
+	 * For building the Settings provider selector without exposing instances.
+	 *
+	 * @since 3.0.0
+	 *
+	 * @return array<string,string> Provider id => label.
+	 */
+	public static function get_provider_labels() {
+		$labels = [];
+
+		foreach ( self::get_providers() as $id => $provider ) {
+			$labels[ $id ] = $provider->get_label();
+		}
+
+		return $labels;
 	}
 
 	/**

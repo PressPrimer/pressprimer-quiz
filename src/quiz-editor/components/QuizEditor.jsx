@@ -53,6 +53,8 @@ const QuizEditor = ({ quizData = {} }) => {
 	const [feedbackBands, setFeedbackBands] = useState([]);
 	// Inline warnings returned by the REST save (e.g., random distractor cap edge cases).
 	const [maxAnswersWarnings, setMaxAnswersWarnings] = useState([]);
+	// Name of the default template that pre-filled a fresh quiz (FR-006 badge).
+	const [defaultsFromName, setDefaultsFromName] = useState('');
 
 	const isNew = !currentQuizId;
 
@@ -236,17 +238,17 @@ const QuizEditor = ({ quizData = {} }) => {
 	};
 
 	/**
-	 * Apply a settings template to the editor (client-side only).
+	 * Fill the editor form from a template's settings (client-side only).
 	 *
-	 * Fills the form fields from the template's sanitized settings; nothing is
-	 * persisted until the author saves the quiz. Booleans are converted to the
-	 * Switch's boolean form value; display_settings and feedback bands are
-	 * replaced (not merged); keys with no editable field are skipped.
+	 * Nothing is persisted until the author saves the quiz. Booleans are
+	 * converted to the Switch's boolean form value; display_settings and feedback
+	 * bands are replaced (not merged); keys with no editable field are skipped.
+	 * No user-facing messages — used by both Apply and the default-template
+	 * pre-fill.
 	 *
-	 * @param {Object} settings  Sanitized settings map from the template.
-	 * @param {Array}  reminders Preset reminders to surface after apply.
+	 * @param {Object} settings Sanitized settings map from the template.
 	 */
-	const applyTemplate = (settings = {}, reminders = []) => {
+	const applyTemplateToForm = (settings = {}) => {
 		const booleanKeys = [
 			'allow_skip', 'allow_backward', 'allow_resume',
 			'randomize_questions', 'randomize_answers',
@@ -309,10 +311,24 @@ const QuizEditor = ({ quizData = {} }) => {
 		if (Array.isArray(nextBands)) {
 			setFeedbackBands(nextBands);
 		}
+	};
 
+	const applyTemplate = (settings = {}, reminders = []) => {
+		applyTemplateToForm(settings);
 		reminders.forEach((reminder) => message.warning(reminder));
 		message.success(__('Template applied. Review the settings and save the quiz to keep them.', 'pressprimer-quiz'));
 	};
+
+	// Pre-fill a brand-new quiz from the site default template once on mount
+	// (feature 003, FR-006). Existing quizzes load their own saved values.
+	useEffect(() => {
+		if (!quizData.id && quizData.defaultTemplate && quizData.defaultTemplate.settings) {
+			applyTemplateToForm(quizData.defaultTemplate.settings);
+			setDefaultsFromName(quizData.defaultTemplate.name || '');
+		}
+		// Intentionally mount-only: apply the default once before the author edits.
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, []);
 
 	/**
 	 * Collect the editor's current settings as a template payload.
@@ -425,7 +441,7 @@ const QuizEditor = ({ quizData = {} }) => {
 		{
 			key: 'settings',
 			label: __('Settings', 'pressprimer-quiz'),
-			children: <SettingsPanel form={form} generationMode={generationMode} setGenerationMode={setGenerationMode} quizData={quizData} maxAnswersWarnings={maxAnswersWarnings} saving={saving} applyTemplate={applyTemplate} collectTemplateSettings={collectTemplateSettings} />,
+			children: <SettingsPanel form={form} generationMode={generationMode} setGenerationMode={setGenerationMode} quizData={quizData} maxAnswersWarnings={maxAnswersWarnings} saving={saving} applyTemplate={applyTemplate} collectTemplateSettings={collectTemplateSettings} defaultsFromName={defaultsFromName} />,
 		},
 		hasPremiumAddons && {
 			key: 'premium',

@@ -613,6 +613,21 @@ class PressPrimer_Quiz_Admin_Quizzes {
 				'display_settings'         => (object) array(),
 				'max_answers_per_question' => null,
 			];
+
+			// Pre-fill a fresh quiz from the site default settings template, before
+			// the builder first renders (feature 003, FR-006). The editor applies
+			// these client-side and shows a "Defaults from" badge; nothing is
+			// persisted until the author saves.
+			if ( class_exists( 'PressPrimer_Quiz_Default_Template' ) ) {
+				$default_template = PressPrimer_Quiz_Default_Template::resolve();
+
+				if ( is_array( $default_template ) ) {
+					$quiz_data['defaultTemplate'] = [
+						'name'     => $default_template['name'],
+						'settings' => (object) $default_template['settings'],
+					];
+				}
+			}
 		}
 
 		// Site-wide MA scoring default — used by the editor to render the

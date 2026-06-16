@@ -144,8 +144,10 @@ const MA_SCORING_OPTIONS = [
  *                                              (client-side only; nothing persists until save).
  * @param {Function} props.collectTemplateSettings Returns the editor's current settings as a
  *                                              template payload (for "Save as template").
+ * @param {string}   props.defaultsFromName    Name of the default template that pre-filled a
+ *                                              fresh quiz, shown as a badge (empty otherwise).
  */
-const SettingsPanel = ({ form, generationMode, setGenerationMode, quizData = {}, maxAnswersWarnings = [], saving = false, applyTemplate, collectTemplateSettings }) => {
+const SettingsPanel = ({ form, generationMode, setGenerationMode, quizData = {}, maxAnswersWarnings = [], saving = false, applyTemplate, collectTemplateSettings, defaultsFromName = '' }) => {
 	// Watch access_mode to show/hide login message field
 	const accessMode = Form.useWatch('access_mode', form);
 
@@ -219,6 +221,15 @@ const SettingsPanel = ({ form, generationMode, setGenerationMode, quizData = {},
 				<ApplyTemplateButton form={form} quizData={quizData} onApply={applyTemplate} />
 				{quizData.canManageSettings && collectTemplateSettings && (
 					<SaveAsTemplateButton onCollectSettings={collectTemplateSettings} />
+				)}
+				{defaultsFromName && (
+					<Tag color="blue" style={{ alignSelf: 'center', marginInlineStart: 4 }}>
+						{sprintf(
+							/* translators: %s: template name. */
+							__('Defaults from: %s', 'pressprimer-quiz'),
+							defaultsFromName
+						)}
+					</Tag>
 				)}
 			</div>
 		)}

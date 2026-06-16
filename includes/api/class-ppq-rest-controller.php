@@ -521,6 +521,20 @@ class PressPrimer_Quiz_REST_Controller {
 			]
 		);
 
+		// Default-template selector target. Registered before the numeric-id route;
+		// 'default' never matches the \d+ pattern, but keeping it first is explicit.
+		register_rest_route(
+			'ppq/v1',
+			'/quiz-templates/default',
+			[
+				[
+					'methods'             => WP_REST_Server::CREATABLE,
+					'callback'            => [ $this, 'set_default_quiz_template' ],
+					'permission_callback' => [ $this, 'check_settings_permission' ],
+				],
+			]
+		);
+
 		register_rest_route(
 			'ppq/v1',
 			'/quiz-templates/(?P<id>\d+)',
@@ -3999,7 +4013,42 @@ class PressPrimer_Quiz_REST_Controller {
 			$items[] = $this->format_quiz_template( $template );
 		}
 
-		return new WP_REST_Response( array( 'items' => $items ), 200 );
+		// Resolve the site default, auto-clearing a stale (deleted-target) value
+		// so the selector and the "cleared" notice stay accurate (FR-006).
+		$raw_default = PressPrimer_Quiz_Default_Template::get_raw();
+		$default     = PressPrimer_Quiz_Default_Template::get_validated();
+
+		return new WP_REST_Response(
+			array(
+				'items'           => $items,
+				'default'         => $default,
+				'default_cleared' => ( '' !== $raw_default && '' === $default ),
+			),
+			200
+		);
+	}
+
+	/**
+	 * Set (or clear) the default settings template for new quizzes.
+	 *
+	 * @since 3.0.0
+	 *
+	 * @param WP_REST_Request $request Request object.
+	 * @return WP_REST_Response Response with the stored value.
+	 */
+	public function set_default_quiz_template( $request ) {
+		$data  = $request->get_json_params();
+		$value = is_array( $data ) && isset( $data['value'] ) && is_string( $data['value'] ) ? $data['value'] : '';
+
+		$stored = PressPrimer_Quiz_Default_Template::set_value( $value );
+
+		return new WP_REST_Response(
+			array(
+				'success' => true,
+				'default' => $stored,
+			),
+			200
+		);
 	}
 
 	/**

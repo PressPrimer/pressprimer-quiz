@@ -19,6 +19,8 @@ import {
 	Modal,
 	Form,
 	Input,
+	Select,
+	Alert,
 	Popconfirm,
 	Descriptions,
 	Typography,
@@ -45,6 +47,10 @@ const { TextArea } = Input;
 const TemplatesTab = () => {
 	const [form] = Form.useForm();
 	const [templates, setTemplates] = useState([]);
+	const [presets, setPresets] = useState([]);
+	const [defaultValue, setDefaultValue] = useState('');
+	const [defaultCleared, setDefaultCleared] = useState(false);
+	const [savingDefault, setSavingDefault] = useState(false);
 	const [loading, setLoading] = useState(true);
 	const [editTarget, setEditTarget] = useState(null);
 	const [viewTarget, setViewTarget] = useState(null);
@@ -56,13 +62,36 @@ const TemplatesTab = () => {
 			.then((res) => {
 				const items = Array.isArray(res?.items) ? res.items : [];
 				setTemplates(items.filter((item) => 'template' === item.source));
+				setPresets(items.filter((item) => 'preset' === item.source));
+				setDefaultValue(typeof res?.default === 'string' ? res.default : '');
+				setDefaultCleared(!!res?.default_cleared);
 			})
 			.catch((error) => {
 				debugError('Failed to load templates:', error);
 				setTemplates([]);
+				setPresets([]);
 			})
 			.finally(() => setLoading(false));
 	}, []);
+
+	const changeDefault = async (value) => {
+		setSavingDefault(true);
+		try {
+			const res = await apiFetch({
+				path: '/ppq/v1/quiz-templates/default',
+				method: 'POST',
+				data: { value },
+			});
+			setDefaultValue(typeof res?.default === 'string' ? res.default : '');
+			setDefaultCleared(false);
+			message.success(__('Default template updated.', 'pressprimer-quiz'));
+		} catch (error) {
+			debugError('Failed to set default template:', error);
+			message.error(error.message || __('Failed to update the default template.', 'pressprimer-quiz'));
+		} finally {
+			setSavingDefault(false);
+		}
+	};
 
 	useEffect(() => {
 		loadTemplates();
@@ -187,6 +216,22 @@ const TemplatesTab = () => {
 			? Object.entries(viewTarget.settings)
 			: [];
 
+	const defaultOptions = [
+		{ value: '', label: __('— None (use built-in defaults) —', 'pressprimer-quiz') },
+	];
+	if (presets.length) {
+		defaultOptions.push({
+			label: __('Presets', 'pressprimer-quiz'),
+			options: presets.map((p) => ({ value: `preset:${p.id}`, label: p.name })),
+		});
+	}
+	if (templates.length) {
+		defaultOptions.push({
+			label: __('Saved Templates', 'pressprimer-quiz'),
+			options: templates.map((t) => ({ value: `template:${t.id}`, label: t.name })),
+		});
+	}
+
 	let listContent;
 	if (loading) {
 		listContent = (
@@ -220,6 +265,32 @@ const TemplatesTab = () => {
 			<Paragraph className="ppq-settings-section-description">
 				{__('Saved templates capture a quiz’s settings so you can apply them to other quizzes from the Quiz Builder. Built-in presets (such as Exam Simulation) are always available there and are not listed here.', 'pressprimer-quiz')}
 			</Paragraph>
+
+			{defaultCleared && (
+				<Alert
+					type="warning"
+					showIcon
+					style={{ marginBottom: 16 }}
+					message={__('The default template for new quizzes was removed, so it has been cleared. New quizzes now use the built-in defaults.', 'pressprimer-quiz')}
+				/>
+			)}
+
+			<div className="ppq-settings-field" style={{ marginBottom: 24 }}>
+				<Text strong style={{ display: 'block', marginBottom: 4 }}>
+					{__('Default template for new quizzes', 'pressprimer-quiz')}
+				</Text>
+				<Text type="secondary" style={{ display: 'block', marginBottom: 8, fontSize: 13 }}>
+					{__('New quizzes start pre-filled with this template’s settings. Authors can change anything before saving.', 'pressprimer-quiz')}
+				</Text>
+				<Select
+					value={defaultValue}
+					onChange={changeDefault}
+					loading={savingDefault}
+					disabled={loading}
+					options={defaultOptions}
+					style={{ width: 360, maxWidth: '100%' }}
+				/>
+			</div>
 
 			{listContent}
 

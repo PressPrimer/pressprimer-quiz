@@ -711,6 +711,28 @@ class PressPrimer_Quiz_Quiz extends PressPrimer_Quiz_Model {
 	 * @return int|WP_Error Quiz ID on success, WP_Error on failure.
 	 */
 	public static function create( array $data ) {
+		// Apply the site default settings template (feature 003, FR-006) for any
+		// settings keys the caller did not provide. Skipped for review quizzes and
+		// when the caller opts out via 'skip_default_template'. Callers that pass a
+		// full settings set (the Quiz Builder save) are unaffected — every key is
+		// already present, so nothing is filled.
+		$skip_default           = ! empty( $data['skip_default_template'] ) || ! empty( $data['is_review_quiz'] );
+		$applied_default_source = '';
+		unset( $data['skip_default_template'] );
+
+		if ( ! $skip_default && class_exists( 'PressPrimer_Quiz_Default_Template' ) ) {
+			$default = PressPrimer_Quiz_Default_Template::resolve();
+
+			if ( is_array( $default ) && ! empty( $default['settings'] ) ) {
+				foreach ( $default['settings'] as $key => $value ) {
+					if ( ! array_key_exists( $key, $data ) ) {
+						$data[ $key ] = $value;
+					}
+				}
+				$applied_default_source = isset( $default['source'] ) ? (string) $default['source'] : '';
+			}
+		}
+
 		// Validate required fields
 		if ( empty( $data['title'] ) ) {
 			return new WP_Error(
@@ -903,6 +925,19 @@ class PressPrimer_Quiz_Quiz extends PressPrimer_Quiz_Model {
 			 * @param array $data    The quiz data.
 			 */
 			do_action( 'pressprimer_quiz_quiz_created', $quiz_id, $data );
+
+			// Audit hook: the site default template populated this new quiz.
+			if ( '' !== $applied_default_source ) {
+				/**
+				 * Fires when the default settings template populates a new quiz.
+				 *
+				 * @since 3.0.0
+				 *
+				 * @param int    $quiz_id The new quiz ID.
+				 * @param string $source  The default source ('preset:{id}' or 'template:{id}').
+				 */
+				do_action( 'pressprimer_quiz_template_applied_defaults', $quiz_id, $applied_default_source );
+			}
 		}
 
 		return $quiz_id;

@@ -1021,9 +1021,20 @@ class PressPrimer_Quiz_AI_Service {
 			],
 		];
 
+		// Resolve the model to send. OpenAI behavior is unchanged. For other
+		// providers, fall back to that provider's default when the configured
+		// model is empty or is still the OpenAI default (i.e. not an explicit
+		// choice for this provider) — per-provider model selection arrives with
+		// the Settings UI (Prompt 4.4), which will set an appropriate model.
+		$model = $this->model;
+		if ( 'openai' !== $provider->get_id()
+			&& ( '' === (string) $model || self::DEFAULT_MODEL === $model ) ) {
+			$model = $provider->get_default_model();
+		}
+
 		$options = [
 			'api_key'     => $this->api_key,
-			'model'       => $this->model,
+			'model'       => $model,
 			'max_tokens'  => 64000,
 			'temperature' => 0.7,
 			'timeout'     => self::API_TIMEOUT,
@@ -1096,11 +1107,13 @@ class PressPrimer_Quiz_AI_Service {
 			}
 		}
 
-		// Guarantee the built-in OpenAI provider. In Prompt 4.1 this is a
-		// temporary inline transport; Prompt 4.2 replaces it with the extracted,
-		// regression-gated class-ppq-ai-provider-openai.php.
+		// Guarantee the built-in providers (the filter may override either).
 		if ( ! isset( $providers['openai'] ) ) {
 			$providers['openai'] = self::get_builtin_openai_provider();
+		}
+
+		if ( ! isset( $providers['anthropic'] ) ) {
+			$providers['anthropic'] = self::get_builtin_anthropic_provider();
 		}
 
 		return $providers;
@@ -1171,6 +1184,21 @@ class PressPrimer_Quiz_AI_Service {
 	 */
 	private static function get_builtin_openai_provider() {
 		return new PressPrimer_Quiz_AI_Provider_OpenAI();
+	}
+
+	/**
+	 * Build the built-in Anthropic provider.
+	 *
+	 * Anthropic Messages API support (feature 004, FR-003), mirroring the
+	 * PressPrimer Assignment conventions. Addons may override 'anthropic' via the
+	 * pressprimer_quiz_ai_providers filter.
+	 *
+	 * @since 3.0.0
+	 *
+	 * @return PressPrimer_Quiz_AI_Provider_Interface The Anthropic provider.
+	 */
+	private static function get_builtin_anthropic_provider() {
+		return new PressPrimer_Quiz_AI_Provider_Anthropic();
 	}
 
 	/**
@@ -1796,6 +1824,113 @@ class PressPrimer_Quiz_AI_Service {
 			),
 			'masked_key' => $masked,
 		];
+	}
+
+	/**
+	 * Save the Anthropic API key for a user.
+	 *
+	 * Same storage treatment as the OpenAI key (feature 004, FR-004): encrypted
+	 * in user meta under the ppq_ prefix.
+	 *
+	 * @since 3.0.0
+	 *
+	 * @param int    $user_id User ID.
+	 * @param string $api_key API key to save (empty clears it).
+	 * @return bool|WP_Error True on success, WP_Error on failure.
+	 */
+	public static function save_anthropic_api_key( $user_id, $api_key ) {
+		$user_id = absint( $user_id );
+
+		if ( ! $user_id ) {
+			return new WP_Error(
+				'ppq_invalid_user',
+				__( 'Invalid user ID.', 'pressprimer-quiz' )
+			);
+		}
+
+		// Allow clearing the key.
+		if ( empty( $api_key ) ) {
+			delete_user_meta( $user_id, 'pressprimer_quiz_anthropic_api_key' );
+			delete_user_meta( $user_id, 'pressprimer_quiz_anthropic_model' );
+			return true;
+		}
+
+		$encrypted = PressPrimer_Quiz_Helpers::encrypt( $api_key );
+
+		if ( is_wp_error( $encrypted ) ) {
+			return $encrypted;
+		}
+
+		$result = update_user_meta( $user_id, 'pressprimer_quiz_anthropic_api_key', $encrypted );
+
+		return false !== $result;
+	}
+
+	/**
+	 * Get the Anthropic API key.
+	 *
+	 * Mirrors get_api_key()'s resolution: a site-wide configured key first, then
+	 * the legacy admin user-meta location.
+	 *
+	 * @since 3.0.0
+	 *
+	 * @param int|null $user_id User ID (unused; mirrors get_api_key signature).
+	 * @return string Decrypted API key, or '' when none.
+	 */
+	public static function get_anthropic_api_key( $user_id = null ) {
+		$site_key = get_option( 'pressprimer_quiz_site_anthropic_api_key', '' );
+
+		if ( ! empty( $site_key ) ) {
+			$decrypted = PressPrimer_Quiz_Helpers::decrypt( $site_key );
+
+			if ( ! is_wp_error( $decrypted ) && ! empty( $decrypted ) ) {
+				return $decrypted;
+			}
+		}
+
+		$admin_users = get_users(
+			[
+				'role'   => 'administrator',
+				'number' => 1,
+			]
+		);
+
+		if ( ! empty( $admin_users ) ) {
+			$admin_id  = $admin_users[0]->ID;
+			$encrypted = get_user_meta( $admin_id, 'pressprimer_quiz_anthropic_api_key', true );
+
+			if ( ! empty( $encrypted ) ) {
+				$decrypted = PressPrimer_Quiz_Helpers::decrypt( $encrypted );
+
+				if ( ! is_wp_error( $decrypted ) && ! empty( $decrypted ) ) {
+					return $decrypted;
+				}
+			}
+		}
+
+		return '';
+	}
+
+	/**
+	 * Get the API key for a given provider.
+	 *
+	 * Resolves to the active provider when none is supplied. Lets the generation
+	 * path send the correct key for whichever provider is active.
+	 *
+	 * @since 3.0.0
+	 *
+	 * @param string|null $provider Provider id (defaults to the active provider).
+	 * @param int|null    $user_id  User ID (defaults to the current user).
+	 * @return string Decrypted API key, or '' when none.
+	 */
+	public static function get_api_key_for_provider( $provider = null, $user_id = null ) {
+		$provider = ( is_string( $provider ) && '' !== $provider ) ? $provider : self::resolve_provider_id( $user_id );
+
+		if ( 'anthropic' === $provider ) {
+			return self::get_anthropic_api_key( $user_id );
+		}
+
+		return self::get_api_key( $user_id );
 	}
 
 	/**

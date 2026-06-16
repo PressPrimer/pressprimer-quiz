@@ -14,10 +14,19 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
+// The provider interface ships under services/ai/ with an interface- filename
+// the class autoloader does not map, so load it explicitly. Provider classes
+// (class-ppq-ai-provider-*.php) autoload normally once instantiated through the
+// orchestrator, by which point this interface is already defined.
+require_once __DIR__ . '/ai/interface-ppq-ai-provider.php';
+
 /**
  * AI Service class
  *
- * Provides AI question generation functionality with user-provided API keys.
+ * Orchestrates AI question generation: prompts, JSON parsing/repair, retries,
+ * timeouts, content limits, and the per-user rate limit are provider-neutral
+ * here; transport is delegated to a provider implementing
+ * PressPrimer_Quiz_AI_Provider_Interface, resolved per request (feature 004).
  *
  * @since 1.0.0
  */
@@ -978,58 +987,72 @@ class PressPrimer_Quiz_AI_Service {
 	/**
 	 * Call API
 	 *
-	 * Makes the actual API call to OpenAI with extended timeout and retry support.
-	 * OpenAI can take several minutes for complex generation tasks, especially
-	 * with large content or many questions requested.
+	 * Resolves the active provider and runs the provider-neutral retry loop,
+	 * delegating transport to the provider's send(). Returns the assistant text
+	 * (a JSON string for generation) or a WP_Error. Token usage and the raw
+	 * response from the last successful call are retained for the existing
+	 * get_last_token_usage()/get_last_response() accessors. AI generation can
+	 * take several minutes for complex tasks, so providers use an extended
+	 * timeout.
 	 *
 	 * @since 1.0.0
 	 *
-	 * @param array $prompt Prompt with system and user messages.
+	 * @param array $prompt Prompt with 'system' and 'user' messages.
 	 * @return string|WP_Error Response content or WP_Error.
 	 */
 	private function call_api( $prompt ) {
-		$request_body = [
-			'model'                 => $this->model,
-			'messages'              => [
-				[
-					'role'    => 'system',
-					'content' => $prompt['system'],
-				],
-				[
-					'role'    => 'user',
-					'content' => $prompt['user'],
-				],
+		$provider = $this->resolve_provider();
+
+		if ( ! $provider instanceof PressPrimer_Quiz_AI_Provider_Interface ) {
+			return new WP_Error(
+				'ppq_no_provider',
+				__( 'No AI provider is available.', 'pressprimer-quiz' )
+			);
+		}
+
+		$messages = [
+			[
+				'role'    => 'system',
+				'content' => $prompt['system'],
 			],
-			'max_completion_tokens' => 64000,
+			[
+				'role'    => 'user',
+				'content' => $prompt['user'],
+			],
 		];
 
-		// GPT-5.x models don't support temperature parameter (only default value of 1)
-		// Only add temperature for older models (GPT-4.x and below)
-		if ( ! preg_match( '/^gpt-5/', $this->model ) ) {
-			$request_body['temperature'] = 0.7;
-		}
+		$options = [
+			'api_key'     => $this->api_key,
+			'model'       => $this->model,
+			'max_tokens'  => 64000,
+			'temperature' => 0.7,
+			'timeout'     => self::API_TIMEOUT,
+		];
 
 		$last_error = null;
 
-		// Retry loop for transient failures
+		// Retry loop for transient failures (provider-neutral).
 		for ( $attempt = 0; $attempt <= self::MAX_RETRIES; $attempt++ ) {
 			// Wait before retry (not on first attempt)
 			if ( $attempt > 0 ) {
 				sleep( self::RETRY_DELAY );
 			}
 
-			$response = $this->make_api_request( $request_body );
+			$result = $provider->send( $messages, $options );
 
-			// If successful, return the content
-			if ( ! is_wp_error( $response ) ) {
-				return $response;
+			// If successful, retain debugging/usage state and return the content.
+			if ( ! is_wp_error( $result ) ) {
+				$this->last_response    = ( isset( $result['raw'] ) && is_array( $result['raw'] ) ) ? $result['raw'] : [];
+				$this->last_token_usage = ( isset( $result['usage'] ) && is_array( $result['usage'] ) ) ? $result['usage'] : [];
+
+				return isset( $result['content'] ) ? $result['content'] : '';
 			}
 
-			$last_error = $response;
+			$last_error = $result;
 
 			// Check if error is retryable
-			if ( ! $this->is_retryable_error( $response ) ) {
-				return $response;
+			if ( ! $this->is_retryable_error( $result ) ) {
+				return $result;
 			}
 		}
 
@@ -1038,122 +1061,310 @@ class PressPrimer_Quiz_AI_Service {
 	}
 
 	/**
-	 * Make API request
+	 * Get the registered AI providers, keyed by id.
 	 *
-	 * Executes a single API request to OpenAI with extended timeout.
+	 * Applies the internal/unstable pressprimer_quiz_ai_providers filter and
+	 * guarantees a built-in OpenAI provider is present. Resolved per request,
+	 * never cached across requests.
 	 *
-	 * @since 1.0.0
+	 * @since 3.0.0
 	 *
-	 * @param array $request_body Request body for OpenAI API.
-	 * @return string|WP_Error Response content or WP_Error.
+	 * @return PressPrimer_Quiz_AI_Provider_Interface[] Providers keyed by id.
 	 */
-	private function make_api_request( $request_body ) {
-		$response = wp_remote_post(
-			self::API_BASE_URL . '/chat/completions',
-			[
-				'timeout'     => self::API_TIMEOUT,
-				'httpversion' => '1.1',
-				'headers'     => [
-					'Authorization' => 'Bearer ' . $this->api_key,
-					'Content-Type'  => 'application/json',
-				],
-				'body'        => wp_json_encode( $request_body ),
-				'sslverify'   => true,
-			]
-		);
+	public static function get_providers() {
+		/**
+		 * Filters the registered AI providers.
+		 *
+		 * Internal/unstable in 3.0: used to register first-party providers, not a
+		 * public extension promise. Each entry is an id => provider-instance pair
+		 * (instances implement PressPrimer_Quiz_AI_Provider_Interface).
+		 *
+		 * @since 3.0.0
+		 *
+		 * @param array $providers Map of provider id => provider instance.
+		 */
+		$providers = apply_filters( 'pressprimer_quiz_ai_providers', [] );
 
-		if ( is_wp_error( $response ) ) {
-			$error_message = $response->get_error_message();
+		if ( ! is_array( $providers ) ) {
+			$providers = [];
+		}
 
-			// Provide more helpful timeout message
-			if ( strpos( $error_message, 'timed out' ) !== false || strpos( $error_message, 'timeout' ) !== false ) {
-				return new WP_Error(
-					'ppq_api_timeout',
-					__( 'The request to OpenAI timed out. This can happen with large content or many questions. Please try again with less content or fewer questions.', 'pressprimer-quiz' )
-				);
+		// Keep only valid id => provider-instance pairs.
+		foreach ( $providers as $id => $provider ) {
+			if ( ! is_string( $id ) || ! $provider instanceof PressPrimer_Quiz_AI_Provider_Interface ) {
+				unset( $providers[ $id ] );
+			}
+		}
+
+		// Guarantee the built-in OpenAI provider. In Prompt 4.1 this is a
+		// temporary inline transport; Prompt 4.2 replaces it with the extracted,
+		// regression-gated class-ppq-ai-provider-openai.php.
+		if ( ! isset( $providers['openai'] ) ) {
+			$providers['openai'] = self::get_builtin_openai_provider();
+		}
+
+		return $providers;
+	}
+
+	/**
+	 * Resolve the active provider id for a user.
+	 *
+	 * User active-provider meta → site default option → 'openai'.
+	 *
+	 * @since 3.0.0
+	 *
+	 * @param int|null $user_id User ID (defaults to the current user).
+	 * @return string Provider id.
+	 */
+	public static function resolve_provider_id( $user_id = null ) {
+		$user_id = $user_id ? absint( $user_id ) : get_current_user_id();
+
+		if ( $user_id ) {
+			$pref = get_user_meta( $user_id, 'pressprimer_quiz_ai_provider', true );
+			if ( is_string( $pref ) && '' !== $pref ) {
+				return $pref;
+			}
+		}
+
+		$default = get_option( 'pressprimer_quiz_default_ai_provider', 'openai' );
+
+		return ( is_string( $default ) && '' !== $default ) ? $default : 'openai';
+	}
+
+	/**
+	 * Resolve the active provider instance for this request.
+	 *
+	 * Falls back to OpenAI, then to any registered provider.
+	 *
+	 * @since 3.0.0
+	 *
+	 * @return PressPrimer_Quiz_AI_Provider_Interface|null Provider, or null if none.
+	 */
+	private function resolve_provider() {
+		$providers = self::get_providers();
+		$id        = self::resolve_provider_id();
+
+		if ( isset( $providers[ $id ] ) ) {
+			return $providers[ $id ];
+		}
+
+		if ( isset( $providers['openai'] ) ) {
+			return $providers['openai'];
+		}
+
+		$first = reset( $providers );
+
+		return $first ? $first : null;
+	}
+
+	/**
+	 * Build the temporary built-in OpenAI provider (Prompt 4.1).
+	 *
+	 * Wraps the current OpenAI transport behind the provider interface with no
+	 * behavior change: same endpoint, headers, request body, error codes, and
+	 * response handling as before. Prompt 4.2 replaces this with the extracted
+	 * class-ppq-ai-provider-openai.php under a golden-output regression gate.
+	 *
+	 * @since 3.0.0
+	 *
+	 * @return PressPrimer_Quiz_AI_Provider_Interface The OpenAI provider.
+	 */
+	private static function get_builtin_openai_provider() {
+		return new class() implements PressPrimer_Quiz_AI_Provider_Interface {
+
+			/**
+			 * Provider id.
+			 *
+			 * @since 3.0.0
+			 *
+			 * @return string Provider id.
+			 */
+			public function get_id(): string {
+				return 'openai';
 			}
 
-			return new WP_Error(
-				'ppq_api_connection_error',
-				sprintf(
-					/* translators: %s: error message */
-					__( 'Failed to connect to OpenAI API: %s', 'pressprimer-quiz' ),
-					$error_message
-				)
-			);
-		}
+			/**
+			 * Provider label.
+			 *
+			 * @since 3.0.0
+			 *
+			 * @return string Provider label.
+			 */
+			public function get_label(): string {
+				return 'OpenAI';
+			}
 
-		$code = wp_remote_retrieve_response_code( $response );
-		$body = json_decode( wp_remote_retrieve_body( $response ), true );
+			/**
+			 * Default model.
+			 *
+			 * @since 3.0.0
+			 *
+			 * @return string Model id.
+			 */
+			public function get_default_model(): string {
+				return PressPrimer_Quiz_AI_Service::DEFAULT_MODEL;
+			}
 
-		// Store full response for debugging
-		$this->last_response = $body;
+			/**
+			 * Curated model list.
+			 *
+			 * Empty here; the orchestrator's get_available_models() supplies the
+			 * live, key-derived list. The filterable curated list arrives in 4.2.
+			 *
+			 * @since 3.0.0
+			 *
+			 * @return array Model ids.
+			 */
+			public function get_models(): array {
+				return [];
+			}
 
-		// Store token usage
-		if ( isset( $body['usage'] ) ) {
-			$this->last_token_usage = $body['usage'];
-		}
+			/**
+			 * Validate an API key (delegates to the existing validator).
+			 *
+			 * @since 3.0.0
+			 *
+			 * @param string $api_key API key.
+			 * @return true|WP_Error True when valid, WP_Error otherwise.
+			 */
+			public function validate_key( string $api_key ) {
+				return PressPrimer_Quiz_AI_Service::validate_api_key( $api_key );
+			}
 
-		if ( 401 === $code ) {
-			return new WP_Error(
-				'ppq_invalid_key',
-				__( 'Invalid API key.', 'pressprimer-quiz' )
-			);
-		}
+			/**
+			 * Send a request to the OpenAI Chat Completions API.
+			 *
+			 * Behavior-identical to the prior make_api_request(): same endpoint,
+			 * headers, body shaping, error codes/messages, and content extraction.
+			 *
+			 * @since 3.0.0
+			 *
+			 * @param array $messages Neutral role/content message array.
+			 * @param array $options  Request options (api_key, model, max_tokens, temperature, timeout).
+			 * @return array|WP_Error Normalized result, or WP_Error on failure.
+			 */
+			public function send( array $messages, array $options ) {
+				$model   = isset( $options['model'] ) ? $options['model'] : PressPrimer_Quiz_AI_Service::DEFAULT_MODEL;
+				$api_key = isset( $options['api_key'] ) ? $options['api_key'] : '';
+				$timeout = isset( $options['timeout'] ) ? (int) $options['timeout'] : PressPrimer_Quiz_AI_Service::API_TIMEOUT;
 
-		if ( 429 === $code ) {
-			return new WP_Error(
-				'ppq_rate_limited',
-				__( 'OpenAI API rate limit exceeded. Please try again later.', 'pressprimer-quiz' )
-			);
-		}
+				$request_body = [
+					'model'                 => $model,
+					'messages'              => $messages,
+					'max_completion_tokens' => isset( $options['max_tokens'] ) ? (int) $options['max_tokens'] : 64000,
+				];
 
-		// 502 Bad Gateway is usually a server/proxy timeout, not an OpenAI issue.
-		// This happens when the hosting server (nginx, Apache, load balancer) times out
-		// waiting for the PHP process, which is still waiting for OpenAI.
-		if ( 502 === $code ) {
-			return new WP_Error(
-				'ppq_server_timeout',
-				__( 'Server timeout (502 Bad Gateway). This is not an OpenAI issue — your hosting server closed the connection before the AI response was received. OpenAI can take 1-3 minutes for complex requests, but many hosting servers timeout after 30-60 seconds. To fix this, contact your hosting provider about increasing the proxy timeout (nginx: proxy_read_timeout, Apache: ProxyTimeout). As a workaround, try generating fewer questions at once or using shorter content.', 'pressprimer-quiz' )
-			);
-		}
+				// GPT-5.x models don't support the temperature parameter (only the
+				// default value of 1). Only add temperature for older models.
+				if ( isset( $options['temperature'] ) && ! preg_match( '/^gpt-5/', $model ) ) {
+					$request_body['temperature'] = $options['temperature'];
+				}
 
-		// 504 Gateway Timeout is similar to 502 - a proxy/server level timeout.
-		if ( 504 === $code ) {
-			return new WP_Error(
-				'ppq_server_timeout',
-				__( 'Server timeout (504 Gateway Timeout). Your hosting server closed the connection before the AI response was received. OpenAI can take 1-3 minutes for complex requests, but many hosting servers timeout after 30-60 seconds. To fix this, contact your hosting provider about increasing the proxy timeout. As a workaround, try generating fewer questions at once or using shorter content.', 'pressprimer-quiz' )
-			);
-		}
+				$response = wp_remote_post(
+					PressPrimer_Quiz_AI_Service::API_BASE_URL . '/chat/completions',
+					[
+						'timeout'     => $timeout,
+						'httpversion' => '1.1',
+						'headers'     => [
+							'Authorization' => 'Bearer ' . $api_key,
+							'Content-Type'  => 'application/json',
+						],
+						'body'        => wp_json_encode( $request_body ),
+						'sslverify'   => true,
+					]
+				);
 
-		if ( 500 === $code || 503 === $code ) {
-			return new WP_Error(
-				'ppq_api_server_error',
-				sprintf(
-					/* translators: %d: HTTP status code */
-					__( 'OpenAI server error (HTTP %d). This is usually temporary. Please try again in a few moments.', 'pressprimer-quiz' ),
-					$code
-				)
-			);
-		}
+				if ( is_wp_error( $response ) ) {
+					$error_message = $response->get_error_message();
 
-		if ( isset( $body['error'] ) ) {
-			return new WP_Error(
-				'ppq_api_error',
-				isset( $body['error']['message'] )
-					? $body['error']['message']
-					: __( 'OpenAI API error occurred.', 'pressprimer-quiz' )
-			);
-		}
+					// Provide more helpful timeout message
+					if ( strpos( $error_message, 'timed out' ) !== false || strpos( $error_message, 'timeout' ) !== false ) {
+						return new WP_Error(
+							'ppq_api_timeout',
+							__( 'The request to OpenAI timed out. This can happen with large content or many questions. Please try again with less content or fewer questions.', 'pressprimer-quiz' )
+						);
+					}
 
-		if ( ! isset( $body['choices'][0]['message']['content'] ) ) {
-			return new WP_Error(
-				'ppq_invalid_response',
-				__( 'Invalid response format from OpenAI.', 'pressprimer-quiz' )
-			);
-		}
+					return new WP_Error(
+						'ppq_api_connection_error',
+						sprintf(
+							/* translators: %s: error message */
+							__( 'Failed to connect to OpenAI API: %s', 'pressprimer-quiz' ),
+							$error_message
+						)
+					);
+				}
 
-		return $body['choices'][0]['message']['content'];
+				$code = wp_remote_retrieve_response_code( $response );
+				$body = json_decode( wp_remote_retrieve_body( $response ), true );
+
+				if ( 401 === $code ) {
+					return new WP_Error(
+						'ppq_invalid_key',
+						__( 'Invalid API key.', 'pressprimer-quiz' )
+					);
+				}
+
+				if ( 429 === $code ) {
+					return new WP_Error(
+						'ppq_rate_limited',
+						__( 'OpenAI API rate limit exceeded. Please try again later.', 'pressprimer-quiz' )
+					);
+				}
+
+				// 502 Bad Gateway is usually a server/proxy timeout, not an OpenAI issue.
+				// This happens when the hosting server (nginx, Apache, load balancer) times out
+				// waiting for the PHP process, which is still waiting for OpenAI.
+				if ( 502 === $code ) {
+					return new WP_Error(
+						'ppq_server_timeout',
+						__( 'Server timeout (502 Bad Gateway). This is not an OpenAI issue — your hosting server closed the connection before the AI response was received. OpenAI can take 1-3 minutes for complex requests, but many hosting servers timeout after 30-60 seconds. To fix this, contact your hosting provider about increasing the proxy timeout (nginx: proxy_read_timeout, Apache: ProxyTimeout). As a workaround, try generating fewer questions at once or using shorter content.', 'pressprimer-quiz' )
+					);
+				}
+
+				// 504 Gateway Timeout is similar to 502 - a proxy/server level timeout.
+				if ( 504 === $code ) {
+					return new WP_Error(
+						'ppq_server_timeout',
+						__( 'Server timeout (504 Gateway Timeout). Your hosting server closed the connection before the AI response was received. OpenAI can take 1-3 minutes for complex requests, but many hosting servers timeout after 30-60 seconds. To fix this, contact your hosting provider about increasing the proxy timeout. As a workaround, try generating fewer questions at once or using shorter content.', 'pressprimer-quiz' )
+					);
+				}
+
+				if ( 500 === $code || 503 === $code ) {
+					return new WP_Error(
+						'ppq_api_server_error',
+						sprintf(
+							/* translators: %d: HTTP status code */
+							__( 'OpenAI server error (HTTP %d). This is usually temporary. Please try again in a few moments.', 'pressprimer-quiz' ),
+							$code
+						)
+					);
+				}
+
+				if ( isset( $body['error'] ) ) {
+					return new WP_Error(
+						'ppq_api_error',
+						isset( $body['error']['message'] )
+							? $body['error']['message']
+							: __( 'OpenAI API error occurred.', 'pressprimer-quiz' )
+					);
+				}
+
+				if ( ! isset( $body['choices'][0]['message']['content'] ) ) {
+					return new WP_Error(
+						'ppq_invalid_response',
+						__( 'Invalid response format from OpenAI.', 'pressprimer-quiz' )
+					);
+				}
+
+				return [
+					'content' => $body['choices'][0]['message']['content'],
+					'model'   => $model,
+					'usage'   => ( isset( $body['usage'] ) && is_array( $body['usage'] ) ) ? $body['usage'] : [],
+					'raw'     => is_array( $body ) ? $body : [],
+				];
+			}
+		};
 	}
 
 	/**

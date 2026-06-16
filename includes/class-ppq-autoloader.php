@@ -34,6 +34,7 @@ class PressPrimer_Quiz_Autoloader {
 		'api',
 		'frontend',
 		'services',
+		'services/ai',
 		'integrations',
 		'database',
 		'utilities',

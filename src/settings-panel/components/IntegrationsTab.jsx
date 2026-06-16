@@ -30,10 +30,12 @@ const { Title, Paragraph, Text } = Typography;
 /**
  * Integrations Tab - API keys and third-party integrations
  *
- * @param {Object} props Component props
- * @param {Object} props.settingsData Full settings data including AI provider status
+ * @param {Object}   props Component props
+ * @param {Object}   props.settingsData Full settings data including AI provider status
+ * @param {Object}   props.aiState      Lifted AI provider state (persists across tabs)
+ * @param {Function} props.setAiState   Setter for the lifted AI provider state
  */
-const IntegrationsTab = ({ settingsData }) => {
+const IntegrationsTab = ({ settingsData, aiState, setAiState }) => {
 	// LMS Integration states - use pre-loaded data from PHP
 	const lmsStatus = settingsData.lmsStatus || {};
 	const [learndashStatus, setLearndashStatus] = useState(
@@ -250,7 +252,7 @@ const IntegrationsTab = ({ settingsData }) => {
 	return (
 		<div>
 			{/* AI Provider Section (site-level keys, provider selector). */}
-			<AiProviderSettings ai={ settingsData.ai || {} } usageData={ usageData } />
+			<AiProviderSettings ai={ aiState } onChange={ setAiState } usageData={ usageData } />
 
 			{/* LMS Integrations Section */}
 			<div className="ppq-settings-section">

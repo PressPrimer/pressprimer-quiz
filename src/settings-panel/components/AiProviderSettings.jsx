@@ -6,6 +6,9 @@
  * provider for the whole site, with a masked status indicator, a "Test key"
  * action, and a model selector per provider.
  *
+ * Controlled component: the persistent AI state (active provider + per-provider
+ * status/models/model) is owned by the parent so it survives tab switches.
+ *
  * @package PressPrimer_Quiz
  * @since 3.0.0
  */
@@ -39,19 +42,23 @@ import {
 const { Title, Paragraph, Text } = Typography;
 
 /**
- * Per-provider API key manager.
+ * Per-provider API key manager (controlled).
  *
- * @param {Object}  props            Component props.
- * @param {string}  props.providerId Provider id (e.g. 'openai').
- * @param {string}  props.label      Provider display label.
- * @param {Object}  props.initial    Initial { status, models, modelPref }.
- * @param {boolean} props.isActive   Whether this is the active provider.
+ * Persistent values (status, models, modelPref) come from props and are pushed
+ * back up via onDataChange; only transient input/busy state is local.
+ *
+ * @param {Object}   props              Component props.
+ * @param {string}   props.providerId   Provider id (e.g. 'openai').
+ * @param {Object}   props.data         Provider data { label, status, models, modelPref }.
+ * @param {boolean}  props.isActive     Whether this is the active provider.
+ * @param {Function} props.onDataChange Called with the next provider data.
  * @return {JSX.Element} The manager.
  */
-const ProviderKeyManager = ({ providerId, label, initial = {}, isActive }) => {
-	const [status, setStatus] = useState(initial.status || { configured: false });
-	const [models, setModels] = useState(initial.models || []);
-	const [model, setModel] = useState(initial.modelPref || '');
+const ProviderKeyManager = ({ providerId, data = {}, isActive, onDataChange }) => {
+	const status = data.status || { configured: false };
+	const models = data.models || [];
+	const model = data.modelPref || '';
+
 	const [keyInput, setKeyInput] = useState('');
 	const [showKey, setShowKey] = useState(false);
 	const [saving, setSaving] = useState(false);
@@ -60,6 +67,8 @@ const ProviderKeyManager = ({ providerId, label, initial = {}, isActive }) => {
 	const [loadingModels, setLoadingModels] = useState(false);
 	const [result, setResult] = useState(null);
 
+	const patch = (next) => onDataChange({ ...data, ...next });
+
 	const refreshModels = async () => {
 		setLoadingModels(true);
 		try {
@@ -67,7 +76,7 @@ const ProviderKeyManager = ({ providerId, label, initial = {}, isActive }) => {
 				path: `/ppq/v1/settings/api-models?provider=${encodeURIComponent(providerId)}`,
 			});
 			if (res.success && Array.isArray(res.models)) {
-				setModels(res.models);
+				patch({ models: res.models });
 			}
 		} catch (e) {
 			// Leave the existing list in place on failure.
@@ -91,7 +100,7 @@ const ProviderKeyManager = ({ providerId, label, initial = {}, isActive }) => {
 			});
 			if (res.success) {
 				setResult({ type: 'success', message: res.message || __('API key saved and validated.', 'pressprimer-quiz') });
-				setStatus({ configured: true, masked_key: res.masked_key || '' });
+				patch({ status: { configured: true, masked_key: res.masked_key || '' } });
 				setKeyInput('');
 				refreshModels();
 			} else {
@@ -140,8 +149,7 @@ const ProviderKeyManager = ({ providerId, label, initial = {}, isActive }) => {
 			});
 			if (res.success) {
 				setResult({ type: 'success', message: res.message || __('API key removed.', 'pressprimer-quiz') });
-				setStatus({ configured: false });
-				setModels([]);
+				patch({ status: { configured: false }, models: [] });
 			}
 		} catch (e) {
 			setResult({ type: 'error', message: e.message || __('Failed to clear API key.', 'pressprimer-quiz') });
@@ -151,7 +159,7 @@ const ProviderKeyManager = ({ providerId, label, initial = {}, isActive }) => {
 	};
 
 	const changeModel = async (value) => {
-		setModel(value);
+		patch({ modelPref: value });
 		try {
 			await apiFetch({
 				path: '/ppq/v1/settings/api-model',
@@ -169,7 +177,7 @@ const ProviderKeyManager = ({ providerId, label, initial = {}, isActive }) => {
 			style={{ marginBottom: 16 }}
 			title={
 				<Space>
-					<Text strong>{label}</Text>
+					<Text strong>{data.label || providerId}</Text>
 					{isActive && <Tag color="blue">{__('Active', 'pressprimer-quiz')}</Tag>}
 					{status.configured ? (
 						<Tag color="success" icon={<CheckCircleOutlined />}>{__('Key set', 'pressprimer-quiz')}</Tag>
@@ -249,23 +257,28 @@ const ProviderKeyManager = ({ providerId, label, initial = {}, isActive }) => {
 };
 
 /**
- * AI provider settings section.
+ * AI provider settings section (controlled).
  *
- * @param {Object} props           Component props.
- * @param {Object} props.ai        AI boot data: { activeProvider, providers }.
- * @param {Object} props.usageData Site-wide usage/rate-limit data.
+ * @param {Object}   props           Component props.
+ * @param {Object}   props.ai        AI state: { activeProvider, providers }.
+ * @param {Function} props.onChange  Called with the next AI state.
+ * @param {Object}   props.usageData Site-wide usage/rate-limit data.
  * @return {JSX.Element} The section.
  */
-const AiProviderSettings = ({ ai = {}, usageData = {} }) => {
+const AiProviderSettings = ({ ai = {}, onChange, usageData = {} }) => {
 	const providers = ai.providers || {};
 	const ids = Object.keys(providers);
-	const [active, setActive] = useState(ai.activeProvider || ids[0] || 'openai');
+	const active = ai.activeProvider || ids[0] || 'openai';
 	const [switching, setSwitching] = useState(false);
+
+	const setProviderData = (id, next) => {
+		onChange({ ...ai, providers: { ...providers, [id]: next } });
+	};
 
 	const changeProvider = async (e) => {
 		const next = e.target.value;
 		const previous = active;
-		setActive(next);
+		onChange({ ...ai, activeProvider: next });
 		setSwitching(true);
 		try {
 			await apiFetch({
@@ -274,7 +287,7 @@ const AiProviderSettings = ({ ai = {}, usageData = {} }) => {
 				data: { provider: next },
 			});
 		} catch (err) {
-			setActive(previous); // Revert on failure.
+			onChange({ ...ai, activeProvider: previous }); // Revert on failure.
 		} finally {
 			setSwitching(false);
 		}
@@ -303,9 +316,9 @@ const AiProviderSettings = ({ ai = {}, usageData = {} }) => {
 				<ProviderKeyManager
 					key={id}
 					providerId={id}
-					label={providers[id].label}
-					initial={providers[id]}
+					data={providers[id]}
 					isActive={id === active}
+					onDataChange={(next) => setProviderData(id, next)}
 				/>
 			))}
 

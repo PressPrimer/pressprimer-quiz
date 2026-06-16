@@ -143,6 +143,10 @@ const SettingsPage = ({ settingsData = {} }) => {
 	const [apiKeyStatus, setApiKeyStatus] = useState(settingsData.apiKeyStatus || { configured: false });
 	const [apiModels, setApiModels] = useState(settingsData.apiModels || []);
 
+	// Lift the AI provider state (active provider + per-provider keys/models) so
+	// it survives switching between settings tabs.
+	const [aiState, setAiState] = useState(settingsData.ai || {});
+
 	/**
 	 * Build combined tabs from core tabs and addon tabs from settingsTabs
 	 * Addon tabs are those in settingsTabs that:
@@ -303,6 +307,8 @@ const SettingsPage = ({ settingsData = {} }) => {
 								setApiKeyStatus={setApiKeyStatus}
 								apiModels={apiModels}
 								setApiModels={setApiModels}
+								aiState={aiState}
+								setAiState={setAiState}
 							/>
 
 							{/* Save Button Footer - hidden on read-only tabs like Status */}

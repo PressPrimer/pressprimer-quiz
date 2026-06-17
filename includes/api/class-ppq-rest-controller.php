@@ -3371,7 +3371,9 @@ class PressPrimer_Quiz_REST_Controller {
 		$result = $providers[ $provider ]->validate_key( $api_key );
 
 		if ( is_wp_error( $result ) ) {
-			return new WP_Error( 'invalid_key', $result->get_error_message(), [ 'status' => 400 ] );
+			// Preserve the provider's normalized code so the UI can distinguish a
+			// genuine invalid key from a "could not confirm" rate limit.
+			return new WP_Error( $result->get_error_code(), $result->get_error_message(), [ 'status' => 400 ] );
 		}
 
 		return new WP_REST_Response(

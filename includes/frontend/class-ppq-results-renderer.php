@@ -41,13 +41,14 @@ class PressPrimer_Quiz_Results_Renderer {
 	 */
 	private function get_default_results_display_options() {
 		return [
-			'show_score'              => true,
-			'show_pass_fail'          => true,
-			'show_time_spent'         => true,
-			'show_average'            => true,
-			'show_category_breakdown' => true,
-			'show_question_review'    => true,
-			'show_retake_button'      => true,
+			'show_score'                => true,
+			'show_pass_fail'            => true,
+			'show_time_spent'           => true,
+			'show_average'              => true,
+			'show_category_breakdown'   => true,
+			'show_question_review'      => true,
+			'show_retake_button'        => true,
+			'show_scoring_explanations' => true,
 		];
 	}
 
@@ -446,6 +447,8 @@ class PressPrimer_Quiz_Results_Renderer {
 			</div>
 			<?php endif; ?>
 
+			<?php $this->render_scoring_explainer( $attempt, $quiz ); ?>
+
 			<?php
 			/**
 			 * Fires after the score summary display.
@@ -463,6 +466,102 @@ class PressPrimer_Quiz_Results_Renderer {
 			?>
 		</div>
 		<?php
+	}
+
+	/**
+	 * Render the quiz-level "How scoring works" explainer.
+	 *
+	 * A collapsed-by-default disclosure in the score summary describing the
+	 * scoring mode that graded this attempt's multiple-answer questions, using
+	 * the same plain-language copy as the builder (shared copy provider). Shown
+	 * only when the attempt recorded a scoring mode (pre-3.0 attempts have none)
+	 * and the attempt actually included a multiple-answer question.
+	 *
+	 * Worked examples are omitted when correctness is hidden from the student,
+	 * since the example numbers imply how many selections were correct
+	 * (feature 005, FR-004, FR-005, FR-006).
+	 *
+	 * @since 3.0.0
+	 *
+	 * @param PressPrimer_Quiz_Attempt $attempt Attempt object.
+	 * @param PressPrimer_Quiz_Quiz    $quiz    Quiz object.
+	 */
+	private function render_scoring_explainer( $attempt, $quiz ) {
+		// Display toggle (FR-006). Default on if the key is somehow absent.
+		if ( isset( $this->display['show_scoring_explanations'] ) && ! $this->display['show_scoring_explanations'] ) {
+			return;
+		}
+
+		$mode = ( $attempt && isset( $attempt->ma_scoring_mode ) ) ? $attempt->ma_scoring_mode : null;
+		if ( ! class_exists( 'PressPrimer_Quiz_Scoring_Copy' )
+			|| ! PressPrimer_Quiz_Scoring_Copy::is_mode( $mode ) ) {
+			return;
+		}
+
+		if ( ! $this->attempt_has_ma_question( $attempt ) ) {
+			return;
+		}
+
+		$label       = PressPrimer_Quiz_Scoring_Copy::get_label( $mode );
+		$description = PressPrimer_Quiz_Scoring_Copy::get_description( $mode );
+
+		// Examples imply correct-selection counts, so omit them when the quiz
+		// hides correctness from the student (FR-005).
+		$examples = $this->should_show_correct_answers( $quiz, $attempt )
+			? PressPrimer_Quiz_Scoring_Copy::get_examples( $mode )
+			: array();
+
+		?>
+		<details class="ppq-scoring-explainer">
+			<summary class="ppq-scoring-explainer-summary"><?php esc_html_e( 'How scoring works', 'pressprimer-quiz' ); ?></summary>
+			<div class="ppq-scoring-explainer-body">
+				<p class="ppq-scoring-explainer-mode">
+					<?php
+					printf(
+						/* translators: 1: scoring mode label, 2: mode description. */
+						esc_html__( 'Multiple-answer questions use %1$s. %2$s', 'pressprimer-quiz' ),
+						esc_html( $label ),
+						esc_html( $description )
+					);
+					?>
+				</p>
+				<?php if ( ! empty( $examples ) ) : ?>
+					<ul class="ppq-scoring-explainer-examples">
+						<?php foreach ( $examples as $example ) : ?>
+							<li><?php echo esc_html( $example ); ?></li>
+						<?php endforeach; ?>
+					</ul>
+				<?php endif; ?>
+			</div>
+		</details>
+		<?php
+	}
+
+	/**
+	 * Whether this attempt included at least one multiple-answer question.
+	 *
+	 * Inspects the attempt's items (already loaded for results), so the
+	 * explainer only appears when the scoring mode is actually relevant to
+	 * what the student saw — pool/random-distractor safe.
+	 *
+	 * @since 3.0.0
+	 *
+	 * @param PressPrimer_Quiz_Attempt|null $attempt Attempt object.
+	 * @return bool True if any item is a multiple-answer question.
+	 */
+	private function attempt_has_ma_question( $attempt ) {
+		if ( ! $attempt ) {
+			return false;
+		}
+
+		foreach ( $attempt->get_items() as $item ) {
+			$question = $item->get_question();
+			if ( $question && in_array( $question->type, array( 'multiple_answer', 'ma' ), true ) ) {
+				return true;
+			}
+		}
+
+		return false;
 	}
 
 	/**
@@ -1026,7 +1125,9 @@ class PressPrimer_Quiz_Results_Renderer {
 				<?php $this->render_answer_options( $answers, $selected_answers, $show_correct_answers, $question->type ); ?>
 			</div>
 
-			<?php $this->render_score_explanation( $attempt, $item, $question, $answers, $selected_answers, $show_correct_answers ); ?>
+			<?php if ( $this->display['show_scoring_explanations'] ?? true ) : ?>
+				<?php $this->render_score_explanation( $attempt, $item, $question, $answers, $selected_answers, $show_correct_answers ); ?>
+			<?php endif; ?>
 
 			<?php $this->render_question_feedback( $item, $revision, $answers, $selected_answers, $show_correct_answers ); ?>
 		</div>

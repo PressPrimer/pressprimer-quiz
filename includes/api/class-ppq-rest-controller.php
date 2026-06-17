@@ -2099,7 +2099,7 @@ class PressPrimer_Quiz_REST_Controller {
 	 * Sanitize a submitted display_settings payload
 	 *
 	 * Accepts an object or associative array whose keys are a subset of the
-	 * 14 display option keys. Returns a clean array of (string => bool)
+	 * 15 display option keys. Returns a clean array of (string => bool)
 	 * pairs ready to pass to PressPrimer_Quiz_Quiz::set_display_settings(),
 	 * or a WP_Error with HTTP 400 if the payload contains any unknown key.
 	 *
@@ -2141,6 +2141,7 @@ class PressPrimer_Quiz_REST_Controller {
 			'show_category_breakdown',
 			'show_question_review',
 			'show_retake_button',
+			'show_scoring_explanations',
 		);
 
 		$sanitized = array();
@@ -2273,7 +2274,7 @@ class PressPrimer_Quiz_REST_Controller {
 			return $ma_scoring_mode;
 		}
 
-		// Validate display_settings: object with keys from the 14-key whitelist.
+		// Validate display_settings: object with keys from the 15-key whitelist.
 		// Unknown keys short-circuit with HTTP 400 invalid_display_key.
 		$display_settings = null;
 		if ( array_key_exists( 'display_settings', $data ) ) {
@@ -2419,7 +2420,7 @@ class PressPrimer_Quiz_REST_Controller {
 			return $ma_scoring_mode;
 		}
 
-		// Validate display_settings: object with keys from the 14-key whitelist.
+		// Validate display_settings: object with keys from the 15-key whitelist.
 		// Unknown keys short-circuit with HTTP 400 invalid_display_key.
 		$display_settings = null;
 		if ( array_key_exists( 'display_settings', $data ) ) {

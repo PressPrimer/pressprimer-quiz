@@ -75,6 +75,10 @@
 		"showRetakeButton": {
 			"type": "boolean",
 			"default": true
+		},
+		"showScoringExplanations": {
+			"type": "boolean",
+			"default": true
 		}
 	},
 	"textdomain": "pressprimer-quiz",

@@ -749,6 +749,42 @@
 }
 
 /* ==========================================================================
+   Scoring Explainer ("How scoring works" summary disclosure)
+   ========================================================================== */
+
+.ppq-scoring-explainer {
+	margin-top: 1rem;
+	text-align: left;
+}
+
+.ppq-scoring-explainer-summary {
+	cursor: pointer;
+	font-weight: 600;
+	color: #374151;
+	font-size: 0.9375rem;
+}
+
+.ppq-scoring-explainer-body {
+	margin-top: 0.5rem;
+	font-size: 0.875rem;
+	line-height: 1.6;
+	color: #4b5563;
+}
+
+.ppq-scoring-explainer-mode {
+	margin: 0 0 0.5rem;
+}
+
+.ppq-scoring-explainer-examples {
+	margin: 0;
+	padding-left: 1.25rem;
+}
+
+.ppq-scoring-explainer-examples li {
+	margin-bottom: 0.25rem;
+}
+
+/* ==========================================================================
    Question Feedback
    ========================================================================== */
 

@@ -554,7 +554,7 @@ class PressPrimer_Quiz_Migrator {
 	 *
 	 * Adds the v2.3 quiz columns: ma_scoring_mode (per-quiz override of the
 	 * multiple-answer scoring mode), display_settings_json (per-quiz defaults
-	 * for the 14 Start/Results display toggles), and max_answers_per_question
+	 * for the 15 Start/Results display toggles), and max_answers_per_question
 	 * (cap on answer options shown per question per attempt). Each column
 	 * check is independent so the migration is safe to re-run for
 	 * partially-migrated installations.

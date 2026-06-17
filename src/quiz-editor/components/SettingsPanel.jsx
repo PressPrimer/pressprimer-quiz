@@ -86,6 +86,7 @@ const DISPLAY_OPTION_SECTIONS = [
 			{ key: 'show_category_breakdown', label: __('Show category breakdown', 'pressprimer-quiz'), tooltip: __('Show per-category performance when the quiz\'s questions are organized by category.', 'pressprimer-quiz') },
 			{ key: 'show_question_review', label: __('Show question review', 'pressprimer-quiz'), tooltip: __('Allow the student to review each question, their answer, and any feedback after submitting.', 'pressprimer-quiz') },
 			{ key: 'show_retake_button', label: __('Show retake button', 'pressprimer-quiz'), tooltip: __('Show a button to retake the quiz when retakes are allowed on the results page.', 'pressprimer-quiz') },
+			{ key: 'show_scoring_explanations', label: __('Show scoring explanations', 'pressprimer-quiz'), tooltip: __('Show how each question was scored in the review, plus a "How scoring works" summary for multiple-answer questions.', 'pressprimer-quiz') },
 		],
 	},
 ];
@@ -132,7 +133,7 @@ const SettingsPanel = ({ form, generationMode, setGenerationMode, quizData = {},
 	// shared copy provider — see PressPrimer_Quiz_Scoring_Copy::get_modes_for_js().
 	const maScoringOptions = Array.isArray(quizData.maScoringModes) ? quizData.maScoringModes : [];
 
-	// Watch display_settings so the 14 toggles stay in sync with form state.
+	// Watch display_settings so the 15 toggles stay in sync with form state.
 	const displaySettings = Form.useWatch('display_settings', form) || {};
 
 	/**

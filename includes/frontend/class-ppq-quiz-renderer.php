@@ -109,7 +109,7 @@ class PressPrimer_Quiz_Quiz_Renderer {
 	 * Retained for backward compatibility with any third-party caller that
 	 * builds its own display array. The shortcode and renderer now resolve
 	 * display values via PressPrimer_Quiz_Quiz::resolve_all_display_options()
-	 * which returns all 14 keys.
+	 * which returns all 15 keys.
 	 *
 	 * @since 2.1.0
 	 * @deprecated 2.3.0 Use $quiz->resolve_all_display_options() instead.
@@ -190,7 +190,7 @@ class PressPrimer_Quiz_Quiz_Renderer {
 	 * @return string Rendered HTML.
 	 */
 	public function render_landing( $quiz, $is_retake = false, $instance_overrides = [] ) {
-		// Resolve all 14 display options using the three-tier precedence:
+		// Resolve all 15 display options using the three-tier precedence:
 		// instance override > quiz default (display_settings_json) > hard default.
 		$display = $quiz->resolve_all_display_options( $instance_overrides );
 		// Enqueue assets

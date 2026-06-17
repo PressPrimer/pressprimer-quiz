@@ -1256,12 +1256,14 @@ class PressPrimer_Quiz_Results_Renderer {
 	 * the recorded score exactly. For single-answer questions it prints a
 	 * uniform correct/incorrect points line.
 	 *
-	 * Two cases degrade to a numeric points-only line: attempts predating 3.0
-	 * (no stored mode — never guess a historical mode) and questions whose
+	 * Several cases degrade to a numeric points-only line: attempts predating
+	 * 3.0 (no stored mode — never guess a historical mode), questions whose
 	 * correctness must stay hidden from the student (showing correct/wrong
-	 * counts would leak answer information). The visibility gate is evaluated
-	 * here, server-side, so counts never reach the page source when hidden
-	 * (feature 005, FR-002, FR-003, FR-005).
+	 * counts would leak answer information), and questions whose recorded score
+	 * no longer matches the built-in formula because a custom-scoring filter
+	 * changed it (never show math that contradicts the score). The visibility
+	 * gate is evaluated here, server-side, so counts never reach the page source
+	 * when hidden (feature 005, FR-002, FR-003, FR-005).
 	 *
 	 * @since 3.0.0
 	 *
@@ -1291,14 +1293,24 @@ class PressPrimer_Quiz_Results_Renderer {
 			if ( class_exists( 'PressPrimer_Quiz_Scoring_Copy' )
 				&& PressPrimer_Quiz_Scoring_Copy::is_mode( $stored_mode ) ) {
 				$counts = $this->get_ma_count_data( $answers, $selected_answers );
-				if ( $counts['total_correct'] > 0 ) {
+
+				// Only show the worked formula when counts are derivable AND the
+				// built-in math reproduces the recorded score. A
+				// pressprimer_quiz_question_score customization (or an unavailable
+				// revision yielding no counts) falls through to the numeric-only
+				// line, so displayed math can never contradict the score
+				// (feature 005, FR-002 fallback, Edge Cases).
+				if ( $counts['total_correct'] > 0
+					&& $this->stored_score_matches_formula( $counts, $max, $score, $stored_mode ) ) {
 					$mode_label = PressPrimer_Quiz_Scoring_Copy::get_label( $stored_mode );
 					$formula    = $this->build_ma_formula_line( $stored_mode, $counts, $score, $max );
 				}
 			}
 
-			// Pre-3.0 (NULL mode), unrecognized mode, or underivable counts:
-			// numeric only — never guess a historical mode (FR-002).
+			// Pre-3.0 (NULL mode), unrecognized mode, underivable counts, or a
+			// score that no longer matches the built-in formula: numeric only —
+			// never guess a historical mode or show math that contradicts the
+			// recorded score (FR-002).
 			if ( '' === $formula ) {
 				$simple = $this->format_points_only( $score, $max );
 			}
@@ -1359,7 +1371,7 @@ class PressPrimer_Quiz_Results_Renderer {
 	 *
 	 * @param array $answers          Displayed answers keyed by revision index, each with an is_correct flag.
 	 * @param array $selected_answers Selected answer indices.
-	 * @return array { total_correct, correct_selected, incorrect_selected }.
+	 * @return array { total_correct, correct_selected, incorrect_selected, correct_indices, selected }.
 	 */
 	private function get_ma_count_data( $answers, $selected_answers ) {
 		$correct_indices = array();
@@ -1378,7 +1390,51 @@ class PressPrimer_Quiz_Results_Renderer {
 			'total_correct'      => count( $correct_indices ),
 			'correct_selected'   => count( array_intersect( $selected, $correct_indices ) ),
 			'incorrect_selected' => count( array_diff( $selected, $correct_indices ) ),
+			'correct_indices'    => $correct_indices,
+			'selected'           => $selected,
 		);
+	}
+
+	/**
+	 * Whether the stored score matches what the built-in formula predicts.
+	 *
+	 * The recorded score passed through the pressprimer_quiz_question_score
+	 * filter; the built-in scoring math (score_ma) did not. Recomputing the
+	 * prediction from the same stored, subset-aware selections and comparing it
+	 * to the recorded score detects a custom-scoring customization: when they
+	 * differ, the worked formula would not match the points shown, so the
+	 * caller suppresses it and falls back to a numeric-only line. If the scoring
+	 * service is unavailable the math cannot be verified, so this returns false
+	 * — unverified arithmetic is never displayed (feature 005, FR-002 fallback).
+	 *
+	 * @since 3.0.0
+	 *
+	 * @param array  $counts       Counts from get_ma_count_data() (incl. correct_indices, selected).
+	 * @param float  $max          Maximum points.
+	 * @param float  $stored_score Recorded points earned for this item.
+	 * @param string $mode         Stored scoring mode key.
+	 * @return bool True when the prediction matches the recorded score.
+	 */
+	private function stored_score_matches_formula( $counts, $max, $stored_score, $mode ) {
+		if ( ! class_exists( 'PressPrimer_Quiz_Scoring_Service' ) ) {
+			return false;
+		}
+
+		$predicted = PressPrimer_Quiz_Scoring_Service::instance()->score_ma(
+			$counts['correct_indices'],
+			$counts['selected'],
+			(float) $max,
+			$mode
+		);
+
+		if ( ! is_array( $predicted ) || ! isset( $predicted['score'] ) ) {
+			return false;
+		}
+
+		// score_ma() and the stored value are both rounded to two decimals, so
+		// an exact match yields a zero difference; anything above half a cent is
+		// a real divergence introduced by a custom-scoring filter.
+		return abs( (float) $predicted['score'] - (float) $stored_score ) < 0.005;
 	}
 
 	/**

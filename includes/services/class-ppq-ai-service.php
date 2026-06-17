@@ -1088,6 +1088,25 @@ class PressPrimer_Quiz_AI_Service {
 			'timeout'     => self::API_TIMEOUT,
 		];
 
+		return $this->dispatch_to_provider( $provider, $messages, $options );
+	}
+
+	/**
+	 * Run the provider-neutral retry loop and return the assistant content.
+	 *
+	 * Transport only: retries transient failures, retains the raw response and
+	 * token usage for the accessors, and returns the content string (or the last
+	 * WP_Error). Rate limiting and provider/model resolution are handled by the
+	 * callers (call_api, generate_text) so each can apply its own policy.
+	 *
+	 * @since 3.0.0
+	 *
+	 * @param PressPrimer_Quiz_AI_Provider_Interface $provider Provider instance.
+	 * @param array                                  $messages Neutral message array.
+	 * @param array                                  $options  Request options.
+	 * @return string|WP_Error Response content, or WP_Error on failure.
+	 */
+	private function dispatch_to_provider( $provider, $messages, $options ) {
 		$last_error = null;
 
 		// Retry loop for transient failures (provider-neutral).
@@ -1117,6 +1136,79 @@ class PressPrimer_Quiz_AI_Service {
 
 		// All retries exhausted
 		return $last_error;
+	}
+
+	/**
+	 * Generate text from a system/user prompt via the active provider.
+	 *
+	 * Provider-neutral transport for callers that build their own prompts and
+	 * parse their own output (e.g. Educator distractor generation, future AI
+	 * feedback). Resolves the active provider, its site-level key, and its
+	 * configured model; checks the shared rate limit when a user id is given;
+	 * runs the retry loop; and returns the raw assistant text or a WP_Error with
+	 * a provider-specific message. Callers do their own response parsing.
+	 *
+	 * @since 3.0.0
+	 *
+	 * @param string $system_prompt System prompt ('' to send only a user turn).
+	 * @param string $user_prompt   User prompt.
+	 * @param array  $args          Optional: 'user_id', 'model', 'max_tokens',
+	 *                              'temperature', 'timeout'.
+	 * @return string|WP_Error Assistant text, or WP_Error on failure.
+	 */
+	public function generate_text( $system_prompt, $user_prompt, $args = [] ) {
+		$provider = $this->resolve_provider();
+
+		if ( ! $provider instanceof PressPrimer_Quiz_AI_Provider_Interface ) {
+			return new WP_Error( 'ppq_no_provider', __( 'No AI provider is available.', 'pressprimer-quiz' ) );
+		}
+
+		// Use an explicitly set instance key, else the active provider's site key.
+		$api_key = $this->api_key ? $this->api_key : self::get_api_key_for_provider();
+		if ( empty( $api_key ) ) {
+			return new WP_Error( 'ppq_no_api_key', __( 'No AI API key is configured. Add one in Settings → Integrations.', 'pressprimer-quiz' ) );
+		}
+
+		// Shared (site-wide) rate limit when a user is provided.
+		if ( ! empty( $args['user_id'] ) ) {
+			$rate_check = self::check_rate_limit( $args['user_id'] );
+			if ( is_wp_error( $rate_check ) ) {
+				return $rate_check;
+			}
+		}
+
+		// Model: explicit override, else the active provider's configured model.
+		$model = ( isset( $args['model'] ) && '' !== $args['model'] )
+			? $args['model']
+			: self::get_site_model( $provider->get_id() );
+
+		$messages = [];
+		if ( is_string( $system_prompt ) && '' !== $system_prompt ) {
+			$messages[] = [
+				'role'    => 'system',
+				'content' => $system_prompt,
+			];
+		}
+		$messages[] = [
+			'role'    => 'user',
+			'content' => (string) $user_prompt,
+		];
+
+		$options = [
+			'api_key'     => $api_key,
+			'model'       => $model,
+			'max_tokens'  => isset( $args['max_tokens'] ) ? (int) $args['max_tokens'] : 64000,
+			'temperature' => isset( $args['temperature'] ) ? (float) $args['temperature'] : 0.7,
+			'timeout'     => isset( $args['timeout'] ) ? (int) $args['timeout'] : self::API_TIMEOUT,
+		];
+
+		$result = $this->dispatch_to_provider( $provider, $messages, $options );
+
+		if ( ! is_wp_error( $result ) && ! empty( $args['user_id'] ) ) {
+			self::increment_rate_limit( $args['user_id'] );
+		}
+
+		return $result;
 	}
 
 	/**

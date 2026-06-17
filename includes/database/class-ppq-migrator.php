@@ -228,8 +228,12 @@ class PressPrimer_Quiz_Migrator {
 			array(
 				'version'  => '3.0.0',
 				'callback' => array( __CLASS__, 'migrate_to_3_0_0' ),
-				// Empty column list = "verify the table exists" (see verify_targets()).
-				'targets'  => array( $templates => array() ),
+				// Empty column list for the templates table = "verify the table
+				// exists" (see verify_targets()); the attempts column is verified by name.
+				'targets'  => array(
+					$templates => array(),
+					$attempts  => array( 'ma_scoring_mode' ),
+				),
 			),
 		);
 	}
@@ -647,11 +651,13 @@ class PressPrimer_Quiz_Migrator {
 	/**
 	 * Migration to version 3.0.0
 	 *
-	 * Creates the quiz settings templates table (wp_ppq_quiz_templates). The
-	 * full-schema dbDelta in update_schema() already creates the table during an
-	 * upgrade; this step re-runs dbDelta on the single CREATE TABLE statement so
-	 * it is self-contained and idempotent. verify-before-advance then confirms
-	 * the table exists before the stored DB version moves to 3.0.0.
+	 * Creates the quiz settings templates table (wp_ppq_quiz_templates) and adds
+	 * the ma_scoring_mode column to the attempts table (Score Transparency, which
+	 * records the scoring mode each attempt was graded under). The full-schema
+	 * dbDelta in update_schema() already creates the table during an upgrade;
+	 * this step re-runs dbDelta on the single CREATE TABLE statement and adds the
+	 * column with a guarded ALTER so it is self-contained and idempotent.
+	 * verify-before-advance then confirms both before the DB version moves to 3.0.0.
 	 *
 	 * @since 3.0.0
 	 */
@@ -662,14 +668,35 @@ class PressPrimer_Quiz_Migrator {
 			return;
 		}
 
+		require_once ABSPATH . 'wp-admin/includes/upgrade.php';
+
 		$sql = PressPrimer_Quiz_Schema::get_table_sql( $wpdb->prefix . 'ppq_quiz_templates' );
 
-		if ( '' === $sql ) {
-			return;
+		if ( '' !== $sql ) {
+			dbDelta( $sql );
 		}
 
-		require_once ABSPATH . 'wp-admin/includes/upgrade.php';
-		dbDelta( $sql );
+		// Add the attempts ma_scoring_mode column (idempotent).
+		$attempts = $wpdb->prefix . 'ppq_attempts';
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching
+		$column_exists = $wpdb->get_results(
+			$wpdb->prepare(
+				'SHOW COLUMNS FROM %i LIKE %s',
+				$attempts,
+				'ma_scoring_mode'
+			)
+		);
+
+		if ( empty( $column_exists ) ) {
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.DirectDatabaseQuery.SchemaChange
+			$wpdb->query(
+				$wpdb->prepare(
+					'ALTER TABLE %i ADD COLUMN ma_scoring_mode VARCHAR(32) DEFAULT NULL AFTER curved_score',
+					$attempts
+				)
+			);
+		}
 	}
 
 	/**

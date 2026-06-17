@@ -164,6 +164,18 @@ class PressPrimer_Quiz_Attempt extends PressPrimer_Quiz_Model {
 	public $curved_score;
 
 	/**
+	 * Resolved multiple-answer scoring mode at submission
+	 *
+	 * The MA scoring mode that actually scored this attempt, written at
+	 * submission so results explanations stay truthful even if the quiz or
+	 * site default changes later. NULL for pre-3.0 attempts (no recorded mode).
+	 *
+	 * @since 3.0.0
+	 * @var string|null right_minus_wrong|proportional|partial_no_wrong|all_or_nothing
+	 */
+	public $ma_scoring_mode;
+
+	/**
 	 * Attempt status
 	 *
 	 * @since 1.0.0
@@ -248,6 +260,7 @@ class PressPrimer_Quiz_Attempt extends PressPrimer_Quiz_Model {
 			'score_percent',
 			'passed',
 			'curved_score',
+			'ma_scoring_mode',
 			'status',
 			'current_position',
 			'questions_json',

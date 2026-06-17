@@ -722,6 +722,33 @@
 }
 
 /* ==========================================================================
+   Score Explanation (per-question scoring line)
+   ========================================================================== */
+
+.ppq-score-explanation {
+	margin-top: 1rem;
+	padding-top: 0.75rem;
+	border-top: 1px solid #e5e5e5;
+	font-size: 0.875rem;
+	line-height: 1.5;
+	color: #4b5563;
+}
+
+.ppq-score-explanation-mode {
+	font-weight: 600;
+	color: #374151;
+}
+
+.ppq-score-explanation-formula {
+	margin-top: 0.25rem;
+	color: #4b5563;
+}
+
+.ppq-score-explanation-line {
+	font-weight: 500;
+}
+
+/* ==========================================================================
    Question Feedback
    ========================================================================== */
 

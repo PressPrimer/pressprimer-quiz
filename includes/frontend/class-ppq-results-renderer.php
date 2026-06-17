@@ -871,7 +871,7 @@ class PressPrimer_Quiz_Results_Renderer {
 			<h2 class="ppq-review-title"><?php esc_html_e( 'Question Review', 'pressprimer-quiz' ); ?></h2>
 
 			<?php foreach ( $items as $index => $item ) : ?>
-				<?php $this->render_single_question_review( $item, $index + 1, count( $items ), $quiz, $show_correct_answers ); ?>
+				<?php $this->render_single_question_review( $item, $index + 1, count( $items ), $quiz, $show_correct_answers, $attempt ); ?>
 			<?php endforeach; ?>
 
 			<?php
@@ -903,8 +903,9 @@ class PressPrimer_Quiz_Results_Renderer {
 	 * @param int                           $total_num Total number of questions.
 	 * @param PressPrimer_Quiz_Quiz         $quiz Quiz object.
 	 * @param bool                          $show_correct_answers Whether to show correct answers.
+	 * @param PressPrimer_Quiz_Attempt      $attempt Parent attempt (carries the stored scoring mode).
 	 */
-	private function render_single_question_review( $item, $current_num, $total_num, $quiz, $show_correct_answers ) {
+	private function render_single_question_review( $item, $current_num, $total_num, $quiz, $show_correct_answers, $attempt = null ) {
 		// Get question revision (locked at attempt time)
 		$revision = $item->get_question_revision();
 		if ( ! $revision ) {
@@ -1025,6 +1026,8 @@ class PressPrimer_Quiz_Results_Renderer {
 				<?php $this->render_answer_options( $answers, $selected_answers, $show_correct_answers, $question->type ); ?>
 			</div>
 
+			<?php $this->render_score_explanation( $attempt, $item, $question, $answers, $selected_answers, $show_correct_answers ); ?>
+
 			<?php $this->render_question_feedback( $item, $revision, $answers, $selected_answers, $show_correct_answers ); ?>
 		</div>
 		<?php
@@ -1140,6 +1143,262 @@ class PressPrimer_Quiz_Results_Renderer {
 			</div>
 		</div>
 		<?php
+	}
+
+	/**
+	 * Render the per-question scoring explanation line.
+	 *
+	 * Shows, beneath a question's answers, how its score was produced. For
+	 * multiple-answer questions it prints the resolved scoring mode label and
+	 * the worked arithmetic; the numbers are derived entirely from stored
+	 * attempt data (subset-aware, mirroring the 2.3 scoring path) so they match
+	 * the recorded score exactly. For single-answer questions it prints a
+	 * uniform correct/incorrect points line.
+	 *
+	 * Two cases degrade to a numeric points-only line: attempts predating 3.0
+	 * (no stored mode — never guess a historical mode) and questions whose
+	 * correctness must stay hidden from the student (showing correct/wrong
+	 * counts would leak answer information). The visibility gate is evaluated
+	 * here, server-side, so counts never reach the page source when hidden
+	 * (feature 005, FR-002, FR-003, FR-005).
+	 *
+	 * @since 3.0.0
+	 *
+	 * @param PressPrimer_Quiz_Attempt|null $attempt              Parent attempt (carries the stored scoring mode).
+	 * @param PressPrimer_Quiz_Attempt_Item $item                 Attempt item.
+	 * @param PressPrimer_Quiz_Question     $question             Question object.
+	 * @param array                         $answers              Displayed answers (subset-aware), keyed by revision index.
+	 * @param array                         $selected_answers     Selected answer indices.
+	 * @param bool                          $show_correct_answers Whether correctness may be revealed to the student.
+	 */
+	private function render_score_explanation( $attempt, $item, $question, $answers, $selected_answers, $show_correct_answers ) {
+		$score = (float) ( $item->score_points ?? 0 );
+		$max   = (float) $question->max_points;
+
+		$is_ma       = in_array( $question->type, array( 'multiple_answer', 'ma' ), true );
+		$stored_mode = ( $attempt && isset( $attempt->ma_scoring_mode ) ) ? $attempt->ma_scoring_mode : null;
+
+		$mode_label = '';
+		$formula    = '';
+		$simple     = '';
+
+		if ( ! $show_correct_answers ) {
+			// Correctness hidden: points only — no counts, no labels (FR-005).
+			$simple = $this->format_points_only( $score, $max );
+		} elseif ( $is_ma ) {
+			// Multiple-answer: mode label + worked arithmetic from stored data.
+			if ( class_exists( 'PressPrimer_Quiz_Scoring_Copy' )
+				&& PressPrimer_Quiz_Scoring_Copy::is_mode( $stored_mode ) ) {
+				$counts = $this->get_ma_count_data( $answers, $selected_answers );
+				if ( $counts['total_correct'] > 0 ) {
+					$mode_label = PressPrimer_Quiz_Scoring_Copy::get_label( $stored_mode );
+					$formula    = $this->build_ma_formula_line( $stored_mode, $counts, $score, $max );
+				}
+			}
+
+			// Pre-3.0 (NULL mode), unrecognized mode, or underivable counts:
+			// numeric only — never guess a historical mode (FR-002).
+			if ( '' === $formula ) {
+				$simple = $this->format_points_only( $score, $max );
+			}
+		} else {
+			// Single-answer (MC/TF): uniform correct/incorrect line (FR-003).
+			$simple = $this->format_mc_tf_line( (bool) $item->is_correct, $score, $max );
+		}
+
+		$html = '<div class="ppq-score-explanation">';
+		if ( '' !== $formula ) {
+			$html .= '<div class="ppq-score-explanation-mode">'
+				/* translators: %s: scoring mode label (e.g. "Right Minus Wrong"). */
+				. esc_html( sprintf( __( 'Scoring — %s', 'pressprimer-quiz' ), $mode_label ) )
+				. '</div>';
+			$html .= '<div class="ppq-score-explanation-formula">' . esc_html( $formula ) . '</div>';
+		} else {
+			$html .= '<div class="ppq-score-explanation-line">' . esc_html( $simple ) . '</div>';
+		}
+		$html .= '</div>';
+
+		/**
+		 * Filters the per-question scoring explanation HTML.
+		 *
+		 * Addons can append to or replace the explanation — e.g., School's
+		 * curve-grading disclosure or CBM explanations. Returned markup passes
+		 * through the renderer's kses treatment before output.
+		 *
+		 * @since 3.0.0
+		 *
+		 * @param string                        $html     Default explanation HTML.
+		 * @param PressPrimer_Quiz_Attempt_Item $item     The attempt item.
+		 * @param PressPrimer_Quiz_Question     $question The question object.
+		 * @param string|null                   $mode     Stored scoring mode (null for pre-3.0 attempts / non-MA).
+		 */
+		$html = apply_filters( 'pressprimer_quiz_score_explanation', $html, $item, $question, $stored_mode );
+
+		$allowed = array(
+			'div'    => array( 'class' => true ),
+			'span'   => array( 'class' => true ),
+			'br'     => array(),
+			'strong' => array(),
+			'em'     => array(),
+		);
+
+		echo wp_kses( $html, $allowed );
+	}
+
+	/**
+	 * Derive subset-aware correct/incorrect selection counts for an MA question.
+	 *
+	 * Mirrors the scoring path (PressPrimer_Quiz_Scoring_Service::score_ma):
+	 * correct indices are taken from the answers actually shown (subset-aware
+	 * per the 2.3 random-distractor behavior), and selections outside the shown
+	 * subset are dropped — so the displayed numbers match the recorded score
+	 * (feature 005, TR-004).
+	 *
+	 * @since 3.0.0
+	 *
+	 * @param array $answers          Displayed answers keyed by revision index, each with an is_correct flag.
+	 * @param array $selected_answers Selected answer indices.
+	 * @return array { total_correct, correct_selected, incorrect_selected }.
+	 */
+	private function get_ma_count_data( $answers, $selected_answers ) {
+		$correct_indices = array();
+		foreach ( $answers as $idx => $answer ) {
+			if ( ! empty( $answer['is_correct'] ) ) {
+				$correct_indices[] = (int) $idx;
+			}
+		}
+
+		$shown_keys = array_map( 'intval', array_keys( $answers ) );
+		$selected   = array_values(
+			array_intersect( array_map( 'intval', (array) $selected_answers ), $shown_keys )
+		);
+
+		return array(
+			'total_correct'      => count( $correct_indices ),
+			'correct_selected'   => count( array_intersect( $selected, $correct_indices ) ),
+			'incorrect_selected' => count( array_diff( $selected, $correct_indices ) ),
+		);
+	}
+
+	/**
+	 * Build the worked-arithmetic line for an MA question from stored counts.
+	 *
+	 * Fills the mode's formula template (from the shared copy provider) with
+	 * i18n-formatted numbers. Returns '' for an unknown mode or missing
+	 * template so the caller can fall back to a numeric-only line.
+	 *
+	 * @since 3.0.0
+	 *
+	 * @param string $mode   Stored scoring mode key.
+	 * @param array  $counts Counts from get_ma_count_data().
+	 * @param float  $score  Points earned (stored).
+	 * @param float  $max    Maximum points.
+	 * @return string Filled formula line, or '' if unavailable.
+	 */
+	private function build_ma_formula_line( $mode, $counts, $score, $max ) {
+		if ( ! class_exists( 'PressPrimer_Quiz_Scoring_Copy' ) ) {
+			return '';
+		}
+
+		$template = PressPrimer_Quiz_Scoring_Copy::get_formula_template( $mode );
+		if ( '' === $template ) {
+			return '';
+		}
+
+		$right = (int) $counts['correct_selected'];
+		$wrong = (int) $counts['incorrect_selected'];
+		$total = (int) $counts['total_correct'];
+		$net   = max( 0, $right - $wrong );
+
+		$right_fmt = number_format_i18n( $right );
+		$wrong_fmt = number_format_i18n( $wrong );
+		$total_fmt = number_format_i18n( $total );
+		$net_fmt   = number_format_i18n( $net );
+		$score_fmt = $this->format_score_number( $score );
+		$max_fmt   = $this->format_score_number( $max );
+
+		switch ( $mode ) {
+			case 'right_minus_wrong':
+				$args = array( $right_fmt, $wrong_fmt, $net_fmt, $total_fmt, $score_fmt, $max_fmt );
+				break;
+
+			case 'proportional':
+				$args = array( $right_fmt, $total_fmt, $score_fmt, $max_fmt );
+				break;
+
+			case 'partial_no_wrong':
+			case 'all_or_nothing':
+				$args = array( $right_fmt, $total_fmt, $wrong_fmt, $score_fmt, $max_fmt );
+				break;
+
+			default:
+				return '';
+		}
+
+		return vsprintf( $template, $args );
+	}
+
+	/**
+	 * Format a numeric points-only line ("{score} of {max} point(s)").
+	 *
+	 * @since 3.0.0
+	 *
+	 * @param float $score Points earned.
+	 * @param float $max   Maximum points.
+	 * @return string Localized points line.
+	 */
+	private function format_points_only( $score, $max ) {
+		$score_fmt = $this->format_score_number( $score );
+		$max_fmt   = $this->format_score_number( $max );
+
+		if ( 1.0 === (float) $max ) {
+			/* translators: 1: points earned, 2: maximum points. */
+			return sprintf( __( '%1$s of %2$s point', 'pressprimer-quiz' ), $score_fmt, $max_fmt );
+		}
+
+		/* translators: 1: points earned, 2: maximum points. */
+		return sprintf( __( '%1$s of %2$s points', 'pressprimer-quiz' ), $score_fmt, $max_fmt );
+	}
+
+	/**
+	 * Format the uniform correct/incorrect line for a single-answer question.
+	 *
+	 * @since 3.0.0
+	 *
+	 * @param bool  $is_correct Whether the response was correct.
+	 * @param float $score      Points earned.
+	 * @param float $max        Maximum points.
+	 * @return string Localized line, e.g. "Correct — 1 of 1 point".
+	 */
+	private function format_mc_tf_line( $is_correct, $score, $max ) {
+		$points = $this->format_points_only( $score, $max );
+
+		if ( $is_correct ) {
+			/* translators: %s: points summary, e.g. "1 of 1 point". */
+			return sprintf( __( 'Correct — %s', 'pressprimer-quiz' ), $points );
+		}
+
+		/* translators: %s: points summary, e.g. "0 of 1 point". */
+		return sprintf( __( 'Incorrect — %s', 'pressprimer-quiz' ), $points );
+	}
+
+	/**
+	 * Format a points value for display: whole numbers without decimals,
+	 * fractional values to two places (matching the stored 2-decimal rounding).
+	 *
+	 * @since 3.0.0
+	 *
+	 * @param float $value Numeric value.
+	 * @return string Localized number.
+	 */
+	private function format_score_number( $value ) {
+		$value = (float) $value;
+
+		if ( $value === floor( $value ) ) {
+			return number_format_i18n( $value, 0 );
+		}
+
+		return number_format_i18n( $value, 2 );
 	}
 
 	/**

@@ -643,6 +643,13 @@ class PressPrimer_Quiz_Admin_Quizzes {
 		// to any quiz editor.
 		$quiz_data['canManageSettings'] = current_user_can( 'pressprimer_quiz_manage_settings' );
 
+		// Multiple-answer scoring copy (labels, descriptions, worked examples) for
+		// the builder's scoring cards. Sourced from the shared copy provider so the
+		// builder and the results renderer cannot drift (feature 005, TR-003).
+		if ( class_exists( 'PressPrimer_Quiz_Scoring_Copy' ) ) {
+			$quiz_data['maScoringModes'] = PressPrimer_Quiz_Scoring_Copy::get_modes_for_js();
+		}
+
 		/**
 		 * Filter quiz editor data before passing to React
 		 *

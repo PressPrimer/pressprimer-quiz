@@ -621,6 +621,37 @@ class PressPrimer_Quiz_REST_Controller {
 				],
 			]
 		);
+
+		register_rest_route(
+			'ppq/v1',
+			'/tools/reset-progress/log',
+			[
+				[
+					'methods'             => WP_REST_Server::READABLE,
+					'callback'            => [ $this, 'get_reset_log' ],
+					'permission_callback' => [ $this, 'check_reset_progress_permission' ],
+				],
+			]
+		);
+
+		register_rest_route(
+			'ppq/v1',
+			'/tools/users',
+			[
+				[
+					'methods'             => WP_REST_Server::READABLE,
+					'callback'            => [ $this, 'search_reset_users' ],
+					'permission_callback' => [ $this, 'check_reset_progress_permission' ],
+					'args'                => [
+						'search' => [
+							'type'              => 'string',
+							'required'          => false,
+							'sanitize_callback' => 'sanitize_text_field',
+						],
+					],
+				],
+			]
+		);
 	}
 
 	/**
@@ -849,6 +880,82 @@ class PressPrimer_Quiz_REST_Controller {
 		}
 
 		return rest_ensure_response( $result );
+	}
+
+	/**
+	 * GET /tools/reset-progress/log — the recent reset operation log.
+	 *
+	 * Enriches each stored entry with the initiator's display name (or null
+	 * when that user no longer exists) for the Data Tools tab.
+	 *
+	 * @since 3.0.0
+	 *
+	 * @return WP_REST_Response|WP_Error Log entries (newest first) or error.
+	 */
+	public function get_reset_log() {
+		if ( ! class_exists( 'PressPrimer_Quiz_Progress_Reset_Service' ) ) {
+			return new WP_Error(
+				'ppq_reset_unavailable',
+				__( 'Reset tools are not available.', 'pressprimer-quiz' ),
+				[ 'status' => 500 ]
+			);
+		}
+
+		$service = new PressPrimer_Quiz_Progress_Reset_Service();
+		$entries = $service->get_log();
+		$out     = [];
+
+		foreach ( $entries as $entry ) {
+			$initiator               = isset( $entry['initiator_id'] ) ? get_userdata( (int) $entry['initiator_id'] ) : false;
+			$entry['initiator_name'] = $initiator ? $initiator->display_name : null;
+			$out[]                   = $entry;
+		}
+
+		return rest_ensure_response( $out );
+	}
+
+	/**
+	 * GET /tools/users — search users for the reset scope picker.
+	 *
+	 * Returns up to 20 matches as { id, label, email }. Gated by the reset
+	 * capability, so it is not a general-purpose user directory.
+	 *
+	 * @since 3.0.0
+	 *
+	 * @param WP_REST_Request $request Request object.
+	 * @return WP_REST_Response Matching users.
+	 */
+	public function search_reset_users( $request ) {
+		$search = (string) $request->get_param( 'search' );
+
+		$args = [
+			'number'  => 20,
+			'orderby' => 'display_name',
+			'order'   => 'ASC',
+		];
+
+		if ( '' !== $search ) {
+			$args['search']         = '*' . $search . '*';
+			$args['search_columns'] = [ 'user_login', 'user_email', 'user_nicename' ];
+		}
+
+		$users = get_users( $args );
+		$out   = [];
+
+		foreach ( $users as $user ) {
+			$out[] = [
+				'id'    => (int) $user->ID,
+				'label' => sprintf(
+					/* translators: 1: display name, 2: user login. */
+					__( '%1$s (%2$s)', 'pressprimer-quiz' ),
+					$user->display_name,
+					$user->user_login
+				),
+				'email' => $user->user_email,
+			];
+		}
+
+		return rest_ensure_response( $out );
 	}
 
 	/**

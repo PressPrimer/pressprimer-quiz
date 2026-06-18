@@ -28,6 +28,7 @@ import {
 	EyeOutlined,
 	ImportOutlined,
 	ProfileOutlined,
+	DatabaseOutlined,
 } from '@ant-design/icons';
 
 import GeneralTab from './GeneralTab';
@@ -37,6 +38,7 @@ import EmailTab from './EmailTab';
 import StatusTab from './StatusTab';
 import AdvancedTab from './AdvancedTab';
 import TemplatesTab from './TemplatesTab';
+import DataToolsTab from './DataToolsTab';
 
 /**
  * Icon map for addon tabs
@@ -92,6 +94,13 @@ const CORE_TABS = [
 		order: 50,
 	},
 	{
+		id: 'data-tools',
+		label: __('Data Tools', 'pressprimer-quiz'),
+		icon: <DatabaseOutlined />,
+		component: DataToolsTab,
+		order: 75,
+	},
+	{
 		id: 'status',
 		label: __('Status', 'pressprimer-quiz'),
 		icon: <InfoCircleOutlined />,
@@ -119,7 +128,7 @@ const IGNORED_SERVER_TABS = ['ai', 'integration'];
  * Tabs that are read-only and should not show the Save Settings button.
  * (Templates manages its own CRUD, so the generic Save button is hidden.)
  */
-const READ_ONLY_TABS = ['status', 'templates'];
+const READ_ONLY_TABS = ['status', 'templates', 'data-tools'];
 
 /**
  * Settings Page Component

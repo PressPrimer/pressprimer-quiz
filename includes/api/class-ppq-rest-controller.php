@@ -562,6 +562,32 @@ class PressPrimer_Quiz_REST_Controller {
 				],
 			]
 		);
+
+		// Progress reset tools (Data Tools). Preview is read-only; deletion is
+		// added on a separate route in a later step (feature 006).
+		register_rest_route(
+			'ppq/v1',
+			'/tools/reset-progress/preview',
+			[
+				[
+					'methods'             => WP_REST_Server::READABLE,
+					'callback'            => [ $this, 'preview_reset_progress' ],
+					'permission_callback' => [ $this, 'check_reset_progress_permission' ],
+					'args'                => [
+						'user_id' => [
+							'type'              => 'integer',
+							'required'          => false,
+							'sanitize_callback' => 'absint',
+						],
+						'quiz_id' => [
+							'type'              => 'integer',
+							'required'          => false,
+							'sanitize_callback' => 'absint',
+						],
+					],
+				],
+			]
+		);
 	}
 
 	/**
@@ -596,6 +622,22 @@ class PressPrimer_Quiz_REST_Controller {
 	 */
 	public function check_settings_permission() {
 		return current_user_can( 'pressprimer_quiz_manage_settings' );
+	}
+
+	/**
+	 * Permission for the progress reset tools.
+	 *
+	 * Deliberately stricter than the settings gate: resetting progress is a
+	 * destructive, site-wide operation, so it requires BOTH full management
+	 * and settings capabilities. Teachers with only manage_own do not qualify.
+	 *
+	 * @since 3.0.0
+	 *
+	 * @return bool True if the user may preview or run a progress reset.
+	 */
+	public function check_reset_progress_permission() {
+		return current_user_can( 'pressprimer_quiz_manage_all' )
+			&& current_user_can( 'pressprimer_quiz_manage_settings' );
 	}
 
 	/**
@@ -664,6 +706,41 @@ class PressPrimer_Quiz_REST_Controller {
 			return null;
 		}
 		return get_current_user_id();
+	}
+
+	/**
+	 * GET /tools/reset-progress/preview — read-only preview of a reset scope.
+	 *
+	 * Resolves the requested scope (user, quiz, or user + quiz) and returns the
+	 * counts and labels the Data Tools UI shows before enabling deletion. No
+	 * data is modified.
+	 *
+	 * @since 3.0.0
+	 *
+	 * @param WP_REST_Request $request Request object.
+	 * @return WP_REST_Response|WP_Error Preview payload or error.
+	 */
+	public function preview_reset_progress( $request ) {
+		if ( ! class_exists( 'PressPrimer_Quiz_Progress_Reset_Service' ) ) {
+			return new WP_Error(
+				'ppq_reset_unavailable',
+				__( 'Reset tools are not available.', 'pressprimer-quiz' ),
+				[ 'status' => 500 ]
+			);
+		}
+
+		$service = new PressPrimer_Quiz_Progress_Reset_Service();
+
+		$scope = $service->sanitize_scope(
+			$request->get_param( 'user_id' ),
+			$request->get_param( 'quiz_id' )
+		);
+
+		if ( is_wp_error( $scope ) ) {
+			return $scope;
+		}
+
+		return rest_ensure_response( $service->get_preview( $scope ) );
 	}
 
 	/**

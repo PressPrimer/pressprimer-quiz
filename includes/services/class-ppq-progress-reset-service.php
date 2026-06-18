@@ -31,6 +31,30 @@ if ( ! defined( 'ABSPATH' ) ) {
 class PressPrimer_Quiz_Progress_Reset_Service {
 
 	/**
+	 * Attempts deleted per batch.
+	 *
+	 * @since 3.0.0
+	 * @var int
+	 */
+	const BATCH_SIZE = 500;
+
+	/**
+	 * Site-wide concurrency lock transient key.
+	 *
+	 * @since 3.0.0
+	 * @var string
+	 */
+	const LOCK_KEY = 'pressprimer_quiz_reset_lock';
+
+	/**
+	 * Lock inactivity expiry, in seconds (refreshed each batch).
+	 *
+	 * @since 3.0.0
+	 * @var int
+	 */
+	const LOCK_TTL = 300;
+
+	/**
 	 * Validate and normalize a requested scope.
 	 *
 	 * At least one of user_id / quiz_id must be present. A by-user scope keeps
@@ -268,5 +292,230 @@ class PressPrimer_Quiz_Progress_Reset_Service {
 		}
 
 		return $preview;
+	}
+
+	/**
+	 * The exact string the admin must type to confirm the operation.
+	 *
+	 * Quiz title when a quiz is in scope (by-quiz and by-user-on-a-quiz),
+	 * otherwise the username (by-user). Falls back to the raw id when the
+	 * quiz or user no longer exists, so a reset of orphaned attempts still
+	 * has a deterministic, typeable token.
+	 *
+	 * @since 3.0.0
+	 *
+	 * @param array $scope Normalized scope.
+	 * @return string Expected confirmation token.
+	 */
+	public function get_confirm_token( $scope ) {
+		if ( ! empty( $scope['quiz_id'] ) ) {
+			if ( class_exists( 'PressPrimer_Quiz_Quiz' ) ) {
+				$quiz = PressPrimer_Quiz_Quiz::get( (int) $scope['quiz_id'] );
+				if ( $quiz && '' !== (string) $quiz->title ) {
+					return (string) $quiz->title;
+				}
+			}
+
+			return (string) (int) $scope['quiz_id'];
+		}
+
+		$user = get_userdata( (int) $scope['user_id'] );
+		if ( $user ) {
+			return (string) $user->user_login;
+		}
+
+		return (string) (int) $scope['user_id'];
+	}
+
+	/**
+	 * Verify a submitted confirmation token against the scope's expected token.
+	 *
+	 * Leading/trailing whitespace in the submission is ignored; the comparison
+	 * is otherwise exact and case-sensitive.
+	 *
+	 * @since 3.0.0
+	 *
+	 * @param array $scope     Normalized scope.
+	 * @param mixed $submitted Token typed by the admin.
+	 * @return bool True when the token matches.
+	 */
+	public function verify_token( $scope, $submitted ) {
+		$expected  = $this->get_confirm_token( $scope );
+		$submitted = is_string( $submitted ) ? trim( $submitted ) : '';
+
+		if ( '' === $expected || '' === $submitted ) {
+			return false;
+		}
+
+		return hash_equals( $expected, $submitted );
+	}
+
+	/**
+	 * Count attempts still matching the scope (optionally beyond a cursor).
+	 *
+	 * @since 3.0.0
+	 *
+	 * @param array $scope    Normalized scope.
+	 * @param int   $after_id Count only ids greater than this (0 = all).
+	 * @return int Remaining attempt count.
+	 */
+	public function count_attempts( $scope, $after_id = 0 ) {
+		global $wpdb;
+
+		list( $where, $params ) = $this->build_scope_where( $scope );
+		$attempts_table         = $wpdb->prefix . 'ppq_attempts';
+
+		// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Table from $wpdb->prefix; $where holds only fixed %d placeholders.
+		$sql = "SELECT COUNT(*) FROM {$attempts_table} WHERE {$where}";
+
+		if ( $after_id > 0 ) {
+			$sql     .= ' AND id > %d';
+			$params[] = (int) $after_id;
+		}
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Custom table; reset must reflect live data.
+		return (int) $wpdb->get_var(
+			// phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- Query is prepared with placeholders; values bound here.
+			$wpdb->prepare( $sql, $params )
+		);
+	}
+
+	/**
+	 * Delete one batch of in-scope attempts (items first, then attempts).
+	 *
+	 * Resolves up to BATCH_SIZE ids beyond the cursor and deletes them inside a
+	 * transaction (where the storage engine supports it). Attempt items are
+	 * removed before their parent attempts. Returns the rows deleted, the new
+	 * cursor (highest id processed), and the count still remaining — the client
+	 * loops until remaining reaches zero.
+	 *
+	 * @since 3.0.0
+	 *
+	 * @param array $scope  Normalized scope.
+	 * @param int   $cursor Process only attempt ids greater than this.
+	 * @return array|WP_Error { deleted:int, cursor:int, remaining:int } or error.
+	 */
+	public function delete_batch( $scope, $cursor = 0 ) {
+		global $wpdb;
+
+		$ids = $this->resolve_attempt_ids( $scope, self::BATCH_SIZE, (int) $cursor );
+
+		if ( empty( $ids ) ) {
+			return array(
+				'deleted'   => 0,
+				'cursor'    => (int) $cursor,
+				'remaining' => 0,
+			);
+		}
+
+		$attempts_table = $wpdb->prefix . 'ppq_attempts';
+		$items_table    = $wpdb->prefix . 'ppq_attempt_items';
+		$placeholders   = implode( ',', array_fill( 0, count( $ids ), '%d' ) );
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Transaction control for batched delete.
+		$wpdb->query( 'START TRANSACTION' );
+
+		// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Table from $wpdb->prefix; placeholders are fixed %d, ids bound here.
+		$items_sql = "DELETE FROM {$items_table} WHERE attempt_id IN ({$placeholders})";
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Custom table; intentional destructive operation.
+		$items_result = $wpdb->query(
+			// phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- Query is prepared with placeholders; ids bound here.
+			$wpdb->prepare( $items_sql, $ids )
+		);
+
+		// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Table from $wpdb->prefix; placeholders are fixed %d, ids bound here.
+		$attempts_sql = "DELETE FROM {$attempts_table} WHERE id IN ({$placeholders})";
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Custom table; intentional destructive operation.
+		$attempts_result = $wpdb->query(
+			// phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- Query is prepared with placeholders; ids bound here.
+			$wpdb->prepare( $attempts_sql, $ids )
+		);
+
+		if ( false === $items_result || false === $attempts_result ) {
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Transaction control for batched delete.
+			$wpdb->query( 'ROLLBACK' );
+
+			return new WP_Error(
+				'ppq_reset_failed',
+				__( 'The reset could not be completed. No attempts were deleted in this batch.', 'pressprimer-quiz' ),
+				array( 'status' => 500 )
+			);
+		}
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Transaction control for batched delete.
+		$wpdb->query( 'COMMIT' );
+
+		$new_cursor = (int) max( $ids );
+
+		return array(
+			'deleted'   => (int) $attempts_result,
+			'cursor'    => $new_cursor,
+			'remaining' => $this->count_attempts( $scope, $new_cursor ),
+		);
+	}
+
+	/**
+	 * A stable identifier for a reset operation (initiator + scope).
+	 *
+	 * Used by the site-wide lock to tell a single operation's batch loop apart
+	 * from a genuinely concurrent operation.
+	 *
+	 * @since 3.0.0
+	 *
+	 * @param array $scope Normalized scope.
+	 * @return string Operation key.
+	 */
+	private function operation_key( $scope ) {
+		return md5(
+			(int) $scope['initiator_id'] . ':' . (int) $scope['user_id'] . ':' . (int) $scope['quiz_id']
+		);
+	}
+
+	/**
+	 * Acquire or refresh the site-wide reset lock for this operation.
+	 *
+	 * A reset runs one-at-a-time across the site. The same operation's batch
+	 * loop re-acquires (refreshes) its own lock; a different operation while one
+	 * is active is rejected with HTTP 409. The lock auto-expires after LOCK_TTL
+	 * seconds of inactivity, so an abandoned run never blocks future ones.
+	 *
+	 * @since 3.0.0
+	 *
+	 * @param array $scope Normalized scope.
+	 * @return true|WP_Error True when the lock is held by this operation, error otherwise.
+	 */
+	public function guard_lock( $scope ) {
+		$key  = $this->operation_key( $scope );
+		$lock = get_transient( self::LOCK_KEY );
+
+		if ( is_array( $lock ) && ! empty( $lock['key'] ) && $lock['key'] !== $key ) {
+			return new WP_Error(
+				'ppq_reset_locked',
+				__( 'Another progress reset is already running. Please wait for it to finish and try again.', 'pressprimer-quiz' ),
+				array( 'status' => 409 )
+			);
+		}
+
+		set_transient(
+			self::LOCK_KEY,
+			array(
+				'key'       => $key,
+				'initiator' => (int) $scope['initiator_id'],
+			),
+			self::LOCK_TTL
+		);
+
+		return true;
+	}
+
+	/**
+	 * Release the site-wide reset lock.
+	 *
+	 * @since 3.0.0
+	 *
+	 * @return void
+	 */
+	public function release_lock() {
+		delete_transient( self::LOCK_KEY );
 	}
 }

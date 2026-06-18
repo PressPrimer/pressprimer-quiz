@@ -563,8 +563,7 @@ class PressPrimer_Quiz_REST_Controller {
 			]
 		);
 
-		// Progress reset tools (Data Tools). Preview is read-only; deletion is
-		// added on a separate route in a later step (feature 006).
+		// Progress reset tools (Data Tools).
 		register_rest_route(
 			'ppq/v1',
 			'/tools/reset-progress/preview',
@@ -580,6 +579,40 @@ class PressPrimer_Quiz_REST_Controller {
 							'sanitize_callback' => 'absint',
 						],
 						'quiz_id' => [
+							'type'              => 'integer',
+							'required'          => false,
+							'sanitize_callback' => 'absint',
+						],
+					],
+				],
+			]
+		);
+
+		register_rest_route(
+			'ppq/v1',
+			'/tools/reset-progress',
+			[
+				[
+					'methods'             => WP_REST_Server::CREATABLE,
+					'callback'            => [ $this, 'reset_progress' ],
+					'permission_callback' => [ $this, 'check_reset_progress_permission' ],
+					'args'                => [
+						'user_id'       => [
+							'type'              => 'integer',
+							'required'          => false,
+							'sanitize_callback' => 'absint',
+						],
+						'quiz_id'       => [
+							'type'              => 'integer',
+							'required'          => false,
+							'sanitize_callback' => 'absint',
+						],
+						'confirm_token' => [
+							'type'              => 'string',
+							'required'          => true,
+							'sanitize_callback' => 'sanitize_text_field',
+						],
+						'cursor'        => [
 							'type'              => 'integer',
 							'required'          => false,
 							'sanitize_callback' => 'absint',
@@ -741,6 +774,71 @@ class PressPrimer_Quiz_REST_Controller {
 		}
 
 		return rest_ensure_response( $service->get_preview( $scope ) );
+	}
+
+	/**
+	 * POST /tools/reset-progress — delete one batch of in-scope attempts.
+	 *
+	 * Validates the typed confirmation token server-side, enforces the
+	 * site-wide single-operation lock, then deletes one batch and reports the
+	 * remaining count and cursor. The client re-POSTs (with the returned cursor)
+	 * until remaining reaches zero. The lock is released when the operation
+	 * completes (feature 006, FR-003, FR-004).
+	 *
+	 * @since 3.0.0
+	 *
+	 * @param WP_REST_Request $request Request object.
+	 * @return WP_REST_Response|WP_Error Batch result or error.
+	 */
+	public function reset_progress( $request ) {
+		if ( ! class_exists( 'PressPrimer_Quiz_Progress_Reset_Service' ) ) {
+			return new WP_Error(
+				'ppq_reset_unavailable',
+				__( 'Reset tools are not available.', 'pressprimer-quiz' ),
+				[ 'status' => 500 ]
+			);
+		}
+
+		$service = new PressPrimer_Quiz_Progress_Reset_Service();
+
+		$scope = $service->sanitize_scope(
+			$request->get_param( 'user_id' ),
+			$request->get_param( 'quiz_id' )
+		);
+
+		if ( is_wp_error( $scope ) ) {
+			return $scope;
+		}
+
+		// Validate the confirmation token before touching the lock or any data.
+		if ( ! $service->verify_token( $scope, $request->get_param( 'confirm_token' ) ) ) {
+			return new WP_Error(
+				'ppq_reset_bad_token',
+				__( 'The confirmation text did not match. Nothing was deleted.', 'pressprimer-quiz' ),
+				[ 'status' => 400 ]
+			);
+		}
+
+		// Enforce the site-wide single-operation lock (409 if another runs).
+		$lock = $service->guard_lock( $scope );
+		if ( is_wp_error( $lock ) ) {
+			return $lock;
+		}
+
+		$result = $service->delete_batch( $scope, absint( $request->get_param( 'cursor' ) ) );
+
+		if ( is_wp_error( $result ) ) {
+			// Leave the lock in place; it expires on inactivity so a retry of
+			// this same operation can resume without being blocked.
+			return $result;
+		}
+
+		// Release the lock once nothing remains for this scope.
+		if ( 0 === (int) $result['remaining'] ) {
+			$service->release_lock();
+		}
+
+		return rest_ensure_response( $result );
 	}
 
 	/**

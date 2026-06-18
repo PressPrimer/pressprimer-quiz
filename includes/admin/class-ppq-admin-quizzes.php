@@ -1562,6 +1562,28 @@ class PressPrimer_Quiz_Quizzes_List_Table extends WP_List_Table {
 			esc_html__( 'Preview', 'pressprimer-quiz' )
 		);
 
+		// Reset attempts action — deep-links to the Data Tools tab with this
+		// quiz preselected and its preview auto-run. Destructive site-level
+		// tool, so it requires both the manage-all and manage-settings
+		// capabilities (matches the reset endpoints' permission gate).
+		if ( current_user_can( 'pressprimer_quiz_manage_all' )
+			&& current_user_can( 'pressprimer_quiz_manage_settings' ) ) {
+			$actions['reset_attempts'] = sprintf(
+				'<a href="%s">%s</a>',
+				esc_url(
+					add_query_arg(
+						[
+							'page'       => 'pressprimer-quiz-settings',
+							'tab'        => 'data-tools',
+							'reset_quiz' => $item->id,
+						],
+						admin_url( 'admin.php' )
+					)
+				),
+				esc_html__( 'Reset attempts…', 'pressprimer-quiz' )
+			);
+		}
+
 		// Build output
 		$title = ! empty( $item->title ) ? esc_html( $item->title ) : '<em>' . esc_html__( '(no title)', 'pressprimer-quiz' ) . '</em>';
 

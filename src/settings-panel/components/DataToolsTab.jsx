@@ -23,6 +23,7 @@ import {
 	Typography,
 	Space,
 	Table,
+	Tag,
 	Empty,
 	Spin,
 	message,
@@ -115,9 +116,20 @@ const DataToolsTab = () => {
 			const res = await apiFetch({
 				path: `/ppq/v1/tools/users?search=${encodeURIComponent(term || '')}`,
 			});
-			setUserOptions(
-				Array.isArray(res) ? res.map((u) => ({ value: u.id, label: u.label })) : []
-			);
+			const opts = Array.isArray(res) ? res.map((u) => ({ value: u.id, label: u.label })) : [];
+
+			// Allow entering a raw numeric user id so attempts left behind by a
+			// deleted WordPress account can still be targeted.
+			const trimmed = (term || '').trim();
+			if (/^\d+$/.test(trimmed) && !opts.some((o) => o.value === Number(trimmed))) {
+				opts.unshift({
+					value: Number(trimmed),
+					/* translators: %s: user id. */
+					label: sprintf(__('User #%s (by ID)', 'pressprimer-quiz'), trimmed),
+				});
+			}
+
+			setUserOptions(opts);
 		} catch (err) {
 			setUserOptions([]);
 		}
@@ -144,15 +156,18 @@ const DataToolsTab = () => {
 		setProgress({ deleted: 0, total: 0 });
 	}, [scope, userId, quizId]);
 
-	const handlePreview = async () => {
+	const handlePreview = useCallback(async () => {
+		const wantUser = 'user' === scope || 'user_quiz' === scope;
+		const wantQuiz = 'quiz' === scope || 'user_quiz' === scope;
+
 		setPreviewing(true);
 		setCompleted(null);
 		try {
 			const params = new URLSearchParams();
-			if (needsUser && userId) {
+			if (wantUser && userId) {
 				params.set('user_id', userId);
 			}
-			if (needsQuiz && quizId) {
+			if (wantQuiz && quizId) {
 				params.set('quiz_id', quizId);
 			}
 			const res = await apiFetch({
@@ -160,11 +175,42 @@ const DataToolsTab = () => {
 			});
 			setPreview(res);
 			setConfirmText('');
+
+			// Ensure the (possibly deep-linked) quiz shows its title in the
+			// selector even before the full quiz list has loaded.
+			if (res && res.quiz_id && res.quiz_title) {
+				setQuizOptions((prev) =>
+					prev.some((q) => q.id === res.quiz_id)
+						? prev
+						: [{ id: res.quiz_id, title: res.quiz_title }, ...prev]
+				);
+			}
 		} catch (err) {
 			message.error(err.message || __('Could not load the preview.', 'pressprimer-quiz'));
 		}
 		setPreviewing(false);
-	};
+	}, [scope, userId, quizId]);
+
+	// Deep link from the quizzes list ("Reset attempts…"): preselect the quiz
+	// and auto-run its preview once.
+	const autoPreviewQuiz = useRef(null);
+
+	useEffect(() => {
+		const params = new URLSearchParams(window.location.search);
+		const resetQuiz = parseInt(params.get('reset_quiz'), 10);
+		if (resetQuiz > 0) {
+			autoPreviewQuiz.current = resetQuiz;
+			setScope('quiz');
+			setQuizId(resetQuiz);
+		}
+	}, []);
+
+	useEffect(() => {
+		if (autoPreviewQuiz.current && 'quiz' === scope && quizId === autoPreviewQuiz.current) {
+			autoPreviewQuiz.current = null;
+			handlePreview();
+		}
+	}, [scope, quizId, handlePreview]);
 
 	// The string the admin must type, and the noun used to prompt for it.
 	const expectedToken = () => {
@@ -373,6 +419,12 @@ const DataToolsTab = () => {
 					<Title level={5} className="ppq-settings-section-title">
 						{__('Preview', 'pressprimer-quiz')}
 					</Title>
+
+					{preview.deleted_user && (
+						<Tag color="warning" style={{ marginBottom: 12 }}>
+							{__('Deleted user', 'pressprimer-quiz')}
+						</Tag>
+					)}
 
 					{0 === preview.attempts_total ? (
 						<Alert

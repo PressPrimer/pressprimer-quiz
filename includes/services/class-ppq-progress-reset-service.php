@@ -104,6 +104,36 @@ class PressPrimer_Quiz_Progress_Reset_Service {
 	}
 
 	/**
+	 * Verify the scope still points at existing targets.
+	 *
+	 * A by-quiz (or by-user-on-a-quiz) operation is anchored to a quiz. If that
+	 * quiz is deleted — including mid-operation, between batches — the reset is
+	 * stopped with an accurate error rather than silently deleting orphaned
+	 * attempts or failing the confirmation check for a confusing reason. A
+	 * deleted *user* is deliberately allowed (the by-user scope cleans up
+	 * attempts left behind by a removed account; the preview flags it).
+	 *
+	 * @since 3.0.0
+	 *
+	 * @param array $scope Normalized scope.
+	 * @return true|WP_Error True when targets exist, error otherwise.
+	 */
+	public function verify_scope_targets( $scope ) {
+		if ( ! empty( $scope['quiz_id'] ) && class_exists( 'PressPrimer_Quiz_Quiz' ) ) {
+			$quiz = PressPrimer_Quiz_Quiz::get( (int) $scope['quiz_id'] );
+			if ( ! $quiz ) {
+				return new WP_Error(
+					'ppq_reset_quiz_missing',
+					__( 'That quiz no longer exists, so the reset was stopped.', 'pressprimer-quiz' ),
+					array( 'status' => 409 )
+				);
+			}
+		}
+
+		return true;
+	}
+
+	/**
 	 * Derive the scope type label from a normalized scope.
 	 *
 	 * @since 3.0.0

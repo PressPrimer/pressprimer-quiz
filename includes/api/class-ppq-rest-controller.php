@@ -841,6 +841,13 @@ class PressPrimer_Quiz_REST_Controller {
 			return $scope;
 		}
 
+		// Stop with an accurate error if the quiz was deleted (including
+		// between batches) so we never report a misleading token mismatch.
+		$targets = $service->verify_scope_targets( $scope );
+		if ( is_wp_error( $targets ) ) {
+			return $targets;
+		}
+
 		// Validate the confirmation token before touching the lock or any data.
 		if ( ! $service->verify_token( $scope, $request->get_param( 'confirm_token' ) ) ) {
 			return new WP_Error(

@@ -55,6 +55,22 @@ class PressPrimer_Quiz_Progress_Reset_Service {
 	const LOCK_TTL = 300;
 
 	/**
+	 * Option name for the capped operation log.
+	 *
+	 * @since 3.0.0
+	 * @var string
+	 */
+	const LOG_OPTION = 'pressprimer_quiz_reset_log';
+
+	/**
+	 * Maximum operation log entries retained.
+	 *
+	 * @since 3.0.0
+	 * @var int
+	 */
+	const LOG_CAP = 20;
+
+	/**
 	 * Validate and normalize a requested scope.
 	 *
 	 * At least one of user_id / quiz_id must be present. A by-user scope keeps
@@ -403,10 +419,26 @@ class PressPrimer_Quiz_Progress_Reset_Service {
 		if ( empty( $ids ) ) {
 			return array(
 				'deleted'   => 0,
+				'items'     => 0,
 				'cursor'    => (int) $cursor,
 				'remaining' => 0,
 			);
 		}
+
+		/**
+		 * Fires before each batch of attempts is deleted, with the exact ids.
+		 *
+		 * Addons subscribe to delete their own dependent rows for these
+		 * attempts within the same operation — e.g. spaced-repetition state or
+		 * proctoring records. The attempts (and their items) still exist when
+		 * this fires, so callbacks may read them.
+		 *
+		 * @since 3.0.0
+		 *
+		 * @param int[] $attempt_ids Attempt ids in this batch.
+		 * @param array $scope       Normalized scope { user_id, quiz_id, initiator_id }.
+		 */
+		do_action( 'pressprimer_quiz_before_progress_reset', $ids, $scope );
 
 		$attempts_table = $wpdb->prefix . 'ppq_attempts';
 		$items_table    = $wpdb->prefix . 'ppq_attempt_items';
@@ -449,6 +481,7 @@ class PressPrimer_Quiz_Progress_Reset_Service {
 
 		return array(
 			'deleted'   => (int) $attempts_result,
+			'items'     => (int) $items_result,
 			'cursor'    => $new_cursor,
 			'remaining' => $this->count_attempts( $scope, $new_cursor ),
 		);
@@ -496,16 +529,157 @@ class PressPrimer_Quiz_Progress_Reset_Service {
 			);
 		}
 
+		// Preserve the running totals when the same operation refreshes its
+		// own lock between batches; start at zero for a fresh acquisition.
+		$attempts = ( is_array( $lock ) && isset( $lock['attempts'] ) ) ? (int) $lock['attempts'] : 0;
+		$items    = ( is_array( $lock ) && isset( $lock['items'] ) ) ? (int) $lock['items'] : 0;
+
 		set_transient(
 			self::LOCK_KEY,
 			array(
 				'key'       => $key,
 				'initiator' => (int) $scope['initiator_id'],
+				'attempts'  => $attempts,
+				'items'     => $items,
 			),
 			self::LOCK_TTL
 		);
 
 		return true;
+	}
+
+	/**
+	 * Add a batch's deletions to the running per-operation totals.
+	 *
+	 * Totals live on the lock transient so they accumulate across the separate
+	 * requests of one batch loop, and are read at completion for the log and
+	 * the completion hook.
+	 *
+	 * @since 3.0.0
+	 *
+	 * @param array $scope    Normalized scope.
+	 * @param int   $attempts Attempts deleted in this batch.
+	 * @param int   $items    Items deleted in this batch.
+	 * @return array Running totals { attempts:int, items:int }.
+	 */
+	public function record_batch( $scope, $attempts, $items ) {
+		$key  = $this->operation_key( $scope );
+		$lock = get_transient( self::LOCK_KEY );
+
+		$total_attempts = ( is_array( $lock ) && isset( $lock['attempts'] ) ) ? (int) $lock['attempts'] : 0;
+		$total_items    = ( is_array( $lock ) && isset( $lock['items'] ) ) ? (int) $lock['items'] : 0;
+
+		$total_attempts += (int) $attempts;
+		$total_items    += (int) $items;
+
+		set_transient(
+			self::LOCK_KEY,
+			array(
+				'key'       => $key,
+				'initiator' => (int) $scope['initiator_id'],
+				'attempts'  => $total_attempts,
+				'items'     => $total_items,
+			),
+			self::LOCK_TTL
+		);
+
+		return array(
+			'attempts' => $total_attempts,
+			'items'    => $total_items,
+		);
+	}
+
+	/**
+	 * Finalize a completed operation: completion hook, log entry, lock release.
+	 *
+	 * Called once, in the request where the last batch empties the scope.
+	 *
+	 * @since 3.0.0
+	 *
+	 * @param array $scope  Normalized scope.
+	 * @param array $totals Whole-operation totals { attempts, items }.
+	 * @return void
+	 */
+	public function complete_operation( $scope, $totals ) {
+		/**
+		 * Fires once after a progress reset operation completes.
+		 *
+		 * @since 3.0.0
+		 *
+		 * @param array $scope  Normalized scope { user_id, quiz_id, initiator_id }.
+		 * @param array $totals Whole-operation totals { attempts, items }.
+		 */
+		do_action( 'pressprimer_quiz_progress_reset', $scope, $totals );
+
+		$this->log_operation( $scope, $totals );
+		$this->release_lock();
+	}
+
+	/**
+	 * Append a completed operation to the capped log option.
+	 *
+	 * Stores label snapshots (quiz title, username) so the log stays readable
+	 * even after the quiz or user is later deleted. Keeps the most recent
+	 * LOG_CAP entries.
+	 *
+	 * @since 3.0.0
+	 *
+	 * @param array $scope  Normalized scope.
+	 * @param array $totals Whole-operation totals { attempts, items }.
+	 * @return void
+	 */
+	private function log_operation( $scope, $totals ) {
+		$quiz_label = null;
+		if ( ! empty( $scope['quiz_id'] ) && class_exists( 'PressPrimer_Quiz_Quiz' ) ) {
+			$quiz = PressPrimer_Quiz_Quiz::get( (int) $scope['quiz_id'] );
+			if ( $quiz ) {
+				$quiz_label = (string) $quiz->title;
+			}
+		}
+
+		$user_label = null;
+		if ( ! empty( $scope['user_id'] ) ) {
+			$user = get_userdata( (int) $scope['user_id'] );
+			if ( $user ) {
+				$user_label = $user->user_login;
+			}
+		}
+
+		$log = get_option( self::LOG_OPTION, array() );
+		if ( ! is_array( $log ) ) {
+			$log = array();
+		}
+
+		array_unshift(
+			$log,
+			array(
+				'initiator_id' => (int) $scope['initiator_id'],
+				'user_id'      => $scope['user_id'] ? (int) $scope['user_id'] : null,
+				'user_label'   => $user_label,
+				'quiz_id'      => $scope['quiz_id'] ? (int) $scope['quiz_id'] : null,
+				'quiz_label'   => $quiz_label,
+				'attempts'     => (int) $totals['attempts'],
+				'items'        => (int) $totals['items'],
+				'timestamp'    => current_time( 'mysql' ),
+			)
+		);
+
+		$log = array_slice( $log, 0, self::LOG_CAP );
+
+		update_option( self::LOG_OPTION, $log, false );
+	}
+
+	/**
+	 * Read the operation log, newest first.
+	 *
+	 * @since 3.0.0
+	 *
+	 * @return array[] Log entries.
+	 */
+	public function get_log() {
+		$log = get_option( self::LOG_OPTION, array() );
+
+		return is_array( $log ) ? $log : array();
 	}
 
 	/**

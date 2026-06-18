@@ -833,9 +833,19 @@ class PressPrimer_Quiz_REST_Controller {
 			return $result;
 		}
 
-		// Release the lock once nothing remains for this scope.
+		// Accumulate this batch into the operation's running totals.
+		$totals           = $service->record_batch( $scope, $result['deleted'], $result['items'] );
+		$result['totals'] = $totals;
+
 		if ( 0 === (int) $result['remaining'] ) {
-			$service->release_lock();
+			if ( $totals['attempts'] > 0 ) {
+				// Real operation finished: fire the completion hook, log it,
+				// and release the lock.
+				$service->complete_operation( $scope, $totals );
+			} else {
+				// Nothing matched the scope; just release the lock.
+				$service->release_lock();
+			}
 		}
 
 		return rest_ensure_response( $result );

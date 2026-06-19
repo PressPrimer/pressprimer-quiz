@@ -100,9 +100,9 @@ class PressPrimer_Quiz_Statistics_Service {
 			$author_where = $wpdb->prepare( ' AND author_id = %d', $owner_id );
 		}
 
-		// Total published quizzes
+		// Total published quizzes (excludes School SR review quizzes)
 		$stats['total_quizzes'] = (int) $wpdb->get_var(
-			"SELECT COUNT(*) FROM {$quizzes_table} WHERE status = 'published'{$owner_where}" // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared,WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Table name safely constructed; results cached at method level
+			"SELECT COUNT(*) FROM {$quizzes_table} WHERE status = 'published' AND is_review_quiz = 0{$owner_where}" // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared,WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Table name safely constructed; results cached at method level
 		);
 
 		// Total active questions (uses author_id, not owner_id)

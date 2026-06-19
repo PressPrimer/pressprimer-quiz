@@ -1745,7 +1745,7 @@ Good luck with your studies!',
 
 		// Get statistics (only questions table has deleted_at column)
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Simple count queries for admin settings display
-		$total_quizzes = (int) $wpdb->get_var( "SELECT COUNT(*) FROM {$wpdb->prefix}ppq_quizzes" ); // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Table name safely constructed
+		$total_quizzes = (int) $wpdb->get_var( "SELECT COUNT(*) FROM {$wpdb->prefix}ppq_quizzes WHERE is_review_quiz = 0" ); // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Table name safely constructed
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching
 		$total_questions = (int) $wpdb->get_var( "SELECT COUNT(*) FROM {$wpdb->prefix}ppq_questions WHERE deleted_at IS NULL" ); // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching

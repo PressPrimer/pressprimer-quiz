@@ -170,6 +170,13 @@ class PressPrimer_Quiz_REST_Controller {
 					'methods'             => WP_REST_Server::READABLE,
 					'callback'            => [ $this, 'get_quizzes' ],
 					'permission_callback' => [ $this, 'check_permission' ],
+					'args'                => [
+						'include_review_quizzes' => [
+							'type'              => 'boolean',
+							'required'          => false,
+							'sanitize_callback' => 'rest_sanitize_boolean',
+						],
+					],
 				],
 				[
 					'methods'             => WP_REST_Server::CREATABLE,
@@ -2201,9 +2208,22 @@ class PressPrimer_Quiz_REST_Controller {
 			'limit'    => 100,
 		);
 
+		$where = array();
+
 		// Non-admins only see their own quizzes.
 		if ( ! current_user_can( 'manage_options' ) ) {
-			$args['where'] = array( 'owner_id' => $user_id );
+			$where['owner_id'] = $user_id;
+		}
+
+		// Exclude School's spaced-repetition review quizzes by default; the
+		// include_review_quizzes flag restores them (Post-Scope Behavioral
+		// Amendment, 2026-06-11). Fetch-by-ID is unaffected.
+		if ( ! rest_sanitize_boolean( $request->get_param( 'include_review_quizzes' ) ) ) {
+			$where['is_review_quiz'] = 0;
+		}
+
+		if ( ! empty( $where ) ) {
+			$args['where'] = $where;
 		}
 
 		$quizzes = PressPrimer_Quiz_Quiz::find( $args );
@@ -2234,7 +2254,12 @@ class PressPrimer_Quiz_REST_Controller {
 	public function get_published_quizzes( $request ) {
 		$quizzes = PressPrimer_Quiz_Quiz::find(
 			[
-				'where'    => [ 'status' => 'published' ],
+				// Review quizzes (School SR) are never embeddable, so they are
+				// always excluded from the block-editor list.
+				'where'    => [
+					'status'         => 'published',
+					'is_review_quiz' => 0,
+				],
 				'order_by' => 'title',
 				'order'    => 'ASC',
 				'limit'    => 100,

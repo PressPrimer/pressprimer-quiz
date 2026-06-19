@@ -1390,6 +1390,17 @@ class PressPrimer_Quiz_Quizzes_List_Table extends WP_List_Table {
 			$where_values[]  = absint( $get_author );
 		}
 
+		// Exclude School's spaced-repetition review quizzes by default; an
+		// include_review_quizzes=1 query arg restores them for School flows and
+		// debugging (Post-Scope Behavioral Amendment, 2026-06-11). Flows to both
+		// the count and the items query via $where_sql.
+		$include_review = isset( $_GET['include_review_quizzes'] )
+			&& '1' === sanitize_text_field( wp_unslash( $_GET['include_review_quizzes'] ) );
+		if ( ! $include_review ) {
+			$where_clauses[] = 'is_review_quiz = %d';
+			$where_values[]  = 0;
+		}
+
 		// Build WHERE clause
 		$where_sql = ! empty( $where_clauses )
 			? 'WHERE ' . implode( ' AND ', $where_clauses )

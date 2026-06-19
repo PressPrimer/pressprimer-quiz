@@ -81,6 +81,29 @@ class PressPrimer_Quiz_Attempt extends PressPrimer_Quiz_Model {
 	public $token_expires_at;
 
 	/**
+	 * Guest marketing-consent state (tri-state)
+	 *
+	 * Recorded when a guest attempt is created: 1 (consent checkbox shown and
+	 * checked), 0 (shown and left unchecked), or NULL (checkbox not shown —
+	 * feature off, or a pre-3.0 attempt). Downstream consumers must treat only
+	 * 1 as consent; NULL means it was never offered.
+	 *
+	 * @since 3.0.0
+	 * @var int|null
+	 */
+	public $guest_consent;
+
+	/**
+	 * Guest consent timestamp
+	 *
+	 * DATETIME of submission when guest_consent is 1, otherwise NULL.
+	 *
+	 * @since 3.0.0
+	 * @var string|null
+	 */
+	public $guest_consent_at;
+
+	/**
 	 * Source URL where the quiz was taken
 	 *
 	 * @since 1.0.0
@@ -250,6 +273,8 @@ class PressPrimer_Quiz_Attempt extends PressPrimer_Quiz_Model {
 			'guest_name',
 			'guest_token',
 			'token_expires_at',
+			'guest_consent',
+			'guest_consent_at',
 			'source_url',
 			'started_at',
 			'finished_at',
@@ -1114,6 +1139,38 @@ class PressPrimer_Quiz_Attempt extends PressPrimer_Quiz_Model {
 		}
 
 		return $this->_quiz;
+	}
+
+	/**
+	 * Whether the guest gave marketing consent on this attempt.
+	 *
+	 * Strict by design: only a recorded value of 1 counts as consent. A 0
+	 * (offered and declined) and NULL (never offered, or a pre-3.0 attempt)
+	 * both return false. This is the documented contract downstream marketing
+	 * integrations (e.g. School's WP Fusion sync) gate on — "no consent, no
+	 * sync" (feature 007, FR-004).
+	 *
+	 * @since 3.0.0
+	 *
+	 * @return bool True only when guest_consent is 1.
+	 */
+	public function has_marketing_consent(): bool {
+		return 1 === (int) $this->guest_consent;
+	}
+
+	/**
+	 * The timestamp marketing consent was recorded, if any.
+	 *
+	 * @since 3.0.0
+	 *
+	 * @return string|null DATETIME string when consent was given, otherwise null.
+	 */
+	public function get_consent_timestamp(): ?string {
+		if ( empty( $this->guest_consent_at ) ) {
+			return null;
+		}
+
+		return (string) $this->guest_consent_at;
 	}
 
 	/**

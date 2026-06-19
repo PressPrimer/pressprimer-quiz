@@ -635,6 +635,8 @@ class PressPrimer_Quiz_Schema {
 			guest_name VARCHAR(100) DEFAULT NULL,
 			guest_token CHAR(64) DEFAULT NULL,
 			token_expires_at DATETIME DEFAULT NULL,
+			guest_consent TINYINT(1) DEFAULT NULL,
+			guest_consent_at DATETIME DEFAULT NULL,
 			source_url VARCHAR(2048) DEFAULT NULL,
 			started_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
 			finished_at DATETIME DEFAULT NULL,

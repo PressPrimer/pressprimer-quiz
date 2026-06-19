@@ -229,10 +229,10 @@ class PressPrimer_Quiz_Migrator {
 				'version'  => '3.0.0',
 				'callback' => array( __CLASS__, 'migrate_to_3_0_0' ),
 				// Empty column list for the templates table = "verify the table
-				// exists" (see verify_targets()); the attempts column is verified by name.
+				// exists" (see verify_targets()); the attempts columns are verified by name.
 				'targets'  => array(
 					$templates => array(),
-					$attempts  => array( 'ma_scoring_mode' ),
+					$attempts  => array( 'ma_scoring_mode', 'guest_consent', 'guest_consent_at' ),
 				),
 			),
 		);
@@ -652,12 +652,14 @@ class PressPrimer_Quiz_Migrator {
 	 * Migration to version 3.0.0
 	 *
 	 * Creates the quiz settings templates table (wp_ppq_quiz_templates) and adds
-	 * the ma_scoring_mode column to the attempts table (Score Transparency, which
-	 * records the scoring mode each attempt was graded under). The full-schema
-	 * dbDelta in update_schema() already creates the table during an upgrade;
-	 * this step re-runs dbDelta on the single CREATE TABLE statement and adds the
-	 * column with a guarded ALTER so it is self-contained and idempotent.
-	 * verify-before-advance then confirms both before the DB version moves to 3.0.0.
+	 * three columns to the attempts table: ma_scoring_mode (Score Transparency,
+	 * recording the scoring mode each attempt was graded under) and the
+	 * guest_consent / guest_consent_at pair (Guest Consent Capture, recording a
+	 * guest's marketing-consent state and timestamp). The full-schema dbDelta in
+	 * update_schema() already creates the table during an upgrade; this step
+	 * re-runs dbDelta on the single CREATE TABLE statement and adds each column
+	 * with a guarded ALTER so it is self-contained and idempotent.
+	 * verify-before-advance then confirms all of them before the DB version moves to 3.0.0.
 	 *
 	 * @since 3.0.0
 	 */
@@ -693,6 +695,46 @@ class PressPrimer_Quiz_Migrator {
 			$wpdb->query(
 				$wpdb->prepare(
 					'ALTER TABLE %i ADD COLUMN ma_scoring_mode VARCHAR(32) DEFAULT NULL AFTER curved_score',
+					$attempts
+				)
+			);
+		}
+
+		// Add the attempts guest_consent column (idempotent).
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching
+		$column_exists = $wpdb->get_results(
+			$wpdb->prepare(
+				'SHOW COLUMNS FROM %i LIKE %s',
+				$attempts,
+				'guest_consent'
+			)
+		);
+
+		if ( empty( $column_exists ) ) {
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.DirectDatabaseQuery.SchemaChange
+			$wpdb->query(
+				$wpdb->prepare(
+					'ALTER TABLE %i ADD COLUMN guest_consent TINYINT(1) DEFAULT NULL AFTER token_expires_at',
+					$attempts
+				)
+			);
+		}
+
+		// Add the attempts guest_consent_at column (idempotent).
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching
+		$column_exists = $wpdb->get_results(
+			$wpdb->prepare(
+				'SHOW COLUMNS FROM %i LIKE %s',
+				$attempts,
+				'guest_consent_at'
+			)
+		);
+
+		if ( empty( $column_exists ) ) {
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.DirectDatabaseQuery.SchemaChange
+			$wpdb->query(
+				$wpdb->prepare(
+					'ALTER TABLE %i ADD COLUMN guest_consent_at DATETIME DEFAULT NULL AFTER guest_consent',
 					$attempts
 				)
 			);

@@ -269,12 +269,12 @@ class PressPrimer_Quiz_Shell {
 	}
 
 	/**
-	 * Register the free plugin's built-in screens and upsell placeholders.
+	 * Register the free plugin's built-in screens.
 	 *
 	 * Hooked to pressprimer_quiz_shell_screens. Adds the student Home and My
-	 * Results screens plus a locked "Teaching" entry that upsells the Educator
-	 * front-end dashboard. Locked entries are always registered here; their
-	 * visibility is resolved later in get_visible_screens().
+	 * Results screens. Addons (e.g. Educator) register their own screens and
+	 * nav groups through the shell filters; the free plugin ships no upsell
+	 * placeholders, and empty nav groups are not rendered.
 	 *
 	 * @since 3.0.0
 	 *
@@ -302,15 +302,6 @@ class PressPrimer_Quiz_Shell {
 			'handle'     => self::HANDLE,
 			'order'      => 10,
 			'icon'       => 'results',
-		);
-
-		$screens['ppq-teaching-locked'] = array(
-			'label'       => __( 'Teaching', 'pressprimer-quiz' ),
-			'group'       => 'teaching',
-			'order'       => 0,
-			'icon'        => 'teaching',
-			'locked'      => true,
-			'locked_tier' => 'educator',
 		);
 
 		return $screens;

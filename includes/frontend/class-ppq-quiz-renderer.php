@@ -638,9 +638,19 @@ class PressPrimer_Quiz_Quiz_Renderer {
 								if ( get_option( 'pressprimer_quiz_guest_consent_enabled', false ) ) :
 									$consent_label = get_option( 'pressprimer_quiz_guest_consent_label', '' );
 									if ( '' === trim( (string) $consent_label ) ) {
-										$consent_label = __( 'Email me about related courses and resources. You can unsubscribe at any time.', 'pressprimer-quiz' );
+										$consent_label = __( 'Add me to the newsletter. I understand that I can unsubscribe at any time.', 'pressprimer-quiz' );
 									}
-									$consent_privacy_link = get_the_privacy_policy_link( ' ', '' );
+									// Build the privacy link ourselves so it opens in a new
+									// tab (core's get_the_privacy_policy_link() does not).
+									$consent_privacy_url  = get_privacy_policy_url();
+									$consent_privacy_link = '';
+									if ( $consent_privacy_url ) {
+										$consent_privacy_title = get_the_title( (int) get_option( 'wp_page_for_privacy_policy' ) );
+										if ( '' === trim( (string) $consent_privacy_title ) ) {
+											$consent_privacy_title = __( 'Privacy Policy', 'pressprimer-quiz' );
+										}
+										$consent_privacy_link = ' <a href="' . esc_url( $consent_privacy_url ) . '" target="_blank" rel="noopener noreferrer">' . esc_html( $consent_privacy_title ) . '</a>';
+									}
 									?>
 									<div class="ppq-guest-consent">
 										<input type="checkbox"

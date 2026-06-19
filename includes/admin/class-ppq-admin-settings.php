@@ -1783,7 +1783,7 @@ Good luck with your studies!',
 		$consent_label                     = get_option( 'pressprimer_quiz_guest_consent_label', '' );
 		$settings['guest_consent_label']   = ( '' !== trim( (string) $consent_label ) )
 			? $consent_label
-			: __( 'Email me about related courses and resources. You can unsubscribe at any time.', 'pressprimer-quiz' );
+			: __( 'Add me to the newsletter. I understand that I can unsubscribe at any time.', 'pressprimer-quiz' );
 
 		/**
 		 * Filter the settings tabs displayed on the settings page.

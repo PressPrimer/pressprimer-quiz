@@ -49,6 +49,10 @@ const MA_SCORING_DESCRIPTIONS = {
 const GeneralTab = ({ settings, updateSetting, settingsData = {} }) => {
 	const maScoringMode = settings.default_ma_scoring || 'right_minus_wrong';
 
+	// WordPress Privacy settings page, for the "set a privacy policy" link.
+	const adminBaseUrl = (window.pressprimerQuizAdmin && window.pressprimerQuizAdmin.adminUrl) || '';
+	const privacySettingsUrl = `${adminBaseUrl}options-privacy.php`;
+
 	// Front-end dashboard page (v3.0).
 	const dashboardData = settingsData.dashboard || {};
 	const dashboardPageId = settings.dashboard_page_id || 0;
@@ -252,7 +256,13 @@ const GeneralTab = ({ settings, updateSetting, settingsData = {} }) => {
 								showIcon
 								style={{ maxWidth: 500 }}
 								message={__('No privacy policy page is set', 'pressprimer-quiz')}
-								description={__('Set a Privacy Policy page under Settings → Privacy so a link can be shown next to the consent checkbox.', 'pressprimer-quiz')}
+								description={createInterpolateElement(
+								__('<a>Set a Privacy Policy page under Settings → Privacy</a> so a link can be shown next to the consent checkbox.', 'pressprimer-quiz'),
+								{
+									// eslint-disable-next-line jsx-a11y/anchor-has-content
+									a: <a href={privacySettingsUrl} target="_blank" rel="noopener noreferrer" />,
+								}
+							)}
 							/>
 						)}
 					</>
@@ -262,9 +272,10 @@ const GeneralTab = ({ settings, updateSetting, settingsData = {} }) => {
 					type="info"
 					showIcon
 					style={{ maxWidth: 500, marginTop: 16 }}
-					message={createInterpolateElement(
+					message={__('Email marketing management', 'pressprimer-quiz')}
+					description={createInterpolateElement(
 						__(
-							'This plugin records consent only. Viewing, filtering, and exporting your consented marketing contacts requires the <a>PressPrimer Quiz Educator add-on</a>.',
+							'This plugin records consent only. Viewing, filtering, and exporting your consented contacts requires the <a>PressPrimer Quiz Educator add-on</a>.',
 							'pressprimer-quiz'
 						),
 						{

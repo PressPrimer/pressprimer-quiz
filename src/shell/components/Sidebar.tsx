@@ -75,6 +75,13 @@ export default function Sidebar( {
 				const groupScreens = screens.filter(
 					( screen ) => screen.group === groupKey
 				);
+
+				// Don't render a nav group that has no visible screens (e.g.
+				// the Teaching group with no Educator add-on installed).
+				if ( groupScreens.length === 0 ) {
+					return null;
+				}
+
 				const groupLabel = groups[ groupKey ]
 					? groups[ groupKey ].label
 					: groupKey;

@@ -1591,7 +1591,7 @@ class PressPrimer_Quiz_Quizzes_List_Table extends WP_List_Table {
 						admin_url( 'admin.php' )
 					)
 				),
-				esc_html__( 'Reset attempts…', 'pressprimer-quiz' )
+				esc_html__( 'Reset Attempts', 'pressprimer-quiz' )
 			);
 		}
 

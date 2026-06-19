@@ -136,14 +136,15 @@ class PressPrimer_Quiz_Scoring_Copy {
 	/**
 	 * Per-question formula template for a scoring mode.
 	 *
-	 * The results renderer fills these with stored, i18n-formatted numbers. The
-	 * numbered placeholders differ per mode:
+	 * The results renderer fills these with stored, i18n-formatted counts. They
+	 * describe the scoring arithmetic only; the resulting point value is shown
+	 * separately by the quiz's "Show points per question" setting, so it is not
+	 * repeated here. The numbered placeholders differ per mode:
 	 *
-	 *  - right_minus_wrong: 1 right, 2 wrong, 3 net counted, 4 total correct,
-	 *    5 score, 6 max
-	 *  - proportional:      1 right, 2 total correct, 3 score, 4 max
-	 *  - partial_no_wrong:  1 right, 2 total correct, 3 wrong, 4 score, 5 max
-	 *  - all_or_nothing:    1 right, 2 total correct, 3 wrong, 4 score, 5 max
+	 *  - right_minus_wrong: 1 right, 2 wrong, 3 net counted, 4 total correct
+	 *  - proportional:      1 right, 2 total correct
+	 *  - partial_no_wrong:  1 right, 2 total correct, 3 wrong
+	 *  - all_or_nothing:    1 right, 2 total correct, 3 wrong
 	 *
 	 * @since 3.0.0
 	 *
@@ -153,17 +154,17 @@ class PressPrimer_Quiz_Scoring_Copy {
 	public static function get_formula_template( $mode ) {
 		switch ( $mode ) {
 			case 'right_minus_wrong':
-				/* translators: 1: correct selections, 2: wrong selections, 3: net correct counted, 4: total correct, 5: score, 6: max points. */
-				return __( '%1$s correct − %2$s wrong = %3$s of %4$s correct counted → %5$s of %6$s points (never below zero)', 'pressprimer-quiz' );
+				/* translators: 1: correct selections, 2: wrong selections, 3: net correct counted, 4: total correct. */
+				return __( '%1$s correct − %2$s wrong = %3$s of %4$s correct counted (never below zero)', 'pressprimer-quiz' );
 			case 'proportional':
-				/* translators: 1: correct selections, 2: total correct, 3: score, 4: max points. */
-				return __( '%1$s of %2$s correct selected, wrong selections ignored → %3$s of %4$s points', 'pressprimer-quiz' );
+				/* translators: 1: correct selections, 2: total correct. */
+				return __( '%1$s of %2$s correct selected, wrong selections ignored', 'pressprimer-quiz' );
 			case 'partial_no_wrong':
-				/* translators: 1: correct selections, 2: total correct, 3: wrong selections, 4: score, 5: max points. */
-				return __( '%1$s of %2$s correct, %3$s wrong → %4$s of %5$s points (any wrong selection scores zero)', 'pressprimer-quiz' );
+				/* translators: 1: correct selections, 2: total correct, 3: wrong selections. */
+				return __( '%1$s of %2$s correct, %3$s wrong (any wrong selection scores zero)', 'pressprimer-quiz' );
 			case 'all_or_nothing':
-				/* translators: 1: correct selections, 2: total correct, 3: wrong selections, 4: score, 5: max points. */
-				return __( '%1$s of %2$s correct, %3$s wrong → %4$s of %5$s points (all correct and none wrong required)', 'pressprimer-quiz' );
+				/* translators: 1: correct selections, 2: total correct, 3: wrong selections. */
+				return __( '%1$s of %2$s correct, %3$s wrong (all correct and none wrong required)', 'pressprimer-quiz' );
 			default:
 				return '';
 		}

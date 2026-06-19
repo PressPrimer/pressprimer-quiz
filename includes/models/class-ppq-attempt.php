@@ -983,13 +983,17 @@ class PressPrimer_Quiz_Attempt extends PressPrimer_Quiz_Model {
 			return $scoring_result;
 		}
 
-		// Reload from database to get updated score values
+		// Reload from database to get values written by score_attempt() (the
+		// scoring service updates the row directly), so the save() below does
+		// not overwrite them with this instance's stale values. ma_scoring_mode
+		// must be carried over too, or the resolved scoring mode is lost.
 		$refreshed = static::get( $this->id );
 		if ( $refreshed ) {
-			$this->score_points  = $refreshed->score_points;
-			$this->max_points    = $refreshed->max_points;
-			$this->score_percent = $refreshed->score_percent;
-			$this->passed        = $refreshed->passed;
+			$this->score_points    = $refreshed->score_points;
+			$this->max_points      = $refreshed->max_points;
+			$this->score_percent   = $refreshed->score_percent;
+			$this->passed          = $refreshed->passed;
+			$this->ma_scoring_mode = $refreshed->ma_scoring_mode;
 		}
 
 		// Get quiz to check passing percentage

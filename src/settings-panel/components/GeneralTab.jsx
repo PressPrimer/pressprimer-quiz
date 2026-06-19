@@ -5,7 +5,7 @@
  * @since 1.0.0
  */
 
-import { useState } from '@wordpress/element';
+import { useState, createInterpolateElement } from '@wordpress/element';
 import { __, sprintf } from '@wordpress/i18n';
 import apiFetch from '@wordpress/api-fetch';
 import {
@@ -257,6 +257,22 @@ const GeneralTab = ({ settings, updateSetting, settingsData = {} }) => {
 						)}
 					</>
 				)}
+
+				<Alert
+					type="info"
+					showIcon
+					style={{ maxWidth: 500, marginTop: 16 }}
+					message={createInterpolateElement(
+						__(
+							'This plugin records consent only. Viewing, filtering, and exporting your consented marketing contacts requires the <a>PressPrimer Quiz Educator add-on</a>.',
+							'pressprimer-quiz'
+						),
+						{
+							// eslint-disable-next-line jsx-a11y/anchor-has-content
+							a: <a href="https://pressprimer.com/pressprimer-quiz-educator/" target="_blank" rel="noopener noreferrer" />,
+						}
+					)}
+				/>
 			</div>
 
 			{/* Scoring Section */}

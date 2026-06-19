@@ -389,8 +389,21 @@ const AiProviderSettings = ( { ai = {}, onChange, usageData = {} } ) => {
 	const activeUi = PROVIDER_UI[ active ] || { label: activeData.label || active, placeholder: '', hint: '', consoleUrl: '', consoleLabel: '' };
 	const activeLabel = activeUi.label || activeData.label || active;
 
+	// Functional update so concurrent patches (e.g. the post-save status change
+	// and the async model refresh) merge into the latest state instead of one
+	// clobbering the other from a stale closure.
 	const patchProvider = ( id, partial ) => {
-		onChange( { ...ai, providers: { ...providers, [ id ]: { ...providers[ id ], ...partial } } } );
+		onChange( ( prev ) => {
+			const base = prev && prev.providers ? prev : ai;
+			const baseProviders = base.providers || {};
+			return {
+				...base,
+				providers: {
+					...baseProviders,
+					[ id ]: { ...baseProviders[ id ], ...partial },
+				},
+			};
+		} );
 	};
 
 	const handleProviderChange = async ( e ) => {

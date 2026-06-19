@@ -130,8 +130,9 @@ class PressPrimer_Quiz_AI_Provider_Anthropic implements PressPrimer_Quiz_AI_Prov
 	 */
 	public function get_models(): array {
 		$models = array(
-			self::DEFAULT_MODEL,
-			'claude-opus-4-8',
+			self::DEFAULT_MODEL,           // claude-sonnet-4-6 — balanced (default).
+			'claude-opus-4-8',             // most capable.
+			'claude-haiku-4-5-20251001',   // fastest / lowest cost.
 		);
 
 		/**

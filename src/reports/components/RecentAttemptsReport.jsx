@@ -22,6 +22,7 @@ import {
 
 import DateRangePicker from './DateRangePicker';
 import AttemptDetailModal from './AttemptDetailModal';
+import ConsentBadge from '../../utils/ConsentBadge';
 import { getDateRange, formatTime, formatDate } from '../utils/dateUtils';
 
 const { Search } = Input;
@@ -188,6 +189,7 @@ const RecentAttemptsReport = () => {
 				<div className="ppq-attempts-student">
 					<UserOutlined className="ppq-attempts-student-icon" />
 					<span>{name || record.guest_email || __('Guest', 'pressprimer-quiz')}</span>
+					<ConsentBadge consent={record.guest_consent} consentAt={record.guest_consent_at} />
 				</div>
 			),
 		},

@@ -17,6 +17,8 @@ import {
 	ArrowRightOutlined,
 } from '@ant-design/icons';
 
+import ConsentBadge from '../../utils/ConsentBadge';
+
 /**
  * Format elapsed time
  *
@@ -101,6 +103,7 @@ const RecentActivity = ({ attempts = [], loading }) => {
 				<div className="ppq-activity-student">
 					<UserOutlined className="ppq-activity-student-icon" />
 					<span>{name || record.guest_email || __('Guest', 'pressprimer-quiz')}</span>
+					<ConsentBadge consent={record.guest_consent} consentAt={record.guest_consent_at} />
 				</div>
 			),
 		},

@@ -24,6 +24,7 @@ import {
 	UpOutlined,
 } from '@ant-design/icons';
 
+import ConsentBadge from '../../utils/ConsentBadge';
 import { formatTime, formatDate } from '../utils/dateUtils';
 
 /**
@@ -301,6 +302,7 @@ const AttemptDetailModal = ({ visible, attempt, onClose }) => {
 								{details?.student_email || attempt.user_email || attempt.guest_email || (
 									<span className="ppq-attempt-value--empty">{__('Not provided', 'pressprimer-quiz')}</span>
 								)}
+								<ConsentBadge consent={details?.guest_consent} consentAt={details?.guest_consent_at} />
 							</span>
 						</Descriptions.Item>
 					</Descriptions>

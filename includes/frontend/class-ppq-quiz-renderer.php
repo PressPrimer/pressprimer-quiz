@@ -634,6 +634,41 @@ class PressPrimer_Quiz_Quiz_Renderer {
 										placeholder="<?php esc_attr_e( 'your@email.com', 'pressprimer-quiz' ); ?>"
 										autocomplete="email"
 										<?php echo $guest_email_required ? 'required' : ''; ?>>
+								<?php
+								if ( get_option( 'pressprimer_quiz_guest_consent_enabled', false ) ) :
+									$consent_label = get_option( 'pressprimer_quiz_guest_consent_label', '' );
+									if ( '' === trim( (string) $consent_label ) ) {
+										$consent_label = __( 'Email me about related courses and resources. You can unsubscribe at any time.', 'pressprimer-quiz' );
+									}
+									$consent_privacy_link = get_the_privacy_policy_link( ' ', '' );
+									?>
+									<div class="ppq-guest-consent">
+										<input type="checkbox"
+												id="ppq-guest-consent"
+												class="ppq-checkbox ppq-consent-checkbox"
+												value="1">
+										<label for="ppq-guest-consent" class="ppq-consent-label">
+											<?php
+											echo esc_html( $consent_label );
+											if ( $consent_privacy_link ) {
+												echo wp_kses(
+													$consent_privacy_link,
+													array(
+														'a' => array(
+															'href'   => true,
+															'class'  => true,
+															'rel'    => true,
+															'target' => true,
+														),
+													)
+												);
+											}
+											?>
+										</label>
+									</div>
+									<?php
+								endif;
+								?>
 							</div>
 						<?php endif; ?>
 

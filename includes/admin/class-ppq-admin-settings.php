@@ -1776,6 +1776,15 @@ Good luck with your studies!',
 		// settings bundle so the General tab preselects it on first render.
 		$settings['dashboard_page_id'] = (int) get_option( 'pressprimer_quiz_dashboard_page_id', 0 );
 
+		// Guest marketing-consent (v3.0): standalone options, exposed so the
+		// General tab shows the current toggle and label on first render. The
+		// translatable default label fills in when none has been saved.
+		$settings['guest_consent_enabled'] = (bool) get_option( 'pressprimer_quiz_guest_consent_enabled', false );
+		$consent_label                     = get_option( 'pressprimer_quiz_guest_consent_label', '' );
+		$settings['guest_consent_label']   = ( '' !== trim( (string) $consent_label ) )
+			? $consent_label
+			: __( 'Email me about related courses and resources. You can unsubscribe at any time.', 'pressprimer-quiz' );
+
 		/**
 		 * Filter the settings tabs displayed on the settings page.
 		 *
@@ -1842,20 +1851,21 @@ Good luck with your studies!',
 		);
 
 		$data = [
-			'pluginUrl'      => PRESSPRIMER_QUIZ_PLUGIN_URL,
-			'settingsMascot' => $settings_mascot,
-			'settings'       => $settings,
-			'settingsTabs'   => $settings_tabs,
-			'apiKeyStatus'   => $key_status,
-			'apiModels'      => $available_models,
-			'modelPref'      => $model_pref,
-			'ai'             => $ai_block,
-			'usageData'      => $usage_data,
-			'defaults'       => [
+			'pluginUrl'        => PRESSPRIMER_QUIZ_PLUGIN_URL,
+			'settingsMascot'   => $settings_mascot,
+			'settings'         => $settings,
+			'privacyPolicyUrl' => get_privacy_policy_url(),
+			'settingsTabs'     => $settings_tabs,
+			'apiKeyStatus'     => $key_status,
+			'apiModels'        => $available_models,
+			'modelPref'        => $model_pref,
+			'ai'               => $ai_block,
+			'usageData'        => $usage_data,
+			'defaults'         => [
 				'siteName'   => get_bloginfo( 'name' ),
 				'adminEmail' => get_bloginfo( 'admin_email' ),
 			],
-			'appearance'     => [
+			'appearance'       => [
 				'themeFont'     => $theme_font,
 				'defaultColors' => [
 					'primary'    => '#0073aa',
@@ -1865,7 +1875,7 @@ Good luck with your studies!',
 					'error'      => '#d63638',
 				],
 			],
-			'systemInfo'     => [
+			'systemInfo'       => [
 				'pluginVersion'          => PRESSPRIMER_QUIZ_VERSION,
 				'dbVersion'              => get_option( 'pressprimer_quiz_db_version', 'Not set' ),
 				'wpVersion'              => get_bloginfo( 'version' ),
@@ -1890,18 +1900,18 @@ Good luck with your studies!',
 				'totalAttempts'          => $total_attempts,
 				'extractionCapabilities' => PressPrimer_Quiz_File_Processor::get_extraction_capabilities(),
 			],
-			'databaseTables' => $table_status,
-			'schemaHealth'   => class_exists( 'PressPrimer_Quiz_Schema_Verifier' )
+			'databaseTables'   => $table_status,
+			'schemaHealth'     => class_exists( 'PressPrimer_Quiz_Schema_Verifier' )
 				? [
 					'report' => PressPrimer_Quiz_Schema_Verifier::check(),
 					'log'    => PressPrimer_Quiz_Schema_Verifier::get_log(),
 				]
 				: null,
-			'dashboard'      => $this->get_dashboard_settings_data(),
-			'nonces'         => [
+			'dashboard'        => $this->get_dashboard_settings_data(),
+			'nonces'           => [
 				'repairTables' => wp_create_nonce( 'pressprimer_quiz_repair_tables_nonce' ),
 			],
-			'lmsStatus'      => [
+			'lmsStatus'        => [
 				// Alphabetical order
 				'learndash'  => [
 					'installed' => defined( 'LEARNDASH_VERSION' ),

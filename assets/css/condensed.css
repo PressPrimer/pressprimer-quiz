@@ -393,6 +393,10 @@
 	margin-bottom: 12px !important;
 }
 
+.ppq-quiz-landing.ppq-quiz--condensed .ppq-guest-consent {
+	margin-top: 10px !important;
+}
+
 .ppq-quiz-landing.ppq-quiz--condensed .ppq-form-label {
 	font-size: 0.875rem !important;
 }

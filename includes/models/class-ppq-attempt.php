@@ -510,12 +510,16 @@ class PressPrimer_Quiz_Attempt extends PressPrimer_Quiz_Model {
 	 *
 	 * @since 1.0.0
 	 *
-	 * @param int    $quiz_id    Quiz ID.
-	 * @param string $email      Guest email address.
-	 * @param string $source_url Optional. URL of the page where the quiz was started.
+	 * @param int    $quiz_id      Quiz ID.
+	 * @param string $email        Guest email address.
+	 * @param string $source_url   Optional. URL of the page where the quiz was started.
+	 * @param array  $consent_args Optional. Guest marketing-consent fields to record on the new
+	 *                             attempt: { guest_consent: 1|0|null, guest_consent_at: ?string }.
+	 *                             Applied only when a new attempt is created (a resumed in-progress
+	 *                             attempt keeps its original consent — consent is captured once).
 	 * @return int|WP_Error Attempt ID on success, WP_Error on failure.
 	 */
-	public static function create_for_guest( int $quiz_id, string $email, string $source_url = '' ) {
+	public static function create_for_guest( int $quiz_id, string $email, string $source_url = '', array $consent_args = array() ) {
 		// Validate email only if provided (email is optional for guests)
 		$email = sanitize_email( $email );
 		if ( ! empty( $email ) && ! is_email( $email ) ) {
@@ -656,6 +660,12 @@ class PressPrimer_Quiz_Attempt extends PressPrimer_Quiz_Model {
 		// Set token expiration to 30 days from now
 		$token_expires = gmdate( 'Y-m-d H:i:s', strtotime( '+30 days' ) );
 
+		// Marketing-consent state captured at creation (tri-state). Defaults to
+		// NULL ("not offered") when the caller passes nothing.
+		$guest_consent    = array_key_exists( 'guest_consent', $consent_args ) ? $consent_args['guest_consent'] : null;
+		$guest_consent_at = array_key_exists( 'guest_consent_at', $consent_args ) ? $consent_args['guest_consent_at'] : null;
+		$guest_consent    = ( null === $guest_consent ) ? null : (int) $guest_consent;
+
 		// Create attempt
 		$attempt_data = [
 			'uuid'             => wp_generate_uuid4(),
@@ -664,6 +674,8 @@ class PressPrimer_Quiz_Attempt extends PressPrimer_Quiz_Model {
 			'guest_email'      => $email,
 			'guest_token'      => $token,
 			'token_expires_at' => $token_expires,
+			'guest_consent'    => $guest_consent,
+			'guest_consent_at' => $guest_consent_at,
 			'source_url'       => $source_url ?: null,
 			'status'           => 'in_progress',
 			'current_position' => 0,

@@ -430,6 +430,29 @@
 	color: var(--ppq-text);
 }
 
+/* Marketing consent checkbox (guest email form) */
+.ppq-guest-consent {
+	display: flex;
+	align-items: flex-start;
+	gap: var(--ppq-space-sm);
+	margin-top: var(--ppq-space-md);
+}
+
+.ppq-consent-checkbox {
+	margin-top: 0.2rem;
+	flex-shrink: 0;
+}
+
+.ppq-consent-label {
+	font-size: 0.875rem;
+	line-height: 1.4;
+	color: var(--ppq-text-secondary);
+}
+
+.ppq-consent-label a {
+	color: var(--ppq-primary);
+}
+
 /* Email input error state */
 .ppq-input.ppq-input-error {
 	border-color: var(--ppq-error);

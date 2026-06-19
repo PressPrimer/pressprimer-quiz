@@ -3243,6 +3243,16 @@ class PressPrimer_Quiz_REST_Controller {
 		// in the same bundle so the General tab can select it like any field.
 		$settings['dashboard_page_id'] = (int) get_option( 'pressprimer_quiz_dashboard_page_id', 0 );
 
+		// Guest marketing-consent settings are standalone options (read on the
+		// quiz-taking path without loading the settings bundle). Expose them
+		// under the same response shape; surface the translatable default label
+		// when none has been saved.
+		$settings['guest_consent_enabled'] = (bool) get_option( 'pressprimer_quiz_guest_consent_enabled', false );
+		$consent_label                     = get_option( 'pressprimer_quiz_guest_consent_label', '' );
+		$settings['guest_consent_label']   = ( '' !== trim( (string) $consent_label ) )
+			? $consent_label
+			: __( 'Email me about related courses and resources. You can unsubscribe at any time.', 'pressprimer-quiz' );
+
 		return new WP_REST_Response(
 			[
 				'success'  => true,
@@ -3486,6 +3496,37 @@ class PressPrimer_Quiz_REST_Controller {
 						'after'  => $submitted_page,
 					);
 				}
+			}
+		}
+
+		// Guest marketing-consent settings are standalone options.
+		if ( isset( $data['guest_consent_enabled'] ) ) {
+			$new_consent_enabled = rest_sanitize_boolean( $data['guest_consent_enabled'] );
+			$old_consent_enabled = (bool) get_option( 'pressprimer_quiz_guest_consent_enabled', false );
+
+			if ( $old_consent_enabled !== $new_consent_enabled ) {
+				update_option( 'pressprimer_quiz_guest_consent_enabled', $new_consent_enabled );
+				$extra_changes[] = array(
+					'field'  => 'guest_consent_enabled',
+					'before' => $old_consent_enabled,
+					'after'  => $new_consent_enabled,
+				);
+			}
+		}
+
+		if ( isset( $data['guest_consent_label'] ) ) {
+			// Owner-entered label is plain text; the privacy link is appended by
+			// the plugin at render time, never stored.
+			$new_consent_label = sanitize_textarea_field( wp_unslash( $data['guest_consent_label'] ) );
+			$old_consent_label = (string) get_option( 'pressprimer_quiz_guest_consent_label', '' );
+
+			if ( $old_consent_label !== $new_consent_label ) {
+				update_option( 'pressprimer_quiz_guest_consent_label', $new_consent_label );
+				$extra_changes[] = array(
+					'field'  => 'guest_consent_label',
+					'before' => $old_consent_label,
+					'after'  => $new_consent_label,
+				);
 			}
 		}
 

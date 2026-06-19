@@ -14,6 +14,7 @@ import {
 	Radio,
 	Select,
 	Input,
+	Switch,
 	Typography,
 	Space,
 	Button,
@@ -206,6 +207,56 @@ const GeneralTab = ({ settings, updateSetting, settingsData = {} }) => {
 						/>
 					</Form.Item>
 				</div>
+			</div>
+
+			{/* Guest Email Consent Section */}
+			<div className="ppq-settings-section">
+				<Title level={4} className="ppq-settings-section-title">
+					{__('Guest Email Consent', 'pressprimer-quiz')}
+				</Title>
+				<Paragraph className="ppq-settings-section-description">
+					{__('Optionally show a marketing consent checkbox on the guest email form. It is unchecked by default and never blocks starting a quiz.', 'pressprimer-quiz')}
+				</Paragraph>
+
+				<div className="ppq-settings-field">
+					<Form.Item
+						label={__('Show a marketing consent checkbox', 'pressprimer-quiz')}
+						help={__('Adds an unchecked, optional consent checkbox to the guest email form.', 'pressprimer-quiz')}
+					>
+						<Switch
+							checked={!! settings.guest_consent_enabled}
+							onChange={(checked) => updateSetting('guest_consent_enabled', checked)}
+						/>
+					</Form.Item>
+				</div>
+
+				{settings.guest_consent_enabled && (
+					<>
+						<div className="ppq-settings-field">
+							<Form.Item
+								label={__('Consent label', 'pressprimer-quiz')}
+								help={__('Describe the marketing use, not quiz function. A link to your Privacy Policy is added automatically when one is set.', 'pressprimer-quiz')}
+							>
+								<TextArea
+									value={settings.guest_consent_label || ''}
+									onChange={(e) => updateSetting('guest_consent_label', e.target.value)}
+									rows={2}
+									style={{ maxWidth: 500 }}
+								/>
+							</Form.Item>
+						</div>
+
+						{! settingsData.privacyPolicyUrl && (
+							<Alert
+								type="info"
+								showIcon
+								style={{ maxWidth: 500 }}
+								message={__('No privacy policy page is set', 'pressprimer-quiz')}
+								description={__('Set a Privacy Policy page under Settings → Privacy so a link can be shown next to the consent checkbox.', 'pressprimer-quiz')}
+							/>
+						)}
+					</>
+				)}
 			</div>
 
 			{/* Scoring Section */}

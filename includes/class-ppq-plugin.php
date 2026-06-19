@@ -196,6 +196,11 @@ class PressPrimer_Quiz_Plugin {
 			$ajax_handler = new PressPrimer_Quiz_AJAX_Handler();
 			$ajax_handler->init();
 		}
+
+		// Register WordPress privacy (personal data export/erase) for guests.
+		if ( class_exists( 'PressPrimer_Quiz_Privacy' ) ) {
+			PressPrimer_Quiz_Privacy::init();
+		}
 	}
 
 	/**

@@ -602,7 +602,7 @@ class PressPrimer_Quiz_Schema {
 		return "CREATE TABLE {$wpdb->prefix}ppq_assignments (
 			id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
 			quiz_id BIGINT UNSIGNED NOT NULL,
-			assignee_type ENUM('group', 'user') NOT NULL,
+			assignee_type ENUM('group', 'user', 'ld_group') NOT NULL,
 			assignee_id BIGINT UNSIGNED NOT NULL,
 			assigned_by BIGINT UNSIGNED NOT NULL,
 			due_at DATETIME DEFAULT NULL,

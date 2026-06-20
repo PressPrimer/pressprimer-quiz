@@ -188,6 +188,7 @@ class PressPrimer_Quiz_Migrator {
 		$attempts      = $wpdb->prefix . 'ppq_attempts';
 		$attempt_items = $wpdb->prefix . 'ppq_attempt_items';
 		$templates     = $wpdb->prefix . 'ppq_quiz_templates';
+		$assignments   = $wpdb->prefix . 'ppq_assignments';
 
 		return array(
 			array(
@@ -233,6 +234,16 @@ class PressPrimer_Quiz_Migrator {
 				'targets'  => array(
 					$templates => array(),
 					$attempts  => array( 'ma_scoring_mode', 'guest_consent', 'guest_consent_at' ),
+				),
+			),
+			array(
+				'version'  => '3.0.1',
+				'callback' => array( __CLASS__, 'migrate_to_3_0_1' ),
+				// Enum widening on an existing column. verify_targets() only checks
+				// table/column existence, so target the table; the callback is
+				// idempotent and self-checks the enum definition.
+				'targets'  => array(
+					$assignments => array(),
 				),
 			),
 		);
@@ -736,6 +747,48 @@ class PressPrimer_Quiz_Migrator {
 				$wpdb->prepare(
 					'ALTER TABLE %i ADD COLUMN guest_consent_at DATETIME DEFAULT NULL AFTER guest_consent',
 					$attempts
+				)
+			);
+		}
+	}
+
+	/**
+	 * Migration to version 3.0.1
+	 *
+	 * Widens the assignments assignee_type enum to include 'ld_group', the
+	 * assignee type the Educator addon writes for LearnDash-group assignments.
+	 * The free plugin owns this table, so the enum lives here — the same pattern
+	 * as enable_sr / is_review_quiz carrying addon-driven features. Idempotent:
+	 * the column is only modified when the new value is missing.
+	 *
+	 * @since 3.0.1
+	 *
+	 * @return void
+	 */
+	private static function migrate_to_3_0_1() {
+		global $wpdb;
+
+		$table_name = $wpdb->prefix . 'ppq_assignments';
+
+		// Read the current assignee_type definition (array form to avoid
+		// referencing MySQL's PascalCase "Type" as an object property).
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching
+		$column = $wpdb->get_row(
+			$wpdb->prepare(
+				'SHOW COLUMNS FROM %i LIKE %s',
+				$table_name,
+				'assignee_type'
+			),
+			ARRAY_A
+		);
+
+		// Only widen the enum when the column exists and lacks 'ld_group'.
+		if ( is_array( $column ) && isset( $column['Type'] ) && false === strpos( (string) $column['Type'], 'ld_group' ) ) {
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.DirectDatabaseQuery.SchemaChange
+			$wpdb->query(
+				$wpdb->prepare(
+					"ALTER TABLE %i MODIFY COLUMN assignee_type ENUM('group', 'user', 'ld_group') NOT NULL",
+					$table_name
 				)
 			);
 		}

@@ -313,17 +313,22 @@ class PressPrimer_Quiz_Theme_Loader {
 	}
 
 	/**
-	 * Get global appearance settings CSS
+	 * Build the appearance CSS-variable map from global plugin settings.
 	 *
-	 * Generates CSS variable overrides from global plugin settings.
-	 * These apply to all themes.
+	 * Returns the standard-mode --ppq-* token overrides (colors with derived
+	 * hover/light variants, fonts, radius scale, spacing) for whichever values
+	 * the admin has customized. Shared by the quiz front end and the front-end
+	 * dashboard shell so both surfaces render with the same appearance tokens.
 	 *
-	 * @since 1.0.0
+	 * @since 3.0.0
 	 *
-	 * @return string CSS string or empty string.
+	 * @param array|null $settings Optional pre-loaded settings; loaded when null.
+	 * @return array Map of CSS custom property name => value (may be empty).
 	 */
-	public static function get_global_appearance_css() {
-		$settings = get_option( PressPrimer_Quiz_Admin_Settings::OPTION_NAME, [] );
+	public static function get_appearance_css_vars( $settings = null ) {
+		if ( null === $settings ) {
+			$settings = get_option( PressPrimer_Quiz_Admin_Settings::OPTION_NAME, [] );
+		}
 
 		$css_vars = [];
 
@@ -427,6 +432,24 @@ class PressPrimer_Quiz_Theme_Loader {
 			$max_width                   = absint( $settings['appearance_max_width'] );
 			$css_vars['--ppq-max-width'] = $max_width . 'px';
 		}
+
+		return $css_vars;
+	}
+
+	/**
+	 * Get global appearance settings CSS
+	 *
+	 * Generates CSS variable overrides from global plugin settings.
+	 * These apply to all themes.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @return string CSS string or empty string.
+	 */
+	public static function get_global_appearance_css() {
+		$settings = get_option( PressPrimer_Quiz_Admin_Settings::OPTION_NAME, [] );
+
+		$css_vars = self::get_appearance_css_vars( $settings );
 
 		// Condensed mode spacing settings (v2.1).
 		$condensed_css_vars = [];

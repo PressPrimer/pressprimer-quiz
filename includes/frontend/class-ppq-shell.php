@@ -243,6 +243,26 @@ class PressPrimer_Quiz_Shell {
 			$version
 		);
 		wp_style_add_data( self::HANDLE, 'rtl', 'replace' );
+
+		// Mirror the global appearance settings onto the shell's token scope so
+		// the dashboard chrome and addon screens inherit the same colors, radius,
+		// and font as the quiz front end (the shell's own style.css supplies the
+		// defaults for any value the admin has not customized). The theme loader
+		// returns values already validated (hex colors, integer-derived radii and
+		// rgba, select-list fonts), so the declaration block is built from
+		// sanitized values per the wp_add_inline_style CSS-safety guideline.
+		if ( class_exists( 'PressPrimer_Quiz_Theme_Loader' ) ) {
+			$appearance_vars = PressPrimer_Quiz_Theme_Loader::get_appearance_css_vars();
+
+			if ( ! empty( $appearance_vars ) ) {
+				$declarations = '';
+				foreach ( $appearance_vars as $property => $value ) {
+					$declarations .= $property . ': ' . $value . '; ';
+				}
+
+				wp_add_inline_style( self::HANDLE, '.ppq-shell { ' . $declarations . '}' );
+			}
+		}
 	}
 
 	/**

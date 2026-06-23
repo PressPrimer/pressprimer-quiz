@@ -45,6 +45,10 @@
 
 	color: var(--ppq-text);
 	background: var(--ppq-bg-alt);
+
+	/* Inherit the page font by default; the appearance setting overrides it via
+	   the --ppq-font-family token the shell emits when an admin customizes it. */
+	font-family: var(--ppq-font-family, inherit);
 	box-sizing: border-box;
 }
 

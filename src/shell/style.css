@@ -143,17 +143,30 @@
 	cursor: pointer;
 }
 
-.ppq-shell-nav-item:hover {
+/* Lock color on every interactive state. Nav items are <button>s, so a host
+   theme's button:hover / :focus color (commonly #fff) would otherwise out-rank
+   the base rule and leave white text on the shell's light hover background —
+   the grey-on-white contrast failure. These selectors out-specify the theme. */
+.ppq-shell-nav-item:hover,
+.ppq-shell-nav-item:focus,
+.ppq-shell-nav-item:active {
 	background: var(--ppq-bg-hover);
+	color: var(--ppq-text);
 }
 
-.ppq-shell-nav-item.is-active {
+.ppq-shell-nav-item.is-active,
+.ppq-shell-nav-item.is-active:hover,
+.ppq-shell-nav-item.is-active:focus,
+.ppq-shell-nav-item.is-active:active {
 	background: var(--ppq-primary-light);
 	color: var(--ppq-primary-hover);
 	font-weight: 600;
 }
 
-.ppq-shell-nav-item.is-locked {
+.ppq-shell-nav-item.is-locked,
+.ppq-shell-nav-item.is-locked:hover,
+.ppq-shell-nav-item.is-locked:focus,
+.ppq-shell-nav-item.is-locked:active {
 	color: var(--ppq-text-secondary);
 }
 
@@ -188,6 +201,12 @@
 	cursor: pointer;
 }
 
+.ppq-shell-menu-toggle:hover,
+.ppq-shell-menu-toggle:focus {
+	background: var(--ppq-bg-hover);
+	color: var(--ppq-text);
+}
+
 .ppq-shell-topbar-title {
 	font-weight: 600;
 }
@@ -214,8 +233,10 @@
 	cursor: pointer;
 }
 
-.ppq-shell-btn:hover {
+.ppq-shell-btn:hover,
+.ppq-shell-btn:focus {
 	background: var(--ppq-bg-hover);
+	color: var(--ppq-text);
 }
 
 .ppq-shell-btn--primary {
@@ -224,9 +245,11 @@
 	color: var(--ppq-text-inverse);
 }
 
-.ppq-shell-btn--primary:hover {
+.ppq-shell-btn--primary:hover,
+.ppq-shell-btn--primary:focus {
 	background: var(--ppq-primary-hover);
 	border-color: var(--ppq-primary-hover);
+	color: var(--ppq-text-inverse);
 }
 
 /* Focus visibility ----------------------------------------------------- */
@@ -390,6 +413,11 @@
 	font-size: 0.875rem;
 	cursor: pointer;
 	padding: 0;
+}
+
+.ppq-shell-link:hover,
+.ppq-shell-link:focus {
+	color: var(--ppq-primary-hover);
 }
 
 .ppq-shell-muted {

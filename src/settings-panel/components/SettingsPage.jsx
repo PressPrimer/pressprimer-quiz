@@ -29,6 +29,8 @@ import {
 	ImportOutlined,
 	ProfileOutlined,
 	DatabaseOutlined,
+	ReadOutlined,
+	KeyOutlined,
 } from '@ant-design/icons';
 
 import GeneralTab from './GeneralTab';
@@ -49,6 +51,8 @@ const ADDON_ICONS = {
 	'audit-log': <AuditOutlined />,
 	proctoring: <EyeOutlined />,
 	import: <ImportOutlined />,
+	educator: <ReadOutlined />,
+	license: <KeyOutlined />,
 	default: <SettingOutlined />,
 };
 

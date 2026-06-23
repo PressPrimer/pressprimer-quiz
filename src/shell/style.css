@@ -17,7 +17,11 @@
 	--ppq-primary-hover: #005a87;
 	--ppq-primary-light: #e5f3fa;
 	--ppq-success: #00a32a;
+	--ppq-success-light: #e6f4ea;
+	--ppq-success-strong: #0a6b21;
 	--ppq-error: #d63638;
+	--ppq-error-light: #fcebea;
+	--ppq-error-strong: #a8201f;
 	--ppq-bg: #fff;
 	--ppq-bg-alt: #f6f7f7;
 	--ppq-bg-hover: #f0f0f1;
@@ -477,12 +481,13 @@
 }
 
 .ppq-shell-badge--success {
-	background: var(--ppq-primary-light);
-	color: var(--ppq-success);
+	background: var(--ppq-success-light);
+	color: var(--ppq-success-strong);
 }
 
 .ppq-shell-badge--error {
-	color: var(--ppq-error);
+	background: var(--ppq-error-light);
+	color: var(--ppq-error-strong);
 }
 
 /* Filters + pagination ------------------------------------------------- */

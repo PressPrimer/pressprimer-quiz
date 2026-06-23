@@ -439,7 +439,7 @@ class PressPrimer_Quiz_Blocks {
 			'pressprimer-quiz/dashboard',
 			[
 				'api_version'     => 3,
-				'title'           => __( 'PPQ Dashboard', 'pressprimer-quiz' ),
+				'title'           => __( 'PressPrimer Quiz Dashboard', 'pressprimer-quiz' ),
 				'description'     => __( 'Front-end dashboard for PressPrimer Quiz.', 'pressprimer-quiz' ),
 				'category'        => 'pressprimer-quiz',
 				'icon'            => 'dashboard',

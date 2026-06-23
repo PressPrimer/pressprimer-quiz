@@ -3,7 +3,7 @@
 	"apiVersion": 3,
 	"name": "pressprimer-quiz/dashboard",
 	"version": "3.0.0",
-	"title": "PPQ Dashboard",
+	"title": "PressPrimer Quiz Dashboard",
 	"category": "pressprimer-quiz",
 	"icon": "dashboard",
 	"description": "Front-end dashboard for PressPrimer Quiz students and, with add-ons, instructors.",

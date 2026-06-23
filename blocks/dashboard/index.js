@@ -38,7 +38,7 @@ function Edit() {
 		<div { ...blockProps }>
 			<Placeholder
 				icon={ dashboardIcon }
-				label={ __( 'PressPrimer Dashboard', 'pressprimer-quiz' ) }
+				label={ __( 'PressPrimer Quiz Dashboard', 'pressprimer-quiz' ) }
 				instructions={ __(
 					'The front-end dashboard renders here on the published page. This placeholder is shown only in the editor. Only one dashboard can appear per page.',
 					'pressprimer-quiz'

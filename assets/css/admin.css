@@ -30,6 +30,30 @@
 }
 
 /*
+ * Fix Ant Design Select search input in WP admin.
+ *
+ * WordPress admin forms.css styles every <input> with a border, a 30px
+ * min-height, and a blue :focus box-shadow. Those leak into Ant Design's Select
+ * search input and render as an oversized, offset blue box when a Select is
+ * focused. This stylesheet loads on every PressPrimer Quiz admin page (free and
+ * add-ons all use pressprimer-quiz-* page slugs), so resetting the inner input
+ * here corrects every admin dropdown in one place — Ant draws the focus ring on
+ * the selector itself.
+ *
+ * @since 3.0.0
+ */
+.ant-select input,
+.ant-select input:focus {
+	min-height: 0 !important;
+	margin: 0 !important;
+	padding: 0 !important;
+	border: 0 !important;
+	box-shadow: none !important;
+	outline: none !important;
+	background: transparent !important;
+}
+
+/*
  * Fix Ant Design modal close button in WP admin.
  *
  * WordPress admin CSS applies styles to bare <button> elements that interfere

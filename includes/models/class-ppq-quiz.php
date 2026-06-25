@@ -1633,12 +1633,26 @@ class PressPrimer_Quiz_Quiz extends PressPrimer_Quiz_Model {
 	public function get_effective_display_density() {
 		// If quiz has specific setting (not 'default'), use it
 		if ( $this->display_density && 'default' !== $this->display_density ) {
-			return $this->display_density;
+			$density = $this->display_density;
+		} else {
+			// Fall back to global setting
+			$settings = get_option( 'pressprimer_quiz_settings', [] );
+			$density  = isset( $settings['display_density'] ) ? $settings['display_density'] : 'standard';
 		}
 
-		// Fall back to global setting
-		$settings = get_option( 'pressprimer_quiz_settings', [] );
-
-		return isset( $settings['display_density'] ) ? $settings['display_density'] : 'standard';
+		/**
+		 * Filter the effective display density for a quiz.
+		 *
+		 * Mirrors `pressprimer_quiz_quiz_theme`, letting an integration apply a
+		 * density override at render time without mutating the stored quiz row
+		 * (for example, the School addon's shared spaced-repetition review
+		 * container, which is rendered for many students).
+		 *
+		 * @since 3.0.0
+		 *
+		 * @param string                $density Display density: 'standard' or 'condensed'.
+		 * @param PressPrimer_Quiz_Quiz $quiz    Quiz object.
+		 */
+		return apply_filters( 'pressprimer_quiz_quiz_density', $density, $this );
 	}
 }

@@ -804,6 +804,70 @@ The Enterprise addon overrides the header background via CSS `!important` and re
 
 ---
 
+## Settings Tab & React Admin Surface Conventions (CRITICAL)
+
+These rules keep behaviour consistent across every settings tab and React admin
+mount. They are established in the free plugin's `SettingsPage.jsx` and apply to
+all addons. Follow them when adding any settings tab or admin React surface.
+
+### Settings tab save behaviour
+
+A settings tab uses **exactly one** of two save models — never leave editable
+fields with no way to persist them:
+
+1. **Batch-save (the default for core tabs).** The tab edits the shared
+   `settings` state via `updateSetting`, and `SettingsPage` renders the single
+   **"Save Settings"** button (disabled until `hasChanges`). Do **not** also
+   save on change. These are the editable core tabs (General, Appearance, Email,
+   Integrations, Advanced).
+
+2. **Save-on-change / action tabs.** The tab persists immediately (toggles,
+   per-row actions) or manages its own CRUD, and therefore **omits** the shared
+   Save button. Two cases:
+   - **Core read-only/action tabs** must be listed in `READ_ONLY_TABS`
+     (`status`, `templates`, `data-tools`) so `SettingsPage` hides the Save
+     button.
+   - **Addon tabs** register with `isAddon: true` and render their own React
+     into `#ppq-settings-addon-{id}`. They are responsible for their **own** save
+     mechanism **and** their own user feedback.
+
+   Any save-on-change or own-save control MUST give immediate feedback on both
+   success and failure — either an Ant Design `message.success()` /
+   `message.error()` toast, **or** an inline `<Alert type="success">` /
+   `<Alert type="error">` banner. Both are in use (the Educator tab uses toasts;
+   the License, Audit Log, and Proctoring settings tabs use inline Alerts) — pick
+   one, but never leave a save with no visible result.
+
+### Confirmation toast placement (`message.config`)
+
+Every React **entry point** that can emit `message.*` toasts MUST configure the
+global message placement so confirmations sit **below** the WordPress admin bar
+(antd's default `top: 8` is hidden behind it). Put this in the entry `index.js`
+(or a component guaranteed to load on mount):
+
+```js
+import { message } from 'antd';
+
+message.config( {
+	top: 50, // Position below WordPress admin bar (32px height + some padding)
+	duration: 5, // Show messages for 5 seconds
+	maxCount: 3, // Show max 3 messages at once
+} );
+```
+
+Use these exact values — they are the ecosystem-wide convention.
+
+### Ant Design Select in wp-admin (do NOT re-fix per surface)
+
+WordPress `forms.css` leaks a border + blue `:focus` box-shadow into Ant Design's
+Select search `<input>`, rendering an oversized offset blue box. This is reset
+**once, centrally**, in the free plugin's `assets/css/admin.css` (un-scoped
+`.ant-select input` reset), which loads on every `pressprimer-quiz-*` admin page
+— free **and** addons. **Do not add per-component `.ant-select input` resets**;
+rely on the central one.
+
+---
+
 ## UI Component Patterns (CRITICAL)
 
 **All addon plugins MUST follow these exact patterns for visual consistency.** These patterns are established in the free plugin and cannot be changed without updating all instances.

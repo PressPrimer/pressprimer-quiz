@@ -31,6 +31,7 @@ import {
 	DatabaseOutlined,
 	ReadOutlined,
 	KeyOutlined,
+	RocketOutlined,
 } from '@ant-design/icons';
 
 import GeneralTab from './GeneralTab';
@@ -53,6 +54,7 @@ const ADDON_ICONS = {
 	import: <ImportOutlined />,
 	educator: <ReadOutlined />,
 	license: <KeyOutlined />,
+	sr: <RocketOutlined />,
 	default: <SettingOutlined />,
 };
 

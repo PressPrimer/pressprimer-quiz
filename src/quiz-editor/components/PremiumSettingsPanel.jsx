@@ -41,6 +41,25 @@ const PremiumSettingsPanel = ({ form, quizData = {} }) => {
 	const [preTestLoading, setPreTestLoading] = useState(false);
 	const [preTestFetched, setPreTestFetched] = useState(false);
 
+	// WP Fusion CRM tag options (only fetched when the WP Fusion feature is on).
+	const [wpfTagOptions, setWpfTagOptions] = useState([]);
+
+	useEffect(() => {
+		if (!quizData.wpfActive) {
+			return;
+		}
+		apiFetch({ path: '/ppqs/v1/wpf/tags' })
+			.then((result) => {
+				setWpfTagOptions(
+					(result.available_tags || []).map((tag) => ({
+						label: tag.label,
+						value: tag.id,
+					}))
+				);
+			})
+			.catch(() => {});
+	}, [quizData.wpfActive]);
+
 	// Set initial pre-test option if quiz already has one linked.
 	useEffect(() => {
 		if (quizData.pre_test_id && quizData.pre_test_title) {
@@ -336,6 +355,48 @@ const PremiumSettingsPanel = ({ form, quizData = {} }) => {
 					<Text type="secondary" style={{ fontSize: 12, display: 'block', marginTop: 8 }}>
 						{__('Students will see review prompts and can generate personalized review quizzes from questions they need to practice.', 'pressprimer-quiz')}
 					</Text>
+				</Card>
+			)}
+
+			{/* WP Fusion - Only shown when the School WP Fusion feature is active */}
+			{quizData.wpfActive && (
+				<Card
+					title={
+						<Space>
+							<Title level={4} style={{ margin: 0 }}>
+								{__('WP Fusion', 'pressprimer-quiz')}
+							</Title>
+							<Tooltip title={__('Apply CRM tags through WP Fusion for this quiz, on top of the site-wide defaults. Guests are only synced when they give marketing consent.', 'pressprimer-quiz')}>
+								<QuestionCircleOutlined style={{ color: '#8c8c8c' }} />
+							</Tooltip>
+						</Space>
+					}
+					style={{ marginBottom: 24 }}
+				>
+					<Text type="secondary" style={{ fontSize: 12, display: 'block', marginBottom: 16 }}>
+						{__('These tags are added on top of the site-wide defaults set under Settings → Integrations → WP Fusion.', 'pressprimer-quiz')}
+					</Text>
+					{[
+						{ name: 'wpf_tag_signup', label: __('Sign-up (email registration)', 'pressprimer-quiz') },
+						{ name: 'wpf_tag_completion', label: __('Completion', 'pressprimer-quiz') },
+						{ name: 'wpf_tag_pass', label: __('Pass', 'pressprimer-quiz') },
+						{ name: 'wpf_tag_fail', label: __('Fail', 'pressprimer-quiz') },
+					].map((field) => (
+						<Form.Item
+							key={field.name}
+							label={field.label}
+							name={field.name}
+							style={{ marginBottom: 12 }}
+						>
+							<Select
+								mode="multiple"
+								allowClear
+								placeholder={__('Select tags…', 'pressprimer-quiz')}
+								options={wpfTagOptions}
+								optionFilterProp="label"
+							/>
+						</Form.Item>
+					))}
 				</Card>
 			)}
 		</Space>

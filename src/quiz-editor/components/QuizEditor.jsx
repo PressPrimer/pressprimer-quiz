@@ -123,6 +123,15 @@ const QuizEditor = ({ quizData = {} }) => {
 				fieldValues.proctoring_require_desktop = quizData.proctoring_require_desktop ?? false;
 			}
 
+			// Add WP Fusion per-quiz tag fields if the WP Fusion feature is active.
+			if (quizData.wpfActive) {
+				const wpfTags = quizData.wpf_tags || {};
+				fieldValues.wpf_tag_signup = wpfTags.signup || [];
+				fieldValues.wpf_tag_completion = wpfTags.completion || [];
+				fieldValues.wpf_tag_pass = wpfTags.pass || [];
+				fieldValues.wpf_tag_fail = wpfTags.fail || [];
+			}
+
 			form.setFieldsValue(fieldValues);
 
 			if (quizData.generation_mode) {

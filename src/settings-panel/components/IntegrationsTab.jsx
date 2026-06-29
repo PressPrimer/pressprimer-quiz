@@ -18,24 +18,42 @@ import {
 	Tag,
 	Spin,
 	Collapse,
+	Switch,
+	Select,
+	message,
 } from 'antd';
 import {
 	CheckCircleOutlined,
 	SettingOutlined,
+	ReloadOutlined,
 } from '@ant-design/icons';
 import AiProviderSettings from './AiProviderSettings';
 
 const { Title, Paragraph, Text } = Typography;
 
 /**
+ * WP Fusion tag moments, in display order, with their labels.
+ */
+const WPF_MOMENT_LABELS = {
+	signup: __( 'Sign-up (email registration)', 'pressprimer-quiz' ),
+	completion: __( 'Completion', 'pressprimer-quiz' ),
+	pass: __( 'Pass', 'pressprimer-quiz' ),
+	fail: __( 'Fail', 'pressprimer-quiz' ),
+};
+
+const WPF_EMPTY_TAGS = { signup: [], completion: [], pass: [], fail: [] };
+
+/**
  * Integrations Tab - API keys and third-party integrations
  *
  * @param {Object}   props Component props
+ * @param {Object}   props.settings     Shared settings state (batch-saved by the page)
+ * @param {Function} props.updateSetting Setter for a single shared setting key
  * @param {Object}   props.settingsData Full settings data including AI provider status
  * @param {Object}   props.aiState      Lifted AI provider state (persists across tabs)
  * @param {Function} props.setAiState   Setter for the lifted AI provider state
  */
-const IntegrationsTab = ({ settingsData, aiState, setAiState }) => {
+const IntegrationsTab = ({ settings, updateSetting, settingsData, aiState, setAiState }) => {
 	// LMS Integration states - use pre-loaded data from PHP
 	const lmsStatus = settingsData.lmsStatus || {};
 	const [learndashStatus, setLearndashStatus] = useState(
@@ -67,6 +85,78 @@ const IntegrationsTab = ({ settingsData, aiState, setAiState }) => {
 		requests_remaining: 20,
 		rate_limit: 20,
 		usage_percent: 0,
+	};
+
+	// WP Fusion (School addon). The values live in the shared `settings` state so
+	// they save with the page's "Save Settings" button; only the available CRM
+	// tag/list options are fetched here from the School REST endpoint.
+	const wpfActive = !!settingsData.wpfActive;
+	const wpfEnabled = !!settings?.wpf_enabled;
+	const wpfTags = { ...WPF_EMPTY_TAGS, ...(settings?.wpf_default_tags || {}) };
+	const wpfSignupLists = settings?.wpf_signup_lists || [];
+	const [wpfAvailableTags, setWpfAvailableTags] = useState([]);
+	const [wpfAvailableLists, setWpfAvailableLists] = useState([]);
+	const [wpfLoading, setWpfLoading] = useState(wpfActive);
+	const [wpfRefreshing, setWpfRefreshing] = useState(false);
+
+	// Fetch the available CRM tags/lists only when WP Fusion is active.
+	useEffect(() => {
+		if (!wpfActive) {
+			setWpfLoading(false);
+			return;
+		}
+
+		let cancelled = false;
+		apiFetch({ path: '/ppqs/v1/wpf/tags' })
+			.then((result) => {
+				if (cancelled) {
+					return;
+				}
+				setWpfAvailableTags(result.available_tags || []);
+				setWpfAvailableLists(result.available_lists || []);
+			})
+			.catch(() => {})
+			.finally(() => {
+				if (!cancelled) {
+					setWpfLoading(false);
+				}
+			});
+
+		return () => {
+			cancelled = true;
+		};
+	}, [wpfActive]);
+
+	/**
+	 * Update a single WP Fusion tag-moment group in the shared settings.
+	 *
+	 * @param {string}   moment Moment key (signup|completion|pass|fail).
+	 * @param {string[]} value  Selected tag IDs.
+	 */
+	const updateWpfTagMoment = (moment, value) => {
+		updateSetting('wpf_default_tags', { ...wpfTags, [moment]: value });
+	};
+
+	/**
+	 * Re-sync the CRM tag/list options from WP Fusion.
+	 */
+	const handleWpfRefresh = async () => {
+		setWpfRefreshing(true);
+		try {
+			const result = await apiFetch({
+				path: '/ppqs/v1/wpf/tags/refresh',
+				method: 'POST',
+			});
+			setWpfAvailableTags(result.available_tags || []);
+			setWpfAvailableLists(result.available_lists || []);
+			message.success(__('Tag list refreshed.', 'pressprimer-quiz'));
+		} catch (error) {
+			message.error(
+				error.message || __('Failed to refresh tags.', 'pressprimer-quiz')
+			);
+		} finally {
+			setWpfRefreshing(false);
+		}
 	};
 
 	// Fetch LearnDash extended status only if LearnDash is active
@@ -362,10 +452,131 @@ const IntegrationsTab = ({ settingsData, aiState, setAiState }) => {
 				</div>
 			</div>
 
-			{/* Addon integrations mount point. Addons (e.g. the School addon's WP
-				Fusion section) render their own integration UI here when the
-				Integrations tab is shown. */}
-			<div id="ppq-settings-integrations-addons" className="ppq-settings-integrations-addons" />
+			{/* WP Fusion (School addon). Rendered inline so it saves with the page's
+				"Save Settings" button. Only shown when the School addon is active
+				and WP Fusion is installed. */}
+			{wpfActive && (
+				<div className="ppq-settings-section">
+					<Title level={4} className="ppq-settings-section-title">
+						{__('WP Fusion', 'pressprimer-quiz')}
+					</Title>
+					<Paragraph className="ppq-settings-section-description">
+						{__(
+							'Apply CRM tags through WP Fusion when visitors take your quizzes. Logged-in users always sync; guests sync only if they tick the marketing-consent checkbox on the guest email form, which you enable under PressPrimer Quiz → Settings → General → Guest Email Consent. These are the site-wide defaults — individual quizzes can add their own tags in the quiz editor’s Premium Settings tab.',
+							'pressprimer-quiz'
+						)}
+					</Paragraph>
+
+					{wpfLoading ? (
+						<div style={{ padding: '16px', textAlign: 'center' }}>
+							<Spin size="small" />
+						</div>
+					) : (
+						<Form layout="vertical">
+							<div className="ppq-settings-field">
+								<Form.Item
+									label={__('Enable WP Fusion tagging', 'pressprimer-quiz')}
+								>
+									<Switch
+										checked={wpfEnabled}
+										onChange={(checked) =>
+											updateSetting('wpf_enabled', checked)
+										}
+									/>
+								</Form.Item>
+							</div>
+
+							{wpfEnabled && (
+								<>
+									{wpfAvailableTags.length === 0 && (
+										<Alert
+											type="info"
+											showIcon
+											style={{ maxWidth: 600, marginBottom: 16 }}
+											message={__('No CRM tags found', 'pressprimer-quiz')}
+											description={__(
+												'WP Fusion has no tags loaded yet. Use “Refresh tags” to pull the tag list from your CRM.',
+												'pressprimer-quiz'
+											)}
+										/>
+									)}
+
+									<Title level={5} style={{ marginTop: 8 }}>
+										{__('Tags', 'pressprimer-quiz')}
+									</Title>
+									{Object.keys(WPF_MOMENT_LABELS).map((moment) => (
+										<div className="ppq-settings-field" key={moment}>
+											<Form.Item label={WPF_MOMENT_LABELS[moment]}>
+												<Select
+													mode="multiple"
+													allowClear
+													style={{ width: '100%', maxWidth: 500 }}
+													placeholder={__('Select tags…', 'pressprimer-quiz')}
+													options={wpfAvailableTags.map((t) => ({
+														label: t.label,
+														value: t.id,
+													}))}
+													value={wpfTags[moment] || []}
+													onChange={(value) =>
+														updateWpfTagMoment(moment, value)
+													}
+													optionFilterProp="label"
+												/>
+											</Form.Item>
+										</div>
+									))}
+
+									{wpfAvailableLists.length > 0 && (
+										<>
+											<Title level={5} style={{ marginTop: 8 }}>
+												{__('Lists', 'pressprimer-quiz')}
+											</Title>
+											<div className="ppq-settings-field">
+												<Form.Item
+													label={WPF_MOMENT_LABELS.signup}
+													help={__(
+														'Add the contact to these CRM lists when a visitor registers their email. Lists apply at sign-up only.',
+														'pressprimer-quiz'
+													)}
+												>
+													<Select
+														mode="multiple"
+														allowClear
+														style={{ width: '100%', maxWidth: 500 }}
+														placeholder={__('Select lists…', 'pressprimer-quiz')}
+														options={wpfAvailableLists.map((t) => ({
+															label: t.label,
+															value: t.id,
+														}))}
+														value={wpfSignupLists}
+														onChange={(value) =>
+															updateSetting('wpf_signup_lists', value)
+														}
+														optionFilterProp="label"
+													/>
+												</Form.Item>
+											</div>
+										</>
+									)}
+
+									<div
+										className="ppq-settings-field"
+										style={{ marginTop: 8, marginBottom: 24 }}
+									>
+										<Button
+											icon={<ReloadOutlined spin={wpfRefreshing} />}
+											onClick={handleWpfRefresh}
+											loading={wpfRefreshing}
+										>
+											{__('Refresh tags', 'pressprimer-quiz')}
+										</Button>
+									</div>
+								</>
+							)}
+						</Form>
+					)}
+				</div>
+			)}
 		</div>
 	);
 };

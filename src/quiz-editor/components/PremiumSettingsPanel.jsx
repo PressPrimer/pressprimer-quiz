@@ -366,7 +366,7 @@ const PremiumSettingsPanel = ({ form, quizData = {} }) => {
 							<Title level={4} style={{ margin: 0 }}>
 								{__('WP Fusion', 'pressprimer-quiz')}
 							</Title>
-							<Tooltip title={__('Apply CRM tags through WP Fusion for this quiz, on top of the site-wide defaults. Guests are only synced when they give marketing consent.', 'pressprimer-quiz')}>
+							<Tooltip title={__('Apply CRM tags through WP Fusion for this quiz, on top of the site-wide defaults. Logged-in users always sync. Guests sync only if they tick the marketing-consent checkbox shown on the guest email form — enable that checkbox under PressPrimer Quiz → Settings → General → Guest Email Consent.', 'pressprimer-quiz')}>
 								<QuestionCircleOutlined style={{ color: '#8c8c8c' }} />
 							</Tooltip>
 						</Space>
@@ -374,7 +374,7 @@ const PremiumSettingsPanel = ({ form, quizData = {} }) => {
 					style={{ marginBottom: 24 }}
 				>
 					<Text type="secondary" style={{ fontSize: 12, display: 'block', marginBottom: 16 }}>
-						{__('These tags are added on top of the site-wide defaults set under Settings → Integrations → WP Fusion.', 'pressprimer-quiz')}
+						{__('These tags are added on top of the site-wide defaults set under PressPrimer Quiz → Settings → Integrations → WP Fusion.', 'pressprimer-quiz')}
 					</Text>
 					{[
 						{ name: 'wpf_tag_signup', label: __('Sign-up (email registration)', 'pressprimer-quiz') },

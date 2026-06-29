@@ -361,6 +361,11 @@ const IntegrationsTab = ({ settingsData, aiState, setAiState }) => {
 					)}
 				</div>
 			</div>
+
+			{/* Addon integrations mount point. Addons (e.g. the School addon's WP
+				Fusion section) render their own integration UI here when the
+				Integrations tab is shown. */}
+			<div id="ppq-settings-integrations-addons" className="ppq-settings-integrations-addons" />
 		</div>
 	);
 };

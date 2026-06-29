@@ -221,6 +221,15 @@ const SettingsPage = ({ settingsData = {} }) => {
 	 * Addon scripts can listen for this to mount their React components
 	 */
 	useEffect(() => {
+		// Generic event for every tab (core and addon) so addon sections rendered
+		// inside a core tab — e.g. WP Fusion under Integrations — can mount when
+		// that tab becomes visible.
+		window.dispatchEvent(
+			new CustomEvent('ppq-settings-tab-active', {
+				detail: { tab: activeTab },
+			})
+		);
+
 		if (isAddonTab) {
 			const event = new CustomEvent('ppq-settings-addon-tab-active', {
 				detail: { tab: activeTab }

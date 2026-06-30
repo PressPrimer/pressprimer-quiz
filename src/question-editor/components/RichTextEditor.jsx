@@ -9,14 +9,19 @@ import { useState, useRef, useEffect } from '@wordpress/element';
 import { __ } from '@wordpress/i18n';
 import { Typography, Space, Progress } from 'antd';
 import ImageUploadModal from './ImageUploadModal';
+import MathInsertModal from './MathInsertModal';
 
 const { Text } = Typography;
+
+// Math notation authoring is shown only when the site setting is on.
+const mathEnabled = !!window.pressprimerQuizQuestionData?.mathEnabled;
 
 let editorCounter = 0;
 
 const RichTextEditor = ({ value, onChange, placeholder, maxChars = 2000, rows = 3 }) => {
 	const [charCount, setCharCount] = useState(0);
 	const [imageModalOpen, setImageModalOpen] = useState(false);
+	const [mathModalOpen, setMathModalOpen] = useState(false);
 	const editorRef = useRef(null);
 	const editorInstanceRef = useRef(null);
 	const [editorId] = useState(() => `ppq-rte-${++editorCounter}`);
@@ -47,7 +52,7 @@ const RichTextEditor = ({ value, onChange, placeholder, maxChars = 2000, rows = 
 						tinymce: {
 							wpautop: true,
 							plugins: 'lists,link,textcolor,paste',
-							toolbar1: 'bold,italic,bullist,numlist,link,forecolor,ppq_image,removeformat',
+							toolbar1: `bold,italic,bullist,numlist,link,forecolor,ppq_image,${mathEnabled ? 'ppq_math,' : ''}removeformat`,
 							menubar: false,
 							height: rows * 40,
 							placeholder: placeholder,
@@ -59,6 +64,16 @@ const RichTextEditor = ({ value, onChange, placeholder, maxChars = 2000, rows = 
 										setImageModalOpen(true);
 									},
 								});
+
+								if (mathEnabled) {
+									editor.addButton('ppq_math', {
+										text: 'Σ',
+										tooltip: __('Insert math', 'pressprimer-quiz'),
+										onclick: () => {
+											setMathModalOpen(true);
+										},
+									});
+								}
 							},
 							init_instance_callback: (editor) => {
 								editorInstanceRef.current = editor;
@@ -128,6 +143,16 @@ const RichTextEditor = ({ value, onChange, placeholder, maxChars = 2000, rows = 
 		editor.execCommand('mceInsertContent', false, html);
 	};
 
+	// Insert delimited LaTeX (\( ... \) or \[ ... \]) at the editor caret.
+	const handleMathInsert = (delimited) => {
+		setMathModalOpen(false);
+
+		const editor = editorInstanceRef.current;
+		if (!editor) return;
+
+		editor.execCommand('mceInsertContent', false, delimited);
+	};
+
 	const percentUsed = (charCount / maxChars) * 100;
 	const strokeColor = percentUsed > 90 ? '#ff4d4f' : '#52c41a';
 
@@ -158,6 +183,11 @@ const RichTextEditor = ({ value, onChange, placeholder, maxChars = 2000, rows = 
 				isOpen={imageModalOpen}
 				onClose={() => setImageModalOpen(false)}
 				onUpload={handleImageUpload}
+			/>
+			<MathInsertModal
+				open={mathModalOpen}
+				onClose={() => setMathModalOpen(false)}
+				onInsert={handleMathInsert}
 			/>
 		</div>
 	);

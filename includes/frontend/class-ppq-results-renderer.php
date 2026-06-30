@@ -247,7 +247,26 @@ class PressPrimer_Quiz_Results_Renderer {
 			?>
 		</div>
 		<?php
-		return ob_get_clean();
+		$html = ob_get_clean();
+		$this->maybe_enqueue_math( $html );
+
+		return $html;
+	}
+
+	/**
+	 * Conditionally enqueue the math (KaTeX) assets for a block of rendered HTML.
+	 *
+	 * Loads nothing unless math notation is enabled site-wide AND the given HTML
+	 * actually contains math delimiters, so results without math add no assets.
+	 *
+	 * @since 3.0.0
+	 *
+	 * @param string $html Rendered HTML to scan for math notation.
+	 */
+	private function maybe_enqueue_math( $html ) {
+		if ( pressprimer_quiz_math_enabled() && PressPrimer_Quiz_Helpers::content_has_math( $html ) ) {
+			pressprimer_quiz_enqueue_math_assets();
+		}
 	}
 
 	/**
@@ -989,7 +1008,10 @@ class PressPrimer_Quiz_Results_Renderer {
 			?>
 		</div>
 		<?php
-		return ob_get_clean();
+		$html = ob_get_clean();
+		$this->maybe_enqueue_math( $html );
+
+		return $html;
 	}
 
 	/**

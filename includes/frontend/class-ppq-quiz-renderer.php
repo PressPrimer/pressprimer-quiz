@@ -104,6 +104,22 @@ class PressPrimer_Quiz_Quiz_Renderer {
 	}
 
 	/**
+	 * Conditionally enqueue the math (KaTeX) assets for a block of rendered HTML.
+	 *
+	 * Loads nothing unless math notation is enabled site-wide AND the given HTML
+	 * actually contains math delimiters, so quizzes without math add no assets.
+	 *
+	 * @since 3.0.0
+	 *
+	 * @param string $html Rendered HTML to scan for math notation.
+	 */
+	private function maybe_enqueue_math( $html ) {
+		if ( pressprimer_quiz_math_enabled() && PressPrimer_Quiz_Helpers::content_has_math( $html ) ) {
+			pressprimer_quiz_enqueue_math_assets();
+		}
+	}
+
+	/**
 	 * Get default display options for Start page
 	 *
 	 * Retained for backward compatibility with any third-party caller that
@@ -961,13 +977,20 @@ class PressPrimer_Quiz_Quiz_Renderer {
 
 			<!-- Questions Container -->
 			<div class="ppq-questions-container" id="ppq-questions-container" role="region" aria-label="<?php esc_attr_e( 'Quiz questions', 'pressprimer-quiz' ); ?>">
-				<?php foreach ( $items as $index => $item ) : ?>
-					<?php
-					// Use wp_kses with custom allowed tags that include form elements.
-					// wp_kses_post cannot be used because it strips <input>, <label>, and <button>.
-					echo wp_kses( $this->render_question( $item, $index, count( $items ) ), $this->get_question_allowed_html() );
-					?>
-				<?php endforeach; ?>
+				<?php
+				// Render all questions first, then load math rendering only when
+				// it is enabled and the questions actually contain math notation.
+				$questions_html = '';
+				foreach ( $items as $index => $item ) {
+					$questions_html .= $this->render_question( $item, $index, count( $items ) );
+				}
+
+				$this->maybe_enqueue_math( $questions_html );
+
+				// Use wp_kses with custom allowed tags that include form elements.
+				// wp_kses_post cannot be used because it strips <input>, <label>, and <button>.
+				echo wp_kses( $questions_html, $this->get_question_allowed_html() );
+				?>
 			</div>
 
 			<!-- Navigation and Submit -->

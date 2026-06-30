@@ -280,7 +280,7 @@ function pressprimer_quiz_enqueue_math_assets() {
 			'delimiters'    => pressprimer_quiz_math_delimiters(),
 			'autoSelectors' => apply_filters(
 				'pressprimer_quiz_math_auto_selectors',
-				array( '.ppq-quiz-interface', '.ppq-results-container', '.ppq-question-review-container' )
+				array( '.ppq-quiz-interface', '.ppq-results-container', '.ppq-question-review-container', '.ppq-quiz-preview-wrap' )
 			),
 		)
 	);

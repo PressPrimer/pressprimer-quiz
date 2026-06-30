@@ -405,6 +405,45 @@ class PressPrimer_Quiz_Admin_Quizzes {
 	}
 
 	/**
+	 * Enqueue the math (KaTeX) assets for the preview page when needed.
+	 *
+	 * Scans the preview's question content (stems, answers, feedback) for math
+	 * notation and loads KaTeX only when the feature is enabled and math is
+	 * present, so previews without math add no assets.
+	 *
+	 * @since 3.0.0
+	 *
+	 * @param array $questions Preview question items (each with a 'revision').
+	 */
+	private function maybe_enqueue_preview_math( $questions ) {
+		if ( ! pressprimer_quiz_math_enabled() ) {
+			return;
+		}
+
+		$content = '';
+		foreach ( (array) $questions as $item ) {
+			if ( empty( $item['revision'] ) ) {
+				continue;
+			}
+
+			$revision = $item['revision'];
+			$content .= ' ' . (string) $revision->stem;
+			$content .= ' ' . (string) $revision->feedback_correct;
+			$content .= ' ' . (string) $revision->feedback_incorrect;
+
+			foreach ( (array) $revision->get_answers() as $answer ) {
+				if ( isset( $answer['text'] ) ) {
+					$content .= ' ' . (string) $answer['text'];
+				}
+			}
+		}
+
+		if ( PressPrimer_Quiz_Helpers::content_has_math( $content ) ) {
+			pressprimer_quiz_enqueue_math_assets();
+		}
+	}
+
+	/**
 	 * Render preview page HTML
 	 *
 	 * @since 1.0.0
@@ -413,6 +452,7 @@ class PressPrimer_Quiz_Admin_Quizzes {
 	 * @param array                 $questions Array of question/revision pairs.
 	 */
 	private function render_preview_page( $quiz, $questions ) {
+		$this->maybe_enqueue_preview_math( $questions );
 		?>
 		<div class="wrap ppq-quiz-preview-wrap">
 			<!-- Preview Mode Banner -->

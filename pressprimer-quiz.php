@@ -190,3 +190,100 @@ function pressprimer_quiz_render_answer_html( $html ) {
 		$html
 	);
 }
+
+/**
+ * Whether math (LaTeX) notation rendering is enabled site-wide.
+ *
+ * Off by default; enabled via Settings → General. Gates all KaTeX loading and
+ * the editor authoring controls.
+ *
+ * @since 3.0.0
+ *
+ * @return bool
+ */
+function pressprimer_quiz_math_enabled() {
+	$settings = get_option( 'pressprimer_quiz_settings', array() );
+
+	return is_array( $settings ) && ! empty( $settings['enable_math'] );
+}
+
+/**
+ * The math delimiter set passed to KaTeX auto-render.
+ *
+ * Each entry is `{ left, right, display }`. Filterable so the delimiter set is
+ * defined in one place for both the JS renderer and the server-side detection
+ * helper {@see PressPrimer_Quiz_Helpers::content_has_math()}.
+ *
+ * @since 3.0.0
+ *
+ * @return array[]
+ */
+function pressprimer_quiz_math_delimiters() {
+	$delimiters = array(
+		array(
+			'left'    => '\\(',
+			'right'   => '\\)',
+			'display' => false,
+		),
+		array(
+			'left'    => '\\[',
+			'right'   => '\\]',
+			'display' => true,
+		),
+		array(
+			'left'    => '$$',
+			'right'   => '$$',
+			'display' => true,
+		),
+	);
+
+	/**
+	 * Filters the math delimiter set used for rendering and detection.
+	 *
+	 * @since 3.0.0
+	 *
+	 * @param array[] $delimiters Array of `{ left, right, display }` entries.
+	 */
+	return apply_filters( 'pressprimer_quiz_math_delimiters', $delimiters );
+}
+
+/**
+ * Register and enqueue the locally-bundled KaTeX assets and the math initializer.
+ *
+ * Idempotent. Serves KaTeX from the plugin (no external request) and exposes the
+ * JS contract `window.PressPrimerQuizMath.typeset( element )`, which front-end
+ * pages use to auto-typeset their quiz/results containers and React surfaces use
+ * to typeset fetched content. Callers should gate on
+ * {@see pressprimer_quiz_math_enabled()} and, where the content is known,
+ * {@see PressPrimer_Quiz_Helpers::content_has_math()}.
+ *
+ * @since 3.0.0
+ */
+function pressprimer_quiz_enqueue_math_assets() {
+	if ( wp_script_is( 'ppq-math', 'enqueued' ) ) {
+		return;
+	}
+
+	$vendor  = PRESSPRIMER_QUIZ_PLUGIN_URL . 'assets/vendor/katex/';
+	$version = PRESSPRIMER_QUIZ_VERSION;
+
+	wp_enqueue_style( 'ppq-katex', $vendor . 'katex.min.css', array(), $version );
+
+	wp_register_script( 'ppq-katex', $vendor . 'katex.min.js', array(), $version, true );
+	wp_register_script( 'ppq-katex-autorender', $vendor . 'contrib/auto-render.min.js', array( 'ppq-katex' ), $version, true );
+	wp_register_script( 'ppq-math', PRESSPRIMER_QUIZ_PLUGIN_URL . 'assets/js/ppq-math.js', array( 'ppq-katex-autorender' ), $version, true );
+
+	wp_localize_script(
+		'ppq-math',
+		'pressprimerQuizMathConfig',
+		array(
+			'delimiters'    => pressprimer_quiz_math_delimiters(),
+			'autoSelectors' => apply_filters(
+				'pressprimer_quiz_math_auto_selectors',
+				array( '.ppq-quiz-landing', '.ppq-quiz-form', '.ppq-results' )
+			),
+		)
+	);
+
+	wp_enqueue_script( 'ppq-math' );
+}

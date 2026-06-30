@@ -25,6 +25,7 @@ import {
 } from '@ant-design/icons';
 
 import ConsentBadge from '../../utils/ConsentBadge';
+import MathContent from '../../utils/MathContent';
 import { formatTime, formatDate } from '../utils/dateUtils';
 
 /**
@@ -158,9 +159,10 @@ const AttemptDetailModal = ({ visible, attempt, onClose }) => {
 											)}
 										</div>
 										{item.stem ? (
-											<div
+											<MathContent
+												tag="div"
 												className="ppq-attempt-question-stem-full"
-												dangerouslySetInnerHTML={{ __html: item.stem }}
+												html={item.stem}
 											/>
 										) : (
 											<div className="ppq-attempt-question-stem-full">
@@ -179,9 +181,10 @@ const AttemptDetailModal = ({ visible, attempt, onClose }) => {
 															{answer.was_selected && !answer.is_correct && <CloseCircleOutlined style={{ color: '#ff4d4f' }} />}
 															{!answer.was_selected && answer.is_correct && <CheckCircleOutlined style={{ color: '#52c41a', opacity: 0.5 }} />}
 														</span>
-														<span
+														<MathContent
+															tag="span"
 															className="ppq-attempt-answer-text"
-															dangerouslySetInnerHTML={{ __html: answer.text }}
+															html={answer.text}
 														/>
 													</div>
 												))}

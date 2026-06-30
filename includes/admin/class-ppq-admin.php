@@ -431,6 +431,12 @@ class PressPrimer_Quiz_Admin {
 			$asset['version']
 		);
 
+		// Load math rendering on the Reports page when enabled, so the attempt
+		// detail modal can typeset LaTeX in question and answer content.
+		if ( pressprimer_quiz_math_enabled() ) {
+			pressprimer_quiz_enqueue_math_assets();
+		}
+
 		/**
 		 * Filters the addon reports to display on the Reports index page.
 		 *

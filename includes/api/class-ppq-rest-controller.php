@@ -3315,6 +3315,10 @@ class PressPrimer_Quiz_REST_Controller {
 				: 'tutorial';
 		}
 
+		if ( isset( $data['enable_math'] ) ) {
+			$sanitized['enable_math'] = rest_sanitize_boolean( $data['enable_math'] );
+		}
+
 		if ( isset( $data['default_access_mode'] ) ) {
 			$sanitized['default_access_mode'] = in_array( $data['default_access_mode'], [ 'guest_optional', 'guest_required', 'login_required' ], true )
 				? $data['default_access_mode']

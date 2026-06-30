@@ -474,6 +474,7 @@ class PressPrimer_Quiz_Admin {
 				'reportsMascot' => $reports_mascot,
 				'resultsUrl'    => home_url( '/quiz-results/' ),
 				'addonReports'  => $addon_reports,
+				'mathEnabled'   => pressprimer_quiz_math_enabled(),
 			]
 		);
 	}

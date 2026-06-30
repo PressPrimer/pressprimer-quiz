@@ -398,6 +398,28 @@ const GeneralTab = ({ settings, updateSetting, settingsData = {} }) => {
 					/>
 				)}
 			</div>
+
+			{/* Math Notation Section */}
+			<div className="ppq-settings-section">
+				<Title level={4} className="ppq-settings-section-title">
+					{__('Math Notation', 'pressprimer-quiz')}
+				</Title>
+				<Paragraph className="ppq-settings-section-description">
+					{__('Render mathematical notation (LaTeX) in questions, answers, and feedback. Off by default; turning it on also adds an Insert Math control to the question editor.', 'pressprimer-quiz')}
+				</Paragraph>
+
+				<div className="ppq-settings-field">
+					<Form.Item
+						label={__('Enable math notation (LaTeX)', 'pressprimer-quiz')}
+						help={__('Write inline math as \\( x^2 \\) or a centered block as \\[ ... \\]. The math library loads only on quizzes that contain notation.', 'pressprimer-quiz')}
+					>
+						<Switch
+							checked={!! settings.enable_math}
+							onChange={(checked) => updateSetting('enable_math', checked)}
+						/>
+					</Form.Item>
+				</div>
+			</div>
 		</div>
 	);
 };

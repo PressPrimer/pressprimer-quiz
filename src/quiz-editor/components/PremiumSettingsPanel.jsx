@@ -304,6 +304,28 @@ const PremiumSettingsPanel = ({ form, quizData = {} }) => {
 					</Form.Item>
 
 					<Form.Item
+						label={
+							<Space>
+								<span>{__('Integrity Analysis', 'pressprimer-quiz')}</span>
+								<Tooltip title={__('Analyze the completed attempts on this quiz for statistically unusual patterns (timing, answer similarity, shared devices). Separate from real-time proctoring; flags only direct reviewer attention and never change scores.', 'pressprimer-quiz')}>
+									<QuestionCircleOutlined style={{ fontSize: 12, color: '#8c8c8c' }} />
+								</Tooltip>
+							</Space>
+						}
+						name="proctoring_integrity"
+					>
+						<Select
+							size="small"
+							style={{ width: 300 }}
+							options={[
+								{ value: 'default', label: __('Use Global Default', 'pressprimer-quiz') },
+								{ value: 'on', label: __('Enabled', 'pressprimer-quiz') },
+								{ value: 'off', label: __('Disabled', 'pressprimer-quiz') },
+							]}
+						/>
+					</Form.Item>
+
+					<Form.Item
 						name="proctoring_require_desktop"
 						valuePropName="checked"
 						style={{ marginBottom: 0 }}

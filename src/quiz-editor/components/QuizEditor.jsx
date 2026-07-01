@@ -121,6 +121,7 @@ const QuizEditor = ({ quizData = {} }) => {
 				fieldValues.proctoring_tab_monitoring = quizData.proctoring_tab_monitoring || 'default';
 				fieldValues.proctoring_fullscreen = quizData.proctoring_fullscreen || 'default';
 				fieldValues.proctoring_require_desktop = quizData.proctoring_require_desktop ?? false;
+				fieldValues.proctoring_integrity = quizData.proctoring_integrity || 'default';
 			}
 
 			// Add WP Fusion per-quiz tag fields if the WP Fusion feature is active.

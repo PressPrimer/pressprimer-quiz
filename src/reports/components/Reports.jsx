@@ -120,19 +120,8 @@ const Reports = ({ initialData = {} }) => {
 			}))
 		: [];
 
-	// Coming soon placeholder
-	const comingSoonReport = {
-		key: 'coming-soon',
-		title: __('More Reports Coming Soon!', 'pressprimer-quiz'),
-		description: __('We\'re working on additional reports to help you better understand your quiz results.', 'pressprimer-quiz'),
-		icon: <RocketOutlined />,
-		color: '#8c8c8c',
-		available: false,
-		comingSoon: true,
-	};
-
-	// Combine: core reports + addon reports + coming soon
-	const reports = [...coreReports, ...addonReports, comingSoonReport];
+	// Combine: core reports + addon reports.
+	const reports = [...coreReports, ...addonReports];
 
 	// Get the plugin URL and mascot from localized data
 	const pluginUrl = window.pressprimerQuizReportsData?.pluginUrl || '';
@@ -181,7 +170,7 @@ const Reports = ({ initialData = {} }) => {
 							{reports.map((report) => (
 								<Col key={report.key} xs={24} sm={12} lg={8}>
 									<Card
-										className={`ppq-report-card ${report.comingSoon ? 'ppq-report-card--coming-soon' : ''}`}
+										className="ppq-report-card"
 										hoverable={report.available}
 										onClick={() => {
 											if (report.available && report.href) {

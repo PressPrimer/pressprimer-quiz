@@ -143,6 +143,7 @@ export const TEMPLATE_FIELDS = [
 	{ key: 'proctoring_tab_monitoring', label: __('Tab/Focus Monitoring', 'pressprimer-quiz'), type: 'enum', format: enumLabel(PROCTORING_TRISTATE_LABELS), requiresAddon: 'enterprise' },
 	{ key: 'proctoring_fullscreen', label: __('Full-Screen Mode', 'pressprimer-quiz'), type: 'enum', format: enumLabel(PROCTORING_TRISTATE_LABELS), requiresAddon: 'enterprise' },
 	{ key: 'proctoring_require_desktop', label: __('Require Desktop Browser', 'pressprimer-quiz'), type: 'bool', format: yesNo, requiresAddon: 'enterprise' },
+	{ key: 'proctoring_integrity', label: __('Integrity Analysis', 'pressprimer-quiz'), type: 'enum', format: enumLabel(PROCTORING_TRISTATE_LABELS), requiresAddon: 'enterprise' },
 	// Core key with no field in this builder, so it cannot be applied here.
 	{ key: 'theme_settings_json', label: __('Theme Settings', 'pressprimer-quiz'), type: 'json', format: jsonSummary, unappliable: true },
 ];

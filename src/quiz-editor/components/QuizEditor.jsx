@@ -444,6 +444,13 @@ const QuizEditor = ({ quizData = {} }) => {
 
 	const hasPremiumAddons = quizData.educatorActive || quizData.enterpriseActive || quizData.schoolActive;
 
+	// Always surface the Premium Settings tab so free-site admins can discover
+	// what premium quiz options exist. On a free site it is admin-only: a teacher
+	// can neither upgrade nor use these options, so they never see the upsell.
+	// When any add-on is active the tab shows the real settings to everyone who
+	// can edit the quiz.
+	const showPremiumTab = hasPremiumAddons || !!quizData.isAdmin;
+
 	// Branching tab is available only for fixed-mode quizzes when Enterprise addon provides branching.
 	const showBranchingTab = quizData.branchingActive && generationMode === 'fixed' && currentQuizId;
 
@@ -453,7 +460,7 @@ const QuizEditor = ({ quizData = {} }) => {
 			label: __('Settings', 'pressprimer-quiz'),
 			children: <SettingsPanel form={form} generationMode={generationMode} setGenerationMode={setGenerationMode} quizData={quizData} maxAnswersWarnings={maxAnswersWarnings} saving={saving} applyTemplate={applyTemplate} collectTemplateSettings={collectTemplateSettings} defaultsFromName={defaultsFromName} />,
 		},
-		hasPremiumAddons && {
+		showPremiumTab && {
 			key: 'premium',
 			label: __('Premium Settings', 'pressprimer-quiz'),
 			children: <PremiumSettingsPanel form={form} quizData={quizData} />,

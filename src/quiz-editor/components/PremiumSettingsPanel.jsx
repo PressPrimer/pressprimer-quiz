@@ -26,6 +26,8 @@ import {
 	QuestionCircleOutlined,
 } from '@ant-design/icons';
 
+import PremiumUpsell from './PremiumUpsell';
+
 const { Title, Text } = Typography;
 
 /**
@@ -150,6 +152,18 @@ const PremiumSettingsPanel = ({ form, quizData = {} }) => {
 
 		form.setFieldsValue({ pre_test_id: value || null });
 	}, [form]);
+
+	// Free site: no premium addon active. The tab becomes an upsell preview of
+	// the premium per-quiz options. (Only admins reach this — the editor hides
+	// the tab from teachers on a free site.)
+	const hasAnyAddon =
+		quizData.educatorActive ||
+		quizData.schoolActive ||
+		quizData.enterpriseActive;
+
+	if (!hasAnyAddon) {
+		return <PremiumUpsell />;
+	}
 
 	return (
 		<Space direction="vertical" size="large" style={{ width: '100%' }}>

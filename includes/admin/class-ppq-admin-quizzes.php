@@ -683,6 +683,12 @@ class PressPrimer_Quiz_Admin_Quizzes {
 		// to any quiz editor.
 		$quiz_data['canManageSettings'] = current_user_can( 'pressprimer_quiz_manage_settings' );
 
+		// Whether the current user is a site administrator. Gates the Premium
+		// Settings tab's upsell preview on a free site — a teacher can neither
+		// upgrade nor use premium options, so the tab stays hidden from them until
+		// an add-on is active (admins-only upsells).
+		$quiz_data['isAdmin'] = current_user_can( 'manage_options' );
+
 		// Multiple-answer scoring copy (labels, descriptions, worked examples) for
 		// the builder's scoring cards. Sourced from the shared copy provider so the
 		// builder and the results renderer cannot drift (feature 005, TR-003).

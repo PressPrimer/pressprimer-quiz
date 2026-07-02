@@ -132,7 +132,7 @@ The `/src` directory contains all unminified source files. The plugin uses webpa
 
 = Third-Party Libraries =
 
-Math notation rendering uses [KaTeX](https://katex.org/) (version 0.17.0, MIT license), bundled locally in `assets/vendor/katex/` — there are no external or CDN requests. The official minified distribution is included; it is obtained via `npm install katex@0.17.0` and the files are copied from the package's `dist/` directory (`katex.min.js`, `katex.min.css`, `contrib/auto-render.min.js`, and the woff2/woff fonts). KaTeX is loaded only when the Math Notation setting is enabled and a quiz actually contains math notation.
+Math notation rendering uses [KaTeX](https://katex.org/) (version 0.17.0, MIT license), bundled locally in `assets/vendor/katex/` — there are no external or CDN requests. The official minified distribution is included; it is obtained via `npm install katex@0.17.0` and the files are copied from the package's `dist/` directory (`katex.min.js`, `katex.min.css`, `contrib/auto-render.min.js`, and the woff2/woff fonts). The complete, unminified source for this exact version is available in the KaTeX GitHub repository at the [v0.17.0 release](https://github.com/KaTeX/KaTeX/releases/tag/v0.17.0), and in the `katex@0.17.0` npm package's `dist/` directory, which ships the unminified `katex.js` and `katex.css` alongside the minified files bundled here. KaTeX is loaded only when the Math Notation setting is enabled and a quiz actually contains math notation.
 
 == Installation ==
 

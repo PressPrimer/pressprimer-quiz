@@ -523,4 +523,164 @@ class PressPrimer_Quiz_Upgrade_Page {
 			),
 		);
 	}
+
+	/**
+	 * Ordered catalog of premium report cards shown on the Reports page.
+	 *
+	 * The free plugin's own knowledge of the reports each premium tier adds, so
+	 * the Reports page can advertise them (locked) even when the providing addon
+	 * is not installed. Order is meaningful — it is the display order, grouped by
+	 * tier (Educator, then School, then Enterprise) — and MUST stay stable whether
+	 * a report is locked or available, so the grid does not reflow when an addon
+	 * is activated. Keys, colors, icon types, and the within-tier order mirror the
+	 * cards each addon registers via `pressprimer_quiz_reports_addon_reports` (in
+	 * that addon's own registration order), so a locked card sits exactly where
+	 * its real card appears once the add-on is active.
+	 *
+	 * @since 3.0.0
+	 *
+	 * @return array<int, array<string, string>> Ordered premium report catalog.
+	 */
+	public static function get_premium_report_catalog() {
+		return array(
+			array(
+				'key'         => 'quiz-detail',
+				'tier'        => 'educator',
+				'title'       => __( 'Quiz Detail', 'pressprimer-quiz' ),
+				'description' => __( 'In-depth analysis with score distribution, category performance, and question difficulty.', 'pressprimer-quiz' ),
+				'iconType'    => 'BarChartOutlined',
+				'color'       => '#14b8a6',
+			),
+			array(
+				'key'         => 'prepost-analysis',
+				'tier'        => 'educator',
+				'title'       => __( 'Pre/Post Analysis', 'pressprimer-quiz' ),
+				'description' => __( 'Compare quiz scores across linked pairs, any two quizzes, or individual attempts.', 'pressprimer-quiz' ),
+				'iconType'    => 'SwapOutlined',
+				'color'       => '#8b5cf6',
+			),
+			array(
+				'key'         => 'question-quality',
+				'tier'        => 'school',
+				'title'       => __( 'Question Quality', 'pressprimer-quiz' ),
+				'description' => __( 'Analyze question difficulty, discrimination, and distractor efficiency with psychometric measures.', 'pressprimer-quiz' ),
+				'iconType'    => 'ExperimentOutlined',
+				'color'       => '#52c41a',
+			),
+			array(
+				'key'         => 'curve-grading',
+				'tier'        => 'school',
+				'title'       => __( 'Curve Grading', 'pressprimer-quiz' ),
+				'description' => __( 'Apply grading curves to adjust quiz scores with a before/after distribution preview.', 'pressprimer-quiz' ),
+				'iconType'    => 'LineChartOutlined',
+				'color'       => '#722ed1',
+			),
+			array(
+				'key'         => 'spaced-repetition',
+				'tier'        => 'school',
+				'title'       => __( 'Spaced Repetition', 'pressprimer-quiz' ),
+				'description' => __( 'Track mastery progress and review questions at optimal intervals using spaced repetition.', 'pressprimer-quiz' ),
+				'iconType'    => 'RocketOutlined',
+				'color'       => '#14b8a6',
+			),
+			array(
+				'key'         => 'group-performance',
+				'tier'        => 'school',
+				'title'       => __( 'Group Performance', 'pressprimer-quiz' ),
+				'description' => __( 'Compare performance across groups with member drill-down and trends.', 'pressprimer-quiz' ),
+				'iconType'    => 'TeamOutlined',
+				'color'       => '#f59e0b',
+			),
+			array(
+				'key'         => 'proctoring',
+				'tier'        => 'enterprise',
+				'title'       => __( 'Proctoring Report', 'pressprimer-quiz' ),
+				'description' => __( 'Review proctoring incidents, flagged attempts, and quiz integrity data.', 'pressprimer-quiz' ),
+				'iconType'    => 'EyeOutlined',
+				'color'       => '#eb2f96',
+			),
+			array(
+				'key'         => 'audit-trail',
+				'tier'        => 'enterprise',
+				'title'       => __( 'Audit Trail', 'pressprimer-quiz' ),
+				'description' => __( 'A complete audit log of quiz, question, and user activity for compliance and troubleshooting.', 'pressprimer-quiz' ),
+				'iconType'    => 'AuditOutlined',
+				'color'       => '#722ed1',
+			),
+			array(
+				'key'         => 'deleted-questions',
+				'tier'        => 'enterprise',
+				'title'       => __( 'Deleted Questions', 'pressprimer-quiz' ),
+				'description' => __( 'Recover or permanently delete questions that were previously removed.', 'pressprimer-quiz' ),
+				'iconType'    => 'DeleteOutlined',
+				'color'       => '#ff4d4f',
+			),
+			array(
+				'key'         => 'integrity-review',
+				'tier'        => 'enterprise',
+				'title'       => __( 'Integrity Review', 'pressprimer-quiz' ),
+				'description' => __( 'Review attempts flagged for statistically unusual patterns — timing, answer similarity, shared devices, and concurrent sessions.', 'pressprimer-quiz' ),
+				'iconType'    => 'SafetyCertificateOutlined',
+				'color'       => '#14b8a6',
+			),
+		);
+	}
+
+	/**
+	 * Premium report cards prepared for the Reports page, with lock state.
+	 *
+	 * Walks the catalog in order and marks each report locked when the tier that
+	 * provides it is not active. Locked cards gain the tier's display name and the
+	 * pricing URL so the Reports page can render an upgrade prompt in place, and
+	 * are shown to administrators only. The order never changes with which tiers
+	 * are active — an inactive report keeps its slot as a locked card — so the
+	 * grid does not reflow when an add-on is enabled or disabled.
+	 *
+	 * @since 3.0.0
+	 *
+	 * @return array<int, array<string, mixed>> Ordered premium report cards.
+	 */
+	public static function get_premium_report_cards() {
+		$pricing_url = 'https://pressprimer.com/pressprimer-quiz-pricing/#pricing';
+		$tiers       = self::get_tiers();
+
+		// Locked (upsell) cards are for administrators only — a teacher can neither
+		// buy an upgrade nor should be shown a report they cannot reach. Non-admins
+		// receive only the reports whose tier is active (resolved to real,
+		// capability-checked cards on the client).
+		$is_admin = current_user_can( 'manage_options' );
+
+		$cards = array();
+
+		foreach ( self::get_premium_report_catalog() as $entry ) {
+			$tier        = isset( $entry['tier'] ) ? (string) $entry['tier'] : '';
+			$tier_active = function_exists( 'pressprimer_quiz_has_addon' ) && pressprimer_quiz_has_addon( $tier );
+			$locked      = ! $tier_active;
+
+			// Never advertise an unavailable report to non-admins. Skipping keeps
+			// the remaining cards in the same catalog order for everyone.
+			if ( $locked && ! $is_admin ) {
+				continue;
+			}
+
+			$card = array(
+				'key'         => $entry['key'],
+				'title'       => $entry['title'],
+				'description' => $entry['description'],
+				'iconType'    => $entry['iconType'],
+				'color'       => $entry['color'],
+				'tier'        => $tier,
+				'locked'      => $locked,
+			);
+
+			if ( $locked ) {
+				$card['tierName']   = isset( $tiers[ $tier ]['name'] ) ? $tiers[ $tier ]['name'] : ucfirst( $tier );
+				$card['upgradeUrl'] = $pricing_url;
+			}
+
+			$cards[] = $card;
+		}
+
+		return $cards;
+	}
 }

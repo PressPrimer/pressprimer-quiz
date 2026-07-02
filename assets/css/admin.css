@@ -67,6 +67,29 @@
 	pointer-events: auto !important;
 }
 
+/*
+ * Fix visited-link color on Ant Design button links in WP admin.
+ *
+ * Ant Design renders an <a href> button as <a class="ant-btn ...">. WordPress
+ * admin styles a:link / a:visited with a color whose selector out-specifies Ant
+ * Design's class-based button text color, so after a user follows an upgrade or
+ * other link button its label turns the muddy visited-link color. Restore the
+ * intended text color across link states. Only the solid variants (primary and
+ * default) are targeted — link/text buttons take their color from context (e.g.
+ * the reports back link on a dark header) and must not be forced here.
+ *
+ * @since 3.0.0
+ */
+a.ant-btn-primary:link,
+a.ant-btn-primary:visited {
+	color: #fff;
+}
+
+a.ant-btn-default:link,
+a.ant-btn-default:visited {
+	color: rgba(0, 0, 0, 0.88);
+}
+
 /* Dashboard Layout */
 .ppq-dashboard {
 	margin-top: 20px;

@@ -245,14 +245,15 @@ class PressPrimer_Quiz_Upgrade_Page {
 	public static function get_comparison_features() {
 		$core      = __( 'Core Quiz Features', 'pressprimer-quiz' );
 		$ai_banks  = __( 'AI & Question Banks', 'pressprimer-quiz' );
-		$lms       = __( 'LMS Integrations', 'pressprimer-quiz' );
+		$lms       = __( 'Integrations', 'pressprimer-quiz' );
 		$reporting = __( 'Reporting & Analytics', 'pressprimer-quiz' );
 		$groups    = __( 'Groups & Assignments', 'pressprimer-quiz' );
 		$advanced  = __( 'Advanced & Compliance', 'pressprimer-quiz' );
+		$privacy   = __( 'Data & Privacy', 'pressprimer-quiz' );
 		$support   = __( 'Support & Branding', 'pressprimer-quiz' );
 
 		return array(
-			// Core Quiz Features (4 rows).
+			// Core Quiz Features.
 			array(
 				'category'   => $core,
 				'feature'    => __( 'Multiple choice, multiple answer, true/false questions', 'pressprimer-quiz' ),
@@ -279,8 +280,32 @@ class PressPrimer_Quiz_Upgrade_Page {
 			),
 			array(
 				'category'   => $core,
+				'feature'    => __( 'Math & equation rendering (LaTeX)', 'pressprimer-quiz' ),
+				'free'       => true,
+				'educator'   => true,
+				'school'     => true,
+				'enterprise' => true,
+			),
+			array(
+				'category'   => $core,
+				'feature'    => __( 'Quiz templates', 'pressprimer-quiz' ),
+				'free'       => true,
+				'educator'   => true,
+				'school'     => true,
+				'enterprise' => true,
+			),
+			array(
+				'category'   => $core,
 				'feature'    => __( '6 built-in themes and appearance settings', 'pressprimer-quiz' ),
 				'free'       => true,
+				'educator'   => true,
+				'school'     => true,
+				'enterprise' => true,
+			),
+			array(
+				'category'   => $core,
+				'feature'    => __( 'Hide /wp-admin/ from students and teachers', 'pressprimer-quiz' ),
+				'free'       => false,
 				'educator'   => true,
 				'school'     => true,
 				'enterprise' => true,
@@ -347,7 +372,15 @@ class PressPrimer_Quiz_Upgrade_Page {
 			),
 			array(
 				'category'   => $lms,
-				'feature'    => __( 'LearnDash quiz import (full conversion)', 'pressprimer-quiz' ),
+				'feature'    => __( 'LearnDash & LifterLMS quiz import', 'pressprimer-quiz' ),
+				'free'       => false,
+				'educator'   => false,
+				'school'     => true,
+				'enterprise' => true,
+			),
+			array(
+				'category'   => $lms,
+				'feature'    => __( 'WP Fusion integration', 'pressprimer-quiz' ),
 				'free'       => false,
 				'educator'   => false,
 				'school'     => true,
@@ -399,6 +432,22 @@ class PressPrimer_Quiz_Upgrade_Page {
 			),
 			array(
 				'category'   => $groups,
+				'feature'    => __( 'Front-end teacher dashboard', 'pressprimer-quiz' ),
+				'free'       => false,
+				'educator'   => true,
+				'school'     => true,
+				'enterprise' => true,
+			),
+			array(
+				'category'   => $groups,
+				'feature'    => __( 'LearnDash Groups support', 'pressprimer-quiz' ),
+				'free'       => false,
+				'educator'   => true,
+				'school'     => true,
+				'enterprise' => true,
+			),
+			array(
+				'category'   => $groups,
 				'feature'    => __( 'Assignment due dates and reminder emails', 'pressprimer-quiz' ),
 				'free'       => false,
 				'educator'   => true,
@@ -441,10 +490,44 @@ class PressPrimer_Quiz_Upgrade_Page {
 			),
 			array(
 				'category'   => $advanced,
+				'feature'    => __( 'Integrity analytics', 'pressprimer-quiz' ),
+				'free'       => false,
+				'educator'   => false,
+				'school'     => false,
+				'enterprise' => true,
+			),
+			array(
+				'category'   => $advanced,
 				'feature'    => __( 'Audit log', 'pressprimer-quiz' ),
 				'free'       => false,
 				'educator'   => false,
 				'school'     => false,
+				'enterprise' => true,
+			),
+
+			// Data & Privacy.
+			array(
+				'category'   => $privacy,
+				'feature'    => __( 'Guest data eraser (GDPR)', 'pressprimer-quiz' ),
+				'free'       => true,
+				'educator'   => true,
+				'school'     => true,
+				'enterprise' => true,
+			),
+			array(
+				'category'   => $privacy,
+				'feature'    => __( 'Quiz data reset', 'pressprimer-quiz' ),
+				'free'       => true,
+				'educator'   => true,
+				'school'     => true,
+				'enterprise' => true,
+			),
+			array(
+				'category'   => $privacy,
+				'feature'    => __( 'Marketing-consent capture for guests', 'pressprimer-quiz' ),
+				'free'       => true,
+				'educator'   => true,
+				'school'     => true,
 				'enterprise' => true,
 			),
 
@@ -503,7 +586,8 @@ class PressPrimer_Quiz_Upgrade_Page {
 					__( 'Question analysis & pre/post comparison', 'pressprimer-quiz' ),
 					__( 'xAPI / LRS integration', 'pressprimer-quiz' ),
 					__( 'Spaced repetition scheduling', 'pressprimer-quiz' ),
-					__( 'LearnDash quiz import', 'pressprimer-quiz' ),
+					__( 'WP Fusion integration', 'pressprimer-quiz' ),
+					__( 'LearnDash & LifterLMS quiz import', 'pressprimer-quiz' ),
 				),
 				'url'         => 'https://pressprimer.com/pressprimer-quiz-school/',
 				'featured'    => true,
@@ -515,6 +599,7 @@ class PressPrimer_Quiz_Upgrade_Page {
 				'highlights'  => array(
 					__( 'Everything in School', 'pressprimer-quiz' ),
 					__( 'Proctoring tools', 'pressprimer-quiz' ),
+					__( 'Integrity analytics', 'pressprimer-quiz' ),
 					__( 'Branching logic', 'pressprimer-quiz' ),
 					__( 'White-label branding', 'pressprimer-quiz' ),
 					__( 'Audit log', 'pressprimer-quiz' ),

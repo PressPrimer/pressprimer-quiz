@@ -93,6 +93,20 @@ const minutes = (value) =>
 const countOrUnlimited = (value) =>
 	value ? String(value) : __('Unlimited', 'pressprimer-quiz');
 
+// Enterprise per-quiz proctoring settings (carried by the Proctored Exam preset
+// and any template saved from a proctored quiz). Labels mirror the quiz editor.
+const PROCTORING_MODE_LABELS = {
+	default: __('Use Global Default', 'pressprimer-quiz'),
+	off: __('Off', 'pressprimer-quiz'),
+	monitor: __('Monitor', 'pressprimer-quiz'),
+	strict: __('Strict', 'pressprimer-quiz'),
+};
+const PROCTORING_TRISTATE_LABELS = {
+	default: __('Use Global Default', 'pressprimer-quiz'),
+	on: __('Enabled', 'pressprimer-quiz'),
+	off: __('Disabled', 'pressprimer-quiz'),
+};
+
 /**
  * Ordered field metadata, keyed by settings key. `type` drives value
  * comparison; `requiresAddon` marks a key the free editor cannot apply unless
@@ -125,6 +139,10 @@ export const TEMPLATE_FIELDS = [
 	{ key: 'display_settings_json', label: __('Display Defaults', 'pressprimer-quiz'), type: 'json', format: jsonSummary, formField: 'display_settings' },
 	{ key: 'band_feedback_json', label: __('Score Feedback Bands', 'pressprimer-quiz'), type: 'json', format: jsonSummary },
 	{ key: 'enable_sr', label: __('Spaced Repetition', 'pressprimer-quiz'), type: 'bool', format: yesNo, requiresAddon: 'school' },
+	{ key: 'proctoring_mode', label: __('Proctoring Mode', 'pressprimer-quiz'), type: 'enum', format: enumLabel(PROCTORING_MODE_LABELS), requiresAddon: 'enterprise' },
+	{ key: 'proctoring_tab_monitoring', label: __('Tab/Focus Monitoring', 'pressprimer-quiz'), type: 'enum', format: enumLabel(PROCTORING_TRISTATE_LABELS), requiresAddon: 'enterprise' },
+	{ key: 'proctoring_fullscreen', label: __('Full-Screen Mode', 'pressprimer-quiz'), type: 'enum', format: enumLabel(PROCTORING_TRISTATE_LABELS), requiresAddon: 'enterprise' },
+	{ key: 'proctoring_require_desktop', label: __('Require Desktop Browser', 'pressprimer-quiz'), type: 'bool', format: yesNo, requiresAddon: 'enterprise' },
 	// Core key with no field in this builder, so it cannot be applied here.
 	{ key: 'theme_settings_json', label: __('Theme Settings', 'pressprimer-quiz'), type: 'json', format: jsonSummary, unappliable: true },
 ];

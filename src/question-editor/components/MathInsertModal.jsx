@@ -159,6 +159,15 @@ const MathInsertModal = ({ open, onClose, onInsert }) => {
 					{__('Block (centered)', 'pressprimer-quiz')}
 				</Radio>
 			</Radio.Group>
+			<Text
+				type="secondary"
+				style={{ display: 'block', marginBottom: 12, fontSize: 12 }}
+			>
+				{__(
+					'Inline flows within a line of text; block sits centered on its own line.',
+					'pressprimer-quiz'
+				)}
+			</Text>
 			<Input.TextArea
 				value={latex}
 				onChange={(e) => setLatex(e.target.value)}

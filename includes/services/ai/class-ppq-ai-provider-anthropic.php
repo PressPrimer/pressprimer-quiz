@@ -152,6 +152,161 @@ class PressPrimer_Quiz_AI_Provider_Anthropic implements PressPrimer_Quiz_AI_Prov
 	}
 
 	/**
+	 * Fetch the account's available Claude models live from GET /v1/models.
+	 *
+	 * Unlike get_models() (a curated fallback), this returns the Claude chat
+	 * models the supplied key can actually access, newest first — so newly
+	 * released models appear as soon as the account has them, with no plugin
+	 * update required. Dated snapshots are collapsed to one entry per model
+	 * family (the alias id when the account exposes one, otherwise the newest
+	 * dated id) to keep the menu clean. The pressprimer_quiz_ai_models_anthropic
+	 * filter still applies.
+	 *
+	 * @since 3.0.0
+	 *
+	 * @param string $api_key API key to use.
+	 * @return array|WP_Error Model ids (newest first), or WP_Error on failure.
+	 */
+	public function fetch_models( string $api_key ) {
+		if ( '' === $api_key ) {
+			return new WP_Error( 'ppq_no_key', __( 'API key is required.', 'pressprimer-quiz' ) );
+		}
+
+		$response = wp_remote_get(
+			self::API_BASE_URL . '/models?limit=1000',
+			array(
+				'timeout' => self::VALIDATION_TIMEOUT,
+				'headers' => array(
+					'x-api-key'         => $api_key,
+					'anthropic-version' => self::API_VERSION,
+				),
+			)
+		);
+
+		if ( is_wp_error( $response ) ) {
+			return new WP_Error( 'ppq_api_connection_error', $response->get_error_message() );
+		}
+
+		$code = (int) wp_remote_retrieve_response_code( $response );
+
+		if ( 200 !== $code ) {
+			return new WP_Error(
+				'ppq_api_error',
+				sprintf(
+					/* translators: %d: HTTP status code */
+					__( 'Anthropic returned HTTP %d while listing models.', 'pressprimer-quiz' ),
+					$code
+				)
+			);
+		}
+
+		$body = json_decode( wp_remote_retrieve_body( $response ), true );
+
+		if ( ! is_array( $body ) || ! isset( $body['data'] ) || ! is_array( $body['data'] ) ) {
+			return new WP_Error(
+				'ppq_invalid_response',
+				__( 'Unexpected response while listing Anthropic models.', 'pressprimer-quiz' )
+			);
+		}
+
+		return $this->normalize_live_models( $body['data'] );
+	}
+
+	/**
+	 * Reduce a raw /v1/models data array to a clean, newest-first id list.
+	 *
+	 * Keeps only Claude chat models, groups them by family (the id with any
+	 * trailing -YYYYMMDD date removed), and keeps one id per family: the alias
+	 * form when present, otherwise the most recently created dated id. Families
+	 * are ordered newest first by creation date.
+	 *
+	 * @since 3.0.0
+	 *
+	 * @param array $data Raw `data` entries from GET /v1/models.
+	 * @return array Model ids, newest first.
+	 */
+	private function normalize_live_models( array $data ): array {
+		$families = array();
+
+		foreach ( $data as $model ) {
+			if ( ! is_array( $model ) || empty( $model['id'] ) || ! is_string( $model['id'] ) ) {
+				continue;
+			}
+
+			$id = $model['id'];
+
+			// Only Claude chat models.
+			if ( 0 !== strpos( $id, 'claude-' ) ) {
+				continue;
+			}
+
+			$created = isset( $model['created_at'] ) && is_string( $model['created_at'] )
+				? (int) strtotime( $model['created_at'] )
+				: 0;
+
+			$family = preg_replace( '/-\d{8}$/', '', $id );
+			if ( ! is_string( $family ) ) {
+				$family = $id;
+			}
+			$is_alias = ( $family === $id );
+
+			if ( ! isset( $families[ $family ] ) ) {
+				$families[ $family ] = array(
+					'id'      => $id,
+					'created' => $created,
+					'alias'   => $is_alias,
+				);
+				continue;
+			}
+
+			// Prefer the alias id; otherwise keep the most recently created id.
+			$current = $families[ $family ];
+			$replace = ( $is_alias && ! $current['alias'] )
+				|| ( $is_alias === $current['alias'] && $created > $current['created'] );
+
+			if ( $replace ) {
+				$families[ $family ] = array(
+					'id'      => $id,
+					'created' => $created,
+					'alias'   => $is_alias,
+				);
+			}
+		}
+
+		if ( empty( $families ) ) {
+			return array();
+		}
+
+		// Newest family first.
+		uasort(
+			$families,
+			static function ( $a, $b ) {
+				return $b['created'] <=> $a['created'];
+			}
+		);
+
+		$ids = array();
+		foreach ( $families as $family ) {
+			$ids[] = $family['id'];
+		}
+
+		/**
+		 * Filters the Anthropic model id list (applied to the live and curated lists).
+		 *
+		 * @since 3.0.0
+		 *
+		 * @param array $ids Model ids, newest first.
+		 */
+		$ids = apply_filters( 'pressprimer_quiz_ai_models_anthropic', $ids );
+
+		if ( ! is_array( $ids ) ) {
+			return array();
+		}
+
+		return array_values( array_unique( array_filter( $ids, 'is_string' ) ) );
+	}
+
+	/**
 	 * Validate an API key with a minimal no-content probe (GET /v1/models).
 	 *
 	 * @since 3.0.0

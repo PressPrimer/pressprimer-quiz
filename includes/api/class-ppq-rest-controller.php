@@ -3759,8 +3759,10 @@ class PressPrimer_Quiz_REST_Controller {
 	/**
 	 * Get API models
 	 *
-	 * Returns selectable models for the requested (or active) provider: OpenAI's
-	 * live account list, or the provider's curated list otherwise.
+	 * Returns selectable models for the requested (or active) provider. OpenAI
+	 * and Anthropic return the account's live model list (falling back to a
+	 * curated list when it can't be fetched); other providers return their
+	 * curated list.
 	 *
 	 * @since 1.0.0
 	 *
@@ -3782,6 +3784,26 @@ class PressPrimer_Quiz_REST_Controller {
 
 			if ( is_wp_error( $models ) ) {
 				return new WP_Error( 'fetch_failed', $models->get_error_message(), [ 'status' => 500 ] );
+			}
+		} elseif ( 'anthropic' === $provider ) {
+			$provider_obj = $providers[ $provider ];
+			$api_key      = PressPrimer_Quiz_AI_Service::get_api_key_for_provider( 'anthropic' );
+			$models       = null;
+
+			// Prefer the account's live model list so newly released models
+			// appear without a plugin update. Fall back to the curated list when
+			// the key is missing, a custom provider lacks live listing, or the
+			// request fails.
+			if ( ! empty( $api_key ) && method_exists( $provider_obj, 'fetch_models' ) ) {
+				$live = $provider_obj->fetch_models( $api_key );
+
+				if ( ! is_wp_error( $live ) && ! empty( $live ) ) {
+					$models = $live;
+				}
+			}
+
+			if ( null === $models ) {
+				$models = $provider_obj->get_models();
 			}
 		} else {
 			$models = $providers[ $provider ]->get_models();

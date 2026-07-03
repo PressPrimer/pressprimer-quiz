@@ -85,7 +85,13 @@ const DataToolsTab = () => {
 			try {
 				const res = await apiFetch({ path: '/ppq/v1/statistics/quiz-options' });
 				if (res && res.success) {
-					setQuizOptions(res.data || []);
+					// The quiz-options query returns ids as strings (wpdb), while
+					// the preview endpoint returns quiz_id as an integer. Normalize
+					// to numbers so the de-duplication in handlePreview matches and
+					// the previewed quiz is never appended a second time.
+					setQuizOptions(
+						(res.data || []).map((q) => ({ ...q, id: Number(q.id) }))
+					);
 				}
 			} catch (err) {
 				// Leave empty; the selector simply shows no options.

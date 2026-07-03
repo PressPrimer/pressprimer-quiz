@@ -36,7 +36,7 @@ PressPrimer Quiz delivers enterprise-grade assessment and includes all of the cr
 
 PressPrimer Quiz includes features in the free version that competitors charge for:
 
-* **Front-end dashboard** – Add a "My Results" area to any page with the [ppq_dashboard] shortcode or block
+* **Front-end dashboard** – Add a "My Results" area to any page with the [pressprimer_quiz_dashboard] shortcode or block
 * **Math & equation rendering** – Write LaTeX in questions and answers, rendered with bundled KaTeX
 * **Quiz  templates** – Save and reuse quiz settings
 * **Question banks** – Organize and reuse questions across quizzes
@@ -242,7 +242,7 @@ This plugin also offers optional AI-powered question generation using the Anthro
 == Changelog ==
 
 = 3.0.0 =
-* Added: A front-end dashboard you can place on any page with the [ppq_dashboard] shortcode or the Dashboard block. Students get a "My Results" area to review their past quiz attempts without visiting the WordPress admin.
+* Added: A front-end dashboard you can place on any page with the [pressprimer_quiz_dashboard] shortcode or the Dashboard block. Students get a "My Results" area to review their past quiz attempts without visiting the WordPress admin.
 * Added: Math and equation support. Write LaTeX in questions and answers and it renders as formatted math (using KaTeX) in quizzes, on the results page, in the admin preview, and in reports. Turn it on under Settings > General.
 * Added: Quiz templates. Save any quiz's settings as a reusable template, apply one with a full preview before anything changes, and choose a default template for new quizzes.
 * Added: Choose your AI provider for question generation. Both OpenAI and Anthropic (Claude) are supported, each with its own API key.

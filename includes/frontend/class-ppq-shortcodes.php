@@ -44,15 +44,14 @@ class PressPrimer_Quiz_Shortcodes {
 		add_shortcode( 'pressprimer_quiz', [ $this, 'render_quiz' ] );
 		add_shortcode( 'pressprimer_quiz_my_attempts', [ $this, 'render_my_attempts' ] );
 
-		// Front-end dashboard shell (v3.0). Short tag plus a full-prefix alias.
-		add_shortcode( 'ppq_dashboard', [ $this, 'render_dashboard' ] );
+		// Front-end dashboard shell (v3.0).
 		add_shortcode( 'pressprimer_quiz_dashboard', [ $this, 'render_dashboard' ] );
 	}
 
 	/**
 	 * Render the front-end dashboard shell.
 	 *
-	 * Both [ppq_dashboard] and [pressprimer_quiz_dashboard] route here. The shell
+	 * The [pressprimer_quiz_dashboard] shortcode routes here. The shell
 	 * renders the mount container only in the main query's singular content and
 	 * enforces one instance per page.
 	 *

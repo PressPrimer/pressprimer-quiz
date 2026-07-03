@@ -2,8 +2,8 @@
 /**
  * Front-end app shell
  *
- * Mounts the React dashboard shell on a page via the [ppq_dashboard] shortcode
- * or the pressprimer-quiz/dashboard block. This file provides the render
+ * Mounts the React dashboard shell on a page via the [pressprimer_quiz_dashboard]
+ * shortcode or the pressprimer-quiz/dashboard block. This file provides the render
  * container, the one-instance-per-page guard, the render-context guard, and
  * conditional asset enqueueing. The screen registry and boot payload arrive in
  * Prompt 2.3; the JS shell app and its build in Prompt 2.4.
@@ -197,7 +197,6 @@ class PressPrimer_Quiz_Shell {
 		}
 
 		return has_block( 'pressprimer-quiz/dashboard', $post )
-			|| has_shortcode( $post->post_content, 'ppq_dashboard' )
 			|| has_shortcode( $post->post_content, 'pressprimer_quiz_dashboard' );
 	}
 

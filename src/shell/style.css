@@ -423,8 +423,12 @@
 	padding: 0;
 }
 
-.ppq-shell-link:hover,
-.ppq-shell-link:focus {
+/* Scoped under .ppq-shell so the transparent background beats a theme's
+   button:hover background (otherwise the link reads as blue-on-blue). */
+.ppq-shell .ppq-shell-link:hover,
+.ppq-shell .ppq-shell-link:focus {
+	background: transparent;
+	text-decoration: underline;
 	color: var(--ppq-primary-hover);
 }
 

@@ -49,17 +49,32 @@ export default function Home( { user, navigate }: ScreenProps ) {
 		};
 	}, [] );
 
+	// A "returning" visitor is one who already has quiz activity; a first-time
+	// visitor (no attempts yet) gets a plain welcome rather than "Welcome back".
+	const isReturning = ! loading && recent.length > 0;
+
+	let greeting: string;
+	if ( user.name ) {
+		greeting = isReturning
+			? sprintf(
+					/* translators: %s: user display name. */
+					__( 'Welcome back, %s.', 'pressprimer-quiz' ),
+					user.name
+			  )
+			: sprintf(
+					/* translators: %s: user display name. */
+					__( 'Welcome, %s.', 'pressprimer-quiz' ),
+					user.name
+			  );
+	} else {
+		greeting = isReturning
+			? __( 'Welcome back.', 'pressprimer-quiz' )
+			: __( 'Welcome.', 'pressprimer-quiz' );
+	}
+
 	return (
 		<div className="ppq-shell-home">
-			<p className="ppq-shell-home-greeting">
-				{ user.name
-					? sprintf(
-							/* translators: %s: user display name. */
-							__( 'Welcome back, %s.', 'pressprimer-quiz' ),
-							user.name
-					  )
-					: __( 'Welcome back.', 'pressprimer-quiz' ) }
-			</p>
+			<p className="ppq-shell-home-greeting">{ greeting }</p>
 
 			{ cards.length > 0 && (
 				<div className="ppq-shell-home-cards">
@@ -89,7 +104,7 @@ export default function Home( { user, navigate }: ScreenProps ) {
 				{ ! loading && ! forbidden && recent.length === 0 && (
 					<p className="ppq-shell-muted">
 						{ __(
-							'You have not taken any quizzes yet.',
+							'You have no quiz activity yet.',
 							'pressprimer-quiz'
 						) }
 					</p>

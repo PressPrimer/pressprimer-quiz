@@ -46,6 +46,31 @@
 	};
 
 	/**
+	 * Replace non-breaking spaces (U+00A0) with regular spaces in an element's
+	 * text nodes.
+	 *
+	 * Visual editors (TinyMCE) can store a space typed inside a math expression
+	 * — e.g. the space after \( in "\( \int ... \)" — as a non-breaking space.
+	 * KaTeX treats U+00A0 as an unknown symbol and renders the source in red, so
+	 * normalizing it first lets that math render like any other.
+	 *
+	 * @param {HTMLElement} root Container to normalize.
+	 */
+	function normalizeNonBreakingSpaces( root ) {
+		if ( ! root || typeof document.createTreeWalker !== 'function' ) {
+			return;
+		}
+		const walker = document.createTreeWalker( root, NodeFilter.SHOW_TEXT );
+		let node = walker.nextNode();
+		while ( node ) {
+			if ( node.nodeValue && node.nodeValue.indexOf( '\u00a0' ) !== -1 ) {
+				node.nodeValue = node.nodeValue.replace( /\u00a0/g, ' ' );
+			}
+			node = walker.nextNode();
+		}
+	}
+
+	/**
 	 * Typeset math within a single DOM element.
 	 *
 	 * @param {HTMLElement} element Container to render math within.
@@ -54,6 +79,7 @@
 		if ( ! element || typeof renderMathInElement !== 'function' ) {
 			return;
 		}
+		normalizeNonBreakingSpaces( element );
 		try {
 			renderMathInElement( element, options );
 		} catch ( e ) {

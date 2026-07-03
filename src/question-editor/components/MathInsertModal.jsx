@@ -129,7 +129,7 @@ const MathInsertModal = ({ open, onClose, onInsert }) => {
 		}
 		const escaped = escapeHtml(body);
 		const delimited =
-			mode === 'block' ? `\\[ ${escaped} \\]` : `\\( ${escaped} \\)`;
+			mode === 'block' ? `\\[${escaped}\\]` : `\\(${escaped}\\)`;
 		onInsert(delimited);
 		reset();
 	};

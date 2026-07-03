@@ -29,6 +29,46 @@ const escapeHtml = (str) =>
 	str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 
 /**
+ * Recognized math delimiter pairs (longest first) with the display mode each
+ * implies.
+ */
+const DELIMITERS = [
+	{ left: '$$', right: '$$', display: true },
+	{ left: '\\[', right: '\\]', display: true },
+	{ left: '\\(', right: '\\)', display: false },
+	{ left: '$', right: '$', display: false },
+];
+
+/**
+ * Strip one layer of recognized delimiters from the input.
+ *
+ * KaTeX's render() expects a bare expression, and the editor adds its own
+ * delimiters on insert — so input that already carries delimiters (e.g. a
+ * formula pasted from documentation) must be normalized, or the preview would
+ * error and the inserted markup would be double-wrapped.
+ *
+ * @param {string} input Raw input.
+ * @return {{ body: string, display: (boolean|null) }} The delimiter-free body
+ *         and the display mode the delimiter implies (null when there was none).
+ */
+const stripDelimiters = (input) => {
+	const s = (input || '').trim();
+	for (const d of DELIMITERS) {
+		if (
+			s.length > d.left.length + d.right.length &&
+			s.startsWith(d.left) &&
+			s.endsWith(d.right)
+		) {
+			return {
+				body: s.slice(d.left.length, s.length - d.right.length).trim(),
+				display: d.display,
+			};
+		}
+	}
+	return { body: s, display: null };
+};
+
+/**
  * @param {Object}   props          Component props.
  * @param {boolean}  props.open     Whether the dialog is open.
  * @param {Function} props.onClose  Close handler.
@@ -40,19 +80,20 @@ const MathInsertModal = ({ open, onClose, onInsert }) => {
 	const [mode, setMode] = useState('inline');
 	const previewRef = useRef(null);
 
-	// Re-render the live preview whenever the input or mode changes.
+	// Re-render the live preview whenever the input or mode changes. The body is
+	// stripped of any delimiters first so KaTeX receives a bare expression.
 	useEffect(() => {
 		const el = previewRef.current;
 		if (!open || !el) {
 			return;
 		}
-		const trimmed = latex.trim();
-		if (!trimmed || !window.katex?.render) {
+		const { body } = stripDelimiters(latex);
+		if (!body || !window.katex?.render) {
 			el.textContent = '';
 			return;
 		}
 		try {
-			window.katex.render(trimmed, el, {
+			window.katex.render(body, el, {
 				throwOnError: false,
 				errorColor: '#cc0000',
 				displayMode: mode === 'block',
@@ -66,19 +107,29 @@ const MathInsertModal = ({ open, onClose, onInsert }) => {
 		}
 	}, [latex, mode, open]);
 
+	// When the input arrives already delimited (e.g. pasted), match the
+	// inline/block choice to the delimiter so the preview and inserted markup
+	// agree. The radio remains user-adjustable afterward.
+	useEffect(() => {
+		const { display } = stripDelimiters(latex);
+		if (null !== display) {
+			setMode(display ? 'block' : 'inline');
+		}
+	}, [latex]);
+
 	const reset = () => {
 		setLatex('');
 		setMode('inline');
 	};
 
 	const handleInsert = () => {
-		const trimmed = latex.trim();
-		if (!trimmed) {
+		const { body } = stripDelimiters(latex);
+		if (!body) {
 			return;
 		}
-		const body = escapeHtml(trimmed);
+		const escaped = escapeHtml(body);
 		const delimited =
-			mode === 'block' ? `\\[ ${body} \\]` : `\\( ${body} \\)`;
+			mode === 'block' ? `\\[ ${escaped} \\]` : `\\( ${escaped} \\)`;
 		onInsert(delimited);
 		reset();
 	};

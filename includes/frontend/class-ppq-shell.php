@@ -314,10 +314,16 @@ class PressPrimer_Quiz_Shell {
 			'icon'       => 'home',
 		);
 
+		// "My Results" shows the current user's OWN attempts. Gate it on the
+		// quiz-taker capability — the same one the my-attempts endpoint accepts
+		// (check_own_attempts_permission) — not view_results_own, which is the
+		// teacher capability for viewing OTHER students' results. Students have
+		// take_quiz but not view_results_own, so the teacher gate hid this tab
+		// from the very users it is for.
 		$screens['my-results'] = array(
 			'label'      => __( 'My Results', 'pressprimer-quiz' ),
 			'group'      => 'student',
-			'capability' => 'pressprimer_quiz_view_results_own',
+			'capability' => 'pressprimer_quiz_take_quiz',
 			'handle'     => self::HANDLE,
 			'order'      => 10,
 			'icon'       => 'results',

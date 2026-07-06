@@ -4435,8 +4435,17 @@ class PressPrimer_Quiz_REST_Controller {
 
 		foreach ( $rows as $row ) {
 			$db_status = $row->status;
-			$base      = ! empty( $row->source_url ) ? $row->source_url : home_url( '/' );
-			$action    = add_query_arg( 'attempt', (int) $row->id, $base );
+
+			// Build the results/resume base from a page that actually embeds the
+			// quiz (so ?attempt=N can render), then fall back to the attempt's
+			// source page and finally the site home. source_url is where the
+			// attempt was launched, which may be a listing page (e.g. an
+			// "Assigned Quizzes" page) that cannot display quiz results.
+			$base = $this->resolve_quiz_page_url( (int) $row->quiz_id );
+			if ( '' === $base ) {
+				$base = ! empty( $row->source_url ) ? $row->source_url : home_url( '/' );
+			}
+			$action = add_query_arg( 'attempt', (int) $row->id, $base );
 
 			$items[] = [
 				'attempt_id'    => (int) $row->id,
@@ -4453,6 +4462,62 @@ class PressPrimer_Quiz_REST_Controller {
 		}
 
 		return $items;
+	}
+
+	/**
+	 * Resolve the URL of a published page that embeds a quiz.
+	 *
+	 * Results are rendered by the quiz itself (via ?attempt=N), so a "View
+	 * results" link must point at a page that contains the quiz — through the
+	 * [pressprimer_quiz] shortcode or the pressprimer-quiz/quiz block — rather
+	 * than wherever the attempt happened to be launched (which may be a listing
+	 * page such as "Assigned Quizzes"). Cached per request. Returns '' when no
+	 * embedding page is found so the caller can fall back.
+	 *
+	 * @since 3.0.0
+	 *
+	 * @param int $quiz_id Quiz id.
+	 * @return string Page permalink, or '' when none is found.
+	 */
+	private function resolve_quiz_page_url( $quiz_id ) {
+		static $cache = [];
+
+		$quiz_id = (int) $quiz_id;
+
+		if ( $quiz_id <= 0 ) {
+			return '';
+		}
+
+		if ( array_key_exists( $quiz_id, $cache ) ) {
+			return $cache[ $quiz_id ];
+		}
+
+		global $wpdb;
+
+		// Match the shortcode form and the block form (quizId is serialized
+		// first as it is the block's primary attribute).
+		$shortcode = '%' . $wpdb->esc_like( '[pressprimer_quiz id="' . $quiz_id . '"' ) . '%';
+		$block_one = '%' . $wpdb->esc_like( 'pressprimer-quiz/quiz {"quizId":' . $quiz_id . '}' ) . '%';
+		$block_mid = '%' . $wpdb->esc_like( 'pressprimer-quiz/quiz {"quizId":' . $quiz_id . ',' ) . '%';
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+		$page_id = $wpdb->get_var(
+			$wpdb->prepare(
+				"SELECT ID FROM {$wpdb->posts}
+				 WHERE post_status = 'publish'
+				 AND ( post_content LIKE %s OR post_content LIKE %s OR post_content LIKE %s )
+				 ORDER BY ( post_type = 'page' ) DESC, ID ASC
+				 LIMIT 1",
+				$shortcode,
+				$block_one,
+				$block_mid
+			)
+		);
+
+		$url               = $page_id ? (string) get_permalink( (int) $page_id ) : '';
+		$cache[ $quiz_id ] = $url;
+
+		return $url;
 	}
 
 	/**

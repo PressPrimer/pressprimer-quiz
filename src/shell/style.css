@@ -432,6 +432,18 @@
 	color: var(--ppq-primary-hover);
 }
 
+/* Host themes commonly force button:hover / :focus / :active color to #fff,
+   which out-ranks Ant Design's class-based danger color — after a click opens a
+   Popconfirm the button keeps focus and its icon turns white (invisible). Lock
+   the danger color across states for non-primary danger buttons; the :not()
+   guard preserves the white-on-red text of a danger primary button. */
+.ppq-shell .ant-btn-dangerous:not(.ant-btn-primary),
+.ppq-shell .ant-btn-dangerous:not(.ant-btn-primary):hover,
+.ppq-shell .ant-btn-dangerous:not(.ant-btn-primary):focus,
+.ppq-shell .ant-btn-dangerous:not(.ant-btn-primary):active {
+	color: #ff4d4f;
+}
+
 .ppq-shell-muted {
 	color: var(--ppq-text-secondary);
 }

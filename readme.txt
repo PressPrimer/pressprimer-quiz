@@ -254,7 +254,9 @@ This plugin also offers optional AI-powered question generation using the Anthro
 * Added: The quiz editor now always includes a Premium Settings tab. On the free plugin it previews the per-quiz options the premium add-ons add, such as pre/post test linking, spaced repetition, branching, and proctoring.
 * Improved: Refreshed the Reports and Upgrade pages to reflect the full 3.0 feature set.
 * Fixed: Selector dropdowns (for choosing quizzes, groups, and more) no longer show an oversized, misaligned blue box when focused, on both admin and report pages.
+* Fixed: Search boxes in the admin — including the Add Questions search and the search fields on the Recent Attempts and Quiz Performance reports — now display correctly, with centered text and no stray outline box when focused.
 * Fixed: Spaced-repetition review quizzes created by the School add-on no longer clutter the Quizzes list, quiz pickers, or quiz counts.
+* Fixed: The checkmark on the AI question generator's "Add Selected to Bank" button now aligns with the button text instead of dropping below it.
 
 = 2.3.1 =
 * Improved: Tightened permission checks on the quiz items and quiz rules REST endpoints so teachers can only view, add, edit, reorder, or remove items and rules on quizzes they own. Single-teacher sites and sites without the Educator addon are unaffected.

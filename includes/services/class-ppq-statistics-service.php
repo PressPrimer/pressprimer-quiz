@@ -100,9 +100,9 @@ class PressPrimer_Quiz_Statistics_Service {
 			$author_where = $wpdb->prepare( ' AND author_id = %d', $owner_id );
 		}
 
-		// Total published quizzes
+		// Total published quizzes (excludes School SR review quizzes)
 		$stats['total_quizzes'] = (int) $wpdb->get_var(
-			"SELECT COUNT(*) FROM {$quizzes_table} WHERE status = 'published'{$owner_where}" // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared,WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Table name safely constructed; results cached at method level
+			"SELECT COUNT(*) FROM {$quizzes_table} WHERE status = 'published' AND is_review_quiz = 0{$owner_where}" // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared,WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Table name safely constructed; results cached at method level
 		);
 
 		// Total active questions (uses author_id, not owner_id)
@@ -645,6 +645,8 @@ class PressPrimer_Quiz_Statistics_Service {
 					a.quiz_id,
 					a.user_id,
 					a.guest_email,
+					a.guest_consent,
+					a.guest_consent_at,
 					a.score_points,
 					a.score_percent,
 					a.passed,
@@ -727,6 +729,8 @@ class PressPrimer_Quiz_Statistics_Service {
 					a.quiz_id,
 					a.user_id,
 					a.guest_email,
+					a.guest_consent,
+					a.guest_consent_at,
 					a.score_points,
 					a.score_percent,
 					a.passed,
@@ -817,6 +821,8 @@ class PressPrimer_Quiz_Statistics_Service {
 			'user_id'           => $attempt->user_id ? (int) $attempt->user_id : null,
 			'student_name'      => $attempt->student_name,
 			'student_email'     => $attempt->user_email ?? $attempt->guest_email ?? '',
+			'guest_consent'     => is_null( $attempt->guest_consent ) ? null : (int) $attempt->guest_consent,
+			'guest_consent_at'  => $attempt->guest_consent_at,
 			'score_points'      => (float) $attempt->score_points,
 			'score_percent'     => (float) $attempt->score_percent,
 			'passed'            => (bool) $attempt->passed,

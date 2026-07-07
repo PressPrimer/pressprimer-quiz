@@ -27,6 +27,11 @@ import {
 	AuditOutlined,
 	EyeOutlined,
 	ImportOutlined,
+	ProfileOutlined,
+	DatabaseOutlined,
+	ReadOutlined,
+	KeyOutlined,
+	RocketOutlined,
 } from '@ant-design/icons';
 
 import GeneralTab from './GeneralTab';
@@ -35,6 +40,8 @@ import IntegrationsTab from './IntegrationsTab';
 import EmailTab from './EmailTab';
 import StatusTab from './StatusTab';
 import AdvancedTab from './AdvancedTab';
+import TemplatesTab from './TemplatesTab';
+import DataToolsTab from './DataToolsTab';
 
 /**
  * Icon map for addon tabs
@@ -45,6 +52,9 @@ const ADDON_ICONS = {
 	'audit-log': <AuditOutlined />,
 	proctoring: <EyeOutlined />,
 	import: <ImportOutlined />,
+	educator: <ReadOutlined />,
+	license: <KeyOutlined />,
+	sr: <RocketOutlined />,
 	default: <SettingOutlined />,
 };
 
@@ -76,11 +86,25 @@ const CORE_TABS = [
 		order: 30,
 	},
 	{
+		id: 'templates',
+		label: __('Templates', 'pressprimer-quiz'),
+		icon: <ProfileOutlined />,
+		component: TemplatesTab,
+		order: 25,
+	},
+	{
 		id: 'integrations',
 		label: __('Integrations', 'pressprimer-quiz'),
 		icon: <ApiOutlined />,
 		component: IntegrationsTab,
 		order: 50,
+	},
+	{
+		id: 'data-tools',
+		label: __('Data Tools', 'pressprimer-quiz'),
+		icon: <DatabaseOutlined />,
+		component: DataToolsTab,
+		order: 75,
 	},
 	{
 		id: 'status',
@@ -108,8 +132,9 @@ const IGNORED_SERVER_TABS = ['ai', 'integration'];
 
 /**
  * Tabs that are read-only and should not show the Save Settings button.
+ * (Templates manages its own CRUD, so the generic Save button is hidden.)
  */
-const READ_ONLY_TABS = ['status'];
+const READ_ONLY_TABS = ['status', 'templates', 'data-tools'];
 
 /**
  * Settings Page Component
@@ -132,6 +157,10 @@ const SettingsPage = ({ settingsData = {} }) => {
 	// Lift API key status state to persist across tab navigation
 	const [apiKeyStatus, setApiKeyStatus] = useState(settingsData.apiKeyStatus || { configured: false });
 	const [apiModels, setApiModels] = useState(settingsData.apiModels || []);
+
+	// Lift the AI provider state (active provider + per-provider keys/models) so
+	// it survives switching between settings tabs.
+	const [aiState, setAiState] = useState(settingsData.ai || {});
 
 	/**
 	 * Build combined tabs from core tabs and addon tabs from settingsTabs
@@ -293,6 +322,8 @@ const SettingsPage = ({ settingsData = {} }) => {
 								setApiKeyStatus={setApiKeyStatus}
 								apiModels={apiModels}
 								setApiModels={setApiModels}
+								aiState={aiState}
+								setAiState={setAiState}
 							/>
 
 							{/* Save Button Footer - hidden on read-only tabs like Status */}

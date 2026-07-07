@@ -76,6 +76,11 @@
 				$emailInput.removeClass('ppq-input-error');
 			}
 
+			// Guest marketing consent. The checkbox is only present when the site
+			// enabled it; the server treats its absence as "not offered" (NULL).
+			const $consentInput = $('#ppq-guest-consent');
+			const guestConsent = $consentInput.length && $consentInput.is(':checked') ? 1 : 0;
+
 			// Disable button and show loading state
 			$button.prop('disabled', true).addClass('ppq-loading');
 
@@ -87,7 +92,8 @@
 					action: 'pressprimer_quiz_start_quiz',
 					nonce: pressprimerQuiz.nonce,
 					quiz_id: quizId,
-					guest_email: guestEmail
+					guest_email: guestEmail,
+					guest_consent: guestConsent
 				},
 				success: (response) => {
 					if (response.success && response.data.attempt_id) {

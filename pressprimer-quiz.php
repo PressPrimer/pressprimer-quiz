@@ -3,7 +3,7 @@
  * Plugin Name:       PressPrimer Quiz
  * Plugin URI:        https://pressprimer.com/quiz
  * Description:       Enterprise-grade quiz and assessment platform for educators with AI question generation, LMS integration, and modern themes.
- * Version:           2.3.1
+ * Version:           3.0.0
  * Requires at least: 6.4
  * Requires PHP:      7.4
  * Author:            PressPrimer
@@ -23,12 +23,12 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 // Plugin constants
-define( 'PRESSPRIMER_QUIZ_VERSION', '2.3.1' );
+define( 'PRESSPRIMER_QUIZ_VERSION', '3.0.0' );
 define( 'PRESSPRIMER_QUIZ_PLUGIN_FILE', __FILE__ );
 define( 'PRESSPRIMER_QUIZ_PLUGIN_PATH', plugin_dir_path( __FILE__ ) );
 define( 'PRESSPRIMER_QUIZ_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
 define( 'PRESSPRIMER_QUIZ_PLUGIN_BASENAME', plugin_basename( __FILE__ ) );
-define( 'PRESSPRIMER_QUIZ_DB_VERSION', '2.3.0' );
+define( 'PRESSPRIMER_QUIZ_DB_VERSION', '3.0.1' );
 
 // Composer autoloader (for smalot/pdfparser and other vendor dependencies)
 if ( file_exists( PRESSPRIMER_QUIZ_PLUGIN_PATH . 'vendor/autoload.php' ) ) {
@@ -38,6 +38,9 @@ if ( file_exists( PRESSPRIMER_QUIZ_PLUGIN_PATH . 'vendor/autoload.php' ) ) {
 // Autoloader
 require_once PRESSPRIMER_QUIZ_PLUGIN_PATH . 'includes/class-ppq-autoloader.php';
 PressPrimer_Quiz_Autoloader::register();
+
+// Front-end shell companion functions (global helpers, not autoloaded).
+require_once PRESSPRIMER_QUIZ_PLUGIN_PATH . 'includes/frontend/ppq-shell-functions.php';
 
 // Activation/Deactivation hooks
 register_activation_hook( __FILE__, [ 'PressPrimer_Quiz_Activator', 'activate' ] );
@@ -118,6 +121,38 @@ function pressprimer_quiz_addon_active( $slug ) {
 }
 
 /**
+ * Check whether a premium addon for a given tier is active.
+ *
+ * Tier-based companion to {@see pressprimer_quiz_addon_active()} (which checks a
+ * single slug). Used by upsell surfaces — e.g. the front-end shell's locked nav
+ * entries — to decide whether a tier's real screens have replaced its upsell
+ * placeholder. Falls back to the addon's load-time constant, mirroring the
+ * Upgrade page, so late or skipped addon registration still reads correctly.
+ *
+ * @since 3.0.0
+ *
+ * @param string $tier Tier name: 'educator', 'school', or 'enterprise'.
+ * @return bool True when an addon for that tier is active.
+ */
+function pressprimer_quiz_has_addon( $tier ) {
+	$manager = pressprimer_quiz_addon_manager();
+
+	foreach ( array_keys( $manager->get_by_tier( $tier ) ) as $slug ) {
+		if ( $manager->is_active( $slug ) ) {
+			return true;
+		}
+	}
+
+	$constants = array(
+		'educator'   => 'PRESSPRIMER_QUIZ_EDUCATOR_VERSION',
+		'school'     => 'PRESSPRIMER_QUIZ_SCHOOL_VERSION',
+		'enterprise' => 'PRESSPRIMER_QUIZ_ENTERPRISE_VERSION',
+	);
+
+	return isset( $constants[ $tier ] ) && defined( $constants[ $tier ] );
+}
+
+/**
  * Render answer text HTML for output.
  *
  * Sanitizes the stored HTML with {@see wp_kses_post()} and then forces every
@@ -154,4 +189,101 @@ function pressprimer_quiz_render_answer_html( $html ) {
 		},
 		$html
 	);
+}
+
+/**
+ * Whether math (LaTeX) notation rendering is enabled site-wide.
+ *
+ * Off by default; enabled via Settings → General. Gates all KaTeX loading and
+ * the editor authoring controls.
+ *
+ * @since 3.0.0
+ *
+ * @return bool
+ */
+function pressprimer_quiz_math_enabled() {
+	$settings = get_option( 'pressprimer_quiz_settings', array() );
+
+	return is_array( $settings ) && ! empty( $settings['enable_math'] );
+}
+
+/**
+ * The math delimiter set passed to KaTeX auto-render.
+ *
+ * Each entry is `{ left, right, display }`. Filterable so the delimiter set is
+ * defined in one place for both the JS renderer and the server-side detection
+ * helper {@see PressPrimer_Quiz_Helpers::content_has_math()}.
+ *
+ * @since 3.0.0
+ *
+ * @return array[]
+ */
+function pressprimer_quiz_math_delimiters() {
+	$delimiters = array(
+		array(
+			'left'    => '\\(',
+			'right'   => '\\)',
+			'display' => false,
+		),
+		array(
+			'left'    => '\\[',
+			'right'   => '\\]',
+			'display' => true,
+		),
+		array(
+			'left'    => '$$',
+			'right'   => '$$',
+			'display' => true,
+		),
+	);
+
+	/**
+	 * Filters the math delimiter set used for rendering and detection.
+	 *
+	 * @since 3.0.0
+	 *
+	 * @param array[] $delimiters Array of `{ left, right, display }` entries.
+	 */
+	return apply_filters( 'pressprimer_quiz_math_delimiters', $delimiters );
+}
+
+/**
+ * Register and enqueue the locally-bundled KaTeX assets and the math initializer.
+ *
+ * Idempotent. Serves KaTeX from the plugin (no external request) and exposes the
+ * JS contract `window.PressPrimerQuizMath.typeset( element )`, which front-end
+ * pages use to auto-typeset their quiz/results containers and React surfaces use
+ * to typeset fetched content. Callers should gate on
+ * {@see pressprimer_quiz_math_enabled()} and, where the content is known,
+ * {@see PressPrimer_Quiz_Helpers::content_has_math()}.
+ *
+ * @since 3.0.0
+ */
+function pressprimer_quiz_enqueue_math_assets() {
+	if ( wp_script_is( 'ppq-math', 'enqueued' ) ) {
+		return;
+	}
+
+	$vendor  = PRESSPRIMER_QUIZ_PLUGIN_URL . 'assets/vendor/katex/';
+	$version = PRESSPRIMER_QUIZ_VERSION;
+
+	wp_enqueue_style( 'ppq-katex', $vendor . 'katex.min.css', array(), $version );
+
+	wp_register_script( 'ppq-katex', $vendor . 'katex.min.js', array(), $version, true );
+	wp_register_script( 'ppq-katex-autorender', $vendor . 'contrib/auto-render.min.js', array( 'ppq-katex' ), $version, true );
+	wp_register_script( 'ppq-math', PRESSPRIMER_QUIZ_PLUGIN_URL . 'assets/js/ppq-math.js', array( 'ppq-katex-autorender' ), $version, true );
+
+	wp_localize_script(
+		'ppq-math',
+		'pressprimerQuizMathConfig',
+		array(
+			'delimiters'    => pressprimer_quiz_math_delimiters(),
+			'autoSelectors' => apply_filters(
+				'pressprimer_quiz_math_auto_selectors',
+				array( '.ppq-quiz-interface', '.ppq-results-container', '.ppq-question-review-container', '.ppq-quiz-preview-wrap' )
+			),
+		)
+	);
+
+	wp_enqueue_script( 'ppq-math' );
 }

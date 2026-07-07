@@ -303,6 +303,12 @@ class PressPrimer_Quiz_Admin_Questions {
 			PRESSPRIMER_QUIZ_VERSION
 		);
 
+		// Load the math runtime so the Insert Math control can render a live
+		// preview while authoring (only when the feature is enabled).
+		if ( pressprimer_quiz_math_enabled() ) {
+			pressprimer_quiz_enqueue_math_assets();
+		}
+
 		// Prepare question data for React
 		$question_data = [];
 
@@ -365,6 +371,10 @@ class PressPrimer_Quiz_Admin_Questions {
 				];
 			}
 		}
+
+		// Expose whether math notation is enabled so the editor can show the
+		// Insert Math control and live preview.
+		$question_data['mathEnabled'] = pressprimer_quiz_math_enabled();
 
 		// Localize script with data
 		wp_localize_script(

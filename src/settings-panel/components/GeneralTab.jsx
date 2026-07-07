@@ -5,16 +5,23 @@
  * @since 1.0.0
  */
 
-import { __ } from '@wordpress/i18n';
+import { useState, createInterpolateElement } from '@wordpress/element';
+import { __, sprintf } from '@wordpress/i18n';
+import apiFetch from '@wordpress/api-fetch';
 import {
 	Form,
 	InputNumber,
 	Radio,
 	Select,
 	Input,
+	Switch,
 	Typography,
 	Space,
+	Button,
+	Alert,
+	message,
 } from 'antd';
+import { PlusOutlined } from '@ant-design/icons';
 
 const { Title, Paragraph } = Typography;
 const { TextArea } = Input;
@@ -37,9 +44,75 @@ const MA_SCORING_DESCRIPTIONS = {
  * @param {Object} props Component props
  * @param {Object} props.settings Current settings
  * @param {Function} props.updateSetting Function to update a setting
+ * @param {Object} props.settingsData Localized settings data (dashboard facts, etc.)
  */
-const GeneralTab = ({ settings, updateSetting }) => {
+const GeneralTab = ({ settings, updateSetting, settingsData = {} }) => {
 	const maScoringMode = settings.default_ma_scoring || 'right_minus_wrong';
+
+	// WordPress Privacy settings page, for the "set a privacy policy" link.
+	const adminBaseUrl = (window.pressprimerQuizAdmin && window.pressprimerQuizAdmin.adminUrl) || '';
+	const privacySettingsUrl = `${adminBaseUrl}options-privacy.php`;
+
+	// Front-end dashboard page (v3.0).
+	const dashboardData = settingsData.dashboard || {};
+	const dashboardPageId = settings.dashboard_page_id || 0;
+	const [dashboardPages, setDashboardPages] = useState(dashboardData.pages || []);
+	const [creatingPage, setCreatingPage] = useState(false);
+	// View/Edit links for the page these links belong to (forId). Cleared when a
+	// different page is selected, since its permalink isn't known client-side.
+	const [dashboardLinks, setDashboardLinks] = useState({
+		view: dashboardData.viewUrl || '',
+		edit: dashboardData.editUrl || '',
+		forId: dashboardPageId,
+	});
+
+	const isFrontPage = dashboardPageId > 0
+		&& dashboardPageId === (dashboardData.frontPageId || 0)
+		&& dashboardData.showOnFront === 'page';
+	const isMissingPage = dashboardPageId > 0
+		&& !dashboardPages.some((p) => p.id === dashboardPageId);
+
+	const pageOptions = [
+		{ value: 0, label: __('— None —', 'pressprimer-quiz') },
+		...dashboardPages.map((p) => ({ value: p.id, label: p.title })),
+	];
+	if (isMissingPage) {
+		pageOptions.push({
+			value: dashboardPageId,
+			/* translators: %d: page ID. */
+			label: sprintf(__('Page #%d (unpublished or deleted)', 'pressprimer-quiz'), dashboardPageId),
+		});
+	}
+
+	/**
+	 * Create a dashboard page on the server, then select it.
+	 */
+	const handleCreateDashboardPage = async () => {
+		setCreatingPage(true);
+		try {
+			const res = await apiFetch({ path: '/ppq/v1/dashboard-page', method: 'POST' });
+			if (res && res.success && res.pageId) {
+				setDashboardPages((prev) => (
+					prev.some((p) => p.id === res.pageId)
+						? prev
+						: [{ id: res.pageId, title: res.pageTitle || __('Dashboard', 'pressprimer-quiz') }, ...prev]
+				));
+				updateSetting('dashboard_page_id', res.pageId);
+				setDashboardLinks({
+					view: res.viewUrl || '',
+					edit: res.editUrl || '',
+					forId: res.pageId,
+				});
+				message.success(__('Dashboard page created and selected.', 'pressprimer-quiz'));
+			} else {
+				message.error(__('Could not create the dashboard page.', 'pressprimer-quiz'));
+			}
+		} catch (error) {
+			message.error(error.message || __('Could not create the dashboard page.', 'pressprimer-quiz'));
+		} finally {
+			setCreatingPage(false);
+		}
+	};
 
 	return (
 		<div>
@@ -140,6 +213,81 @@ const GeneralTab = ({ settings, updateSetting }) => {
 				</div>
 			</div>
 
+			{/* Guest Email Consent Section */}
+			<div className="ppq-settings-section">
+				<Title level={4} className="ppq-settings-section-title">
+					{__('Guest Email Consent', 'pressprimer-quiz')}
+				</Title>
+				<Paragraph className="ppq-settings-section-description">
+					{__('Optionally show a marketing consent checkbox on the guest email form. It is unchecked by default and never blocks starting a quiz.', 'pressprimer-quiz')}
+				</Paragraph>
+
+				<div className="ppq-settings-field">
+					<Form.Item
+						label={__('Show a marketing consent checkbox', 'pressprimer-quiz')}
+						help={__('Adds an unchecked, optional consent checkbox to the guest email form.', 'pressprimer-quiz')}
+					>
+						<Switch
+							checked={!! settings.guest_consent_enabled}
+							onChange={(checked) => updateSetting('guest_consent_enabled', checked)}
+						/>
+					</Form.Item>
+				</div>
+
+				{settings.guest_consent_enabled && (
+					<>
+						<div className="ppq-settings-field">
+							<Form.Item
+								label={__('Consent label', 'pressprimer-quiz')}
+								help={__('Describe the marketing use, not quiz function. A link to your Privacy Policy is added automatically when one is set.', 'pressprimer-quiz')}
+							>
+								<TextArea
+									value={settings.guest_consent_label || ''}
+									onChange={(e) => updateSetting('guest_consent_label', e.target.value)}
+									rows={2}
+									style={{ maxWidth: 500 }}
+								/>
+							</Form.Item>
+						</div>
+
+						{! settingsData.privacyPolicyUrl && (
+							<Alert
+								type="info"
+								showIcon
+								style={{ maxWidth: 500 }}
+								message={__('No privacy policy page is set', 'pressprimer-quiz')}
+								description={createInterpolateElement(
+								__('<a>Set a Privacy Policy page under Settings → Privacy</a> so a link can be shown next to the consent checkbox.', 'pressprimer-quiz'),
+								{
+									// eslint-disable-next-line jsx-a11y/anchor-has-content
+									a: <a href={privacySettingsUrl} target="_blank" rel="noopener noreferrer" />,
+								}
+							)}
+							/>
+						)}
+					</>
+				)}
+
+				{! settingsData.educatorActive && (
+					<Alert
+						type="info"
+						showIcon
+						style={{ maxWidth: 500, marginTop: 16 }}
+						message={__('Email marketing management', 'pressprimer-quiz')}
+						description={createInterpolateElement(
+							__(
+								'This plugin records consent only. Viewing, filtering, and exporting your consented contacts requires the <a>PressPrimer Quiz Educator add-on</a>.',
+								'pressprimer-quiz'
+							),
+							{
+								// eslint-disable-next-line jsx-a11y/anchor-has-content
+								a: <a href="https://pressprimer.com/pressprimer-quiz-educator/" target="_blank" rel="noopener noreferrer" />,
+							}
+						)}
+					/>
+				)}
+			</div>
+
 			{/* Scoring Section */}
 			<div className="ppq-settings-section">
 				<Title level={4} className="ppq-settings-section-title">
@@ -176,6 +324,100 @@ const GeneralTab = ({ settings, updateSetting }) => {
 									label: __('All or Nothing', 'pressprimer-quiz'),
 								},
 							]}
+						/>
+					</Form.Item>
+				</div>
+			</div>
+
+			{/* Dashboard Section */}
+			<div className="ppq-settings-section">
+				<Title level={4} className="ppq-settings-section-title">
+					{__('Dashboard', 'pressprimer-quiz')}
+				</Title>
+				<Paragraph className="ppq-settings-section-description">
+					{__('Choose the page that hosts the front-end dashboard. The plugin links here from emails, results pages, and (with add-ons) instructor tools. The dashboard block can be placed on any page; this setting just records which one to link to.', 'pressprimer-quiz')}
+				</Paragraph>
+
+				<div className="ppq-settings-field">
+					<Form.Item
+						label={__('Dashboard Page', 'pressprimer-quiz')}
+						help={__('Select an existing page, or create one automatically.', 'pressprimer-quiz')}
+					>
+						<Space wrap>
+							<Select
+								value={dashboardPageId || 0}
+								onChange={(value) => updateSetting('dashboard_page_id', value)}
+								style={{ width: 320 }}
+								options={pageOptions}
+							/>
+							<Button
+								icon={<PlusOutlined />}
+								onClick={handleCreateDashboardPage}
+								loading={creatingPage}
+							>
+								{__('Create page for me', 'pressprimer-quiz')}
+							</Button>
+						</Space>
+					</Form.Item>
+				</div>
+
+				{dashboardLinks.view && dashboardLinks.forId === dashboardPageId && (
+					<div className="ppq-settings-field">
+						<Space size="middle">
+							<a href={dashboardLinks.view} target="_blank" rel="noopener noreferrer">
+								{__('View page', 'pressprimer-quiz')}
+							</a>
+							{dashboardLinks.edit && (
+								<a href={dashboardLinks.edit} target="_blank" rel="noopener noreferrer">
+									{__('Edit page', 'pressprimer-quiz')}
+								</a>
+							)}
+						</Space>
+					</div>
+				)}
+
+				<Paragraph className="ppq-settings-section-description" style={{ marginTop: 8 }}>
+					{__('Tip: if your site uses page caching, exclude the dashboard page from the cache so it always loads fresh. Most caching plugins skip logged-in users automatically.', 'pressprimer-quiz')}
+				</Paragraph>
+
+				{isFrontPage && (
+					<Alert
+						type="error"
+						showIcon
+						style={{ marginTop: 12 }}
+						message={__('This page is your static front page', 'pressprimer-quiz')}
+						description={__('WordPress does not reliably render app-style pages as the static front page. Choose a different page for the dashboard.', 'pressprimer-quiz')}
+					/>
+				)}
+
+				{isMissingPage && (
+					<Alert
+						type="warning"
+						showIcon
+						style={{ marginTop: 12 }}
+						message={__('The selected dashboard page is missing or unpublished', 'pressprimer-quiz')}
+						description={__('Links to the dashboard are hidden until you select a published page.', 'pressprimer-quiz')}
+					/>
+				)}
+			</div>
+
+			{/* Math Notation Section */}
+			<div className="ppq-settings-section">
+				<Title level={4} className="ppq-settings-section-title">
+					{__('Math Notation', 'pressprimer-quiz')}
+				</Title>
+				<Paragraph className="ppq-settings-section-description">
+					{__('Render mathematical notation (LaTeX) in questions, answers, and feedback. Off by default; turning it on also adds an Insert Math control to the question editor.', 'pressprimer-quiz')}
+				</Paragraph>
+
+				<div className="ppq-settings-field">
+					<Form.Item
+						label={__('Enable math notation (LaTeX)', 'pressprimer-quiz')}
+						help={__('Write inline math as \\( x^2 \\) or a centered block as \\[ ... \\]. The math library loads only on quizzes that contain notation.', 'pressprimer-quiz')}
+					>
+						<Switch
+							checked={!! settings.enable_math}
+							onChange={(checked) => updateSetting('enable_math', checked)}
 						/>
 					</Form.Item>
 				</div>

@@ -183,8 +183,38 @@ class PressPrimer_Quiz_AJAX_Handler {
 			// Logged-in user
 			$attempt = PressPrimer_Quiz_Attempt::create_for_user( $quiz_id, $user_id, $source_url );
 		} else {
+			// Resolve the guest marketing-consent state. Whether the checkbox was
+			// shown is decided server-side by the option, not by the request, so a
+			// "shown but unchecked" (0) is distinguishable from "not offered"
+			// (NULL). Unchecked checkboxes submit no value, hence the option gate.
+			$consent_args = [
+				'guest_consent'    => null,
+				'guest_consent_at' => null,
+			];
+
+			if ( get_option( 'pressprimer_quiz_guest_consent_enabled', false ) ) {
+				$consent_given = isset( $_POST['guest_consent'] )
+					&& filter_var( wp_unslash( $_POST['guest_consent'] ), FILTER_VALIDATE_BOOLEAN );
+
+				$consent_args['guest_consent']    = $consent_given ? 1 : 0;
+				$consent_args['guest_consent_at'] = $consent_given ? current_time( 'mysql' ) : null;
+			}
+
+			/**
+			 * Filters the guest consent fields recorded on a new guest attempt.
+			 *
+			 * Lets edge integrations adjust the captured consent state and
+			 * timestamp before they are written.
+			 *
+			 * @since 3.0.0
+			 *
+			 * @param array $consent_args { guest_consent: 1|0|null, guest_consent_at: ?string }.
+			 * @param int   $quiz_id      Quiz being started.
+			 */
+			$consent_args = apply_filters( 'pressprimer_quiz_guest_consent_args', $consent_args, $quiz_id );
+
 			// Guest user
-			$attempt = PressPrimer_Quiz_Attempt::create_for_guest( $quiz_id, $guest_email, $source_url );
+			$attempt = PressPrimer_Quiz_Attempt::create_for_guest( $quiz_id, $guest_email, $source_url, $consent_args );
 		}
 
 		if ( is_wp_error( $attempt ) ) {

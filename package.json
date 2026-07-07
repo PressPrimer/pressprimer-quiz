@@ -1,6 +1,6 @@
 {
   "name": "pressprimer-quiz",
-  "version": "2.2.0",
+  "version": "3.0.0",
   "description": "Enterprise-grade quiz and assessment platform for WordPress educators",
   "scripts": {
     "build": "wp-scripts build",
@@ -24,7 +24,8 @@
   },
   "devDependencies": {
     "@playwright/test": "^1.48.0",
-    "@wordpress/scripts": "^27.0.0"
+    "@wordpress/scripts": "^27.0.0",
+    "katex": "^0.17.0"
   },
   "dependencies": {
     "@ant-design/icons": "^5.2.6",

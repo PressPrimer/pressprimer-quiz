@@ -12,57 +12,48 @@ import {
 	Form,
 	Input,
 	Button,
-	Select,
-	Progress,
 	Typography,
-	Space,
 	Alert,
 	Descriptions,
 	Tag,
 	Spin,
 	Collapse,
+	Switch,
+	Select,
+	message,
 } from 'antd';
 import {
 	CheckCircleOutlined,
-	WarningOutlined,
-	EyeOutlined,
-	EyeInvisibleOutlined,
-	ReloadOutlined,
-	DeleteOutlined,
-	LockOutlined,
 	SettingOutlined,
+	ReloadOutlined,
 } from '@ant-design/icons';
+import AiProviderSettings from './AiProviderSettings';
 
 const { Title, Paragraph, Text } = Typography;
 
 /**
+ * WP Fusion tag moments, in display order, with their labels.
+ */
+const WPF_MOMENT_LABELS = {
+	signup: __( 'Sign-up (email registration)', 'pressprimer-quiz' ),
+	completion: __( 'Completion', 'pressprimer-quiz' ),
+	pass: __( 'Pass', 'pressprimer-quiz' ),
+	fail: __( 'Fail', 'pressprimer-quiz' ),
+};
+
+const WPF_EMPTY_TAGS = { signup: [], completion: [], pass: [], fail: [] };
+
+/**
  * Integrations Tab - API keys and third-party integrations
  *
- * @param {Object} props Component props
- * @param {Object} props.settings Current settings
- * @param {Function} props.updateSetting Function to update a setting
- * @param {Object} props.settingsData Full settings data including API status
- * @param {Object} props.apiKeyStatus API key status (lifted state from parent)
- * @param {Function} props.setApiKeyStatus Function to update API key status
- * @param {Array} props.apiModels Available API models (lifted state from parent)
- * @param {Function} props.setApiModels Function to update API models
+ * @param {Object}   props Component props
+ * @param {Object}   props.settings     Shared settings state (batch-saved by the page)
+ * @param {Function} props.updateSetting Setter for a single shared setting key
+ * @param {Object}   props.settingsData Full settings data including AI provider status
+ * @param {Object}   props.aiState      Lifted AI provider state (persists across tabs)
+ * @param {Function} props.setAiState   Setter for the lifted AI provider state
  */
-const IntegrationsTab = ({ settings, updateSetting, settingsData, apiKeyStatus, setApiKeyStatus, apiModels, setApiModels }) => {
-	const [showApiKey, setShowApiKey] = useState(false);
-	const [newApiKey, setNewApiKey] = useState('');
-	const [savingKey, setSavingKey] = useState(false);
-	const [validatingKey, setValidatingKey] = useState(false);
-	const [clearingKey, setClearingKey] = useState(false);
-	const [loadingModels, setLoadingModels] = useState(false);
-	const [validationResult, setValidationResult] = useState(null);
-	const [selectedModel, setSelectedModel] = useState(settingsData.modelPref || '');
-
-	// Use lifted state from parent, with fallback to settingsData for backwards compatibility
-	const apiStatus = apiKeyStatus || settingsData.apiKeyStatus || { configured: false };
-	const setApiStatus = setApiKeyStatus || (() => {});
-	const models = apiModels || settingsData.apiModels || [];
-	const setModels = setApiModels || (() => {});
-
+const IntegrationsTab = ({ settings, updateSetting, settingsData, aiState, setAiState }) => {
 	// LMS Integration states - use pre-loaded data from PHP
 	const lmsStatus = settingsData.lmsStatus || {};
 	const [learndashStatus, setLearndashStatus] = useState(
@@ -94,6 +85,78 @@ const IntegrationsTab = ({ settings, updateSetting, settingsData, apiKeyStatus, 
 		requests_remaining: 20,
 		rate_limit: 20,
 		usage_percent: 0,
+	};
+
+	// WP Fusion (School addon). The values live in the shared `settings` state so
+	// they save with the page's "Save Settings" button; only the available CRM
+	// tag/list options are fetched here from the School REST endpoint.
+	const wpfActive = !!settingsData.wpfActive;
+	const wpfEnabled = !!settings?.wpf_enabled;
+	const wpfTags = { ...WPF_EMPTY_TAGS, ...(settings?.wpf_default_tags || {}) };
+	const wpfSignupLists = settings?.wpf_signup_lists || [];
+	const [wpfAvailableTags, setWpfAvailableTags] = useState([]);
+	const [wpfAvailableLists, setWpfAvailableLists] = useState([]);
+	const [wpfLoading, setWpfLoading] = useState(wpfActive);
+	const [wpfRefreshing, setWpfRefreshing] = useState(false);
+
+	// Fetch the available CRM tags/lists only when WP Fusion is active.
+	useEffect(() => {
+		if (!wpfActive) {
+			setWpfLoading(false);
+			return;
+		}
+
+		let cancelled = false;
+		apiFetch({ path: '/ppqs/v1/wpf/tags' })
+			.then((result) => {
+				if (cancelled) {
+					return;
+				}
+				setWpfAvailableTags(result.available_tags || []);
+				setWpfAvailableLists(result.available_lists || []);
+			})
+			.catch(() => {})
+			.finally(() => {
+				if (!cancelled) {
+					setWpfLoading(false);
+				}
+			});
+
+		return () => {
+			cancelled = true;
+		};
+	}, [wpfActive]);
+
+	/**
+	 * Update a single WP Fusion tag-moment group in the shared settings.
+	 *
+	 * @param {string}   moment Moment key (signup|completion|pass|fail).
+	 * @param {string[]} value  Selected tag IDs.
+	 */
+	const updateWpfTagMoment = (moment, value) => {
+		updateSetting('wpf_default_tags', { ...wpfTags, [moment]: value });
+	};
+
+	/**
+	 * Re-sync the CRM tag/list options from WP Fusion.
+	 */
+	const handleWpfRefresh = async () => {
+		setWpfRefreshing(true);
+		try {
+			const result = await apiFetch({
+				path: '/ppqs/v1/wpf/tags/refresh',
+				method: 'POST',
+			});
+			setWpfAvailableTags(result.available_tags || []);
+			setWpfAvailableLists(result.available_lists || []);
+			message.success(__('Tag list refreshed.', 'pressprimer-quiz'));
+		} catch (error) {
+			message.error(
+				error.message || __('Failed to refresh tags.', 'pressprimer-quiz')
+			);
+		} finally {
+			setWpfRefreshing(false);
+		}
 	};
 
 	// Fetch LearnDash extended status only if LearnDash is active
@@ -226,141 +289,6 @@ const IntegrationsTab = ({ settings, updateSetting, settingsData, apiKeyStatus, 
 	};
 
 	/**
-	 * Save new API key
-	 */
-	const handleSaveApiKey = async () => {
-		if (!newApiKey.trim()) {
-			setValidationResult({ type: 'error', message: __('Please enter an API key.', 'pressprimer-quiz') });
-			return;
-		}
-
-		if (!newApiKey.startsWith('sk-')) {
-			setValidationResult({ type: 'error', message: __('Invalid API key format. Keys should start with "sk-".', 'pressprimer-quiz') });
-			return;
-		}
-
-		try {
-			setSavingKey(true);
-			setValidationResult(null);
-
-			const response = await apiFetch({
-				path: '/ppq/v1/settings/api-key',
-				method: 'POST',
-				data: { api_key: newApiKey },
-			});
-
-			if (response.success) {
-				setValidationResult({ type: 'success', message: __('API key saved and validated successfully.', 'pressprimer-quiz') });
-				setApiStatus({ configured: true, masked_key: response.masked_key || 'sk-....' });
-				setNewApiKey('');
-				// Refresh models
-				handleRefreshModels();
-			} else {
-				setValidationResult({ type: 'error', message: response.message || __('Failed to save API key.', 'pressprimer-quiz') });
-			}
-		} catch (error) {
-			setValidationResult({ type: 'error', message: error.message || __('Failed to save API key.', 'pressprimer-quiz') });
-		} finally {
-			setSavingKey(false);
-		}
-	};
-
-	/**
-	 * Validate existing API key
-	 */
-	const handleValidateKey = async () => {
-		try {
-			setValidatingKey(true);
-			setValidationResult(null);
-
-			const response = await apiFetch({
-				path: '/ppq/v1/settings/api-key/validate',
-				method: 'POST',
-			});
-
-			if (response.success) {
-				setValidationResult({ type: 'success', message: __('API key is valid and working correctly.', 'pressprimer-quiz') });
-			} else {
-				setValidationResult({ type: 'error', message: response.message || __('Invalid API key.', 'pressprimer-quiz') });
-			}
-		} catch (error) {
-			setValidationResult({ type: 'error', message: error.message || __('Failed to validate API key.', 'pressprimer-quiz') });
-		} finally {
-			setValidatingKey(false);
-		}
-	};
-
-	/**
-	 * Clear API key
-	 */
-	const handleClearKey = async () => {
-		if (!window.confirm(__('Are you sure you want to remove your API key? You will not be able to use AI generation until you add a new key.', 'pressprimer-quiz'))) {
-			return;
-		}
-
-		try {
-			setClearingKey(true);
-			setValidationResult(null);
-
-			const response = await apiFetch({
-				path: '/ppq/v1/settings/api-key/clear',
-				method: 'POST',
-			});
-
-			if (response.success) {
-				setValidationResult({ type: 'success', message: __('API key removed successfully.', 'pressprimer-quiz') });
-				setApiStatus({ configured: false });
-				setModels([]);
-			} else {
-				setValidationResult({ type: 'error', message: response.message || __('Failed to clear API key.', 'pressprimer-quiz') });
-			}
-		} catch (error) {
-			setValidationResult({ type: 'error', message: error.message || __('Failed to clear API key.', 'pressprimer-quiz') });
-		} finally {
-			setClearingKey(false);
-		}
-	};
-
-	/**
-	 * Refresh available models
-	 */
-	const handleRefreshModels = async () => {
-		try {
-			setLoadingModels(true);
-
-			const response = await apiFetch({
-				path: '/ppq/v1/settings/api-models',
-				method: 'GET',
-			});
-
-			if (response.success && response.models) {
-				setModels(response.models);
-			}
-		} catch (error) {
-			// Failed to fetch models - dropdown will be empty
-		} finally {
-			setLoadingModels(false);
-		}
-	};
-
-	/**
-	 * Save model preference
-	 */
-	const handleModelChange = async (model) => {
-		setSelectedModel(model);
-
-		try {
-			await apiFetch({
-				path: '/ppq/v1/settings/api-model',
-				method: 'POST',
-				data: { model },
-			});
-		} catch (error) {
-			// Silently fail - user can retry
-		}
-	};
-
-	/**
 	 * Render LMS integration content based on loading and status
 	 */
 	const renderLmsContent = (loading, status, notDetectedMessage, notDetectedDescription, extraContent = null) => {
@@ -413,165 +341,8 @@ const IntegrationsTab = ({ settings, updateSetting, settingsData, apiKeyStatus, 
 
 	return (
 		<div>
-			{/* OpenAI Section */}
-			<div className="ppq-settings-section">
-				<Title level={4} className="ppq-settings-section-title">
-					{__('OpenAI API', 'pressprimer-quiz')}
-				</Title>
-				<Paragraph className="ppq-settings-section-description">
-					{__('Configure your OpenAI API key for AI-powered question generation. Your key is stored securely and encrypted.', 'pressprimer-quiz')}
-				</Paragraph>
-
-				<div className="ppq-api-key-manager">
-					{/* API Key Status */}
-					<div className={`ppq-api-key-status ${apiStatus.configured ? 'ppq-api-key-status--configured' : 'ppq-api-key-status--not-configured'}`}>
-						{apiStatus.configured ? (
-							<>
-								<CheckCircleOutlined className="ppq-api-key-status-icon" />
-								<Text>
-									{__('API Key Configured:', 'pressprimer-quiz')}{' '}
-									<Text code>{apiStatus.masked_key || 'sk-****'}</Text>
-								</Text>
-								<Space style={{ marginLeft: 'auto' }}>
-									<Button
-										size="small"
-										onClick={handleValidateKey}
-										loading={validatingKey}
-									>
-										{__('Validate', 'pressprimer-quiz')}
-									</Button>
-									<Button
-										size="small"
-										danger
-										icon={<DeleteOutlined />}
-										onClick={handleClearKey}
-										loading={clearingKey}
-									>
-										{__('Clear', 'pressprimer-quiz')}
-									</Button>
-								</Space>
-							</>
-						) : (
-							<>
-								<WarningOutlined className="ppq-api-key-status-icon" />
-								<Text>{__('No API Key Configured', 'pressprimer-quiz')}</Text>
-							</>
-						)}
-					</div>
-
-					{/* Validation Result */}
-					{validationResult && (
-						<Alert
-							message={validationResult.message}
-							type={validationResult.type}
-							showIcon
-							closable
-							style={{ marginBottom: 16 }}
-							onClose={() => setValidationResult(null)}
-						/>
-					)}
-
-					{/* API Key Input */}
-					<Form.Item
-						label={apiStatus.configured
-							? __('Enter New API Key:', 'pressprimer-quiz')
-							: __('Enter Your OpenAI API Key:', 'pressprimer-quiz')
-						}
-					>
-						<Space.Compact style={{ width: '100%', maxWidth: 500 }}>
-							<Input
-								type={showApiKey ? 'text' : 'password'}
-								value={newApiKey}
-								onChange={(e) => setNewApiKey(e.target.value)}
-								placeholder="sk-..."
-								autoComplete="off"
-							/>
-							<Button
-								icon={showApiKey ? <EyeInvisibleOutlined /> : <EyeOutlined />}
-								onClick={() => setShowApiKey(!showApiKey)}
-							/>
-							<Button
-								type="primary"
-								onClick={handleSaveApiKey}
-								loading={savingKey}
-							>
-								{__('Save Key', 'pressprimer-quiz')}
-							</Button>
-						</Space.Compact>
-						<Paragraph type="secondary" style={{ marginTop: 8 }}>
-							{__('Get your API key from', 'pressprimer-quiz')}{' '}
-							<a href="https://platform.openai.com/api-keys" target="_blank" rel="noopener noreferrer">
-								OpenAI Platform
-							</a>
-							{'. '}
-							{__('Keys start with "sk-".', 'pressprimer-quiz')}
-						</Paragraph>
-					</Form.Item>
-
-					{/* Model Selection - Only show if API key is configured */}
-					{apiStatus.configured && (
-						<div className="ppq-model-section">
-							<Form.Item label={__('Preferred Model:', 'pressprimer-quiz')}>
-								<Space>
-									<Select
-										value={selectedModel || undefined}
-										onChange={handleModelChange}
-										style={{ width: 300 }}
-										loading={loadingModels}
-										placeholder={models.length === 0 ? __('Click refresh to load models', 'pressprimer-quiz') : __('Select a model', 'pressprimer-quiz')}
-										options={models.map(model => ({
-											value: model,
-											label: model,
-										}))}
-									/>
-									<Button
-										icon={<ReloadOutlined />}
-										onClick={handleRefreshModels}
-										loading={loadingModels}
-									>
-										{__('Refresh', 'pressprimer-quiz')}
-									</Button>
-								</Space>
-								<Paragraph type="secondary" style={{ marginTop: 8 }}>
-									{__('Select the OpenAI model to use for question generation.', 'pressprimer-quiz')}
-								</Paragraph>
-							</Form.Item>
-						</div>
-					)}
-
-					{/* Usage Statistics - Only show if API key is configured */}
-					{apiStatus.configured && (
-						<div className="ppq-usage-stats">
-							<div className="ppq-usage-stat">
-								<span className="ppq-usage-stat-value">{usageData.requests_this_hour}</span>
-								<span className="ppq-usage-stat-label">{__('Requests', 'pressprimer-quiz')}</span>
-							</div>
-							<div className="ppq-usage-stat">
-								<span className="ppq-usage-stat-value">{usageData.requests_remaining}</span>
-								<span className="ppq-usage-stat-label">{__('Remaining', 'pressprimer-quiz')}</span>
-							</div>
-							<div style={{ flex: 1, minWidth: 200 }}>
-								<Progress
-									percent={usageData.usage_percent}
-									showInfo={false}
-									strokeColor="#2271b1"
-								/>
-								<Paragraph type="secondary" style={{ marginTop: 4, marginBottom: 0 }}>
-									{__('Rate limit:', 'pressprimer-quiz')} {usageData.rate_limit} {__('requests per hour', 'pressprimer-quiz')}
-								</Paragraph>
-							</div>
-						</div>
-					)}
-
-					{/* Security Notice */}
-					<div className="ppq-security-notice">
-						<LockOutlined />
-						<span>
-							{__('Your API key is encrypted using AES-256-CBC before storage and is only accessible to your account.', 'pressprimer-quiz')}
-						</span>
-					</div>
-				</div>
-			</div>
+			{/* AI Provider Section (site-level keys, provider selector). */}
+			<AiProviderSettings ai={ aiState } onChange={ setAiState } usageData={ usageData } />
 
 			{/* LMS Integrations Section */}
 			<div className="ppq-settings-section">
@@ -680,6 +451,132 @@ const IntegrationsTab = ({ settings, updateSetting, settingsData, apiKeyStatus, 
 					)}
 				</div>
 			</div>
+
+			{/* WP Fusion (School addon). Rendered inline so it saves with the page's
+				"Save Settings" button. Only shown when the School addon is active
+				and WP Fusion is installed. */}
+			{wpfActive && (
+				<div className="ppq-settings-section">
+					<Title level={4} className="ppq-settings-section-title">
+						{__('WP Fusion', 'pressprimer-quiz')}
+					</Title>
+					<Paragraph className="ppq-settings-section-description">
+						{__(
+							'Apply CRM tags through WP Fusion when visitors take your quizzes. Logged-in users always sync; guests sync only if they tick the marketing-consent checkbox on the guest email form, which you enable under PressPrimer Quiz → Settings → General → Guest Email Consent. These are the site-wide defaults — individual quizzes can add their own tags in the quiz editor’s Premium Settings tab.',
+							'pressprimer-quiz'
+						)}
+					</Paragraph>
+
+					{wpfLoading ? (
+						<div style={{ padding: '16px', textAlign: 'center' }}>
+							<Spin size="small" />
+						</div>
+					) : (
+						<Form layout="vertical">
+							<div className="ppq-settings-field">
+								<Form.Item
+									label={__('Enable WP Fusion tagging', 'pressprimer-quiz')}
+								>
+									<Switch
+										checked={wpfEnabled}
+										onChange={(checked) =>
+											updateSetting('wpf_enabled', checked)
+										}
+									/>
+								</Form.Item>
+							</div>
+
+							{wpfEnabled && (
+								<>
+									{wpfAvailableTags.length === 0 && (
+										<Alert
+											type="info"
+											showIcon
+											style={{ maxWidth: 600, marginBottom: 16 }}
+											message={__('No CRM tags found', 'pressprimer-quiz')}
+											description={__(
+												'WP Fusion has no tags loaded yet. Use “Refresh tags” to pull the tag list from your CRM.',
+												'pressprimer-quiz'
+											)}
+										/>
+									)}
+
+									<Title level={5} style={{ marginTop: 8 }}>
+										{__('Tags', 'pressprimer-quiz')}
+									</Title>
+									{Object.keys(WPF_MOMENT_LABELS).map((moment) => (
+										<div className="ppq-settings-field" key={moment}>
+											<Form.Item label={WPF_MOMENT_LABELS[moment]}>
+												<Select
+													mode="multiple"
+													allowClear
+													style={{ width: '100%', maxWidth: 500 }}
+													placeholder={__('Select tags…', 'pressprimer-quiz')}
+													options={wpfAvailableTags.map((t) => ({
+														label: t.label,
+														value: t.id,
+													}))}
+													value={wpfTags[moment] || []}
+													onChange={(value) =>
+														updateWpfTagMoment(moment, value)
+													}
+													optionFilterProp="label"
+												/>
+											</Form.Item>
+										</div>
+									))}
+
+									{wpfAvailableLists.length > 0 && (
+										<>
+											<Title level={5} style={{ marginTop: 8 }}>
+												{__('Lists', 'pressprimer-quiz')}
+											</Title>
+											<div className="ppq-settings-field">
+												<Form.Item
+													label={WPF_MOMENT_LABELS.signup}
+													help={__(
+														'Add the contact to these CRM lists when a visitor registers their email. Lists apply at sign-up only.',
+														'pressprimer-quiz'
+													)}
+												>
+													<Select
+														mode="multiple"
+														allowClear
+														style={{ width: '100%', maxWidth: 500 }}
+														placeholder={__('Select lists…', 'pressprimer-quiz')}
+														options={wpfAvailableLists.map((t) => ({
+															label: t.label,
+															value: t.id,
+														}))}
+														value={wpfSignupLists}
+														onChange={(value) =>
+															updateSetting('wpf_signup_lists', value)
+														}
+														optionFilterProp="label"
+													/>
+												</Form.Item>
+											</div>
+										</>
+									)}
+
+									<div
+										className="ppq-settings-field"
+										style={{ marginTop: 8, marginBottom: 24 }}
+									>
+										<Button
+											icon={<ReloadOutlined spin={wpfRefreshing} />}
+											onClick={handleWpfRefresh}
+											loading={wpfRefreshing}
+										>
+											{__('Refresh tags', 'pressprimer-quiz')}
+										</Button>
+									</div>
+								</>
+							)}
+						</Form>
+					)}
+				</div>
+			)}
 		</div>
 	);
 };

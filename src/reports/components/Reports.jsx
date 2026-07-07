@@ -8,10 +8,10 @@
  */
 
 import { useState, useEffect } from '@wordpress/element';
-import { __ } from '@wordpress/i18n';
+import { __, sprintf } from '@wordpress/i18n';
 import apiFetch from '@wordpress/api-fetch';
 import { debugError } from '../../utils/debug';
-import { Spin, Alert, Card, Row, Col } from 'antd';
+import { Spin, Alert, Card, Row, Col, Button, Tooltip } from 'antd';
 import {
 	TrophyOutlined,
 	ClockCircleOutlined,
@@ -25,6 +25,10 @@ import {
 	SafetyCertificateOutlined,
 	ExperimentOutlined,
 	DeleteOutlined,
+	SwapOutlined,
+	TeamOutlined,
+	EyeOutlined,
+	LockOutlined,
 } from '@ant-design/icons';
 
 import OverviewCards from './OverviewCards';
@@ -47,6 +51,9 @@ const ICON_MAP = {
 	SafetyCertificateOutlined: <SafetyCertificateOutlined />,
 	ExperimentOutlined: <ExperimentOutlined />,
 	DeleteOutlined: <DeleteOutlined />,
+	SwapOutlined: <SwapOutlined />,
+	TeamOutlined: <TeamOutlined />,
+	EyeOutlined: <EyeOutlined />,
 };
 
 /**
@@ -120,19 +127,51 @@ const Reports = ({ initialData = {} }) => {
 			}))
 		: [];
 
-	// Coming soon placeholder
-	const comingSoonReport = {
-		key: 'coming-soon',
-		title: __('More Reports Coming Soon!', 'pressprimer-quiz'),
-		description: __('We\'re working on additional reports to help you better understand your quiz results.', 'pressprimer-quiz'),
-		icon: <RocketOutlined />,
-		color: '#8c8c8c',
-		available: false,
-		comingSoon: true,
-	};
+	// Premium report catalog (with lock state) from PHP. Drives a stable order:
+	// active-tier reports pull their real (capability-correct) card from
+	// addonReports; inactive-tier reports render a locked upgrade card in place,
+	// so the grid does not reflow when an addon is activated.
+	const premiumCatalog = Array.isArray(
+		window.pressprimerQuizReportsData?.premiumReports
+	)
+		? window.pressprimerQuizReportsData.premiumReports
+		: [];
 
-	// Combine: core reports + addon reports + coming soon
-	const reports = [...coreReports, ...addonReports, comingSoonReport];
+	const addonByKey = {};
+	addonReports.forEach((report) => {
+		if (report && report.key) {
+			addonByKey[report.key] = report;
+		}
+	});
+
+	const catalogKeys = new Set();
+	const premiumCards = [];
+	premiumCatalog.forEach((entry) => {
+		if (!entry || !entry.key) {
+			return;
+		}
+		catalogKeys.add(entry.key);
+
+		if (entry.locked) {
+			premiumCards.push({
+				...entry,
+				available: false,
+				icon: ICON_MAP[entry.iconType] || <BarChartOutlined />,
+			});
+		} else if (addonByKey[entry.key]) {
+			// Tier active: use the real card the addon registered.
+			premiumCards.push(addonByKey[entry.key]);
+		}
+		// Tier active but no card for this user (capability) — skip silently.
+	});
+
+	// Any active addon reports not covered by the catalog (forward-compat).
+	const extraAddonReports = addonReports.filter(
+		(report) => report && report.key && !catalogKeys.has(report.key)
+	);
+
+	// Combine: core reports + ordered premium cards + any extras.
+	const reports = [...coreReports, ...premiumCards, ...extraAddonReports];
 
 	// Get the plugin URL and mascot from localized data
 	const pluginUrl = window.pressprimerQuizReportsData?.pluginUrl || '';
@@ -178,31 +217,70 @@ const Reports = ({ initialData = {} }) => {
 							{__('Available Reports', 'pressprimer-quiz')}
 						</h2>
 						<Row gutter={[16, 16]}>
-							{reports.map((report) => (
-								<Col key={report.key} xs={24} sm={12} lg={8}>
-									<Card
-										className={`ppq-report-card ${report.comingSoon ? 'ppq-report-card--coming-soon' : ''}`}
-										hoverable={report.available}
-										onClick={() => {
-											if (report.available && report.href) {
-												window.location.href = report.href;
-											}
-										}}
-									>
-										<div className="ppq-report-card-icon" style={{ backgroundColor: report.color }}>
-											{report.icon}
-										</div>
-										<div className="ppq-report-card-content">
-											<h3 className="ppq-report-card-title">
-												{report.title}
-											</h3>
-											<p className="ppq-report-card-description">
-												{report.description}
-											</p>
-										</div>
-									</Card>
-								</Col>
-							))}
+							{reports.map((report) => {
+								const locked = !!report.locked;
+								return (
+									<Col key={report.key} xs={24} sm={12} lg={8}>
+										<Card
+											className={`ppq-report-card${locked ? ' ppq-report-card--locked' : ''}`}
+											hoverable={report.available && !locked}
+											onClick={() => {
+												if (!locked && report.available && report.href) {
+													window.location.href = report.href;
+												}
+											}}
+										>
+											<div
+												className="ppq-report-card-icon"
+												style={{ backgroundColor: locked ? '#94a3b8' : report.color }}
+											>
+												{report.icon}
+											</div>
+											<div className="ppq-report-card-content">
+												<h3 className="ppq-report-card-title">
+													{report.title}
+													{locked && report.tierName && (
+														<Tooltip
+															title={sprintf(
+																/* translators: %s: premium tier name (Educator, School, or Enterprise). */
+																__('Available in the %s add-on', 'pressprimer-quiz'),
+																report.tierName
+															)}
+														>
+															<LockOutlined className="ppq-report-card-lock" />
+														</Tooltip>
+													)}
+												</h3>
+												<p className="ppq-report-card-description">
+													{report.description}
+												</p>
+												{locked && (
+													<div className="ppq-report-card-upsell">
+														<span className="ppq-report-card-requires">
+															{report.tierName
+																? sprintf(
+																		/* translators: %s: premium tier name (Educator, School, or Enterprise). */
+																		__('Requires the %s add-on.', 'pressprimer-quiz'),
+																		report.tierName
+																  )
+																: __('Requires a premium add-on.', 'pressprimer-quiz')}
+														</span>
+														<Button
+															type="primary"
+															size="small"
+															href={report.upgradeUrl}
+															target="_blank"
+															rel="noopener noreferrer"
+														>
+															{__('Upgrade', 'pressprimer-quiz')}
+														</Button>
+													</div>
+												)}
+											</div>
+										</Card>
+									</Col>
+								);
+							})}
 						</Row>
 					</div>
 				</div>

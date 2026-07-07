@@ -444,6 +444,12 @@ class PressPrimer_Quiz_Scoring_Service {
 		$attempt->max_points    = round( $total_max, 2 );
 		$attempt->score_percent = round( $score_percent, 2 );
 		$attempt->passed        = $passed ? 1 : 0;
+
+		// Persist the resolved MA scoring mode (Score Transparency, FR-001) so
+		// results explanations stay truthful even if the quiz or site default
+		// changes later. This is the same mode threaded into score_response().
+		$attempt->ma_scoring_mode = $this->resolve_ma_scoring_mode( $quiz );
+
 		$attempt->save();
 
 		return [

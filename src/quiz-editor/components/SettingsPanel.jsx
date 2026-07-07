@@ -30,6 +30,8 @@ import {
 	QuestionCircleOutlined,
 	SaveOutlined,
 } from '@ant-design/icons';
+import ApplyTemplateButton from '../templates/ApplyTemplateButton';
+import SaveAsTemplateButton from '../templates/SaveAsTemplateButton';
 
 const { TextArea } = Input;
 const { Title, Text } = Typography;
@@ -84,46 +86,15 @@ const DISPLAY_OPTION_SECTIONS = [
 			{ key: 'show_category_breakdown', label: __('Show category breakdown', 'pressprimer-quiz'), tooltip: __('Show per-category performance when the quiz\'s questions are organized by category.', 'pressprimer-quiz') },
 			{ key: 'show_question_review', label: __('Show question review', 'pressprimer-quiz'), tooltip: __('Allow the student to review each question, their answer, and any feedback after submitting.', 'pressprimer-quiz') },
 			{ key: 'show_retake_button', label: __('Show retake button', 'pressprimer-quiz'), tooltip: __('Show a button to retake the quiz when retakes are allowed on the results page.', 'pressprimer-quiz') },
+			{ key: 'show_scoring_explanations', label: __('Show scoring explanations', 'pressprimer-quiz'), tooltip: __('Show how each question was scored in the review, plus a "How scoring works" summary for multiple-answer questions.', 'pressprimer-quiz') },
 		],
 	},
 ];
 
-const MA_SCORING_OPTIONS = [
-	{
-		value: 'right_minus_wrong',
-		label: __('Right Minus Wrong', 'pressprimer-quiz'),
-		description: __('Each wrong selection cancels one correct selection. Score never goes below zero.', 'pressprimer-quiz'),
-		examples: [
-			__('2 correct + 1 wrong → 0.33 points', 'pressprimer-quiz'),
-		],
-	},
-	{
-		value: 'proportional',
-		label: __('Partial Credit', 'pressprimer-quiz'),
-		description: __('Each correct selection earns proportional credit. Wrong selections are ignored.', 'pressprimer-quiz'),
-		examples: [
-			__('2 correct + 1 wrong → 0.67 points', 'pressprimer-quiz'),
-		],
-	},
-	{
-		value: 'partial_no_wrong',
-		label: __('Partial Credit, No Wrong Answers', 'pressprimer-quiz'),
-		description: __('Proportional credit, but any wrong selection scores zero for the question.', 'pressprimer-quiz'),
-		examples: [
-			__('2 correct + 1 wrong → 0 points', 'pressprimer-quiz'),
-			__('2 correct + 0 wrong → 0.67 points', 'pressprimer-quiz'),
-		],
-	},
-	{
-		value: 'all_or_nothing',
-		label: __('All or Nothing', 'pressprimer-quiz'),
-		description: __('Full credit only when every correct answer is selected and none of the wrong ones.', 'pressprimer-quiz'),
-		examples: [
-			__('2 correct + 0 wrong → 0 points', 'pressprimer-quiz'),
-			__('Only 3 correct + 0 wrong → 1.00 points', 'pressprimer-quiz'),
-		],
-	},
-];
+// Multiple-answer scoring copy (labels, descriptions, worked examples) is
+// localized from PHP via PressPrimer_Quiz_Scoring_Copy::get_modes_for_js() on
+// quizData.maScoringModes, so the builder and the results renderer share one
+// copy source and cannot drift (feature 005, TR-003).
 
 /**
  * Settings Panel Component
@@ -138,8 +109,14 @@ const MA_SCORING_OPTIONS = [
  *                                              correct count exceeds the cap).
  * @param {boolean}  props.saving              Whether a save is currently in progress (drives the
  *                                              loading state on the TOC's Save button).
+ * @param {Function} props.applyTemplate       Applies a settings template to the editor form
+ *                                              (client-side only; nothing persists until save).
+ * @param {Function} props.collectTemplateSettings Returns the editor's current settings as a
+ *                                              template payload (for "Save as template").
+ * @param {string}   props.defaultsFromName    Name of the default template that pre-filled a
+ *                                              fresh quiz, shown as a badge (empty otherwise).
  */
-const SettingsPanel = ({ form, generationMode, setGenerationMode, quizData = {}, maxAnswersWarnings = [], saving = false }) => {
+const SettingsPanel = ({ form, generationMode, setGenerationMode, quizData = {}, maxAnswersWarnings = [], saving = false, applyTemplate, collectTemplateSettings, defaultsFromName = '' }) => {
 	// Watch access_mode to show/hide login message field
 	const accessMode = Form.useWatch('access_mode', form);
 
@@ -152,7 +129,11 @@ const SettingsPanel = ({ form, generationMode, setGenerationMode, quizData = {},
 	const maScoringMode = Form.useWatch('ma_scoring_mode', form);
 	const siteDefaultMaScoring = quizData.default_ma_scoring || 'right_minus_wrong';
 
-	// Watch display_settings so the 14 toggles stay in sync with form state.
+	// Scoring-mode copy (labels, descriptions, examples) localized from PHP's
+	// shared copy provider — see PressPrimer_Quiz_Scoring_Copy::get_modes_for_js().
+	const maScoringOptions = Array.isArray(quizData.maScoringModes) ? quizData.maScoringModes : [];
+
+	// Watch display_settings so the 15 toggles stay in sync with form state.
 	const displaySettings = Form.useWatch('display_settings', form) || {};
 
 	/**
@@ -208,6 +189,23 @@ const SettingsPanel = ({ form, generationMode, setGenerationMode, quizData = {},
 	return (
 		<div className="ppq-settings-layout">
 			<div className="ppq-settings-content">
+		{applyTemplate && (
+			<div className="ppq-settings-toolbar">
+				<ApplyTemplateButton form={form} quizData={quizData} onApply={applyTemplate} />
+				{quizData.canManageSettings && collectTemplateSettings && (
+					<SaveAsTemplateButton onCollectSettings={collectTemplateSettings} />
+				)}
+				{defaultsFromName && (
+					<Tag color="blue" style={{ alignSelf: 'center', marginInlineStart: 4 }}>
+						{sprintf(
+							/* translators: %s: template name. */
+							__('Defaults from: %s', 'pressprimer-quiz'),
+							defaultsFromName
+						)}
+					</Tag>
+				)}
+			</div>
+		)}
 		<Space direction="vertical" size="large" style={{ width: '100%' }}>
 			{hasBranchingRules && (
 				<Alert
@@ -522,7 +520,7 @@ const SettingsPanel = ({ form, generationMode, setGenerationMode, quizData = {},
 				<Form.Item name="ma_scoring_mode" style={{ marginBottom: 0 }}>
 					<Radio.Group style={{ width: '100%' }}>
 						<Space direction="vertical" style={{ width: '100%' }} size="small">
-							{MA_SCORING_OPTIONS.map((option) => {
+							{maScoringOptions.map((option) => {
 								const isSelected = maScoringMode === option.value;
 								const isSiteDefault = option.value === siteDefaultMaScoring;
 								return (

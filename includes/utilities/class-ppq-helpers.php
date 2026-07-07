@@ -515,4 +515,31 @@ class PressPrimer_Quiz_Helpers {
 
 		return current_user_can( 'edit_post', $post_id );
 	}
+
+	/**
+	 * Whether a block of HTML contains math notation that needs rendering.
+	 *
+	 * Scans for any configured opening math delimiter (see
+	 * {@see pressprimer_quiz_math_delimiters()}). Used to decide, at output time,
+	 * whether the KaTeX assets need to be enqueued for a given quiz/question — so
+	 * content without math loads nothing even when the feature is enabled.
+	 *
+	 * @since 3.0.0
+	 *
+	 * @param string $html Rendered HTML to scan.
+	 * @return bool True when an opening delimiter is present.
+	 */
+	public static function content_has_math( $html ) {
+		if ( ! is_string( $html ) || '' === $html ) {
+			return false;
+		}
+
+		foreach ( pressprimer_quiz_math_delimiters() as $delimiter ) {
+			if ( ! empty( $delimiter['left'] ) && false !== strpos( $html, (string) $delimiter['left'] ) ) {
+				return true;
+			}
+		}
+
+		return false;
+	}
 }

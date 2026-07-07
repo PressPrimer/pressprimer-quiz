@@ -112,9 +112,14 @@ class PressPrimer_Quiz_Admin_AI_Generation {
 	 * @param int $bank_id Bank ID to add questions to.
 	 */
 	public function render_panel( $bank_id ) {
-		// Get API key status
+		// Get API key status for the active provider.
 		$user_id    = get_current_user_id();
 		$api_status = PressPrimer_Quiz_AI_Service::get_api_key_status( $user_id );
+
+		// Active provider name for the generation panel (feature 004).
+		$active_provider = PressPrimer_Quiz_AI_Service::get_active_provider();
+		$provider_labels = PressPrimer_Quiz_AI_Service::get_provider_labels();
+		$provider_label  = isset( $provider_labels[ $active_provider ] ) ? $provider_labels[ $active_provider ] : $active_provider;
 
 		// Get categories for selection
 		$categories = [];
@@ -135,9 +140,17 @@ class PressPrimer_Quiz_Admin_AI_Generation {
 			<div class="ppq-ai-setup-prompt">
 				<span class="dashicons dashicons-admin-generic"></span>
 				<h3><?php esc_html_e( 'AI Question Generation', 'pressprimer-quiz' ); ?></h3>
-				<p><?php esc_html_e( 'Generate quiz questions automatically from your course content using AI.', 'pressprimer-quiz' ); ?></p>
-				<a href="<?php echo esc_url( admin_url( 'admin.php?page=pressprimer-quiz-settings' ) ); ?>" class="button button-primary">
-					<?php esc_html_e( 'Configure API Key in Settings', 'pressprimer-quiz' ); ?>
+				<p>
+					<?php
+					printf(
+						/* translators: %s: active AI provider name (e.g. OpenAI). */
+						esc_html__( 'Generate quiz questions automatically from your course content using AI. Add your %s API key to get started.', 'pressprimer-quiz' ),
+						esc_html( $provider_label )
+					);
+					?>
+				</p>
+				<a href="<?php echo esc_url( admin_url( 'admin.php?page=pressprimer-quiz-settings&tab=integrations' ) ); ?>" class="button button-primary">
+					<?php esc_html_e( 'Configure API Key in Settings → AI', 'pressprimer-quiz' ); ?>
 				</a>
 			</div>
 		</div>
@@ -319,6 +332,15 @@ class PressPrimer_Quiz_Admin_AI_Generation {
 						<?php esc_html_e( 'This may take a few minutes for large content. Please wait...', 'pressprimer-quiz' ); ?>
 					</p>
 				</div>
+				<p class="ppq-ai-provider-note">
+					<?php
+					printf(
+						/* translators: %s: active AI provider name (e.g. OpenAI). */
+						esc_html__( 'Using %s for generation.', 'pressprimer-quiz' ),
+						esc_html( $provider_label )
+					);
+					?>
+				</p>
 			</div>
 
 			<!-- Error Display -->
@@ -385,10 +407,10 @@ class PressPrimer_Quiz_Admin_AI_Generation {
 
 		$user_id = get_current_user_id();
 
-		// Get API key
-		$api_key = PressPrimer_Quiz_AI_Service::get_api_key( $user_id );
+		// Get the active provider's API key (feature 004).
+		$api_key = PressPrimer_Quiz_AI_Service::get_api_key_for_provider();
 		if ( empty( $api_key ) || is_wp_error( $api_key ) ) {
-			wp_send_json_error( [ 'message' => __( 'OpenAI API key is not configured.', 'pressprimer-quiz' ) ] );
+			wp_send_json_error( [ 'message' => __( 'No AI API key is configured. Add one in Settings → Integrations.', 'pressprimer-quiz' ) ] );
 		}
 
 		// Get parameters. v2.3 image support: substitute any embedded <img>

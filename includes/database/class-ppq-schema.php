@@ -35,27 +35,232 @@ class PressPrimer_Quiz_Schema {
 	 * @return string SQL for all table creation.
 	 */
 	public static function get_schema() {
+		return implode( '', self::get_core_table_sql() );
+	}
+
+	/**
+	 * Get the CREATE TABLE statement for every core table, keyed by table name.
+	 *
+	 * Single source of truth for the plugin's core schema. Both consumers derive
+	 * from it: get_schema() concatenates the statements for dbDelta(), and
+	 * get_expected_schema() parses them into a column map for the schema
+	 * verifier. A column added to a CREATE TABLE definition therefore flows into
+	 * both the installer and the verifier with no second list to keep in sync.
+	 *
+	 * @since 3.0.0
+	 *
+	 * @return array<string,string> Map of full table name => CREATE TABLE SQL.
+	 */
+	private static function get_core_table_sql() {
 		global $wpdb;
 
 		$charset_collate = $wpdb->get_charset_collate();
 
-		$sql  = self::get_questions_table( $charset_collate );
-		$sql .= self::get_question_revisions_table( $charset_collate );
-		$sql .= self::get_categories_table( $charset_collate );
-		$sql .= self::get_question_tax_table( $charset_collate );
-		$sql .= self::get_banks_table( $charset_collate );
-		$sql .= self::get_bank_questions_table( $charset_collate );
-		$sql .= self::get_quizzes_table( $charset_collate );
-		$sql .= self::get_quiz_items_table( $charset_collate );
-		$sql .= self::get_quiz_rules_table( $charset_collate );
-		$sql .= self::get_groups_table( $charset_collate );
-		$sql .= self::get_group_members_table( $charset_collate );
-		$sql .= self::get_assignments_table( $charset_collate );
-		$sql .= self::get_attempts_table( $charset_collate );
-		$sql .= self::get_attempt_items_table( $charset_collate );
-		$sql .= self::get_events_table( $charset_collate );
+		return array(
+			$wpdb->prefix . 'ppq_questions'          => self::get_questions_table( $charset_collate ),
+			$wpdb->prefix . 'ppq_question_revisions' => self::get_question_revisions_table( $charset_collate ),
+			$wpdb->prefix . 'ppq_categories'         => self::get_categories_table( $charset_collate ),
+			$wpdb->prefix . 'ppq_question_tax'       => self::get_question_tax_table( $charset_collate ),
+			$wpdb->prefix . 'ppq_banks'              => self::get_banks_table( $charset_collate ),
+			$wpdb->prefix . 'ppq_bank_questions'     => self::get_bank_questions_table( $charset_collate ),
+			$wpdb->prefix . 'ppq_quizzes'            => self::get_quizzes_table( $charset_collate ),
+			$wpdb->prefix . 'ppq_quiz_items'         => self::get_quiz_items_table( $charset_collate ),
+			$wpdb->prefix . 'ppq_quiz_rules'         => self::get_quiz_rules_table( $charset_collate ),
+			$wpdb->prefix . 'ppq_groups'             => self::get_groups_table( $charset_collate ),
+			$wpdb->prefix . 'ppq_group_members'      => self::get_group_members_table( $charset_collate ),
+			$wpdb->prefix . 'ppq_assignments'        => self::get_assignments_table( $charset_collate ),
+			$wpdb->prefix . 'ppq_attempts'           => self::get_attempts_table( $charset_collate ),
+			$wpdb->prefix . 'ppq_attempt_items'      => self::get_attempt_items_table( $charset_collate ),
+			$wpdb->prefix . 'ppq_events'             => self::get_events_table( $charset_collate ),
+			$wpdb->prefix . 'ppq_quiz_templates'     => self::get_quiz_templates_table( $charset_collate ),
+		);
+	}
 
-		return $sql;
+	/**
+	 * Get the CREATE TABLE statement for a single core table.
+	 *
+	 * Returns the canonical dbDelta statement for one table, used by the schema
+	 * verifier to recreate a missing core table from the same source get_schema()
+	 * uses. Returns an empty string for tables not defined by the core plugin
+	 * (e.g. addon tables registered only via the expected-schema filter — their
+	 * own migrator owns creation).
+	 *
+	 * @since 3.0.0
+	 *
+	 * @param string $table Full table name (with prefix).
+	 * @return string CREATE TABLE SQL, or '' if not a core table.
+	 */
+	public static function get_table_sql( string $table ): string {
+		$tables = self::get_core_table_sql();
+
+		return isset( $tables[ $table ] ) ? $tables[ $table ] : '';
+	}
+
+	/**
+	 * Get the expected schema map for the current DB version.
+	 *
+	 * Returns [ table_name => [ column_name => column_definition ] ] derived from
+	 * the same CREATE TABLE definitions get_schema() feeds to dbDelta() (see
+	 * get_core_table_sql()). The schema verifier uses this map to detect missing
+	 * columns/tables and to run the idempotent column-add for a repair.
+	 * Comparison is presence-only in 3.0; the definition strings are the SQL
+	 * fragments used when a missing column is re-added.
+	 *
+	 * Addons register their own tables via the pressprimer_quiz_expected_schema
+	 * filter so they get the same check/heal coverage.
+	 *
+	 * @since 3.0.0
+	 *
+	 * @return array<string,array<string,string>> Map of table => column => definition.
+	 */
+	public static function get_expected_schema() {
+		$schema = array();
+
+		foreach ( self::get_core_table_sql() as $table => $create_sql ) {
+			$schema[ $table ] = self::parse_columns_from_create( $create_sql );
+		}
+
+		/**
+		 * Filters the expected database schema map.
+		 *
+		 * Lets addons register their own tables so the schema verifier checks and
+		 * heals them with the same machinery used for core tables. Each entry is
+		 * keyed by the full table name (including $wpdb->prefix) and maps to one
+		 * of two shapes:
+		 *
+		 *  - A simple [ column_name => column_definition ] array (always checked).
+		 *  - A structured array [ 'columns' => [ column => definition ],
+		 *    'ready' => bool ]. When 'ready' is false the table is skipped — an
+		 *    addon sets this while its own migrations are still pending so the
+		 *    verifier does not flag a table that has not been created yet.
+		 *
+		 * Column definitions are the SQL fragments used to add the column, e.g.
+		 * 'ma_scoring_mode VARCHAR(32) DEFAULT NULL'.
+		 *
+		 * @since 3.0.0
+		 *
+		 * @param array $schema Map of table name => column definitions.
+		 */
+		$schema = apply_filters( 'pressprimer_quiz_expected_schema', $schema );
+
+		return self::normalize_expected_schema( $schema );
+	}
+
+	/**
+	 * Parse column definitions out of a CREATE TABLE statement.
+	 *
+	 * Reads the body of a dbDelta-style CREATE TABLE string and returns each
+	 * column as [ column_name => full_column_definition ], skipping index and
+	 * key lines (PRIMARY KEY, UNIQUE KEY, KEY, ...). Presence detection only
+	 * needs the column names; the definitions are retained so the verifier can
+	 * re-add a missing column from the canonical source.
+	 *
+	 * @since 3.0.0
+	 *
+	 * @param string $create_sql A CREATE TABLE statement.
+	 * @return array<string,string> Map of column name => column definition.
+	 */
+	private static function parse_columns_from_create( $create_sql ) {
+		$columns     = array();
+		$lines       = explode( "\n", (string) $create_sql );
+		$in_body     = false;
+		$key_markers = array( 'PRIMARY', 'UNIQUE', 'KEY', 'INDEX', 'FULLTEXT', 'SPATIAL', 'CONSTRAINT', 'FOREIGN', 'CHECK' );
+
+		foreach ( $lines as $line ) {
+			$trimmed = trim( $line );
+
+			if ( '' === $trimmed ) {
+				continue;
+			}
+
+			if ( ! $in_body ) {
+				// The opening "CREATE TABLE ... (" line starts the column body.
+				if ( 0 === stripos( $trimmed, 'CREATE TABLE' ) && false !== strpos( $trimmed, '(' ) ) {
+					$in_body = true;
+				}
+				continue;
+			}
+
+			// The closing ") ..." line ends the column body.
+			if ( 0 === strpos( $trimmed, ')' ) ) {
+				break;
+			}
+
+			$trimmed = rtrim( $trimmed, ',' );
+			$parts   = preg_split( '/\s+/', $trimmed );
+
+			if ( empty( $parts[0] ) ) {
+				continue;
+			}
+
+			// Skip index/key declarations — only real columns are wanted.
+			if ( in_array( strtoupper( $parts[0] ), $key_markers, true ) ) {
+				continue;
+			}
+
+			$column_name = trim( $parts[0], '`' );
+
+			if ( '' !== $column_name ) {
+				$columns[ $column_name ] = $trimmed;
+			}
+		}
+
+		return $columns;
+	}
+
+	/**
+	 * Normalize a (possibly filtered) expected-schema map.
+	 *
+	 * Accepts both supported entry shapes (see get_expected_schema()), drops
+	 * tables whose registrant reports its migrations are not ready, unwraps the
+	 * structured shape to [ column => definition ], and discards malformed
+	 * entries so a bad filter registration cannot corrupt the verifier input.
+	 *
+	 * @since 3.0.0
+	 *
+	 * @param mixed $schema The filtered schema map.
+	 * @return array<string,array<string,string>> Normalized table => column => definition map.
+	 */
+	private static function normalize_expected_schema( $schema ) {
+		$normalized = array();
+
+		if ( ! is_array( $schema ) ) {
+			return $normalized;
+		}
+
+		foreach ( $schema as $table => $definition ) {
+			if ( ! is_string( $table ) || '' === $table || ! is_array( $definition ) ) {
+				continue;
+			}
+
+			// Structured shape: [ 'columns' => [...], 'ready' => bool ].
+			if ( isset( $definition['columns'] ) && is_array( $definition['columns'] ) ) {
+				$ready = ! isset( $definition['ready'] ) || (bool) $definition['ready'];
+
+				if ( ! $ready ) {
+					continue;
+				}
+
+				$columns = $definition['columns'];
+			} else {
+				// Simple shape: [ column => definition ].
+				$columns = $definition;
+			}
+
+			$clean = array();
+
+			foreach ( $columns as $column => $column_def ) {
+				if ( is_string( $column ) && '' !== $column && is_string( $column_def ) ) {
+					$clean[ $column ] = $column_def;
+				}
+			}
+
+			if ( ! empty( $clean ) ) {
+				$normalized[ $table ] = $clean;
+			}
+		}
+
+		return $normalized;
 	}
 
 	/**
@@ -397,7 +602,7 @@ class PressPrimer_Quiz_Schema {
 		return "CREATE TABLE {$wpdb->prefix}ppq_assignments (
 			id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
 			quiz_id BIGINT UNSIGNED NOT NULL,
-			assignee_type ENUM('group', 'user') NOT NULL,
+			assignee_type ENUM('group', 'user', 'ld_group') NOT NULL,
 			assignee_id BIGINT UNSIGNED NOT NULL,
 			assigned_by BIGINT UNSIGNED NOT NULL,
 			due_at DATETIME DEFAULT NULL,
@@ -430,6 +635,8 @@ class PressPrimer_Quiz_Schema {
 			guest_name VARCHAR(100) DEFAULT NULL,
 			guest_token CHAR(64) DEFAULT NULL,
 			token_expires_at DATETIME DEFAULT NULL,
+			guest_consent TINYINT(1) DEFAULT NULL,
+			guest_consent_at DATETIME DEFAULT NULL,
 			source_url VARCHAR(2048) DEFAULT NULL,
 			started_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
 			finished_at DATETIME DEFAULT NULL,
@@ -440,6 +647,7 @@ class PressPrimer_Quiz_Schema {
 			score_percent DECIMAL(5,2) DEFAULT NULL,
 			passed TINYINT(1) DEFAULT NULL,
 			curved_score DECIMAL(5,2) DEFAULT NULL,
+			ma_scoring_mode VARCHAR(32) DEFAULT NULL,
 			status ENUM('in_progress', 'submitted', 'abandoned') NOT NULL DEFAULT 'in_progress',
 			current_position SMALLINT UNSIGNED NOT NULL DEFAULT 0,
 			questions_json LONGTEXT NOT NULL,
@@ -511,6 +719,34 @@ class PressPrimer_Quiz_Schema {
 			KEY attempt_id (attempt_id),
 			KEY event_type (event_type),
 			KEY created_at (created_at)
+		) $charset_collate;\n";
+	}
+
+	/**
+	 * Get quiz settings templates table schema
+	 *
+	 * Stores named, partial snapshots of quiz settings (feature 003). Presets
+	 * are code/filter only and are never rows here. settings_json is a JSON
+	 * object of quiz-level settings keys, sanitized key-by-key on write.
+	 *
+	 * @since 3.0.0
+	 *
+	 * @param string $charset_collate Character set and collation.
+	 * @return string SQL for quiz templates table.
+	 */
+	private static function get_quiz_templates_table( $charset_collate ) {
+		global $wpdb;
+
+		return "CREATE TABLE {$wpdb->prefix}ppq_quiz_templates (
+			id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+			name VARCHAR(100) NOT NULL,
+			description TEXT DEFAULT NULL,
+			settings_json LONGTEXT NOT NULL,
+			created_by BIGINT UNSIGNED NOT NULL,
+			created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+			updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+			PRIMARY KEY  (id),
+			KEY created_by (created_by)
 		) $charset_collate;\n";
 	}
 }

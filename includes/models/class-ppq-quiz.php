@@ -248,7 +248,7 @@ class PressPrimer_Quiz_Quiz extends PressPrimer_Quiz_Model {
 	/**
 	 * Quiz-level display defaults
 	 *
-	 * Sparse JSON object of overrides for the 14 Start Page / Results Page
+	 * Sparse JSON object of overrides for the 15 Start Page / Results Page
 	 * display toggles. NULL or empty means "use hard-coded defaults
 	 * everywhere." Keys must match the snake_case shortcode attribute names.
 	 *
@@ -367,7 +367,7 @@ class PressPrimer_Quiz_Quiz extends PressPrimer_Quiz_Model {
 	private $_rules = null;
 
 	/**
-	 * Hard-coded defaults for the 14 quiz display options
+	 * Hard-coded defaults for the 15 quiz display options
 	 *
 	 * Authoritative key list. All values default to true (existing behavior:
 	 * every section visible) and are overridden by quiz-level JSON or by an
@@ -381,20 +381,21 @@ class PressPrimer_Quiz_Quiz extends PressPrimer_Quiz_Model {
 	 * @var array<string, bool>
 	 */
 	private static $display_hard_defaults = array(
-		'show_description'        => true,
-		'show_question_count'     => true,
-		'show_quiz_type'          => true,
-		'show_time_limit'         => true,
-		'show_pass_percentage'    => true,
-		'show_attempt_count'      => true,
-		'show_attempt_history'    => true,
-		'show_score'              => true,
-		'show_pass_fail'          => true,
-		'show_time_spent'         => true,
-		'show_average'            => true,
-		'show_category_breakdown' => true,
-		'show_question_review'    => true,
-		'show_retake_button'      => true,
+		'show_description'          => true,
+		'show_question_count'       => true,
+		'show_quiz_type'            => true,
+		'show_time_limit'           => true,
+		'show_pass_percentage'      => true,
+		'show_attempt_count'        => true,
+		'show_attempt_history'      => true,
+		'show_score'                => true,
+		'show_pass_fail'            => true,
+		'show_time_spent'           => true,
+		'show_average'              => true,
+		'show_category_breakdown'   => true,
+		'show_question_review'      => true,
+		'show_retake_button'        => true,
+		'show_scoring_explanations' => true,
 	);
 
 	/**
@@ -456,6 +457,227 @@ class PressPrimer_Quiz_Quiz extends PressPrimer_Quiz_Model {
 	}
 
 	/**
+	 * Get the canonical per-field sanitizers for quiz settings keys.
+	 *
+	 * Single source of truth for how each quiz-level *settings* value is
+	 * normalized to its stored form. Returns a map of setting key => callable;
+	 * each callable takes one raw value and returns the sanitized value
+	 * (clamping or defaulting — never a WP_Error), mirroring the exact rules the
+	 * quiz editor applies in the REST create/update handlers.
+	 *
+	 * Settings Templates (feature 003) reuse this so a template payload is
+	 * sanitized identically to the editor, with no second validation table to
+	 * drift. Identity and content columns (id, uuid, title, owner_id, status,
+	 * timestamps, …) are deliberately absent: templates store settings only.
+	 *
+	 * @since 3.0.0
+	 *
+	 * @return array<string,callable> Map of setting key => sanitizer callable.
+	 */
+	public static function get_settings_sanitizers() {
+		// Normalize any truthy/falsy value to a stored 1/0, matching the model's
+		// boolean_fields handling in create().
+		$bool = static function ( $value ) {
+			return absint( $value ) ? 1 : 0;
+		};
+
+		// Accept an array or a JSON string; store normalized JSON, or NULL when
+		// empty or unparseable (defense in depth against a hand-edited row).
+		$json = static function ( $value ) {
+			if ( null === $value || '' === $value ) {
+				return null;
+			}
+
+			if ( is_array( $value ) ) {
+				$encoded = wp_json_encode( $value );
+				return false !== $encoded ? $encoded : null;
+			}
+
+			if ( is_string( $value ) ) {
+				$decoded = json_decode( $value, true );
+				if ( null === $decoded ) {
+					return null;
+				}
+				$encoded = wp_json_encode( $decoded );
+				return false !== $encoded ? $encoded : null;
+			}
+
+			return null;
+		};
+
+		return array(
+			'mode'                     => static function ( $value ) {
+				$value = sanitize_key( (string) $value );
+				return in_array( $value, array( 'tutorial', 'timed' ), true ) ? $value : 'tutorial';
+			},
+			'time_limit_seconds'       => static function ( $value ) {
+				if ( null === $value || '' === $value || 0 === (int) $value ) {
+					return null;
+				}
+				return min( 86400, max( 60, absint( $value ) ) );
+			},
+			'pass_percent'             => static function ( $value ) {
+				if ( ! is_numeric( $value ) ) {
+					return 70.0;
+				}
+				return (float) min( 100, max( 0, (float) $value ) );
+			},
+			'allow_skip'               => $bool,
+			'allow_backward'           => $bool,
+			'allow_resume'             => $bool,
+			'max_attempts'             => static function ( $value ) {
+				if ( null === $value || '' === $value || 0 === (int) $value ) {
+					return null;
+				}
+				return min( 100, max( 1, absint( $value ) ) );
+			},
+			'attempt_delay_minutes'    => static function ( $value ) {
+				return min( 10080, max( 0, absint( $value ) ) );
+			},
+			'randomize_questions'      => $bool,
+			'randomize_answers'        => $bool,
+			'page_mode'                => static function ( $value ) {
+				$value = sanitize_key( (string) $value );
+				return in_array( $value, array( 'single', 'paged' ), true ) ? $value : 'single';
+			},
+			'questions_per_page'       => static function ( $value ) {
+				$value = absint( $value );
+				return ( $value >= 1 && $value <= 100 ) ? $value : 1;
+			},
+			'show_answers'             => static function ( $value ) {
+				$value = sanitize_key( (string) $value );
+				return in_array( $value, array( 'never', 'after_submit', 'after_pass' ), true ) ? $value : 'after_submit';
+			},
+			'enable_confidence'        => $bool,
+			'show_points'              => $bool,
+			'theme'                    => static function ( $value ) {
+				$value = sanitize_key( (string) $value );
+				return '' !== $value ? $value : 'default';
+			},
+			'theme_settings_json'      => $json,
+			'band_feedback_json'       => $json,
+			'access_mode'              => static function ( $value ) {
+				$value = sanitize_key( (string) $value );
+				$valid = array( 'default', 'guest_optional', 'guest_required', 'login_required' );
+				return in_array( $value, $valid, true ) ? $value : 'default';
+			},
+			'login_message'            => static function ( $value ) {
+				return wp_kses_post( (string) $value );
+			},
+			'ma_scoring_mode'          => static function ( $value ) {
+				if ( null === $value || '' === $value ) {
+					return null;
+				}
+				$valid = array( 'right_minus_wrong', 'proportional', 'partial_no_wrong', 'all_or_nothing' );
+				return ( is_string( $value ) && in_array( $value, $valid, true ) ) ? $value : null;
+			},
+			'display_settings_json'    => $json,
+			'max_answers_per_question' => static function ( $value ) {
+				if ( null === $value || '' === $value || ! is_numeric( $value ) ) {
+					return null;
+				}
+				$intval = (int) $value;
+				return ( $intval >= 2 && $intval <= 8 ) ? $intval : null;
+			},
+			'display_density'          => static function ( $value ) {
+				$value = sanitize_key( (string) $value );
+				return in_array( $value, array( 'default', 'standard', 'condensed' ), true ) ? $value : 'default';
+			},
+			'pool_enabled'             => $bool,
+			'max_questions'            => static function ( $value ) {
+				if ( null === $value || '' === $value ) {
+					return null;
+				}
+				$value = absint( $value );
+				return $value >= 1 ? $value : null;
+			},
+			'enable_sr'                => $bool,
+		);
+	}
+
+	/**
+	 * Get the list of quiz-level settings keys a template may store (include map).
+	 *
+	 * Defaults to the keys of get_settings_sanitizers() so the include list and
+	 * the core sanitizers cannot drift, then runs the
+	 * pressprimer_quiz_template_settings_keys filter so addons can register their
+	 * own quiz-level settings keys. This is the single include map consumed by
+	 * the model sanitizer (sanitize_settings) and by the apply preview.
+	 *
+	 * @since 3.0.0
+	 *
+	 * @return string[] Settings key names.
+	 */
+	public static function get_settings_keys() {
+		$keys = array_keys( static::get_settings_sanitizers() );
+
+		/**
+		 * Filters the quiz settings keys a template may include.
+		 *
+		 * Addons add their own quiz-level settings keys here so those keys are
+		 * captured into and applied from templates. A key registered without a
+		 * matching core sanitizer is stored as sanitized text on write. Keys not
+		 * present in this map are dropped on save (and, when an addon that
+		 * registered a key is later inactive, that key is simply absent here and
+		 * is skipped on apply).
+		 *
+		 * @since 3.0.0
+		 *
+		 * @param string[] $keys Settings key names.
+		 */
+		$keys = apply_filters( 'pressprimer_quiz_template_settings_keys', $keys );
+
+		if ( ! is_array( $keys ) ) {
+			return array();
+		}
+
+		$normalized = array();
+		foreach ( $keys as $key ) {
+			if ( is_string( $key ) && '' !== $key && ! in_array( $key, $normalized, true ) ) {
+				$normalized[] = $key;
+			}
+		}
+
+		return $normalized;
+	}
+
+	/**
+	 * Sanitize a partial map of quiz settings against the canonical sanitizers.
+	 *
+	 * Drops any key not present in the include map (get_settings_keys) and runs
+	 * every kept key through its sanitizer. Templates are partial: only the keys
+	 * present in $settings are returned. This is the single entry point callers
+	 * should use; the raw sanitizer map is exposed only so the apply preview can
+	 * enumerate keys.
+	 *
+	 * @since 3.0.0
+	 *
+	 * @param array $settings Raw settings key => value pairs.
+	 * @return array Sanitized settings (include-map keys only).
+	 */
+	public static function sanitize_settings( array $settings ) {
+		$allowed    = static::get_settings_keys();
+		$sanitizers = static::get_settings_sanitizers();
+		$clean      = array();
+
+		foreach ( $settings as $key => $value ) {
+			if ( ! is_string( $key ) || ! in_array( $key, $allowed, true ) ) {
+				continue;
+			}
+
+			if ( isset( $sanitizers[ $key ] ) ) {
+				$clean[ $key ] = call_user_func( $sanitizers[ $key ], $value );
+			} else {
+				// Addon-registered key without a core sanitizer: keep scalars as
+				// sanitized text; drop anything non-scalar.
+				$clean[ $key ] = is_scalar( $value ) ? sanitize_text_field( (string) $value ) : null;
+			}
+		}
+
+		return $clean;
+	}
+
+	/**
 	 * Get quiz by UUID
 	 *
 	 * @since 1.0.0
@@ -490,6 +712,28 @@ class PressPrimer_Quiz_Quiz extends PressPrimer_Quiz_Model {
 	 * @return int|WP_Error Quiz ID on success, WP_Error on failure.
 	 */
 	public static function create( array $data ) {
+		// Apply the site default settings template (feature 003, FR-006) for any
+		// settings keys the caller did not provide. Skipped for review quizzes and
+		// when the caller opts out via 'skip_default_template'. Callers that pass a
+		// full settings set (the Quiz Builder save) are unaffected — every key is
+		// already present, so nothing is filled.
+		$skip_default           = ! empty( $data['skip_default_template'] ) || ! empty( $data['is_review_quiz'] );
+		$applied_default_source = '';
+		unset( $data['skip_default_template'] );
+
+		if ( ! $skip_default && class_exists( 'PressPrimer_Quiz_Default_Template' ) ) {
+			$default = PressPrimer_Quiz_Default_Template::resolve();
+
+			if ( is_array( $default ) && ! empty( $default['settings'] ) ) {
+				foreach ( $default['settings'] as $key => $value ) {
+					if ( ! array_key_exists( $key, $data ) ) {
+						$data[ $key ] = $value;
+					}
+				}
+				$applied_default_source = isset( $default['source'] ) ? (string) $default['source'] : '';
+			}
+		}
+
 		// Validate required fields
 		if ( empty( $data['title'] ) ) {
 			return new WP_Error(
@@ -682,6 +926,19 @@ class PressPrimer_Quiz_Quiz extends PressPrimer_Quiz_Model {
 			 * @param array $data    The quiz data.
 			 */
 			do_action( 'pressprimer_quiz_quiz_created', $quiz_id, $data );
+
+			// Audit hook: the site default template populated this new quiz.
+			if ( '' !== $applied_default_source ) {
+				/**
+				 * Fires when the default settings template populates a new quiz.
+				 *
+				 * @since 3.0.0
+				 *
+				 * @param int    $quiz_id The new quiz ID.
+				 * @param string $source  The default source ('preset:{id}' or 'template:{id}').
+				 */
+				do_action( 'pressprimer_quiz_template_applied_defaults', $quiz_id, $applied_default_source );
+			}
 		}
 
 		return $quiz_id;
@@ -1286,14 +1543,14 @@ class PressPrimer_Quiz_Quiz extends PressPrimer_Quiz_Model {
 	 * Three-tier precedence:
 	 *   1. Instance override (block/shortcode attribute that was explicitly set)
 	 *   2. Quiz default (key present in display_settings_json)
-	 *   3. Hard-coded default (true for all 14 keys)
+	 *   3. Hard-coded default (true for all 15 keys)
 	 *
 	 * Returns true for any unknown key, which keeps the renderer safe if a
 	 * caller misspells a key during development.
 	 *
 	 * @since 2.3.0
 	 *
-	 * @param string $key                One of the 14 display option keys.
+	 * @param string $key                One of the 15 display option keys.
 	 * @param array  $instance_overrides Optional. Block/shortcode attribute values, snake_case keys.
 	 * @return bool Resolved boolean value.
 	 */
@@ -1315,7 +1572,7 @@ class PressPrimer_Quiz_Quiz extends PressPrimer_Quiz_Model {
 	}
 
 	/**
-	 * Resolve all 14 display options for this quiz
+	 * Resolve all 15 display options for this quiz
 	 *
 	 * Convenience wrapper around resolve_display_option() that returns the
 	 * full set so the renderer can iterate without 14 individual calls.
@@ -1323,7 +1580,7 @@ class PressPrimer_Quiz_Quiz extends PressPrimer_Quiz_Model {
 	 * @since 2.3.0
 	 *
 	 * @param array $instance_overrides Optional. Block/shortcode attribute values.
-	 * @return array<string, bool> Map of all 14 display keys → resolved boolean values.
+	 * @return array<string, bool> Map of all 15 display keys → resolved boolean values.
 	 */
 	public function resolve_all_display_options( array $instance_overrides = array() ) {
 		$resolved = array();
@@ -1376,12 +1633,26 @@ class PressPrimer_Quiz_Quiz extends PressPrimer_Quiz_Model {
 	public function get_effective_display_density() {
 		// If quiz has specific setting (not 'default'), use it
 		if ( $this->display_density && 'default' !== $this->display_density ) {
-			return $this->display_density;
+			$density = $this->display_density;
+		} else {
+			// Fall back to global setting
+			$settings = get_option( 'pressprimer_quiz_settings', [] );
+			$density  = isset( $settings['display_density'] ) ? $settings['display_density'] : 'standard';
 		}
 
-		// Fall back to global setting
-		$settings = get_option( 'pressprimer_quiz_settings', [] );
-
-		return isset( $settings['display_density'] ) ? $settings['display_density'] : 'standard';
+		/**
+		 * Filter the effective display density for a quiz.
+		 *
+		 * Mirrors `pressprimer_quiz_quiz_theme`, letting an integration apply a
+		 * density override at render time without mutating the stored quiz row
+		 * (for example, the School addon's shared spaced-repetition review
+		 * container, which is rendered for many students).
+		 *
+		 * @since 3.0.0
+		 *
+		 * @param string                $density Display density: 'standard' or 'condensed'.
+		 * @param PressPrimer_Quiz_Quiz $quiz    Quiz object.
+		 */
+		return apply_filters( 'pressprimer_quiz_quiz_density', $density, $this );
 	}
 }

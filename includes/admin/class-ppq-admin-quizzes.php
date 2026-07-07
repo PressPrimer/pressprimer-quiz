@@ -405,6 +405,45 @@ class PressPrimer_Quiz_Admin_Quizzes {
 	}
 
 	/**
+	 * Enqueue the math (KaTeX) assets for the preview page when needed.
+	 *
+	 * Scans the preview's question content (stems, answers, feedback) for math
+	 * notation and loads KaTeX only when the feature is enabled and math is
+	 * present, so previews without math add no assets.
+	 *
+	 * @since 3.0.0
+	 *
+	 * @param array $questions Preview question items (each with a 'revision').
+	 */
+	private function maybe_enqueue_preview_math( $questions ) {
+		if ( ! pressprimer_quiz_math_enabled() ) {
+			return;
+		}
+
+		$content = '';
+		foreach ( (array) $questions as $item ) {
+			if ( empty( $item['revision'] ) ) {
+				continue;
+			}
+
+			$revision = $item['revision'];
+			$content .= ' ' . (string) $revision->stem;
+			$content .= ' ' . (string) $revision->feedback_correct;
+			$content .= ' ' . (string) $revision->feedback_incorrect;
+
+			foreach ( (array) $revision->get_answers() as $answer ) {
+				if ( isset( $answer['text'] ) ) {
+					$content .= ' ' . (string) $answer['text'];
+				}
+			}
+		}
+
+		if ( PressPrimer_Quiz_Helpers::content_has_math( $content ) ) {
+			pressprimer_quiz_enqueue_math_assets();
+		}
+	}
+
+	/**
 	 * Render preview page HTML
 	 *
 	 * @since 1.0.0
@@ -413,6 +452,7 @@ class PressPrimer_Quiz_Admin_Quizzes {
 	 * @param array                 $questions Array of question/revision pairs.
 	 */
 	private function render_preview_page( $quiz, $questions ) {
+		$this->maybe_enqueue_preview_math( $questions );
 		?>
 		<div class="wrap ppq-quiz-preview-wrap">
 			<!-- Preview Mode Banner -->
@@ -613,6 +653,21 @@ class PressPrimer_Quiz_Admin_Quizzes {
 				'display_settings'         => (object) array(),
 				'max_answers_per_question' => null,
 			];
+
+			// Pre-fill a fresh quiz from the site default settings template, before
+			// the builder first renders (feature 003, FR-006). The editor applies
+			// these client-side and shows a "Defaults from" badge; nothing is
+			// persisted until the author saves.
+			if ( class_exists( 'PressPrimer_Quiz_Default_Template' ) ) {
+				$default_template = PressPrimer_Quiz_Default_Template::resolve();
+
+				if ( is_array( $default_template ) ) {
+					$quiz_data['defaultTemplate'] = [
+						'name'     => $default_template['name'],
+						'settings' => (object) $default_template['settings'],
+					];
+				}
+			}
 		}
 
 		// Site-wide MA scoring default — used by the editor to render the
@@ -621,6 +676,25 @@ class PressPrimer_Quiz_Admin_Quizzes {
 			'pressprimer_quiz_default_ma_scoring',
 			'right_minus_wrong'
 		);
+
+		// Whether the current user may manage site settings. Gates the builder's
+		// "Save as template" action — templates are a site-wide policy object, so
+		// only settings-capable users can create them. Applying remains available
+		// to any quiz editor.
+		$quiz_data['canManageSettings'] = current_user_can( 'pressprimer_quiz_manage_settings' );
+
+		// Whether the current user is a site administrator. Gates the Premium
+		// Settings tab's upsell preview on a free site — a teacher can neither
+		// upgrade nor use premium options, so the tab stays hidden from them until
+		// an add-on is active (admins-only upsells).
+		$quiz_data['isAdmin'] = current_user_can( 'manage_options' );
+
+		// Multiple-answer scoring copy (labels, descriptions, worked examples) for
+		// the builder's scoring cards. Sourced from the shared copy provider so the
+		// builder and the results renderer cannot drift (feature 005, TR-003).
+		if ( class_exists( 'PressPrimer_Quiz_Scoring_Copy' ) ) {
+			$quiz_data['maScoringModes'] = PressPrimer_Quiz_Scoring_Copy::get_modes_for_js();
+		}
 
 		/**
 		 * Filter quiz editor data before passing to React
@@ -1362,6 +1436,17 @@ class PressPrimer_Quiz_Quizzes_List_Table extends WP_List_Table {
 			$where_values[]  = absint( $get_author );
 		}
 
+		// Exclude School's spaced-repetition review quizzes by default; an
+		// include_review_quizzes=1 query arg restores them for School flows and
+		// debugging (Post-Scope Behavioral Amendment, 2026-06-11). Flows to both
+		// the count and the items query via $where_sql.
+		$include_review = isset( $_GET['include_review_quizzes'] )
+			&& '1' === sanitize_text_field( wp_unslash( $_GET['include_review_quizzes'] ) );
+		if ( ! $include_review ) {
+			$where_clauses[] = 'is_review_quiz = %d';
+			$where_values[]  = 0;
+		}
+
 		// Build WHERE clause
 		$where_sql = ! empty( $where_clauses )
 			? 'WHERE ' . implode( ' AND ', $where_clauses )
@@ -1533,6 +1618,28 @@ class PressPrimer_Quiz_Quizzes_List_Table extends WP_List_Table {
 			),
 			esc_html__( 'Preview', 'pressprimer-quiz' )
 		);
+
+		// Reset attempts action — deep-links to the Data Tools tab with this
+		// quiz preselected and its preview auto-run. Destructive site-level
+		// tool, so it requires both the manage-all and manage-settings
+		// capabilities (matches the reset endpoints' permission gate).
+		if ( current_user_can( 'pressprimer_quiz_manage_all' )
+			&& current_user_can( 'pressprimer_quiz_manage_settings' ) ) {
+			$actions['reset_attempts'] = sprintf(
+				'<a href="%s">%s</a>',
+				esc_url(
+					add_query_arg(
+						[
+							'page'       => 'pressprimer-quiz-settings',
+							'tab'        => 'data-tools',
+							'reset_quiz' => $item->id,
+						],
+						admin_url( 'admin.php' )
+					)
+				),
+				esc_html__( 'Reset Attempts', 'pressprimer-quiz' )
+			);
+		}
 
 		// Build output
 		$title = ! empty( $item->title ) ? esc_html( $item->title ) : '<em>' . esc_html__( '(no title)', 'pressprimer-quiz' ) . '</em>';

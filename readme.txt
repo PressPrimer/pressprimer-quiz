@@ -3,7 +3,7 @@ Contributors: pressprimer
 Tags: quiz, learndash, assessment, lms, elearning
 Requires at least: 6.4
 Tested up to: 7.0
-Stable tag: 2.3.1
+Stable tag: 3.0.0
 Requires PHP: 7.4
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -24,9 +24,9 @@ Most WordPress quiz plugins are built for BuzzFeed-style trivia and basic scorin
 
 PressPrimer Quiz delivers enterprise-grade assessment and includes all of the critical features you get in premium plugins at no cost:
 
-* **AI-Powered Question Generation** – Use your own OpenAI API key to generate questions from text, PDFs, or Word documents. No credits to buy, no middleware fees, no limits.
+* **AI-Powered Question Generation** – Use your own OpenAI or Anthropic (Claude) API key to generate questions from text, PDFs, or Word documents. No credits to buy, no middleware fees, no limits.
 * **Deep LMS Integration** – Native integration with popular WordPress LMS plugins, including LearnDash, Tutor LMS, LifterLMS, and LearnPress. Quizzes appear in lessons or topics, trigger completions, and respect enrollment—automatically.
-* **Modern, Beautiful Design** – Three professional themes that rival SaaS products.
+* **Modern, Beautiful Design** – Six professional themes.
 * **Real Reporting** – Score distribution, category breakdowns, time analytics, confidence reporting, and attempt history. 
 * **Built to Prevent Cheating** – Server-side answer validation means correct answers are never exposed in page source. You can also limit attempts and force delays between retries.
 * **Server-Side Resume That Works Everywhere** – Every answer is instantly saved to the server. Students can pause on their phone and resume on their laptop without losing a single response.
@@ -36,19 +36,15 @@ PressPrimer Quiz delivers enterprise-grade assessment and includes all of the cr
 
 PressPrimer Quiz includes features in the free version that competitors charge for:
 
-* **Unlimited quizzes and questions** – No artificial limits
-* **AI question generation** – Bring your own OpenAI API key
-* **LMS integrations** – LearnDash, Tutor LMS, LifterLMS & LearnPress
+* **Front-end dashboard** – Add a "My Results" area to any page with the [pressprimer_quiz_dashboard] shortcode or block
+* **Math & equation rendering** – Write LaTeX in questions and answers, rendered with bundled KaTeX
+* **Quiz  templates** – Save and reuse quiz settings
 * **Question banks** – Organize and reuse questions across quizzes
 * **Dynamic quiz generation** – Pull random questions based on category, difficulty, and question bank
-* **Server-side save and resume** – Students can pause and continue later from any device
-* **Guest support** – Optional email capture for non-registered users
-* **Score-banded feedback** – Different messages based on performance
+* **Guest support** – Optional GDPR-compliant email capture for non-registered users
 * **Four multiple-answer scoring modes** – Right Minus Wrong, Proportional, Partial No Wrong, and All-or-Nothing
-* **Per-question and per-answer feedback** – Explain correct and incorrect answers
+* **Per-question and per-answer feedback** – Explain correct and incorrect answers, with score-banded result messages and optional confidence ratings
 * **Images in questions and answers** – Drag-and-drop uploader with a click-to-zoom lightbox on the front end
-* **Confidence ratings** – Optional checkbox for students to indicate certainty
-* **Three professional themes** – Default, Modern, and Minimal
 * **Question pool** – Limit the number of questions shown per attempt so each student gets a random subset from the full list
 * **Random distractor subsets** – Maximum Answers Per Question shows each student a random subset of distractors while always showing every correct answer
 * **Customizable Appearance** – Adjust fonts, colors, spacing, and other visual styles; includes Condensed Mode for streamlined quizzes with reduced vertical spacing
@@ -89,19 +85,22 @@ All integrations are bundled in the free version.
 Unlock additional premium features at [pressprimer.com](https://pressprimer.com/):
 
 * **Groups & Assignments** – Organize students into groups, assign quizzes with due dates, and track completion progress
-* **Spaced Repetition** – Schedule review sessions using the SM-2 algorithm with a student dashboard, email reminders, and educator tracking
+* **Front-End Teacher Dashboard** – Manage groups and assignments from a front-end page instead of wp-admin, with native LearnDash Groups support
+* **Spaced Repetition** – Schedule review sessions using the SM-2 and FSRS algorithms with a student dashboard, email reminders, and educator tracking
 * **Import/Export** – Move questions between sites or migrate from other quiz plugins with CSV, JSON, and XML support
 * **Pre-/Post-Test Analysis** – Link quizzes as pre/post pairs and measure learning gain with score and category comparison charts
 * **Quiz Detail Reports** – Per-quiz analytics dashboard with score distribution, category performance, question difficulty analysis, and score trends over time
 * **Group Performance Reports** – Compare groups side by side, drill into individual member results, and track weekly score trends
 * **Question Quality Analytics** – Identify problem questions with difficulty indexes, discrimination analysis, and distractor effectiveness analysis
-* **LearnDash Quiz Import** – Migrate entire LearnDash quizzes with questions into PressPrimer Quiz individually or in batches
+* **LearnDash & LifterLMS Quiz Import** – Migrate entire quizzes with questions from LearnDash or LifterLMS, individually or in batches
 * **Quiz Proctoring** – Monitor tab switches and fullscreen exits during quiz attempts with configurable flag thresholds, incident reports, per-quiz overrides, and desktop-only enforcement
+* **Integrity Analytics** – Flag completed attempts with statistically unusual patterns (timing, answer similarity, shared devices, concurrent sessions) for review
 * **Assignment Reminder Emails** – Automated reminder emails for students approaching assignment deadlines, with configurable timing windows and customizable templates
 * **Branching Logic** – Create rules that skip or jump to questions based on student answers, with path-through-quiz visualization in reports
 * **Curve Grading** – Apply grading curves to quiz scores with multiple methods
 * **xAPI/LRS Integration** – Send detailed learning data to your Learning Record Store for compliance and analytics
-* **White-Label Branding** – Remove all PressPrimer branding and customize with your own logos, colors, and plugin name
+* **WP Fusion Integration** – Apply CRM tags on quiz registration, completion, pass, or fail across 60+ CRMs through WP Fusion
+* **White-Label Branding** – Remove all PressPrimer branding across the admin and the front-end dashboard, and customize with your own logos, colors, and plugin name
 * **Audit Logging** – Read-only log of every quiz, question, settings, and attempt change for compliance and accountability
 * **Question Recovery & Version History** – Restore deleted questions and track every edit with one-click rollback to previous versions
 * **AI Distractor Generation** – Generate plausible wrong answers for multiple choice questions using OpenAI, with individual review and bulk generation across entire question banks
@@ -130,6 +129,10 @@ The `/src` directory contains all unminified source files. The plugin uses webpa
 1. Clone the repository
 2. Run `npm install` to install dependencies
 3. Run `npm run build` to compile assets
+
+= Third-Party Libraries =
+
+Math notation rendering uses [KaTeX](https://katex.org/) (version 0.17.0, MIT license), bundled locally in `assets/vendor/katex/` — there are no external or CDN requests. The official minified distribution is included; it is obtained via `npm install katex@0.17.0` and the files are copied from the package's `dist/` directory (`katex.min.js`, `katex.min.css`, `contrib/auto-render.min.js`, and the woff2/woff fonts). The complete, unminified source for this exact version is available in the KaTeX GitHub repository at the [v0.17.0 release](https://github.com/KaTeX/KaTeX/releases/tag/v0.17.0), and in the `katex@0.17.0` npm package's `dist/` directory, which ships the unminified `katex.js` and `katex.css` alongside the minified files bundled here. KaTeX is loaded only when the Math Notation setting is enabled and a quiz actually contains math notation.
 
 == Installation ==
 
@@ -160,7 +163,7 @@ It's really free forever and not locked down. PressPrimer Quiz includes unlimite
 
 = How does AI question generation work? =
 
-You provide your own OpenAI API key in the plugin settings. When generating questions, the plugin calls OpenAI directly—no middleware, no credits to purchase, no per-question fees. You pay OpenAI directly at their standard API rates (typically pennies per quiz). Generate from pasted text or uploaded PDF/Word documents. Review and edit every question before adding items to question banks.
+You provide your own OpenAI or Anthropic (Claude) API key in the plugin settings and choose which provider to use. When generating questions, the plugin calls your chosen provider directly—no middleware, no credits to purchase, no per-question fees. You pay the provider directly at their standard API rates (typically pennies per quiz). Generate from pasted text or uploaded PDF/Word documents. Review and edit every question before adding items to question banks.
 
 = How does the server-side resume feature work? =
 
@@ -203,6 +206,31 @@ This plugin offers optional AI-powered question generation using the OpenAI API.
 
 **Note:** You are responsible for your own use of the OpenAI API and must agree to OpenAI's terms when obtaining an API key. API usage costs are billed directly by OpenAI to the API key holder.
 
+= Anthropic API =
+
+This plugin also offers optional AI-powered question generation using the Anthropic (Claude) API. This feature is **disabled by default** and only activates when an administrator or authorized user enters their own Anthropic API key and selects Anthropic as the AI provider.
+
+**What data is sent:**
+* Text content pasted by the user for question generation
+* Content extracted from PDF or Word documents uploaded by the user
+* Configuration parameters (number of questions, difficulty level, question types)
+
+**When data is sent:**
+* Only when a user explicitly clicks "Generate Questions" in the AI generation interface
+* Data is never sent automatically or in the background
+
+**What data is NOT sent:**
+* Student quiz answers or attempt data
+* User personal information
+* Site configuration or other plugin data
+
+**Service provider:** Anthropic, PBC
+* [Terms of Service](https://www.anthropic.com/legal/commercial-terms)
+* [Privacy Policy](https://www.anthropic.com/legal/privacy)
+* [Usage Policy](https://www.anthropic.com/legal/aup)
+
+**Note:** You are responsible for your own use of the Anthropic API and must agree to Anthropic's terms when obtaining an API key. API usage costs are billed directly by Anthropic to the API key holder.
+
 == Screenshots ==
 
 1. PressPrimer Dashboard with key stats and quick actions
@@ -212,6 +240,23 @@ This plugin offers optional AI-powered question generation using the OpenAI API.
 5. Admin reporting with analytics
 
 == Changelog ==
+
+= 3.0.0 =
+* Added: A front-end dashboard you can place on any page with the [pressprimer_quiz_dashboard] shortcode or the Dashboard block. Students get a "My Results" area to review their past quiz attempts without visiting the WordPress admin.
+* Added: Math and equation support. Write LaTeX in questions and answers and it renders as formatted math (using KaTeX) in quizzes, on the results page, in the admin preview, and in reports. Turn it on under Settings > General.
+* Added: Quiz templates. Save any quiz's settings as a reusable template, apply one with a full preview before anything changes, and choose a default template for new quizzes.
+* Added: Choose your AI provider for question generation. Both OpenAI and Anthropic (Claude) are supported, each with its own API key.
+* Added: Clearer results scoring. Each question now shows how it was scored, alongside a "How scoring works" summary that explains the multiple-answer scoring mode used for the attempt.
+* Added: Data Tools for resetting quiz progress by student, by quiz, or both — with a preview of exactly what will be removed and a typed confirmation before anything is deleted.
+* Added: Optional marketing-consent capture for guests taking a quiz, plus support for WordPress personal-data export and erase requests covering guest quiz data.
+* Added: Automatic database health checks. A new Status check detects and repairs missing database updates on its own, preventing the silent upgrade failures that could leave features half-installed.
+* Added: The Reports page now previews the reports unlocked by the Educator, School, and Enterprise add-ons, so you can see what each tier offers.
+* Added: The quiz editor now always includes a Premium Settings tab. On the free plugin it previews the per-quiz options the premium add-ons add, such as pre/post test linking, spaced repetition, branching, and proctoring.
+* Improved: Refreshed the Reports and Upgrade pages to reflect the full 3.0 feature set.
+* Fixed: Selector dropdowns (for choosing quizzes, groups, and more) no longer show an oversized, misaligned blue box when focused, on both admin and report pages.
+* Fixed: Search boxes in the admin — including the Add Questions search and the search fields on the Recent Attempts and Quiz Performance reports — now display correctly, with centered text and no stray outline box when focused.
+* Fixed: Spaced-repetition review quizzes created by the School add-on no longer clutter the Quizzes list, quiz pickers, or quiz counts.
+* Fixed: The checkmark on the AI question generator's "Add Selected to Bank" button now aligns with the button text instead of dropping below it.
 
 = 2.3.1 =
 * Improved: Tightened permission checks on the quiz items and quiz rules REST endpoints so teachers can only view, add, edit, reorder, or remove items and rules on quizzes they own. Single-teacher sites and sites without the Educator addon are unaffected.

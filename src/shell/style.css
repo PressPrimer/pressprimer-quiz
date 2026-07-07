@@ -1,0 +1,587 @@
+/**
+ * Front-end app shell styles.
+ *
+ * Scoped under .ppq-shell. The base --ppq-* token block mirrors the default
+ * quiz theme so the shell renders consistently as a standalone surface; every
+ * rule below consumes those tokens (no raw color literals). No wp-admin or
+ * @wordpress/components stylesheets are used. TR-006.
+ *
+ * @package PressPrimer_Quiz
+ * @since 3.0.0
+ */
+
+.ppq-shell {
+
+	/* Colors */
+	--ppq-primary: #0073aa;
+	--ppq-primary-hover: #005a87;
+	--ppq-primary-light: #e5f3fa;
+	--ppq-success: #00a32a;
+	--ppq-success-light: #e6f4ea;
+	--ppq-success-strong: #0a6b21;
+	--ppq-error: #d63638;
+	--ppq-error-light: #fcebea;
+	--ppq-error-strong: #a8201f;
+	--ppq-bg: #fff;
+	--ppq-bg-alt: #f6f7f7;
+	--ppq-bg-hover: #f0f0f1;
+	--ppq-text: #1d2327;
+	--ppq-text-secondary: #50575e;
+	--ppq-text-inverse: #fff;
+	--ppq-border: #c3c4c7;
+	--ppq-border-light: #dcdcde;
+
+	/* Radii */
+	--ppq-radius-sm: 4px;
+	--ppq-radius-md: 6px;
+	--ppq-radius-lg: 8px;
+
+	/* Spacing */
+	--ppq-space-xs: 0.25rem;
+	--ppq-space-sm: 0.5rem;
+	--ppq-space-md: 1rem;
+	--ppq-space-lg: 1.5rem;
+	--ppq-space-xl: 2rem;
+
+	color: var(--ppq-text);
+	background: var(--ppq-bg-alt);
+
+	/* Inherit the page font by default; the appearance setting overrides it via
+	   the --ppq-font-family token the shell emits when an admin customizes it. */
+	font-family: var(--ppq-font-family, inherit);
+	box-sizing: border-box;
+}
+
+.ppq-shell *,
+.ppq-shell *::before,
+.ppq-shell *::after {
+	box-sizing: border-box;
+}
+
+/* App layout ----------------------------------------------------------- */
+
+.ppq-shell-body {
+	display: flex;
+	align-items: flex-start;
+	gap: var(--ppq-space-lg);
+	padding: var(--ppq-space-lg);
+}
+
+.ppq-shell-main {
+	flex: 1 1 auto;
+	min-width: 0;
+	background: var(--ppq-bg);
+	border: 1px solid var(--ppq-border-light);
+	border-radius: var(--ppq-radius-lg);
+	padding: var(--ppq-space-xl);
+}
+
+.ppq-shell-screen-title {
+	margin: 0 0 var(--ppq-space-lg);
+	font-size: 1.5rem;
+	line-height: 1.2;
+	color: var(--ppq-text);
+}
+
+/* The heading is a programmatic focus target for screen readers, not an
+   interactive control, so it never shows a visible focus ring. */
+.ppq-shell-screen-title:focus,
+.ppq-shell-screen-title:focus-visible {
+	outline: none;
+}
+
+/* Navigation ----------------------------------------------------------- */
+
+.ppq-shell-nav {
+	flex: 0 0 240px;
+	background: var(--ppq-bg);
+	border: 1px solid var(--ppq-border-light);
+	border-radius: var(--ppq-radius-lg);
+	padding: var(--ppq-space-md);
+}
+
+.ppq-shell-brand {
+	padding: var(--ppq-space-sm) var(--ppq-space-sm) var(--ppq-space-md);
+	border-bottom: 1px solid var(--ppq-border-light);
+	margin-bottom: var(--ppq-space-md);
+}
+
+.ppq-shell-brand-name {
+	font-weight: 600;
+	color: var(--ppq-text);
+}
+
+.ppq-shell-brand-logo {
+	max-height: 32px;
+	width: auto;
+}
+
+.ppq-shell-nav-group + .ppq-shell-nav-group {
+	margin-top: var(--ppq-space-md);
+}
+
+.ppq-shell-nav-group-title {
+	margin: 0 0 var(--ppq-space-xs);
+	padding-inline: var(--ppq-space-sm);
+	font-size: 0.6875rem;
+	font-weight: 600;
+	text-transform: uppercase;
+	letter-spacing: 0.05em;
+	color: var(--ppq-text-secondary);
+}
+
+.ppq-shell-nav-list {
+	list-style: none;
+	margin: 0;
+	padding: 0;
+}
+
+.ppq-shell-nav-item {
+	display: flex;
+	align-items: center;
+	gap: var(--ppq-space-sm);
+	width: 100%;
+	padding: var(--ppq-space-sm) var(--ppq-space-sm);
+	border: 0;
+	border-radius: var(--ppq-radius-md);
+	background: transparent;
+	color: var(--ppq-text);
+	font-size: 0.875rem;
+	text-align: start;
+	cursor: pointer;
+}
+
+/* Lock color on every interactive state. Nav items are <button>s, so a host
+   theme's button:hover / :focus color (commonly #fff) would otherwise out-rank
+   the base rule and leave white text on the shell's light hover background —
+   the grey-on-white contrast failure. These selectors out-specify the theme. */
+.ppq-shell-nav-item:hover,
+.ppq-shell-nav-item:focus,
+.ppq-shell-nav-item:active {
+	background: var(--ppq-bg-hover);
+	color: var(--ppq-text);
+}
+
+.ppq-shell-nav-item.is-active,
+.ppq-shell-nav-item.is-active:hover,
+.ppq-shell-nav-item.is-active:focus,
+.ppq-shell-nav-item.is-active:active {
+	background: var(--ppq-primary-light);
+	color: var(--ppq-primary-hover);
+	font-weight: 600;
+}
+
+.ppq-shell-nav-item.is-locked,
+.ppq-shell-nav-item.is-locked:hover,
+.ppq-shell-nav-item.is-locked:focus,
+.ppq-shell-nav-item.is-locked:active {
+	color: var(--ppq-text-secondary);
+}
+
+.ppq-shell-nav-label {
+	flex: 1 1 auto;
+}
+
+.ppq-shell-icon {
+	flex: 0 0 auto;
+}
+
+/* Top bar (mobile) ----------------------------------------------------- */
+
+.ppq-shell-topbar {
+	display: none;
+	align-items: center;
+	gap: var(--ppq-space-sm);
+	padding: var(--ppq-space-sm) var(--ppq-space-md);
+	background: var(--ppq-bg);
+	border-bottom: 1px solid var(--ppq-border-light);
+}
+
+.ppq-shell-menu-toggle {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	padding: var(--ppq-space-xs);
+	border: 1px solid var(--ppq-border);
+	border-radius: var(--ppq-radius-md);
+	background: var(--ppq-bg);
+	color: var(--ppq-text);
+	cursor: pointer;
+}
+
+.ppq-shell-menu-toggle:hover,
+.ppq-shell-menu-toggle:focus {
+	background: var(--ppq-bg-hover);
+	color: var(--ppq-text);
+}
+
+.ppq-shell-topbar-title {
+	font-weight: 600;
+}
+
+.ppq-shell-topbar-logo {
+	max-height: 28px;
+	width: auto;
+}
+
+/* Buttons -------------------------------------------------------------- */
+
+.ppq-shell-btn {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	gap: var(--ppq-space-xs);
+	padding: var(--ppq-space-sm) var(--ppq-space-md);
+	border: 1px solid var(--ppq-border);
+	border-radius: var(--ppq-radius-md);
+	background: var(--ppq-bg);
+	color: var(--ppq-text);
+	font-size: 0.875rem;
+	text-decoration: none;
+	cursor: pointer;
+}
+
+.ppq-shell-btn:hover,
+.ppq-shell-btn:focus {
+	background: var(--ppq-bg-hover);
+	color: var(--ppq-text);
+}
+
+.ppq-shell-btn--primary {
+	background: var(--ppq-primary);
+	border-color: var(--ppq-primary);
+	color: var(--ppq-text-inverse);
+}
+
+.ppq-shell-btn--primary:hover,
+.ppq-shell-btn--primary:focus {
+	background: var(--ppq-primary-hover);
+	border-color: var(--ppq-primary-hover);
+	color: var(--ppq-text-inverse);
+}
+
+/* Focus visibility ----------------------------------------------------- */
+
+.ppq-shell a:focus-visible,
+.ppq-shell button:focus-visible,
+.ppq-shell select:focus-visible,
+.ppq-shell input:focus-visible,
+.ppq-shell [tabindex]:focus-visible {
+	outline: 2px solid var(--ppq-primary);
+	outline-offset: 2px;
+}
+
+/* Self-contained visually-hidden helper (does not rely on the theme). */
+.ppq-shell .screen-reader-text {
+	position: absolute;
+	width: 1px;
+	height: 1px;
+	margin: -1px;
+	padding: 0;
+	overflow: hidden;
+	clip: rect(0, 0, 0, 0);
+	white-space: nowrap;
+	border: 0;
+}
+
+/* States --------------------------------------------------------------- */
+
+.ppq-shell-state {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: var(--ppq-space-md);
+	padding: var(--ppq-space-xl);
+	text-align: center;
+	color: var(--ppq-text-secondary);
+}
+
+.ppq-shell-state--error {
+	color: var(--ppq-error);
+}
+
+.ppq-login-notice {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: var(--ppq-space-md);
+	padding: var(--ppq-space-xl);
+	margin: var(--ppq-space-xl) auto;
+	max-width: 420px;
+	text-align: center;
+	background: var(--ppq-bg);
+	border: 1px solid var(--ppq-border-light);
+	border-radius: var(--ppq-radius-lg);
+}
+
+.ppq-shell-locked {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: var(--ppq-space-md);
+	padding: var(--ppq-space-xl);
+	max-width: 480px;
+	margin: 0 auto;
+	text-align: center;
+}
+
+.ppq-shell-locked h2 {
+	margin: 0;
+	font-size: 1.25rem;
+	color: var(--ppq-text);
+}
+
+.ppq-shell-locked-tier {
+	margin: 0;
+	font-weight: 600;
+	color: var(--ppq-primary);
+}
+
+.ppq-shell-locked-highlights {
+	margin: 0;
+	padding: 0;
+	list-style: none;
+	text-align: start;
+	display: flex;
+	flex-direction: column;
+	gap: var(--ppq-space-xs);
+	color: var(--ppq-text-secondary);
+	font-size: 0.875rem;
+}
+
+.ppq-shell-locked-highlights li::before {
+	content: "✓";
+	color: var(--ppq-success);
+	margin-inline-end: var(--ppq-space-xs);
+}
+
+.ppq-shell-locked-actions {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	justify-content: center;
+	gap: var(--ppq-space-md);
+}
+
+/* Loading skeleton ----------------------------------------------------- */
+
+.ppq-shell-skeleton {
+	display: flex;
+	flex-direction: column;
+	gap: var(--ppq-space-md);
+	padding: var(--ppq-space-md) 0;
+}
+
+.ppq-shell-skeleton-bar {
+	display: block;
+	height: 1rem;
+	border-radius: var(--ppq-radius-sm);
+	background: var(--ppq-bg-hover);
+}
+
+.ppq-shell-skeleton-bar--short {
+	width: 60%;
+}
+
+/* Home ----------------------------------------------------------------- */
+
+.ppq-shell-home-greeting {
+	margin: 0 0 var(--ppq-space-lg);
+	font-size: 1.0625rem;
+	color: var(--ppq-text);
+}
+
+.ppq-shell-home-cards {
+	display: grid;
+	gap: var(--ppq-space-md);
+	grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+}
+
+.ppq-shell-home-recent {
+	margin-top: var(--ppq-space-xl);
+}
+
+.ppq-shell-section-head {
+	display: flex;
+	align-items: baseline;
+	justify-content: space-between;
+	margin-bottom: var(--ppq-space-md);
+}
+
+.ppq-shell-section-head h2 {
+	margin: 0;
+	font-size: 1.125rem;
+	color: var(--ppq-text);
+}
+
+.ppq-shell-link {
+	border: 0;
+	background: transparent;
+	color: var(--ppq-primary);
+	font-size: 0.875rem;
+	cursor: pointer;
+	padding: 0;
+}
+
+/* Scoped under .ppq-shell so the transparent background beats a theme's
+   button:hover background (otherwise the link reads as blue-on-blue). */
+.ppq-shell .ppq-shell-link:hover,
+.ppq-shell .ppq-shell-link:focus {
+	background: transparent;
+	text-decoration: underline;
+	color: var(--ppq-primary-hover);
+}
+
+/* Host themes commonly force button:hover / :focus / :active color to #fff,
+   which out-ranks Ant Design's class-based danger color — after a click opens a
+   Popconfirm the button keeps focus and its icon turns white (invisible). Lock
+   the danger color across states for non-primary danger buttons; the :not()
+   guard preserves the white-on-red text of a danger primary button. */
+.ppq-shell .ant-btn-dangerous:not(.ant-btn-primary),
+.ppq-shell .ant-btn-dangerous:not(.ant-btn-primary):hover,
+.ppq-shell .ant-btn-dangerous:not(.ant-btn-primary):focus,
+.ppq-shell .ant-btn-dangerous:not(.ant-btn-primary):active {
+	color: #ff4d4f;
+}
+
+.ppq-shell-muted {
+	color: var(--ppq-text-secondary);
+}
+
+/* Attempt list --------------------------------------------------------- */
+
+.ppq-shell-attempts {
+	list-style: none;
+	margin: 0;
+	padding: 0;
+	display: flex;
+	flex-direction: column;
+	gap: var(--ppq-space-sm);
+}
+
+.ppq-shell-attempt {
+	display: flex;
+	align-items: center;
+	gap: var(--ppq-space-md);
+	padding: var(--ppq-space-md);
+	background: var(--ppq-bg);
+	border: 1px solid var(--ppq-border-light);
+	border-radius: var(--ppq-radius-md);
+}
+
+.ppq-shell-attempt-main {
+	flex: 1 1 auto;
+	min-width: 0;
+	display: flex;
+	flex-direction: column;
+	gap: var(--ppq-space-xs);
+}
+
+.ppq-shell-attempt-title {
+	font-weight: 600;
+	color: var(--ppq-text);
+}
+
+.ppq-shell-attempt-meta {
+	font-size: 0.8125rem;
+	color: var(--ppq-text-secondary);
+}
+
+.ppq-shell-attempt-action {
+	flex: 0 0 auto;
+}
+
+.ppq-shell-badge {
+	flex: 0 0 auto;
+	padding: 2px var(--ppq-space-sm);
+	border-radius: var(--ppq-radius-full, 999px);
+	font-size: 0.75rem;
+	background: var(--ppq-bg-hover);
+	color: var(--ppq-text-secondary);
+}
+
+.ppq-shell-badge--success {
+	background: var(--ppq-success-light);
+	color: var(--ppq-success-strong);
+}
+
+.ppq-shell-badge--error {
+	background: var(--ppq-error-light);
+	color: var(--ppq-error-strong);
+}
+
+/* Filters + pagination ------------------------------------------------- */
+
+.ppq-shell-filters {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: flex-end;
+	gap: var(--ppq-space-md);
+	margin-bottom: var(--ppq-space-lg);
+}
+
+.ppq-shell-field {
+	display: flex;
+	flex-direction: column;
+	gap: var(--ppq-space-xs);
+	font-size: 0.8125rem;
+	color: var(--ppq-text-secondary);
+}
+
+/* Base select styling; the earlier :focus-visible rule is a different state. */
+/* stylelint-disable-next-line no-descending-specificity */
+.ppq-shell-field select {
+	padding: var(--ppq-space-xs) var(--ppq-space-sm);
+	border: 1px solid var(--ppq-border);
+	border-radius: var(--ppq-radius-md);
+	background: var(--ppq-bg);
+	color: var(--ppq-text);
+	font-size: 0.875rem;
+}
+
+.ppq-shell-pagination {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	gap: var(--ppq-space-md);
+	margin-top: var(--ppq-space-lg);
+}
+
+.ppq-shell-pagination-status {
+	font-size: 0.875rem;
+	color: var(--ppq-text-secondary);
+}
+
+.ppq-shell-btn[disabled] {
+	opacity: 0.5;
+	cursor: default;
+}
+
+/* Responsive ----------------------------------------------------------- */
+
+@media ( max-width: 782px ) {
+
+	.ppq-shell-topbar {
+		display: flex;
+	}
+
+	.ppq-shell-body {
+		flex-direction: column;
+		padding: var(--ppq-space-md);
+	}
+
+	.ppq-shell-nav {
+		flex-basis: auto;
+		width: 100%;
+		display: none;
+	}
+
+	.ppq-shell-nav.is-open {
+		display: block;
+	}
+
+	.ppq-shell-main {
+		width: 100%;
+		padding: var(--ppq-space-lg);
+	}
+}

@@ -114,6 +114,24 @@
 	min-height: 600px;
 }
 
+/*
+ * WordPress admin (forms.css) styles every <input> with a border, a 30px
+ * min-height, and a blue focus box-shadow. Those leak into Ant Design's Select
+ * search input (used by the Data Tools user/quiz pickers) and render as an
+ * oversized blue box when the field is focused. Reset them so the searchable
+ * Select keeps its own appearance — Ant draws the focus ring on the selector.
+ */
+.ppq-settings-content .ant-select input,
+.ppq-settings-content .ant-select input:focus {
+	min-height: 0;
+	margin: 0;
+	padding: 0;
+	border: 0;
+	box-shadow: none;
+	outline: none;
+	background: transparent;
+}
+
 .ppq-settings-section {
 	margin-bottom: 32px;
 }

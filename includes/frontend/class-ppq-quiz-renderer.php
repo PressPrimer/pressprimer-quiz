@@ -104,12 +104,28 @@ class PressPrimer_Quiz_Quiz_Renderer {
 	}
 
 	/**
+	 * Conditionally enqueue the math (KaTeX) assets for a block of rendered HTML.
+	 *
+	 * Loads nothing unless math notation is enabled site-wide AND the given HTML
+	 * actually contains math delimiters, so quizzes without math add no assets.
+	 *
+	 * @since 3.0.0
+	 *
+	 * @param string $html Rendered HTML to scan for math notation.
+	 */
+	private function maybe_enqueue_math( $html ) {
+		if ( pressprimer_quiz_math_enabled() && PressPrimer_Quiz_Helpers::content_has_math( $html ) ) {
+			pressprimer_quiz_enqueue_math_assets();
+		}
+	}
+
+	/**
 	 * Get default display options for Start page
 	 *
 	 * Retained for backward compatibility with any third-party caller that
 	 * builds its own display array. The shortcode and renderer now resolve
 	 * display values via PressPrimer_Quiz_Quiz::resolve_all_display_options()
-	 * which returns all 14 keys.
+	 * which returns all 15 keys.
 	 *
 	 * @since 2.1.0
 	 * @deprecated 2.3.0 Use $quiz->resolve_all_display_options() instead.
@@ -190,7 +206,7 @@ class PressPrimer_Quiz_Quiz_Renderer {
 	 * @return string Rendered HTML.
 	 */
 	public function render_landing( $quiz, $is_retake = false, $instance_overrides = [] ) {
-		// Resolve all 14 display options using the three-tier precedence:
+		// Resolve all 15 display options using the three-tier precedence:
 		// instance override > quiz default (display_settings_json) > hard default.
 		$display = $quiz->resolve_all_display_options( $instance_overrides );
 		// Enqueue assets
@@ -634,6 +650,51 @@ class PressPrimer_Quiz_Quiz_Renderer {
 										placeholder="<?php esc_attr_e( 'your@email.com', 'pressprimer-quiz' ); ?>"
 										autocomplete="email"
 										<?php echo $guest_email_required ? 'required' : ''; ?>>
+								<?php
+								if ( get_option( 'pressprimer_quiz_guest_consent_enabled', false ) ) :
+									$consent_label = get_option( 'pressprimer_quiz_guest_consent_label', '' );
+									if ( '' === trim( (string) $consent_label ) ) {
+										$consent_label = __( 'Add me to the newsletter. I understand that I can unsubscribe at any time.', 'pressprimer-quiz' );
+									}
+									// Build the privacy link ourselves so it opens in a new
+									// tab (core's get_the_privacy_policy_link() does not).
+									$consent_privacy_url  = get_privacy_policy_url();
+									$consent_privacy_link = '';
+									if ( $consent_privacy_url ) {
+										$consent_privacy_title = get_the_title( (int) get_option( 'wp_page_for_privacy_policy' ) );
+										if ( '' === trim( (string) $consent_privacy_title ) ) {
+											$consent_privacy_title = __( 'Privacy Policy', 'pressprimer-quiz' );
+										}
+										$consent_privacy_link = ' <a href="' . esc_url( $consent_privacy_url ) . '" target="_blank" rel="noopener noreferrer">' . esc_html( $consent_privacy_title ) . '</a>';
+									}
+									?>
+									<div class="ppq-guest-consent">
+										<input type="checkbox"
+												id="ppq-guest-consent"
+												class="ppq-checkbox ppq-consent-checkbox"
+												value="1">
+										<label for="ppq-guest-consent" class="ppq-consent-label">
+											<?php
+											echo esc_html( $consent_label );
+											if ( $consent_privacy_link ) {
+												echo wp_kses(
+													$consent_privacy_link,
+													array(
+														'a' => array(
+															'href'   => true,
+															'class'  => true,
+															'rel'    => true,
+															'target' => true,
+														),
+													)
+												);
+											}
+											?>
+										</label>
+									</div>
+									<?php
+								endif;
+								?>
 							</div>
 						<?php endif; ?>
 
@@ -916,13 +977,20 @@ class PressPrimer_Quiz_Quiz_Renderer {
 
 			<!-- Questions Container -->
 			<div class="ppq-questions-container" id="ppq-questions-container" role="region" aria-label="<?php esc_attr_e( 'Quiz questions', 'pressprimer-quiz' ); ?>">
-				<?php foreach ( $items as $index => $item ) : ?>
-					<?php
-					// Use wp_kses with custom allowed tags that include form elements.
-					// wp_kses_post cannot be used because it strips <input>, <label>, and <button>.
-					echo wp_kses( $this->render_question( $item, $index, count( $items ) ), $this->get_question_allowed_html() );
-					?>
-				<?php endforeach; ?>
+				<?php
+				// Render all questions first, then load math rendering only when
+				// it is enabled and the questions actually contain math notation.
+				$questions_html = '';
+				foreach ( $items as $index => $item ) {
+					$questions_html .= $this->render_question( $item, $index, count( $items ) );
+				}
+
+				$this->maybe_enqueue_math( $questions_html );
+
+				// Use wp_kses with custom allowed tags that include form elements.
+				// wp_kses_post cannot be used because it strips <input>, <label>, and <button>.
+				echo wp_kses( $questions_html, $this->get_question_allowed_html() );
+				?>
 			</div>
 
 			<!-- Navigation and Submit -->

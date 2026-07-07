@@ -14,10 +14,19 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
+// The provider interface ships under services/ai/ with an interface- filename
+// the class autoloader does not map, so load it explicitly. Provider classes
+// (class-ppq-ai-provider-*.php) autoload normally once instantiated through the
+// orchestrator, by which point this interface is already defined.
+require_once __DIR__ . '/ai/interface-ppq-ai-provider.php';
+
 /**
  * AI Service class
  *
- * Provides AI question generation functionality with user-provided API keys.
+ * Orchestrates AI question generation: prompts, JSON parsing/repair, retries,
+ * timeouts, content limits, and the per-user rate limit are provider-neutral
+ * here; transport is delegated to a provider implementing
+ * PressPrimer_Quiz_AI_Provider_Interface, resolved per request (feature 004).
  *
  * @since 1.0.0
  */
@@ -53,6 +62,14 @@ class PressPrimer_Quiz_AI_Service {
 	 * @var int
 	 */
 	const RATE_LIMIT_PER_HOUR = 100;
+
+	/**
+	 * Transient name for the site-wide AI request counter.
+	 *
+	 * @since 3.0.0
+	 * @var string
+	 */
+	const RATE_LIMIT_TRANSIENT = 'pressprimer_quiz_ai_requests';
 
 	/**
 	 * API timeout in seconds
@@ -162,118 +179,159 @@ class PressPrimer_Quiz_AI_Service {
 	 * @return bool|WP_Error True on success, WP_Error on failure.
 	 */
 	public static function save_api_key( $user_id, $api_key ) {
-		$user_id = absint( $user_id );
+		// Keys are site-level (feature 004). $user_id is retained only for the
+		// backward-compatible signature; storage is no longer per-user.
+		return self::save_site_api_key( 'openai', $api_key );
+	}
 
-		if ( ! $user_id ) {
-			return new WP_Error(
-				'ppq_invalid_user',
-				__( 'Invalid user ID.', 'pressprimer-quiz' )
-			);
-		}
+	/**
+	 * Save a site-level API key for a provider.
+	 *
+	 * Stores the key encrypted in the per-provider site option (feature 004),
+	 * mirroring PressPrimer Assignment's site-level key model. An empty value
+	 * clears it.
+	 *
+	 * @since 3.0.0
+	 *
+	 * @param string $provider Provider id ('openai', 'anthropic').
+	 * @param string $api_key  API key to save (empty clears it).
+	 * @return bool|WP_Error True on success, WP_Error on encryption failure.
+	 */
+	public static function save_site_api_key( $provider, $api_key ) {
+		$provider = sanitize_key( $provider );
+		$option   = 'pressprimer_quiz_site_' . $provider . '_api_key';
 
-		// Allow clearing the key
 		if ( empty( $api_key ) ) {
-			delete_user_meta( $user_id, 'pressprimer_quiz_openai_api_key' );
-			delete_user_meta( $user_id, 'pressprimer_quiz_openai_model' );
+			delete_option( $option );
 			return true;
 		}
 
-		// Encrypt the key
 		$encrypted = PressPrimer_Quiz_Helpers::encrypt( $api_key );
 
 		if ( is_wp_error( $encrypted ) ) {
 			return $encrypted;
 		}
 
-		$result = update_user_meta( $user_id, 'pressprimer_quiz_openai_api_key', $encrypted );
+		update_option( $option, $encrypted );
 
-		return false !== $result;
+		return true;
 	}
 
 	/**
-	 * Get API key for user
-	 *
-	 * Retrieves and decrypts the API key from user meta.
+	 * Get the site-level OpenAI API key.
 	 *
 	 * @since 1.0.0
 	 *
-	 * @param int $user_id User ID.
-	 * @return string|WP_Error Decrypted API key or WP_Error.
+	 * @param int|null $user_id User ID (retained for signature compatibility).
+	 * @return string Decrypted API key, or '' when none.
 	 */
 	public static function get_api_key( $user_id = null ) {
-		// Get site-wide API key configured by admin in Settings
-		$site_key = get_option( 'pressprimer_quiz_site_openai_api_key', '' );
-
-		if ( ! empty( $site_key ) ) {
-			$decrypted = PressPrimer_Quiz_Helpers::decrypt( $site_key );
-
-			if ( ! is_wp_error( $decrypted ) && ! empty( $decrypted ) ) {
-				return $decrypted;
-			}
-		}
-
-		// Backwards compatibility: check legacy user_meta storage
-		// This supports existing installations where the key was stored per-user
-		$admin_users = get_users(
-			[
-				'role'   => 'administrator',
-				'number' => 1,
-			]
-		);
-		if ( ! empty( $admin_users ) ) {
-			$admin_id  = $admin_users[0]->ID;
-			$encrypted = get_user_meta( $admin_id, 'pressprimer_quiz_openai_api_key', true );
-
-			if ( ! empty( $encrypted ) ) {
-				$decrypted = PressPrimer_Quiz_Helpers::decrypt( $encrypted );
-
-				if ( ! is_wp_error( $decrypted ) && ! empty( $decrypted ) ) {
-					return $decrypted;
-				}
-			}
-		}
-
-		return '';
+		return self::get_api_key_for_provider( 'openai', $user_id );
 	}
 
 	/**
-	 * Save model preference for user
+	 * Save model preference (site-level per provider).
 	 *
 	 * @since 1.0.0
 	 *
-	 * @param int    $user_id User ID.
-	 * @param string $model   Model identifier.
+	 * @param int    $user_id  User ID (retained for signature compatibility).
+	 * @param string $model    Model identifier.
+	 * @param string $provider Provider id.
 	 * @return bool True on success.
 	 */
-	public static function save_model_preference( $user_id, $model ) {
-		$user_id = absint( $user_id );
-		$model   = sanitize_text_field( $model );
+	public static function save_model_preference( $user_id, $model, $provider = 'openai' ) {
+		return self::save_site_model( $provider, $model );
+	}
 
-		if ( ! $user_id ) {
+	/**
+	 * Get model preference
+	 *
+	 * Site-level per provider (feature 004). $user_id is retained for the
+	 * backward-compatible signature only.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param int    $user_id  User ID (retained for signature compatibility).
+	 * @param string $provider Provider id (defaults to the active provider).
+	 * @return string Model identifier.
+	 */
+	public static function get_model_preference( $user_id, $provider = '' ) {
+		return self::get_site_model( $provider );
+	}
+
+	/**
+	 * Save the site-level model preference for a provider.
+	 *
+	 * @since 3.0.0
+	 *
+	 * @param string $provider Provider id.
+	 * @param string $model    Model identifier (empty clears it).
+	 * @return bool True on success.
+	 */
+	public static function save_site_model( $provider, $model ) {
+		$provider = sanitize_key( $provider );
+		$model    = sanitize_text_field( $model );
+		$option   = 'pressprimer_quiz_site_' . $provider . '_model';
+
+		if ( '' === $model ) {
+			delete_option( $option );
+			return true;
+		}
+
+		update_option( $option, $model );
+		return true;
+	}
+
+	/**
+	 * Get the site-level model preference for a provider.
+	 *
+	 * Falls back to the provider's default model when none is stored.
+	 *
+	 * @since 3.0.0
+	 *
+	 * @param string $provider Provider id (defaults to the active provider).
+	 * @return string Model identifier.
+	 */
+	public static function get_site_model( $provider = '' ) {
+		$provider  = ( is_string( $provider ) && '' !== $provider ) ? sanitize_key( $provider ) : self::resolve_provider_id();
+		$model     = get_option( 'pressprimer_quiz_site_' . $provider . '_model', '' );
+		$providers = self::get_providers();
+		$default   = isset( $providers[ $provider ] ) ? $providers[ $provider ]->get_default_model() : self::DEFAULT_MODEL;
+
+		return ( is_string( $model ) && '' !== $model ) ? $model : $default;
+	}
+
+	/**
+	 * Get / set the active AI provider id (site-level).
+	 *
+	 * @since 3.0.0
+	 *
+	 * @return string Active provider id.
+	 */
+	public static function get_active_provider() {
+		return self::resolve_provider_id();
+	}
+
+	/**
+	 * Set the active AI provider (site-level).
+	 *
+	 * Only a registered provider id is accepted.
+	 *
+	 * @since 3.0.0
+	 *
+	 * @param string $provider Provider id.
+	 * @return bool True if stored, false if not a registered provider.
+	 */
+	public static function set_active_provider( $provider ) {
+		$provider  = sanitize_key( $provider );
+		$providers = self::get_providers();
+
+		if ( ! isset( $providers[ $provider ] ) ) {
 			return false;
 		}
 
-		return false !== update_user_meta( $user_id, 'pressprimer_quiz_openai_model', $model );
-	}
-
-	/**
-	 * Get model preference for user
-	 *
-	 * @since 1.0.0
-	 *
-	 * @param int $user_id User ID.
-	 * @return string Model identifier.
-	 */
-	public static function get_model_preference( $user_id ) {
-		$user_id = absint( $user_id );
-
-		if ( ! $user_id ) {
-			return self::DEFAULT_MODEL;
-		}
-
-		$model = get_user_meta( $user_id, 'pressprimer_quiz_openai_model', true );
-
-		return $model ? $model : self::DEFAULT_MODEL;
+		update_option( 'pressprimer_quiz_default_ai_provider', $provider );
+		return true;
 	}
 
 	/**
@@ -494,9 +552,10 @@ class PressPrimer_Quiz_AI_Service {
 	 * @return bool|WP_Error True if within limits, WP_Error if exceeded.
 	 */
 	public static function check_rate_limit( $user_id ) {
-		$user_id = absint( $user_id );
-		$key     = 'pressprimer_quiz_ai_requests_' . $user_id;
-		$count   = (int) get_transient( $key );
+		// Site-wide budget (feature 004): one shared pool across all users, since
+		// the API key is now site-level rather than per-user. The $user_id
+		// parameter is retained for backward-compatible call sites.
+		$count = (int) get_transient( self::RATE_LIMIT_TRANSIENT );
 
 		if ( $count >= self::RATE_LIMIT_PER_HOUR ) {
 			return new WP_Error(
@@ -517,14 +576,12 @@ class PressPrimer_Quiz_AI_Service {
 	 *
 	 * @since 1.0.0
 	 *
-	 * @param int $user_id User ID.
+	 * @param int $user_id User ID (retained for signature compatibility).
 	 */
 	private static function increment_rate_limit( $user_id ) {
-		$user_id = absint( $user_id );
-		$key     = 'pressprimer_quiz_ai_requests_' . $user_id;
-		$count   = (int) get_transient( $key );
+		$count = (int) get_transient( self::RATE_LIMIT_TRANSIENT );
 
-		set_transient( $key, $count + 1, HOUR_IN_SECONDS );
+		set_transient( self::RATE_LIMIT_TRANSIENT, $count + 1, HOUR_IN_SECONDS );
 	}
 
 	/**
@@ -978,58 +1035,102 @@ class PressPrimer_Quiz_AI_Service {
 	/**
 	 * Call API
 	 *
-	 * Makes the actual API call to OpenAI with extended timeout and retry support.
-	 * OpenAI can take several minutes for complex generation tasks, especially
-	 * with large content or many questions requested.
+	 * Resolves the active provider and runs the provider-neutral retry loop,
+	 * delegating transport to the provider's send(). Returns the assistant text
+	 * (a JSON string for generation) or a WP_Error. Token usage and the raw
+	 * response from the last successful call are retained for the existing
+	 * get_last_token_usage()/get_last_response() accessors. AI generation can
+	 * take several minutes for complex tasks, so providers use an extended
+	 * timeout.
 	 *
 	 * @since 1.0.0
 	 *
-	 * @param array $prompt Prompt with system and user messages.
+	 * @param array $prompt Prompt with 'system' and 'user' messages.
 	 * @return string|WP_Error Response content or WP_Error.
 	 */
 	private function call_api( $prompt ) {
-		$request_body = [
-			'model'                 => $this->model,
-			'messages'              => [
-				[
-					'role'    => 'system',
-					'content' => $prompt['system'],
-				],
-				[
-					'role'    => 'user',
-					'content' => $prompt['user'],
-				],
-			],
-			'max_completion_tokens' => 64000,
-		];
+		$provider = $this->resolve_provider();
 
-		// GPT-5.x models don't support temperature parameter (only default value of 1)
-		// Only add temperature for older models (GPT-4.x and below)
-		if ( ! preg_match( '/^gpt-5/', $this->model ) ) {
-			$request_body['temperature'] = 0.7;
+		if ( ! $provider instanceof PressPrimer_Quiz_AI_Provider_Interface ) {
+			return new WP_Error(
+				'ppq_no_provider',
+				__( 'No AI provider is available.', 'pressprimer-quiz' )
+			);
 		}
 
+		$messages = [
+			[
+				'role'    => 'system',
+				'content' => $prompt['system'],
+			],
+			[
+				'role'    => 'user',
+				'content' => $prompt['user'],
+			],
+		];
+
+		// Resolve the model to send. OpenAI behavior is unchanged. For other
+		// providers, fall back to that provider's default when the configured
+		// model is empty or is still the OpenAI default (i.e. not an explicit
+		// choice for this provider) — per-provider model selection arrives with
+		// the Settings UI (Prompt 4.4), which will set an appropriate model.
+		$model = $this->model;
+		if ( 'openai' !== $provider->get_id()
+			&& ( '' === (string) $model || self::DEFAULT_MODEL === $model ) ) {
+			$model = $provider->get_default_model();
+		}
+
+		$options = [
+			'api_key'     => $this->api_key,
+			'model'       => $model,
+			'max_tokens'  => 64000,
+			'temperature' => 0.7,
+			'timeout'     => self::API_TIMEOUT,
+		];
+
+		return $this->dispatch_to_provider( $provider, $messages, $options );
+	}
+
+	/**
+	 * Run the provider-neutral retry loop and return the assistant content.
+	 *
+	 * Transport only: retries transient failures, retains the raw response and
+	 * token usage for the accessors, and returns the content string (or the last
+	 * WP_Error). Rate limiting and provider/model resolution are handled by the
+	 * callers (call_api, generate_text) so each can apply its own policy.
+	 *
+	 * @since 3.0.0
+	 *
+	 * @param PressPrimer_Quiz_AI_Provider_Interface $provider Provider instance.
+	 * @param array                                  $messages Neutral message array.
+	 * @param array                                  $options  Request options.
+	 * @return string|WP_Error Response content, or WP_Error on failure.
+	 */
+	private function dispatch_to_provider( $provider, $messages, $options ) {
 		$last_error = null;
 
-		// Retry loop for transient failures
+		// Retry loop for transient failures (provider-neutral).
 		for ( $attempt = 0; $attempt <= self::MAX_RETRIES; $attempt++ ) {
 			// Wait before retry (not on first attempt)
 			if ( $attempt > 0 ) {
 				sleep( self::RETRY_DELAY );
 			}
 
-			$response = $this->make_api_request( $request_body );
+			$result = $provider->send( $messages, $options );
 
-			// If successful, return the content
-			if ( ! is_wp_error( $response ) ) {
-				return $response;
+			// If successful, retain debugging/usage state and return the content.
+			if ( ! is_wp_error( $result ) ) {
+				$this->last_response    = ( isset( $result['raw'] ) && is_array( $result['raw'] ) ) ? $result['raw'] : [];
+				$this->last_token_usage = ( isset( $result['usage'] ) && is_array( $result['usage'] ) ) ? $result['usage'] : [];
+
+				return isset( $result['content'] ) ? $result['content'] : '';
 			}
 
-			$last_error = $response;
+			$last_error = $result;
 
 			// Check if error is retryable
-			if ( ! $this->is_retryable_error( $response ) ) {
-				return $response;
+			if ( ! $this->is_retryable_error( $result ) ) {
+				return $result;
 			}
 		}
 
@@ -1038,122 +1139,199 @@ class PressPrimer_Quiz_AI_Service {
 	}
 
 	/**
-	 * Make API request
+	 * Generate text from a system/user prompt via the active provider.
 	 *
-	 * Executes a single API request to OpenAI with extended timeout.
+	 * Provider-neutral transport for callers that build their own prompts and
+	 * parse their own output (e.g. Educator distractor generation, future AI
+	 * feedback). Resolves the active provider, its site-level key, and its
+	 * configured model; checks the shared rate limit when a user id is given;
+	 * runs the retry loop; and returns the raw assistant text or a WP_Error with
+	 * a provider-specific message. Callers do their own response parsing.
 	 *
-	 * @since 1.0.0
+	 * @since 3.0.0
 	 *
-	 * @param array $request_body Request body for OpenAI API.
-	 * @return string|WP_Error Response content or WP_Error.
+	 * @param string $system_prompt System prompt ('' to send only a user turn).
+	 * @param string $user_prompt   User prompt.
+	 * @param array  $args          Optional: 'user_id', 'model', 'max_tokens',
+	 *                              'temperature', 'timeout'.
+	 * @return string|WP_Error Assistant text, or WP_Error on failure.
 	 */
-	private function make_api_request( $request_body ) {
-		$response = wp_remote_post(
-			self::API_BASE_URL . '/chat/completions',
-			[
-				'timeout'     => self::API_TIMEOUT,
-				'httpversion' => '1.1',
-				'headers'     => [
-					'Authorization' => 'Bearer ' . $this->api_key,
-					'Content-Type'  => 'application/json',
-				],
-				'body'        => wp_json_encode( $request_body ),
-				'sslverify'   => true,
-			]
-		);
+	public function generate_text( $system_prompt, $user_prompt, $args = [] ) {
+		$provider = $this->resolve_provider();
 
-		if ( is_wp_error( $response ) ) {
-			$error_message = $response->get_error_message();
+		if ( ! $provider instanceof PressPrimer_Quiz_AI_Provider_Interface ) {
+			return new WP_Error( 'ppq_no_provider', __( 'No AI provider is available.', 'pressprimer-quiz' ) );
+		}
 
-			// Provide more helpful timeout message
-			if ( strpos( $error_message, 'timed out' ) !== false || strpos( $error_message, 'timeout' ) !== false ) {
-				return new WP_Error(
-					'ppq_api_timeout',
-					__( 'The request to OpenAI timed out. This can happen with large content or many questions. Please try again with less content or fewer questions.', 'pressprimer-quiz' )
-				);
+		// Use an explicitly set instance key, else the active provider's site key.
+		$api_key = $this->api_key ? $this->api_key : self::get_api_key_for_provider();
+		if ( empty( $api_key ) ) {
+			return new WP_Error( 'ppq_no_api_key', __( 'No AI API key is configured. Add one in Settings → Integrations.', 'pressprimer-quiz' ) );
+		}
+
+		// Shared (site-wide) rate limit when a user is provided.
+		if ( ! empty( $args['user_id'] ) ) {
+			$rate_check = self::check_rate_limit( $args['user_id'] );
+			if ( is_wp_error( $rate_check ) ) {
+				return $rate_check;
 			}
-
-			return new WP_Error(
-				'ppq_api_connection_error',
-				sprintf(
-					/* translators: %s: error message */
-					__( 'Failed to connect to OpenAI API: %s', 'pressprimer-quiz' ),
-					$error_message
-				)
-			);
 		}
 
-		$code = wp_remote_retrieve_response_code( $response );
-		$body = json_decode( wp_remote_retrieve_body( $response ), true );
+		// Model: explicit override, else the active provider's configured model.
+		$model = ( isset( $args['model'] ) && '' !== $args['model'] )
+			? $args['model']
+			: self::get_site_model( $provider->get_id() );
 
-		// Store full response for debugging
-		$this->last_response = $body;
+		$messages = [];
+		if ( is_string( $system_prompt ) && '' !== $system_prompt ) {
+			$messages[] = [
+				'role'    => 'system',
+				'content' => $system_prompt,
+			];
+		}
+		$messages[] = [
+			'role'    => 'user',
+			'content' => (string) $user_prompt,
+		];
 
-		// Store token usage
-		if ( isset( $body['usage'] ) ) {
-			$this->last_token_usage = $body['usage'];
+		$options = [
+			'api_key'     => $api_key,
+			'model'       => $model,
+			'max_tokens'  => isset( $args['max_tokens'] ) ? (int) $args['max_tokens'] : 64000,
+			'temperature' => isset( $args['temperature'] ) ? (float) $args['temperature'] : 0.7,
+			'timeout'     => isset( $args['timeout'] ) ? (int) $args['timeout'] : self::API_TIMEOUT,
+		];
+
+		$result = $this->dispatch_to_provider( $provider, $messages, $options );
+
+		if ( ! is_wp_error( $result ) && ! empty( $args['user_id'] ) ) {
+			self::increment_rate_limit( $args['user_id'] );
 		}
 
-		if ( 401 === $code ) {
-			return new WP_Error(
-				'ppq_invalid_key',
-				__( 'Invalid API key.', 'pressprimer-quiz' )
-			);
+		return $result;
+	}
+
+	/**
+	 * Get the registered AI providers, keyed by id.
+	 *
+	 * Applies the internal/unstable pressprimer_quiz_ai_providers filter and
+	 * guarantees a built-in OpenAI provider is present. Resolved per request,
+	 * never cached across requests.
+	 *
+	 * @since 3.0.0
+	 *
+	 * @return PressPrimer_Quiz_AI_Provider_Interface[] Providers keyed by id.
+	 */
+	public static function get_providers() {
+		/**
+		 * Filters the registered AI providers.
+		 *
+		 * Internal/unstable in 3.0: used to register first-party providers, not a
+		 * public extension promise. Each entry is an id => provider-instance pair
+		 * (instances implement PressPrimer_Quiz_AI_Provider_Interface).
+		 *
+		 * @since 3.0.0
+		 *
+		 * @param array $providers Map of provider id => provider instance.
+		 */
+		$providers = apply_filters( 'pressprimer_quiz_ai_providers', [] );
+
+		if ( ! is_array( $providers ) ) {
+			$providers = [];
 		}
 
-		if ( 429 === $code ) {
-			return new WP_Error(
-				'ppq_rate_limited',
-				__( 'OpenAI API rate limit exceeded. Please try again later.', 'pressprimer-quiz' )
-			);
+		// Keep only valid id => provider-instance pairs.
+		foreach ( $providers as $id => $provider ) {
+			if ( ! is_string( $id ) || ! $provider instanceof PressPrimer_Quiz_AI_Provider_Interface ) {
+				unset( $providers[ $id ] );
+			}
 		}
 
-		// 502 Bad Gateway is usually a server/proxy timeout, not an OpenAI issue.
-		// This happens when the hosting server (nginx, Apache, load balancer) times out
-		// waiting for the PHP process, which is still waiting for OpenAI.
-		if ( 502 === $code ) {
-			return new WP_Error(
-				'ppq_server_timeout',
-				__( 'Server timeout (502 Bad Gateway). This is not an OpenAI issue — your hosting server closed the connection before the AI response was received. OpenAI can take 1-3 minutes for complex requests, but many hosting servers timeout after 30-60 seconds. To fix this, contact your hosting provider about increasing the proxy timeout (nginx: proxy_read_timeout, Apache: ProxyTimeout). As a workaround, try generating fewer questions at once or using shorter content.', 'pressprimer-quiz' )
-			);
+		// Guarantee the built-in providers (the filter may override either).
+		if ( ! isset( $providers['openai'] ) ) {
+			$providers['openai'] = self::get_builtin_openai_provider();
 		}
 
-		// 504 Gateway Timeout is similar to 502 - a proxy/server level timeout.
-		if ( 504 === $code ) {
-			return new WP_Error(
-				'ppq_server_timeout',
-				__( 'Server timeout (504 Gateway Timeout). Your hosting server closed the connection before the AI response was received. OpenAI can take 1-3 minutes for complex requests, but many hosting servers timeout after 30-60 seconds. To fix this, contact your hosting provider about increasing the proxy timeout. As a workaround, try generating fewer questions at once or using shorter content.', 'pressprimer-quiz' )
-			);
+		if ( ! isset( $providers['anthropic'] ) ) {
+			$providers['anthropic'] = self::get_builtin_anthropic_provider();
 		}
 
-		if ( 500 === $code || 503 === $code ) {
-			return new WP_Error(
-				'ppq_api_server_error',
-				sprintf(
-					/* translators: %d: HTTP status code */
-					__( 'OpenAI server error (HTTP %d). This is usually temporary. Please try again in a few moments.', 'pressprimer-quiz' ),
-					$code
-				)
-			);
+		return $providers;
+	}
+
+	/**
+	 * Resolve the active provider id.
+	 *
+	 * Site-level: the pressprimer_quiz_default_ai_provider option, defaulting to
+	 * 'openai'. Keys and provider selection are site-wide (feature 004), so there
+	 * is no per-user override.
+	 *
+	 * @since 3.0.0
+	 *
+	 * @param int|null $user_id User ID (retained for signature compatibility).
+	 * @return string Provider id.
+	 */
+	public static function resolve_provider_id( $user_id = null ) {
+		$default = get_option( 'pressprimer_quiz_default_ai_provider', 'openai' );
+
+		return ( is_string( $default ) && '' !== $default ) ? $default : 'openai';
+	}
+
+	/**
+	 * Resolve the active provider instance for this request.
+	 *
+	 * Falls back to OpenAI, then to any registered provider.
+	 *
+	 * @since 3.0.0
+	 *
+	 * @return PressPrimer_Quiz_AI_Provider_Interface|null Provider, or null if none.
+	 */
+	private function resolve_provider() {
+		$providers = self::get_providers();
+		$id        = self::resolve_provider_id();
+
+		if ( isset( $providers[ $id ] ) ) {
+			return $providers[ $id ];
 		}
 
-		if ( isset( $body['error'] ) ) {
-			return new WP_Error(
-				'ppq_api_error',
-				isset( $body['error']['message'] )
-					? $body['error']['message']
-					: __( 'OpenAI API error occurred.', 'pressprimer-quiz' )
-			);
+		if ( isset( $providers['openai'] ) ) {
+			return $providers['openai'];
 		}
 
-		if ( ! isset( $body['choices'][0]['message']['content'] ) ) {
-			return new WP_Error(
-				'ppq_invalid_response',
-				__( 'Invalid response format from OpenAI.', 'pressprimer-quiz' )
-			);
-		}
+		$first = reset( $providers );
 
-		return $body['choices'][0]['message']['content'];
+		return $first ? $first : null;
+	}
+
+	/**
+	 * Build the built-in OpenAI provider.
+	 *
+	 * Returns the extracted OpenAI provider (feature 004, FR-002). Behavior is
+	 * identical to the prior inline transport; this named class is the
+	 * regression anchor for the abstraction. Addons may still override 'openai'
+	 * via the pressprimer_quiz_ai_providers filter.
+	 *
+	 * @since 3.0.0
+	 *
+	 * @return PressPrimer_Quiz_AI_Provider_Interface The OpenAI provider.
+	 */
+	private static function get_builtin_openai_provider() {
+		return new PressPrimer_Quiz_AI_Provider_OpenAI();
+	}
+
+	/**
+	 * Build the built-in Anthropic provider.
+	 *
+	 * Anthropic Messages API support (feature 004, FR-003), mirroring the
+	 * PressPrimer Assignment conventions. Addons may override 'anthropic' via the
+	 * pressprimer_quiz_ai_providers filter.
+	 *
+	 * @since 3.0.0
+	 *
+	 * @return PressPrimer_Quiz_AI_Provider_Interface The Anthropic provider.
+	 */
+	private static function get_builtin_anthropic_provider() {
+		return new PressPrimer_Quiz_AI_Provider_Anthropic();
 	}
 
 	/**
@@ -1740,23 +1918,22 @@ class PressPrimer_Quiz_AI_Service {
 	/**
 	 * Get API key status
 	 *
-	 * Returns the status of site-wide API key configuration.
+	 * Returns the configuration status of a provider's site-level API key.
 	 *
 	 * @since 1.0.0
 	 *
-	 * @param int $user_id Deprecated. User ID is no longer used.
+	 * @param int|string $user_id  Deprecated user id, OR a provider id string.
+	 * @param string     $provider Provider id (defaults to the active provider).
 	 * @return array Status information.
 	 */
-	public static function get_api_key_status( $user_id = null ) {
-		$api_key = self::get_api_key();
-
-		if ( is_wp_error( $api_key ) ) {
-			return [
-				'configured' => false,
-				'valid'      => false,
-				'message'    => $api_key->get_error_message(),
-			];
+	public static function get_api_key_status( $user_id = null, $provider = '' ) {
+		// Back-compat: callers historically passed a user id (now ignored). Allow
+		// passing the provider id as the first argument too.
+		if ( '' === $provider && is_string( $user_id ) && '' !== $user_id ) {
+			$provider = $user_id;
 		}
+
+		$api_key = self::get_api_key_for_provider( ( '' !== $provider ) ? $provider : null );
 
 		if ( empty( $api_key ) ) {
 			return [
@@ -1766,7 +1943,7 @@ class PressPrimer_Quiz_AI_Service {
 			];
 		}
 
-		// Key is configured, check if masked for display
+		// Key is configured, masked for display.
 		$masked = substr( $api_key, 0, 7 ) . '...' . substr( $api_key, -4 );
 
 		return [
@@ -1779,6 +1956,92 @@ class PressPrimer_Quiz_AI_Service {
 			),
 			'masked_key' => $masked,
 		];
+	}
+
+	/**
+	 * Get the registered providers as an id => label map.
+	 *
+	 * For building the Settings provider selector without exposing instances.
+	 *
+	 * @since 3.0.0
+	 *
+	 * @return array<string,string> Provider id => label.
+	 */
+	public static function get_provider_labels() {
+		$labels = [];
+
+		foreach ( self::get_providers() as $id => $provider ) {
+			$labels[ $id ] = $provider->get_label();
+		}
+
+		return $labels;
+	}
+
+	/**
+	 * Get the site-level Anthropic API key.
+	 *
+	 * @since 3.0.0
+	 *
+	 * @param int|null $user_id User ID (retained for signature compatibility).
+	 * @return string Decrypted API key, or '' when none.
+	 */
+	public static function get_anthropic_api_key( $user_id = null ) {
+		return self::get_api_key_for_provider( 'anthropic', $user_id );
+	}
+
+	/**
+	 * Get the site-level API key for a provider.
+	 *
+	 * Reads the encrypted per-provider site option. For backward compatibility
+	 * with pre-3.0 installs that stored a key in the first admin's user meta, a
+	 * legacy key is used as a fallback and best-effort promoted to the site
+	 * option on read (so it works even if the promotion write fails).
+	 *
+	 * @since 3.0.0
+	 *
+	 * @param string|null $provider Provider id (defaults to the active provider).
+	 * @param int|null    $user_id  User ID (retained for signature compatibility).
+	 * @return string Decrypted API key, or '' when none.
+	 */
+	public static function get_api_key_for_provider( $provider = null, $user_id = null ) {
+		$provider = ( is_string( $provider ) && '' !== $provider ) ? $provider : self::resolve_provider_id( $user_id );
+		$provider = sanitize_key( $provider );
+
+		$option   = 'pressprimer_quiz_site_' . $provider . '_api_key';
+		$site_key = get_option( $option, '' );
+
+		if ( ! empty( $site_key ) ) {
+			$decrypted = PressPrimer_Quiz_Helpers::decrypt( $site_key );
+
+			if ( ! is_wp_error( $decrypted ) && ! empty( $decrypted ) ) {
+				return $decrypted;
+			}
+		}
+
+		// Legacy fallback: a key stored in the first admin's user meta (pre-3.0).
+		// Promote it to the site option on read (best-effort); if the write
+		// fails, the decrypted fallback value is still returned.
+		$admin_users = get_users(
+			[
+				'role'   => 'administrator',
+				'number' => 1,
+			]
+		);
+
+		if ( ! empty( $admin_users ) ) {
+			$encrypted = get_user_meta( $admin_users[0]->ID, 'pressprimer_quiz_' . $provider . '_api_key', true );
+
+			if ( ! empty( $encrypted ) ) {
+				$decrypted = PressPrimer_Quiz_Helpers::decrypt( $encrypted );
+
+				if ( ! is_wp_error( $decrypted ) && ! empty( $decrypted ) ) {
+					update_option( $option, $encrypted );
+					return $decrypted;
+				}
+			}
+		}
+
+		return '';
 	}
 
 	/**

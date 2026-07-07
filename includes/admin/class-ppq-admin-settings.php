@@ -1717,9 +1717,35 @@ Good luck with your studies!',
 			}
 		}
 
+		// Per-provider AI block (feature 004): key status, curated/live models, and
+		// model preference for each registered provider, plus the active provider.
+		// OpenAI reuses the status/models already fetched above.
+		$ai_active_provider = PressPrimer_Quiz_AI_Service::get_active_provider();
+		$ai_instances       = PressPrimer_Quiz_AI_Service::get_providers();
+		$ai_provider_data   = [];
+		foreach ( PressPrimer_Quiz_AI_Service::get_provider_labels() as $pid => $plabel ) {
+			if ( 'openai' === $pid ) {
+				$pstatus = $key_status;
+				$pmodels = $available_models;
+			} else {
+				$pstatus = PressPrimer_Quiz_AI_Service::get_api_key_status( $pid );
+				$pmodels = isset( $ai_instances[ $pid ] ) ? $ai_instances[ $pid ]->get_models() : [];
+			}
+			$ai_provider_data[ $pid ] = [
+				'label'     => $plabel,
+				'status'    => $pstatus,
+				'models'    => $pmodels,
+				'modelPref' => PressPrimer_Quiz_AI_Service::get_site_model( $pid ),
+			];
+		}
+		$ai_block = [
+			'activeProvider' => $ai_active_provider,
+			'providers'      => $ai_provider_data,
+		];
+
 		// Get statistics (only questions table has deleted_at column)
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Simple count queries for admin settings display
-		$total_quizzes = (int) $wpdb->get_var( "SELECT COUNT(*) FROM {$wpdb->prefix}ppq_quizzes" ); // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Table name safely constructed
+		$total_quizzes = (int) $wpdb->get_var( "SELECT COUNT(*) FROM {$wpdb->prefix}ppq_quizzes WHERE is_review_quiz = 0" ); // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Table name safely constructed
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching
 		$total_questions = (int) $wpdb->get_var( "SELECT COUNT(*) FROM {$wpdb->prefix}ppq_questions WHERE deleted_at IS NULL" ); // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching
@@ -1745,6 +1771,19 @@ Good luck with your studies!',
 		}
 		// Use integer for wp_localize_script compatibility (0 or 1)
 		$settings['remove_data_on_uninstall'] = $remove_data_value ? 1 : 0;
+
+		// Front-end dashboard page (v3.0): a standalone option, exposed in the
+		// settings bundle so the General tab preselects it on first render.
+		$settings['dashboard_page_id'] = (int) get_option( 'pressprimer_quiz_dashboard_page_id', 0 );
+
+		// Guest marketing-consent (v3.0): standalone options, exposed so the
+		// General tab shows the current toggle and label on first render. The
+		// translatable default label fills in when none has been saved.
+		$settings['guest_consent_enabled'] = (bool) get_option( 'pressprimer_quiz_guest_consent_enabled', false );
+		$consent_label                     = get_option( 'pressprimer_quiz_guest_consent_label', '' );
+		$settings['guest_consent_label']   = ( '' !== trim( (string) $consent_label ) )
+			? $consent_label
+			: __( 'Add me to the newsletter. I understand that I can unsubscribe at any time.', 'pressprimer-quiz' );
 
 		/**
 		 * Filter the settings tabs displayed on the settings page.
@@ -1812,19 +1851,21 @@ Good luck with your studies!',
 		);
 
 		$data = [
-			'pluginUrl'      => PRESSPRIMER_QUIZ_PLUGIN_URL,
-			'settingsMascot' => $settings_mascot,
-			'settings'       => $settings,
-			'settingsTabs'   => $settings_tabs,
-			'apiKeyStatus'   => $key_status,
-			'apiModels'      => $available_models,
-			'modelPref'      => $model_pref,
-			'usageData'      => $usage_data,
-			'defaults'       => [
+			'pluginUrl'        => PRESSPRIMER_QUIZ_PLUGIN_URL,
+			'settingsMascot'   => $settings_mascot,
+			'settings'         => $settings,
+			'privacyPolicyUrl' => get_privacy_policy_url(),
+			'settingsTabs'     => $settings_tabs,
+			'apiKeyStatus'     => $key_status,
+			'apiModels'        => $available_models,
+			'modelPref'        => $model_pref,
+			'ai'               => $ai_block,
+			'usageData'        => $usage_data,
+			'defaults'         => [
 				'siteName'   => get_bloginfo( 'name' ),
 				'adminEmail' => get_bloginfo( 'admin_email' ),
 			],
-			'appearance'     => [
+			'appearance'       => [
 				'themeFont'     => $theme_font,
 				'defaultColors' => [
 					'primary'    => '#0073aa',
@@ -1834,7 +1875,7 @@ Good luck with your studies!',
 					'error'      => '#d63638',
 				],
 			],
-			'systemInfo'     => [
+			'systemInfo'       => [
 				'pluginVersion'          => PRESSPRIMER_QUIZ_VERSION,
 				'dbVersion'              => get_option( 'pressprimer_quiz_db_version', 'Not set' ),
 				'wpVersion'              => get_bloginfo( 'version' ),
@@ -1859,11 +1900,18 @@ Good luck with your studies!',
 				'totalAttempts'          => $total_attempts,
 				'extractionCapabilities' => PressPrimer_Quiz_File_Processor::get_extraction_capabilities(),
 			],
-			'databaseTables' => $table_status,
-			'nonces'         => [
+			'databaseTables'   => $table_status,
+			'schemaHealth'     => class_exists( 'PressPrimer_Quiz_Schema_Verifier' )
+				? [
+					'report' => PressPrimer_Quiz_Schema_Verifier::check(),
+					'log'    => PressPrimer_Quiz_Schema_Verifier::get_log(),
+				]
+				: null,
+			'dashboard'        => $this->get_dashboard_settings_data(),
+			'nonces'           => [
 				'repairTables' => wp_create_nonce( 'pressprimer_quiz_repair_tables_nonce' ),
 			],
-			'lmsStatus'      => [
+			'lmsStatus'        => [
 				// Alphabetical order
 				'learndash'  => [
 					'installed' => defined( 'LEARNDASH_VERSION' ),
@@ -1900,6 +1948,82 @@ Good luck with your studies!',
 		 * @param array $data Settings data including settings, apiKeyStatus, systemInfo, etc.
 		 */
 		return apply_filters( 'pressprimer_quiz_settings_data', $data );
+	}
+
+	/**
+	 * Build the front-end dashboard facts for the settings UI.
+	 *
+	 * Provides the published-page list for the selector plus the site's static
+	 * front-page configuration so the General and Status tabs can warn — fully
+	 * client-side — when the designated page is the front page or is missing/
+	 * unpublished. The currently designated page is always included in the list
+	 * (even past the cap) so it stays selectable.
+	 *
+	 * @since 3.0.0
+	 *
+	 * @return array {
+	 *     @type array  $pages       List of [ id, title ] for published pages.
+	 *     @type int    $frontPageId The static front page ID (0 if none).
+	 *     @type string $showOnFront 'posts' or 'page'.
+	 *     @type string $editUrl     Edit link for the designated page ('' if none).
+	 *     @type string $viewUrl     Permalink for the designated page ('' if unavailable).
+	 * }
+	 */
+	private function get_dashboard_settings_data() {
+		$current_id = (int) get_option( 'pressprimer_quiz_dashboard_page_id', 0 );
+
+		$pages = get_pages(
+			[
+				'post_status' => 'publish',
+				'sort_column' => 'post_title',
+				'sort_order'  => 'ASC',
+				'number'      => 200,
+			]
+		);
+
+		$page_list   = [];
+		$has_current = false;
+
+		if ( is_array( $pages ) ) {
+			foreach ( $pages as $page ) {
+				$page_list[] = [
+					'id'    => (int) $page->ID,
+					'title' => '' !== $page->post_title
+						? $page->post_title
+						/* translators: %d: page ID. */
+						: sprintf( __( '(no title) #%d', 'pressprimer-quiz' ), (int) $page->ID ),
+				];
+
+				if ( (int) $page->ID === $current_id ) {
+					$has_current = true;
+				}
+			}
+		}
+
+		// Keep the designated page selectable even if it falls outside the cap.
+		if ( $current_id > 0 && ! $has_current ) {
+			$current_page = get_post( $current_id );
+			if ( $current_page && 'page' === $current_page->post_type && 'publish' === $current_page->post_status ) {
+				array_unshift(
+					$page_list,
+					[
+						'id'    => $current_id,
+						'title' => $current_page->post_title,
+					]
+				);
+			}
+		}
+
+		$edit_url = $current_id > 0 ? get_edit_post_link( $current_id, 'raw' ) : '';
+		$view_url = ( $current_id > 0 && 'publish' === get_post_status( $current_id ) ) ? get_permalink( $current_id ) : '';
+
+		return [
+			'pages'       => $page_list,
+			'frontPageId' => (int) get_option( 'page_on_front', 0 ),
+			'showOnFront' => (string) get_option( 'show_on_front', 'posts' ),
+			'editUrl'     => $edit_url ? $edit_url : '',
+			'viewUrl'     => $view_url ? $view_url : '',
+		];
 	}
 
 	/**

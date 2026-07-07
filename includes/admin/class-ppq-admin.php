@@ -431,6 +431,12 @@ class PressPrimer_Quiz_Admin {
 			$asset['version']
 		);
 
+		// Load math rendering on the Reports page when enabled, so the attempt
+		// detail modal can typeset LaTeX in question and answer content.
+		if ( pressprimer_quiz_math_enabled() ) {
+			pressprimer_quiz_enqueue_math_assets();
+		}
+
 		/**
 		 * Filters the addon reports to display on the Reports index page.
 		 *
@@ -451,6 +457,13 @@ class PressPrimer_Quiz_Admin {
 		 */
 		$addon_reports = apply_filters( 'pressprimer_quiz_reports_addon_reports', [] );
 
+		// Premium report cards the free plugin knows about, each flagged with its
+		// lock state, so reports from inactive tiers still appear (locked) in a
+		// stable order alongside the real cards active addons register above.
+		$premium_reports = ( class_exists( 'PressPrimer_Quiz_Upgrade_Page' ) && method_exists( 'PressPrimer_Quiz_Upgrade_Page', 'get_premium_report_cards' ) )
+			? PressPrimer_Quiz_Upgrade_Page::get_premium_report_cards()
+			: [];
+
 		/**
 		 * Filters the reports page header mascot image URL.
 		 *
@@ -470,10 +483,12 @@ class PressPrimer_Quiz_Admin {
 			'ppq-reports',
 			'pressprimerQuizReportsData',
 			[
-				'pluginUrl'     => PRESSPRIMER_QUIZ_PLUGIN_URL,
-				'reportsMascot' => $reports_mascot,
-				'resultsUrl'    => home_url( '/quiz-results/' ),
-				'addonReports'  => $addon_reports,
+				'pluginUrl'      => PRESSPRIMER_QUIZ_PLUGIN_URL,
+				'reportsMascot'  => $reports_mascot,
+				'resultsUrl'     => home_url( '/quiz-results/' ),
+				'addonReports'   => $addon_reports,
+				'premiumReports' => $premium_reports,
+				'mathEnabled'    => pressprimer_quiz_math_enabled(),
 			]
 		);
 	}

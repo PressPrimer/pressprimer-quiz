@@ -10,12 +10,17 @@ import { __ } from '@wordpress/i18n';
 import { Card, Typography, Tooltip, Space, Progress } from 'antd';
 import { QuestionCircleOutlined } from '@ant-design/icons';
 import ImageUploadModal from './ImageUploadModal';
+import MathInsertModal from './MathInsertModal';
 
 const { Title, Text } = Typography;
+
+// Math notation authoring is shown only when the site setting is on.
+const mathEnabled = !!window.pressprimerQuizQuestionData?.mathEnabled;
 
 const StemEditor = ({ value, onChange }) => {
 	const [charCount, setCharCount] = useState(0);
 	const [imageModalOpen, setImageModalOpen] = useState(false);
+	const [mathModalOpen, setMathModalOpen] = useState(false);
 	const editorRef = useRef(null);
 	const editorInstanceRef = useRef(null);
 	const maxChars = 10000;
@@ -47,7 +52,7 @@ const StemEditor = ({ value, onChange }) => {
 						tinymce: {
 							wpautop: true,
 							plugins: 'lists,link,textcolor,paste,wordpress,wplink',
-							toolbar1: 'formatselect,bold,italic,bullist,numlist,link,forecolor,ppq_image,removeformat',
+							toolbar1: `formatselect,bold,italic,bullist,numlist,link,forecolor,ppq_image,${mathEnabled ? 'ppq_math,' : ''}removeformat`,
 							height: 300,
 							setup: (editor) => {
 								editor.addButton('ppq_image', {
@@ -57,6 +62,16 @@ const StemEditor = ({ value, onChange }) => {
 										setImageModalOpen(true);
 									},
 								});
+
+								if (mathEnabled) {
+									editor.addButton('ppq_math', {
+										text: 'Σ',
+										tooltip: __('Insert math', 'pressprimer-quiz'),
+										onclick: () => {
+											setMathModalOpen(true);
+										},
+									});
+								}
 							},
 							init_instance_callback: (editor) => {
 								editorInstanceRef.current = editor;
@@ -137,6 +152,16 @@ const StemEditor = ({ value, onChange }) => {
 		editor.execCommand('mceInsertContent', false, html);
 	};
 
+	// Insert delimited LaTeX (\( ... \) or \[ ... \]) at the editor caret.
+	const handleMathInsert = (delimited) => {
+		setMathModalOpen(false);
+
+		const editor = editorInstanceRef.current;
+		if (!editor) return;
+
+		editor.execCommand('mceInsertContent', false, delimited);
+	};
+
 	const percentUsed = (charCount / maxChars) * 100;
 	const getStrokeColor = () => {
 		if (percentUsed > 90) {
@@ -191,6 +216,11 @@ const StemEditor = ({ value, onChange }) => {
 				isOpen={imageModalOpen}
 				onClose={() => setImageModalOpen(false)}
 				onUpload={handleImageUpload}
+			/>
+			<MathInsertModal
+				open={mathModalOpen}
+				onClose={() => setMathModalOpen(false)}
+				onInsert={handleMathInsert}
 			/>
 		</Card>
 	);

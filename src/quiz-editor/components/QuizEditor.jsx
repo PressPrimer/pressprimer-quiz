@@ -28,6 +28,7 @@ import {
 } from '@ant-design/icons';
 
 import SettingsPanel from './SettingsPanel';
+import { buildTemplateSettings } from '../templates/templateFields';
 import PremiumSettingsPanel from './PremiumSettingsPanel';
 import QuestionsPanel from './QuestionsPanel';
 import RulesPanel from './RulesPanel';
@@ -52,6 +53,8 @@ const QuizEditor = ({ quizData = {} }) => {
 	const [feedbackBands, setFeedbackBands] = useState([]);
 	// Inline warnings returned by the REST save (e.g., random distractor cap edge cases).
 	const [maxAnswersWarnings, setMaxAnswersWarnings] = useState([]);
+	// Name of the default template that pre-filled a fresh quiz (FR-006 badge).
+	const [defaultsFromName, setDefaultsFromName] = useState('');
 
 	const isNew = !currentQuizId;
 
@@ -118,6 +121,16 @@ const QuizEditor = ({ quizData = {} }) => {
 				fieldValues.proctoring_tab_monitoring = quizData.proctoring_tab_monitoring || 'default';
 				fieldValues.proctoring_fullscreen = quizData.proctoring_fullscreen || 'default';
 				fieldValues.proctoring_require_desktop = quizData.proctoring_require_desktop ?? false;
+				fieldValues.proctoring_integrity = quizData.proctoring_integrity || 'default';
+			}
+
+			// Add WP Fusion per-quiz tag fields if the WP Fusion feature is active.
+			if (quizData.wpfActive) {
+				const wpfTags = quizData.wpf_tags || {};
+				fieldValues.wpf_tag_signup = wpfTags.signup || [];
+				fieldValues.wpf_tag_completion = wpfTags.completion || [];
+				fieldValues.wpf_tag_pass = wpfTags.pass || [];
+				fieldValues.wpf_tag_fail = wpfTags.fail || [];
 			}
 
 			form.setFieldsValue(fieldValues);
@@ -235,6 +248,109 @@ const QuizEditor = ({ quizData = {} }) => {
 	};
 
 	/**
+	 * Fill the editor form from a template's settings (client-side only).
+	 *
+	 * Nothing is persisted until the author saves the quiz. Booleans are
+	 * converted to the Switch's boolean form value; display_settings and feedback
+	 * bands are replaced (not merged); keys with no editable field are skipped.
+	 * No user-facing messages — used by both Apply and the default-template
+	 * pre-fill.
+	 *
+	 * @param {Object} settings Sanitized settings map from the template.
+	 */
+	const applyTemplateToForm = (settings = {}) => {
+		const booleanKeys = [
+			'allow_skip', 'allow_backward', 'allow_resume',
+			'randomize_questions', 'randomize_answers',
+			'enable_confidence', 'show_points', 'pool_enabled', 'enable_sr',
+		];
+
+		const parseJson = (value) => {
+			if (value === null || value === undefined || value === '') {
+				return null;
+			}
+			if (typeof value === 'object') {
+				return value;
+			}
+			try {
+				return JSON.parse(value);
+			} catch (error) {
+				return null;
+			}
+		};
+
+		const patch = {};
+		let nextBands = null;
+		let nextDisplaySettings;
+
+		Object.entries(settings).forEach(([key, value]) => {
+			if (key === 'theme_settings_json') {
+				return; // No editor field for this key.
+			}
+			if (key === 'band_feedback_json') {
+				const bands = parseJson(value);
+				if (Array.isArray(bands)) {
+					nextBands = bands;
+				}
+				return;
+			}
+			if (key === 'display_settings_json') {
+				const obj = parseJson(value);
+				if (obj && typeof obj === 'object' && !Array.isArray(obj)) {
+					nextDisplaySettings = obj;
+				}
+				return;
+			}
+			if (key === 'enable_sr' && !quizData.schoolActive) {
+				return; // School addon inactive.
+			}
+			if (booleanKeys.includes(key)) {
+				patch[key] = !! Number(value);
+				return;
+			}
+			patch[key] = value;
+		});
+
+		form.setFieldsValue(patch);
+
+		// setFieldsValue deep-merges objects, so replace display_settings wholesale.
+		if (nextDisplaySettings !== undefined) {
+			form.setFields([{ name: 'display_settings', value: nextDisplaySettings }]);
+		}
+
+		if (Array.isArray(nextBands)) {
+			setFeedbackBands(nextBands);
+		}
+	};
+
+	const applyTemplate = (settings = {}, reminders = []) => {
+		applyTemplateToForm(settings);
+		reminders.forEach((reminder) => message.warning(reminder));
+		message.success(__('Template applied. Review the settings and save the quiz to keep them.', 'pressprimer-quiz'));
+	};
+
+	// Pre-fill a brand-new quiz from the site default template once on mount
+	// (feature 003, FR-006). Existing quizzes load their own saved values.
+	useEffect(() => {
+		if (!quizData.id && quizData.defaultTemplate && quizData.defaultTemplate.settings) {
+			applyTemplateToForm(quizData.defaultTemplate.settings);
+			setDefaultsFromName(quizData.defaultTemplate.name || '');
+		}
+		// Intentionally mount-only: apply the default once before the author edits.
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, []);
+
+	/**
+	 * Collect the editor's current settings as a template payload.
+	 *
+	 * Used by "Save as template"; the server sanitizes every value on save.
+	 *
+	 * @return {Object} Settings payload keyed by settings key.
+	 */
+	const collectTemplateSettings = () =>
+		buildTemplateSettings(form.getFieldsValue(true), feedbackBands, quizData);
+
+	/**
 	 * Handle cancel
 	 */
 	const handleCancel = () => {
@@ -328,6 +444,13 @@ const QuizEditor = ({ quizData = {} }) => {
 
 	const hasPremiumAddons = quizData.educatorActive || quizData.enterpriseActive || quizData.schoolActive;
 
+	// Always surface the Premium Settings tab so free-site admins can discover
+	// what premium quiz options exist. On a free site it is admin-only: a teacher
+	// can neither upgrade nor use these options, so they never see the upsell.
+	// When any add-on is active the tab shows the real settings to everyone who
+	// can edit the quiz.
+	const showPremiumTab = hasPremiumAddons || !!quizData.isAdmin;
+
 	// Branching tab is available only for fixed-mode quizzes when Enterprise addon provides branching.
 	const showBranchingTab = quizData.branchingActive && generationMode === 'fixed' && currentQuizId;
 
@@ -335,9 +458,9 @@ const QuizEditor = ({ quizData = {} }) => {
 		{
 			key: 'settings',
 			label: __('Settings', 'pressprimer-quiz'),
-			children: <SettingsPanel form={form} generationMode={generationMode} setGenerationMode={setGenerationMode} quizData={quizData} maxAnswersWarnings={maxAnswersWarnings} saving={saving} />,
+			children: <SettingsPanel form={form} generationMode={generationMode} setGenerationMode={setGenerationMode} quizData={quizData} maxAnswersWarnings={maxAnswersWarnings} saving={saving} applyTemplate={applyTemplate} collectTemplateSettings={collectTemplateSettings} defaultsFromName={defaultsFromName} />,
 		},
-		hasPremiumAddons && {
+		showPremiumTab && {
 			key: 'premium',
 			label: __('Premium Settings', 'pressprimer-quiz'),
 			children: <PremiumSettingsPanel form={form} quizData={quizData} />,

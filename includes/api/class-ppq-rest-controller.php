@@ -170,6 +170,13 @@ class PressPrimer_Quiz_REST_Controller {
 					'methods'             => WP_REST_Server::READABLE,
 					'callback'            => [ $this, 'get_quizzes' ],
 					'permission_callback' => [ $this, 'check_permission' ],
+					'args'                => [
+						'include_review_quizzes' => [
+							'type'              => 'boolean',
+							'required'          => false,
+							'sanitize_callback' => 'rest_sanitize_boolean',
+						],
+					],
 				],
 				[
 					'methods'             => WP_REST_Server::CREATABLE,
@@ -323,12 +330,12 @@ class PressPrimer_Quiz_REST_Controller {
 				[
 					'methods'             => WP_REST_Server::CREATABLE,
 					'callback'            => [ $this, 'save_api_key' ],
-					'permission_callback' => [ $this, 'check_permission' ],
+					'permission_callback' => [ $this, 'check_settings_permission' ],
 				],
 				[
 					'methods'             => WP_REST_Server::DELETABLE,
 					'callback'            => [ $this, 'delete_api_key' ],
-					'permission_callback' => [ $this, 'check_permission' ],
+					'permission_callback' => [ $this, 'check_settings_permission' ],
 				],
 			]
 		);
@@ -339,7 +346,7 @@ class PressPrimer_Quiz_REST_Controller {
 			[
 				'methods'             => WP_REST_Server::CREATABLE,
 				'callback'            => [ $this, 'validate_api_key' ],
-				'permission_callback' => [ $this, 'check_permission' ],
+				'permission_callback' => [ $this, 'check_settings_permission' ],
 			]
 		);
 
@@ -349,7 +356,7 @@ class PressPrimer_Quiz_REST_Controller {
 			[
 				'methods'             => WP_REST_Server::CREATABLE,
 				'callback'            => [ $this, 'delete_api_key' ],
-				'permission_callback' => [ $this, 'check_permission' ],
+				'permission_callback' => [ $this, 'check_settings_permission' ],
 			]
 		);
 
@@ -369,7 +376,18 @@ class PressPrimer_Quiz_REST_Controller {
 			[
 				'methods'             => WP_REST_Server::CREATABLE,
 				'callback'            => [ $this, 'save_api_model' ],
-				'permission_callback' => [ $this, 'check_permission' ],
+				'permission_callback' => [ $this, 'check_settings_permission' ],
+			]
+		);
+
+		// Active AI provider (site-level). Settings-capable users only.
+		register_rest_route(
+			'ppq/v1',
+			'/settings/ai-provider',
+			[
+				'methods'             => WP_REST_Server::CREATABLE,
+				'callback'            => [ $this, 'set_ai_provider' ],
+				'permission_callback' => [ $this, 'check_settings_permission' ],
 			]
 		);
 
@@ -454,6 +472,205 @@ class PressPrimer_Quiz_REST_Controller {
 				'permission_callback' => [ $this, 'check_settings_permission' ],
 			]
 		);
+
+		// Schema integrity endpoints (v3.0). Power the Status tab's schema
+		// health section: run a presence-only check and repair missing
+		// tables/columns from the canonical schema map.
+		register_rest_route(
+			'ppq/v1',
+			'/status/schema',
+			[
+				'methods'             => WP_REST_Server::READABLE,
+				'callback'            => [ $this, 'get_schema_status' ],
+				'permission_callback' => [ $this, 'check_settings_permission' ],
+			]
+		);
+
+		register_rest_route(
+			'ppq/v1',
+			'/status/schema/repair',
+			[
+				'methods'             => WP_REST_Server::CREATABLE,
+				'callback'            => [ $this, 'repair_schema_status' ],
+				'permission_callback' => [ $this, 'check_settings_permission' ],
+			]
+		);
+
+		// Front-end dashboard page helper (v3.0). Creates a published page
+		// containing the dashboard block and designates it.
+		register_rest_route(
+			'ppq/v1',
+			'/dashboard-page',
+			[
+				'methods'             => WP_REST_Server::CREATABLE,
+				'callback'            => [ $this, 'create_dashboard_page' ],
+				'permission_callback' => [ $this, 'check_settings_permission' ],
+			]
+		);
+
+		// Current user's own quiz attempts (v3.0 shell My Results).
+		register_rest_route(
+			'ppq/v1',
+			'/my-attempts',
+			[
+				'methods'             => WP_REST_Server::READABLE,
+				'callback'            => [ $this, 'get_my_attempts' ],
+				'permission_callback' => [ $this, 'check_own_attempts_permission' ],
+			]
+		);
+
+		// Quiz settings templates (feature 003). Listing is open to any
+		// quiz-editing user (they can apply templates); mutations require the
+		// settings capability since templates are a site-wide policy object.
+		register_rest_route(
+			'ppq/v1',
+			'/quiz-templates',
+			[
+				[
+					'methods'             => WP_REST_Server::READABLE,
+					'callback'            => [ $this, 'get_quiz_templates' ],
+					'permission_callback' => [ $this, 'check_permission' ],
+				],
+				[
+					'methods'             => WP_REST_Server::CREATABLE,
+					'callback'            => [ $this, 'create_quiz_template' ],
+					'permission_callback' => [ $this, 'check_settings_permission' ],
+				],
+			]
+		);
+
+		// Default-template selector target. Registered before the numeric-id route;
+		// 'default' never matches the \d+ pattern, but keeping it first is explicit.
+		register_rest_route(
+			'ppq/v1',
+			'/quiz-templates/default',
+			[
+				[
+					'methods'             => WP_REST_Server::CREATABLE,
+					'callback'            => [ $this, 'set_default_quiz_template' ],
+					'permission_callback' => [ $this, 'check_settings_permission' ],
+				],
+			]
+		);
+
+		register_rest_route(
+			'ppq/v1',
+			'/quiz-templates/(?P<id>\d+)',
+			[
+				[
+					'methods'             => WP_REST_Server::EDITABLE,
+					'callback'            => [ $this, 'update_quiz_template' ],
+					'permission_callback' => [ $this, 'check_settings_permission' ],
+				],
+				[
+					'methods'             => WP_REST_Server::DELETABLE,
+					'callback'            => [ $this, 'delete_quiz_template' ],
+					'permission_callback' => [ $this, 'check_settings_permission' ],
+				],
+			]
+		);
+
+		// Progress reset tools (Data Tools).
+		register_rest_route(
+			'ppq/v1',
+			'/tools/reset-progress/preview',
+			[
+				[
+					'methods'             => WP_REST_Server::READABLE,
+					'callback'            => [ $this, 'preview_reset_progress' ],
+					'permission_callback' => [ $this, 'check_reset_progress_permission' ],
+					'args'                => [
+						'user_id' => [
+							'type'              => 'integer',
+							'required'          => false,
+							'sanitize_callback' => 'absint',
+						],
+						'quiz_id' => [
+							'type'              => 'integer',
+							'required'          => false,
+							'sanitize_callback' => 'absint',
+						],
+					],
+				],
+			]
+		);
+
+		register_rest_route(
+			'ppq/v1',
+			'/tools/reset-progress',
+			[
+				[
+					'methods'             => WP_REST_Server::CREATABLE,
+					'callback'            => [ $this, 'reset_progress' ],
+					'permission_callback' => [ $this, 'check_reset_progress_permission' ],
+					'args'                => [
+						'user_id'       => [
+							'type'              => 'integer',
+							'required'          => false,
+							'sanitize_callback' => 'absint',
+						],
+						'quiz_id'       => [
+							'type'              => 'integer',
+							'required'          => false,
+							'sanitize_callback' => 'absint',
+						],
+						'confirm_token' => [
+							'type'              => 'string',
+							'required'          => true,
+							'sanitize_callback' => 'sanitize_text_field',
+						],
+						'cursor'        => [
+							'type'              => 'integer',
+							'required'          => false,
+							'sanitize_callback' => 'absint',
+						],
+					],
+				],
+			]
+		);
+
+		register_rest_route(
+			'ppq/v1',
+			'/tools/reset-progress/log',
+			[
+				[
+					'methods'             => WP_REST_Server::READABLE,
+					'callback'            => [ $this, 'get_reset_log' ],
+					'permission_callback' => [ $this, 'check_reset_progress_permission' ],
+				],
+			]
+		);
+
+		register_rest_route(
+			'ppq/v1',
+			'/tools/users',
+			[
+				[
+					'methods'             => WP_REST_Server::READABLE,
+					'callback'            => [ $this, 'search_reset_users' ],
+					'permission_callback' => [ $this, 'check_reset_progress_permission' ],
+					'args'                => [
+						'search' => [
+							'type'              => 'string',
+							'required'          => false,
+							'sanitize_callback' => 'sanitize_text_field',
+						],
+					],
+				],
+			]
+		);
+	}
+
+	/**
+	 * Permission for the current user's own attempts.
+	 *
+	 * @since 3.0.0
+	 *
+	 * @return bool True if the user may view their own attempts.
+	 */
+	public function check_own_attempts_permission() {
+		return current_user_can( 'pressprimer_quiz_take_quiz' )
+			|| current_user_can( 'pressprimer_quiz_view_results_own' );
 	}
 
 	/**
@@ -476,6 +693,22 @@ class PressPrimer_Quiz_REST_Controller {
 	 */
 	public function check_settings_permission() {
 		return current_user_can( 'pressprimer_quiz_manage_settings' );
+	}
+
+	/**
+	 * Permission for the progress reset tools.
+	 *
+	 * Deliberately stricter than the settings gate: resetting progress is a
+	 * destructive, site-wide operation, so it requires BOTH full management
+	 * and settings capabilities. Teachers with only manage_own do not qualify.
+	 *
+	 * @since 3.0.0
+	 *
+	 * @return bool True if the user may preview or run a progress reset.
+	 */
+	public function check_reset_progress_permission() {
+		return current_user_can( 'pressprimer_quiz_manage_all' )
+			&& current_user_can( 'pressprimer_quiz_manage_settings' );
 	}
 
 	/**
@@ -544,6 +777,199 @@ class PressPrimer_Quiz_REST_Controller {
 			return null;
 		}
 		return get_current_user_id();
+	}
+
+	/**
+	 * GET /tools/reset-progress/preview — read-only preview of a reset scope.
+	 *
+	 * Resolves the requested scope (user, quiz, or user + quiz) and returns the
+	 * counts and labels the Data Tools UI shows before enabling deletion. No
+	 * data is modified.
+	 *
+	 * @since 3.0.0
+	 *
+	 * @param WP_REST_Request $request Request object.
+	 * @return WP_REST_Response|WP_Error Preview payload or error.
+	 */
+	public function preview_reset_progress( $request ) {
+		if ( ! class_exists( 'PressPrimer_Quiz_Progress_Reset_Service' ) ) {
+			return new WP_Error(
+				'ppq_reset_unavailable',
+				__( 'Reset tools are not available.', 'pressprimer-quiz' ),
+				[ 'status' => 500 ]
+			);
+		}
+
+		$service = new PressPrimer_Quiz_Progress_Reset_Service();
+
+		$scope = $service->sanitize_scope(
+			$request->get_param( 'user_id' ),
+			$request->get_param( 'quiz_id' )
+		);
+
+		if ( is_wp_error( $scope ) ) {
+			return $scope;
+		}
+
+		return rest_ensure_response( $service->get_preview( $scope ) );
+	}
+
+	/**
+	 * POST /tools/reset-progress — delete one batch of in-scope attempts.
+	 *
+	 * Validates the typed confirmation token server-side, enforces the
+	 * site-wide single-operation lock, then deletes one batch and reports the
+	 * remaining count and cursor. The client re-POSTs (with the returned cursor)
+	 * until remaining reaches zero. The lock is released when the operation
+	 * completes (feature 006, FR-003, FR-004).
+	 *
+	 * @since 3.0.0
+	 *
+	 * @param WP_REST_Request $request Request object.
+	 * @return WP_REST_Response|WP_Error Batch result or error.
+	 */
+	public function reset_progress( $request ) {
+		if ( ! class_exists( 'PressPrimer_Quiz_Progress_Reset_Service' ) ) {
+			return new WP_Error(
+				'ppq_reset_unavailable',
+				__( 'Reset tools are not available.', 'pressprimer-quiz' ),
+				[ 'status' => 500 ]
+			);
+		}
+
+		$service = new PressPrimer_Quiz_Progress_Reset_Service();
+
+		$scope = $service->sanitize_scope(
+			$request->get_param( 'user_id' ),
+			$request->get_param( 'quiz_id' )
+		);
+
+		if ( is_wp_error( $scope ) ) {
+			return $scope;
+		}
+
+		// Stop with an accurate error if the quiz was deleted (including
+		// between batches) so we never report a misleading token mismatch.
+		$targets = $service->verify_scope_targets( $scope );
+		if ( is_wp_error( $targets ) ) {
+			return $targets;
+		}
+
+		// Validate the confirmation token before touching the lock or any data.
+		if ( ! $service->verify_token( $scope, $request->get_param( 'confirm_token' ) ) ) {
+			return new WP_Error(
+				'ppq_reset_bad_token',
+				__( 'The confirmation text did not match. Nothing was deleted.', 'pressprimer-quiz' ),
+				[ 'status' => 400 ]
+			);
+		}
+
+		// Enforce the site-wide single-operation lock (409 if another runs).
+		$lock = $service->guard_lock( $scope );
+		if ( is_wp_error( $lock ) ) {
+			return $lock;
+		}
+
+		$result = $service->delete_batch( $scope, absint( $request->get_param( 'cursor' ) ) );
+
+		if ( is_wp_error( $result ) ) {
+			// Leave the lock in place; it expires on inactivity so a retry of
+			// this same operation can resume without being blocked.
+			return $result;
+		}
+
+		// Accumulate this batch into the operation's running totals.
+		$totals           = $service->record_batch( $scope, $result['deleted'], $result['items'] );
+		$result['totals'] = $totals;
+
+		if ( 0 === (int) $result['remaining'] ) {
+			if ( $totals['attempts'] > 0 ) {
+				// Real operation finished: fire the completion hook, log it,
+				// and release the lock.
+				$service->complete_operation( $scope, $totals );
+			} else {
+				// Nothing matched the scope; just release the lock.
+				$service->release_lock();
+			}
+		}
+
+		return rest_ensure_response( $result );
+	}
+
+	/**
+	 * GET /tools/reset-progress/log — the recent reset operation log.
+	 *
+	 * Enriches each stored entry with the initiator's display name (or null
+	 * when that user no longer exists) for the Data Tools tab.
+	 *
+	 * @since 3.0.0
+	 *
+	 * @return WP_REST_Response|WP_Error Log entries (newest first) or error.
+	 */
+	public function get_reset_log() {
+		if ( ! class_exists( 'PressPrimer_Quiz_Progress_Reset_Service' ) ) {
+			return new WP_Error(
+				'ppq_reset_unavailable',
+				__( 'Reset tools are not available.', 'pressprimer-quiz' ),
+				[ 'status' => 500 ]
+			);
+		}
+
+		$service = new PressPrimer_Quiz_Progress_Reset_Service();
+		$entries = $service->get_log();
+		$out     = [];
+
+		foreach ( $entries as $entry ) {
+			$initiator               = isset( $entry['initiator_id'] ) ? get_userdata( (int) $entry['initiator_id'] ) : false;
+			$entry['initiator_name'] = $initiator ? $initiator->display_name : null;
+			$out[]                   = $entry;
+		}
+
+		return rest_ensure_response( $out );
+	}
+
+	/**
+	 * GET /tools/users — search users for the reset scope picker.
+	 *
+	 * Returns up to 20 matches as { id, label, email }. Gated by the reset
+	 * capability, so it is not a general-purpose user directory.
+	 *
+	 * @since 3.0.0
+	 *
+	 * @param WP_REST_Request $request Request object.
+	 * @return WP_REST_Response Matching users.
+	 */
+	public function search_reset_users( $request ) {
+		$search = (string) $request->get_param( 'search' );
+
+		$args = [
+			'number'  => 20,
+			'orderby' => 'display_name',
+			'order'   => 'ASC',
+		];
+
+		if ( '' !== $search ) {
+			$args['search']         = '*' . $search . '*';
+			$args['search_columns'] = [ 'user_login', 'user_email', 'user_nicename' ];
+		}
+
+		$users = get_users( $args );
+		$out   = [];
+
+		foreach ( $users as $user ) {
+			$out[] = [
+				'id'    => (int) $user->ID,
+				'label' => sprintf(
+					/* translators: 1: display name, 2: user login. */
+					__( '%1$s (%2$s)', 'pressprimer-quiz' ),
+					$user->display_name,
+					$user->user_login
+				),
+				'email' => $user->user_email,
+			];
+		}
+
+		return rest_ensure_response( $out );
 	}
 
 	/**
@@ -1782,9 +2208,22 @@ class PressPrimer_Quiz_REST_Controller {
 			'limit'    => 100,
 		);
 
+		$where = array();
+
 		// Non-admins only see their own quizzes.
 		if ( ! current_user_can( 'manage_options' ) ) {
-			$args['where'] = array( 'owner_id' => $user_id );
+			$where['owner_id'] = $user_id;
+		}
+
+		// Exclude School's spaced-repetition review quizzes by default; the
+		// include_review_quizzes flag restores them (Post-Scope Behavioral
+		// Amendment, 2026-06-11). Fetch-by-ID is unaffected.
+		if ( ! rest_sanitize_boolean( $request->get_param( 'include_review_quizzes' ) ) ) {
+			$where['is_review_quiz'] = 0;
+		}
+
+		if ( ! empty( $where ) ) {
+			$args['where'] = $where;
 		}
 
 		$quizzes = PressPrimer_Quiz_Quiz::find( $args );
@@ -1815,7 +2254,12 @@ class PressPrimer_Quiz_REST_Controller {
 	public function get_published_quizzes( $request ) {
 		$quizzes = PressPrimer_Quiz_Quiz::find(
 			[
-				'where'    => [ 'status' => 'published' ],
+				// Review quizzes (School SR) are never embeddable, so they are
+				// always excluded from the block-editor list.
+				'where'    => [
+					'status'         => 'published',
+					'is_review_quiz' => 0,
+				],
 				'order_by' => 'title',
 				'order'    => 'ASC',
 				'limit'    => 100,
@@ -1979,7 +2423,7 @@ class PressPrimer_Quiz_REST_Controller {
 	 * Sanitize a submitted display_settings payload
 	 *
 	 * Accepts an object or associative array whose keys are a subset of the
-	 * 14 display option keys. Returns a clean array of (string => bool)
+	 * 15 display option keys. Returns a clean array of (string => bool)
 	 * pairs ready to pass to PressPrimer_Quiz_Quiz::set_display_settings(),
 	 * or a WP_Error with HTTP 400 if the payload contains any unknown key.
 	 *
@@ -2021,6 +2465,7 @@ class PressPrimer_Quiz_REST_Controller {
 			'show_category_breakdown',
 			'show_question_review',
 			'show_retake_button',
+			'show_scoring_explanations',
 		);
 
 		$sanitized = array();
@@ -2153,7 +2598,7 @@ class PressPrimer_Quiz_REST_Controller {
 			return $ma_scoring_mode;
 		}
 
-		// Validate display_settings: object with keys from the 14-key whitelist.
+		// Validate display_settings: object with keys from the 15-key whitelist.
 		// Unknown keys short-circuit with HTTP 400 invalid_display_key.
 		$display_settings = null;
 		if ( array_key_exists( 'display_settings', $data ) ) {
@@ -2299,7 +2744,7 @@ class PressPrimer_Quiz_REST_Controller {
 			return $ma_scoring_mode;
 		}
 
-		// Validate display_settings: object with keys from the 14-key whitelist.
+		// Validate display_settings: object with keys from the 15-key whitelist.
 		// Unknown keys short-circuit with HTTP 400 invalid_display_key.
 		$display_settings = null;
 		if ( array_key_exists( 'display_settings', $data ) ) {
@@ -2819,6 +3264,20 @@ class PressPrimer_Quiz_REST_Controller {
 			'right_minus_wrong'
 		);
 
+		// Designated front-end dashboard page (v3.0) is its own option; expose it
+		// in the same bundle so the General tab can select it like any field.
+		$settings['dashboard_page_id'] = (int) get_option( 'pressprimer_quiz_dashboard_page_id', 0 );
+
+		// Guest marketing-consent settings are standalone options (read on the
+		// quiz-taking path without loading the settings bundle). Expose them
+		// under the same response shape; surface the translatable default label
+		// when none has been saved.
+		$settings['guest_consent_enabled'] = (bool) get_option( 'pressprimer_quiz_guest_consent_enabled', false );
+		$consent_label                     = get_option( 'pressprimer_quiz_guest_consent_label', '' );
+		$settings['guest_consent_label']   = ( '' !== trim( (string) $consent_label ) )
+			? $consent_label
+			: __( 'Add me to the newsletter. I understand that I can unsubscribe at any time.', 'pressprimer-quiz' );
+
 		return new WP_REST_Response(
 			[
 				'success'  => true,
@@ -2854,6 +3313,10 @@ class PressPrimer_Quiz_REST_Controller {
 			$sanitized['default_quiz_mode'] = in_array( $data['default_quiz_mode'], [ 'tutorial', 'timed' ], true )
 				? $data['default_quiz_mode']
 				: 'tutorial';
+		}
+
+		if ( isset( $data['enable_math'] ) ) {
+			$sanitized['enable_math'] = rest_sanitize_boolean( $data['enable_math'] );
 		}
 
 		if ( isset( $data['default_access_mode'] ) ) {
@@ -3038,6 +3501,64 @@ class PressPrimer_Quiz_REST_Controller {
 			}
 		}
 
+		// Front-end dashboard page (v3.0) is also a standalone option. 0 clears
+		// the designation; any other value must be a real page. Invalid IDs are
+		// ignored so a bad submission never points the option at a non-page.
+		if ( isset( $data['dashboard_page_id'] ) ) {
+			$submitted_page = absint( $data['dashboard_page_id'] );
+			$page_valid     = false;
+
+			if ( 0 === $submitted_page ) {
+				$page_valid = true;
+			} else {
+				$page       = get_post( $submitted_page );
+				$page_valid = ( $page && 'page' === $page->post_type );
+			}
+
+			if ( $page_valid ) {
+				$old_page = (int) get_option( 'pressprimer_quiz_dashboard_page_id', 0 );
+				if ( $old_page !== $submitted_page ) {
+					update_option( 'pressprimer_quiz_dashboard_page_id', $submitted_page );
+					$extra_changes[] = array(
+						'field'  => 'dashboard_page_id',
+						'before' => $old_page,
+						'after'  => $submitted_page,
+					);
+				}
+			}
+		}
+
+		// Guest marketing-consent settings are standalone options.
+		if ( isset( $data['guest_consent_enabled'] ) ) {
+			$new_consent_enabled = rest_sanitize_boolean( $data['guest_consent_enabled'] );
+			$old_consent_enabled = (bool) get_option( 'pressprimer_quiz_guest_consent_enabled', false );
+
+			if ( $old_consent_enabled !== $new_consent_enabled ) {
+				update_option( 'pressprimer_quiz_guest_consent_enabled', $new_consent_enabled );
+				$extra_changes[] = array(
+					'field'  => 'guest_consent_enabled',
+					'before' => $old_consent_enabled,
+					'after'  => $new_consent_enabled,
+				);
+			}
+		}
+
+		if ( isset( $data['guest_consent_label'] ) ) {
+			// Owner-entered label is plain text; the privacy link is appended by
+			// the plugin at render time, never stored.
+			$new_consent_label = sanitize_textarea_field( wp_unslash( $data['guest_consent_label'] ) );
+			$old_consent_label = (string) get_option( 'pressprimer_quiz_guest_consent_label', '' );
+
+			if ( $old_consent_label !== $new_consent_label ) {
+				update_option( 'pressprimer_quiz_guest_consent_label', $new_consent_label );
+				$extra_changes[] = array(
+					'field'  => 'guest_consent_label',
+					'before' => $old_consent_label,
+					'after'  => $new_consent_label,
+				);
+			}
+		}
+
 		/**
 		 * Filter the sanitized settings before saving.
 		 *
@@ -3135,41 +3656,38 @@ class PressPrimer_Quiz_REST_Controller {
 	 * @return WP_REST_Response|WP_Error Response object or error.
 	 */
 	public function save_api_key( $request ) {
-		$data    = $request->get_json_params();
-		$api_key = sanitize_text_field( $data['api_key'] ?? '' );
+		$provider = $this->resolve_request_provider_id( $request );
+		$data     = $request->get_json_params();
+		$api_key  = sanitize_text_field( is_array( $data ) && isset( $data['api_key'] ) ? $data['api_key'] : '' );
 
 		if ( empty( $api_key ) ) {
 			return new WP_Error( 'invalid_key', __( 'Please provide an API key.', 'pressprimer-quiz' ), [ 'status' => 400 ] );
 		}
 
-		if ( strpos( $api_key, 'sk-' ) !== 0 ) {
-			return new WP_Error( 'invalid_key', __( 'Invalid API key format.', 'pressprimer-quiz' ), [ 'status' => 400 ] );
+		$providers = PressPrimer_Quiz_AI_Service::get_providers();
+		if ( ! isset( $providers[ $provider ] ) ) {
+			return new WP_Error( 'invalid_provider', __( 'Unknown AI provider.', 'pressprimer-quiz' ), [ 'status' => 400 ] );
 		}
 
-		// Validate the key with OpenAI before saving
-		$validation = PressPrimer_Quiz_AI_Service::validate_api_key( $api_key );
-
+		// Validate the key with the provider before saving (the key is never logged).
+		$validation = $providers[ $provider ]->validate_key( $api_key );
 		if ( is_wp_error( $validation ) ) {
 			return new WP_Error( 'invalid_key', $validation->get_error_message(), [ 'status' => 400 ] );
 		}
 
-		// Encrypt and save the site-wide key
-		$encrypted = PressPrimer_Quiz_Helpers::encrypt( $api_key );
-
-		if ( is_wp_error( $encrypted ) ) {
-			return new WP_Error( 'encryption_failed', $encrypted->get_error_message(), [ 'status' => 500 ] );
+		$saved = PressPrimer_Quiz_AI_Service::save_site_api_key( $provider, $api_key );
+		if ( is_wp_error( $saved ) ) {
+			return new WP_Error( 'encryption_failed', $saved->get_error_message(), [ 'status' => 500 ] );
 		}
 
-		update_option( 'pressprimer_quiz_site_openai_api_key', $encrypted );
-
-		// Get status for response
-		$status = PressPrimer_Quiz_AI_Service::get_api_key_status();
+		$status = PressPrimer_Quiz_AI_Service::get_api_key_status( $provider );
 
 		return new WP_REST_Response(
 			[
 				'success'    => true,
+				'provider'   => $provider,
 				'message'    => __( 'API key saved and validated successfully.', 'pressprimer-quiz' ),
-				'masked_key' => $status['masked_key'] ?? 'sk-****',
+				'masked_key' => $status['masked_key'] ?? '',
 			],
 			200
 		);
@@ -3178,7 +3696,7 @@ class PressPrimer_Quiz_REST_Controller {
 	/**
 	 * Delete API key
 	 *
-	 * Removes the site-wide OpenAI API key.
+	 * Removes the site-wide API key for the requested (or active) provider.
 	 *
 	 * @since 1.0.0
 	 *
@@ -3186,13 +3704,15 @@ class PressPrimer_Quiz_REST_Controller {
 	 * @return WP_REST_Response Response object.
 	 */
 	public function delete_api_key( $request ) {
-		// Delete the site-wide API key
-		delete_option( 'pressprimer_quiz_site_openai_api_key' );
+		$provider = $this->resolve_request_provider_id( $request );
+
+		PressPrimer_Quiz_AI_Service::save_site_api_key( $provider, '' );
 
 		return new WP_REST_Response(
 			[
-				'success' => true,
-				'message' => __( 'API key removed successfully.', 'pressprimer-quiz' ),
+				'success'  => true,
+				'provider' => $provider,
+				'message'  => __( 'API key removed successfully.', 'pressprimer-quiz' ),
 			],
 			200
 		);
@@ -3201,7 +3721,8 @@ class PressPrimer_Quiz_REST_Controller {
 	/**
 	 * Validate API key
 	 *
-	 * Validates the currently configured site-wide API key.
+	 * Validates the configured site-wide key for the requested (or active)
+	 * provider against that provider.
 	 *
 	 * @since 1.0.0
 	 *
@@ -3209,24 +3730,27 @@ class PressPrimer_Quiz_REST_Controller {
 	 * @return WP_REST_Response|WP_Error Response object or error.
 	 */
 	public function validate_api_key( $request ) {
-		// Get the site-wide API key (get_api_key checks site option first)
-		$api_key = PressPrimer_Quiz_AI_Service::get_api_key();
+		$provider  = $this->resolve_request_provider_id( $request );
+		$providers = PressPrimer_Quiz_AI_Service::get_providers();
+		$api_key   = PressPrimer_Quiz_AI_Service::get_api_key_for_provider( $provider );
 
-		if ( is_wp_error( $api_key ) || empty( $api_key ) ) {
+		if ( empty( $api_key ) ) {
 			return new WP_Error( 'no_key', __( 'No API key configured.', 'pressprimer-quiz' ), [ 'status' => 400 ] );
 		}
 
-		// Validate the key against the OpenAI API.
-		$result = PressPrimer_Quiz_AI_Service::validate_api_key( $api_key );
+		$result = $providers[ $provider ]->validate_key( $api_key );
 
 		if ( is_wp_error( $result ) ) {
-			return new WP_Error( 'invalid_key', $result->get_error_message(), [ 'status' => 400 ] );
+			// Preserve the provider's normalized code so the UI can distinguish a
+			// genuine invalid key from a "could not confirm" rate limit.
+			return new WP_Error( $result->get_error_code(), $result->get_error_message(), [ 'status' => 400 ] );
 		}
 
 		return new WP_REST_Response(
 			[
-				'success' => true,
-				'message' => __( 'API key is valid.', 'pressprimer-quiz' ),
+				'success'  => true,
+				'provider' => $provider,
+				'message'  => __( 'API key is valid.', 'pressprimer-quiz' ),
 			],
 			200
 		);
@@ -3235,7 +3759,10 @@ class PressPrimer_Quiz_REST_Controller {
 	/**
 	 * Get API models
 	 *
-	 * Returns available OpenAI models for the configured site-wide API key.
+	 * Returns selectable models for the requested (or active) provider. OpenAI
+	 * and Anthropic return the account's live model list (falling back to a
+	 * curated list when it can't be fetched); other providers return their
+	 * curated list.
 	 *
 	 * @since 1.0.0
 	 *
@@ -3243,24 +3770,50 @@ class PressPrimer_Quiz_REST_Controller {
 	 * @return WP_REST_Response|WP_Error Response object or error.
 	 */
 	public function get_api_models( $request ) {
-		// Get the site-wide API key
-		$api_key = PressPrimer_Quiz_AI_Service::get_api_key();
+		$provider  = $this->resolve_request_provider_id( $request );
+		$providers = PressPrimer_Quiz_AI_Service::get_providers();
 
-		if ( is_wp_error( $api_key ) || empty( $api_key ) ) {
-			return new WP_Error( 'no_key', __( 'No API key configured.', 'pressprimer-quiz' ), [ 'status' => 400 ] );
-		}
+		if ( 'openai' === $provider ) {
+			$api_key = PressPrimer_Quiz_AI_Service::get_api_key_for_provider( 'openai' );
 
-		// Fetch models
-		$models = PressPrimer_Quiz_AI_Service::get_available_models( $api_key );
+			if ( empty( $api_key ) ) {
+				return new WP_Error( 'no_key', __( 'No API key configured.', 'pressprimer-quiz' ), [ 'status' => 400 ] );
+			}
 
-		if ( is_wp_error( $models ) ) {
-			return new WP_Error( 'fetch_failed', $models->get_error_message(), [ 'status' => 500 ] );
+			$models = PressPrimer_Quiz_AI_Service::get_available_models( $api_key );
+
+			if ( is_wp_error( $models ) ) {
+				return new WP_Error( 'fetch_failed', $models->get_error_message(), [ 'status' => 500 ] );
+			}
+		} elseif ( 'anthropic' === $provider ) {
+			$provider_obj = $providers[ $provider ];
+			$api_key      = PressPrimer_Quiz_AI_Service::get_api_key_for_provider( 'anthropic' );
+			$models       = null;
+
+			// Prefer the account's live model list so newly released models
+			// appear without a plugin update. Fall back to the curated list when
+			// the key is missing, a custom provider lacks live listing, or the
+			// request fails.
+			if ( ! empty( $api_key ) && method_exists( $provider_obj, 'fetch_models' ) ) {
+				$live = $provider_obj->fetch_models( $api_key );
+
+				if ( ! is_wp_error( $live ) && ! empty( $live ) ) {
+					$models = $live;
+				}
+			}
+
+			if ( null === $models ) {
+				$models = $provider_obj->get_models();
+			}
+		} else {
+			$models = $providers[ $provider ]->get_models();
 		}
 
 		return new WP_REST_Response(
 			[
-				'success' => true,
-				'models'  => $models,
+				'success'  => true,
+				'provider' => $provider,
+				'models'   => $models,
 			],
 			200
 		);
@@ -3275,20 +3828,76 @@ class PressPrimer_Quiz_REST_Controller {
 	 * @return WP_REST_Response Response object.
 	 */
 	public function save_api_model( $request ) {
-		$data    = $request->get_json_params();
-		$model   = sanitize_text_field( $data['model'] ?? '' );
-		$user_id = get_current_user_id();
+		$provider = $this->resolve_request_provider_id( $request );
+		$data     = $request->get_json_params();
+		$model    = sanitize_text_field( is_array( $data ) && isset( $data['model'] ) ? $data['model'] : '' );
 
-		// Save model preference
-		PressPrimer_Quiz_AI_Service::save_model_preference( $user_id, $model );
+		PressPrimer_Quiz_AI_Service::save_site_model( $provider, $model );
 
 		return new WP_REST_Response(
 			[
-				'success' => true,
-				'message' => __( 'Model preference saved.', 'pressprimer-quiz' ),
+				'success'  => true,
+				'provider' => $provider,
+				'message'  => __( 'Model preference saved.', 'pressprimer-quiz' ),
 			],
 			200
 		);
+	}
+
+	/**
+	 * Set the active AI provider (site-level).
+	 *
+	 * @since 3.0.0
+	 *
+	 * @param WP_REST_Request $request Request object.
+	 * @return WP_REST_Response|WP_Error Response object or error.
+	 */
+	public function set_ai_provider( $request ) {
+		$data     = $request->get_json_params();
+		$provider = sanitize_key( is_array( $data ) && isset( $data['provider'] ) ? (string) $data['provider'] : '' );
+
+		if ( ! PressPrimer_Quiz_AI_Service::set_active_provider( $provider ) ) {
+			return new WP_Error( 'invalid_provider', __( 'Unknown AI provider.', 'pressprimer-quiz' ), [ 'status' => 400 ] );
+		}
+
+		return new WP_REST_Response(
+			[
+				'success'  => true,
+				'provider' => $provider,
+			],
+			200
+		);
+	}
+
+	/**
+	 * Resolve the provider id for an AI settings request.
+	 *
+	 * Reads `provider` from the JSON body or query, validates it against the
+	 * registered providers, and falls back to the active provider.
+	 *
+	 * @since 3.0.0
+	 *
+	 * @param WP_REST_Request $request Request object.
+	 * @return string Registered provider id.
+	 */
+	private function resolve_request_provider_id( $request ) {
+		$json     = $request->get_json_params();
+		$provider = '';
+
+		if ( is_array( $json ) && isset( $json['provider'] ) && is_string( $json['provider'] ) ) {
+			$provider = $json['provider'];
+		} elseif ( null !== $request->get_param( 'provider' ) ) {
+			$provider = (string) $request->get_param( 'provider' );
+		}
+
+		$provider  = sanitize_key( $provider );
+		$providers = PressPrimer_Quiz_AI_Service::get_providers();
+
+		if ( '' === $provider || ! isset( $providers[ $provider ] ) ) {
+			$provider = PressPrimer_Quiz_AI_Service::get_active_provider();
+		}
+
+		return $provider;
 	}
 
 	/**
@@ -3536,5 +4145,689 @@ class PressPrimer_Quiz_REST_Controller {
 		} else {
 			return new WP_Error( 'send_failed', __( 'Failed to send test email. Please check your email configuration.', 'pressprimer-quiz' ), [ 'status' => 500 ] );
 		}
+	}
+
+	/**
+	 * Get database schema health.
+	 *
+	 * Runs a presence-only schema check and returns the report plus the rolling
+	 * check/repair log tail for the Status tab.
+	 *
+	 * @since 3.0.0
+	 *
+	 * @param WP_REST_Request $request Request object.
+	 * @return WP_REST_Response|WP_Error Response object or error.
+	 */
+	public function get_schema_status( $request ) {
+		if ( ! class_exists( 'PressPrimer_Quiz_Schema_Verifier' ) ) {
+			return new WP_Error( 'schema_verifier_unavailable', __( 'Schema verifier is unavailable.', 'pressprimer-quiz' ), [ 'status' => 500 ] );
+		}
+
+		return new WP_REST_Response(
+			[
+				'report' => PressPrimer_Quiz_Schema_Verifier::check(),
+				'log'    => PressPrimer_Quiz_Schema_Verifier::get_log(),
+			],
+			200
+		);
+	}
+
+	/**
+	 * Repair database schema findings.
+	 *
+	 * Repairs missing tables/columns from the canonical schema map (manual
+	 * action, so the auto-repair attempt cap is overridden), then returns the
+	 * repair outcome alongside a fresh check report and log so the Status tab
+	 * re-renders from a single request.
+	 *
+	 * @since 3.0.0
+	 *
+	 * @param WP_REST_Request $request Request object.
+	 * @return WP_REST_Response|WP_Error Response object or error.
+	 */
+	public function repair_schema_status( $request ) {
+		if ( ! class_exists( 'PressPrimer_Quiz_Schema_Verifier' ) ) {
+			return new WP_Error( 'schema_verifier_unavailable', __( 'Schema verifier is unavailable.', 'pressprimer-quiz' ), [ 'status' => 500 ] );
+		}
+
+		$result = PressPrimer_Quiz_Schema_Verifier::repair_findings();
+
+		return new WP_REST_Response(
+			[
+				'result' => $result,
+				'report' => PressPrimer_Quiz_Schema_Verifier::check(),
+				'log'    => PressPrimer_Quiz_Schema_Verifier::get_log(),
+			],
+			200
+		);
+	}
+
+	/**
+	 * Create and designate a front-end dashboard page.
+	 *
+	 * Publishes a page containing the dashboard block and stores its ID in the
+	 * pressprimer_quiz_dashboard_page_id option. Requires the publish_pages
+	 * capability in addition to the route's manage_settings permission.
+	 *
+	 * @since 3.0.0
+	 *
+	 * @param WP_REST_Request $request Request object.
+	 * @return WP_REST_Response|WP_Error Response object or error.
+	 */
+	public function create_dashboard_page( $request ) {
+		if ( ! current_user_can( 'publish_pages' ) ) {
+			return new WP_Error( 'cannot_publish_pages', __( 'You do not have permission to create pages.', 'pressprimer-quiz' ), [ 'status' => 403 ] );
+		}
+
+		/**
+		 * Filters the title of the auto-created dashboard page.
+		 *
+		 * @since 3.0.0
+		 *
+		 * @param string $title Default page title.
+		 */
+		$title = apply_filters( 'pressprimer_quiz_dashboard_page_title', __( 'Dashboard', 'pressprimer-quiz' ) );
+
+		/**
+		 * Filters the slug of the auto-created dashboard page.
+		 *
+		 * @since 3.0.0
+		 *
+		 * @param string $slug Default page slug.
+		 */
+		$slug = apply_filters( 'pressprimer_quiz_dashboard_page_slug', 'dashboard' );
+
+		$page_id = wp_insert_post(
+			[
+				'post_title'   => $title,
+				'post_name'    => sanitize_title( $slug ),
+				'post_content' => '<!-- wp:pressprimer-quiz/dashboard /-->',
+				'post_status'  => 'publish',
+				'post_type'    => 'page',
+			],
+			true
+		);
+
+		if ( is_wp_error( $page_id ) ) {
+			return new WP_Error( 'create_failed', $page_id->get_error_message(), [ 'status' => 500 ] );
+		}
+
+		update_option( 'pressprimer_quiz_dashboard_page_id', (int) $page_id );
+
+		return new WP_REST_Response(
+			[
+				'success'   => true,
+				'pageId'    => (int) $page_id,
+				'pageTitle' => $title,
+				'editUrl'   => get_edit_post_link( $page_id, 'raw' ),
+				'viewUrl'   => get_permalink( $page_id ),
+			],
+			200
+		);
+	}
+
+	/**
+	 * Get the current user's own quiz attempts (paginated).
+	 *
+	 * Hard-scoped to the authenticated user. A user_id parameter is rejected
+	 * (400) so cross-user scope violations are impossible rather than merely
+	 * checked (SR-002); cross-user listings are addon reporting territory.
+	 *
+	 * @since 3.0.0
+	 *
+	 * @param WP_REST_Request $request Request object.
+	 * @return WP_REST_Response|WP_Error Response object or error.
+	 */
+	public function get_my_attempts( $request ) {
+		// SR-002: never accept a user_id; the user is the session, full stop.
+		if ( null !== $request->get_param( 'user_id' ) ) {
+			return new WP_Error( 'user_id_not_allowed', __( 'The user_id parameter is not allowed on this endpoint.', 'pressprimer-quiz' ), [ 'status' => 400 ] );
+		}
+
+		$user_id = get_current_user_id();
+
+		// Pagination.
+		$page     = max( 1, absint( $request->get_param( 'page' ) ) );
+		$per_page = absint( $request->get_param( 'per_page' ) );
+		$per_page = $per_page > 0 ? min( 50, $per_page ) : 20;
+
+		// Optional quiz filter.
+		$quiz_id = absint( $request->get_param( 'quiz_id' ) );
+
+		// Optional status filter: completed | in_progress -> DB status.
+		$status_param = $request->get_param( 'status' );
+		$db_status    = '';
+		if ( null !== $status_param && '' !== $status_param ) {
+			$status_map = [
+				'completed'   => 'submitted',
+				'in_progress' => 'in_progress',
+			];
+			if ( ! isset( $status_map[ $status_param ] ) ) {
+				return new WP_Error( 'invalid_status', __( 'Invalid status filter.', 'pressprimer-quiz' ), [ 'status' => 400 ] );
+			}
+			$db_status = $status_map[ $status_param ];
+		}
+
+		// orderby whitelist (SECURITY.md: validate field against a whitelist).
+		$orderby_param = $request->get_param( 'orderby' );
+		if ( null === $orderby_param || '' === $orderby_param ) {
+			$orderby_param = 'date';
+		}
+		$orderby_map = [
+			'date'  => 'started_at',
+			'score' => 'score_percent',
+		];
+		if ( ! isset( $orderby_map[ $orderby_param ] ) ) {
+			return new WP_Error( 'invalid_orderby', __( 'Invalid orderby value.', 'pressprimer-quiz' ), [ 'status' => 400 ] );
+		}
+		$order_column = $orderby_map[ $orderby_param ];
+
+		// Direction defaults to descending; invalid values fall back to it.
+		$is_asc = 'asc' === strtolower( (string) $request->get_param( 'order' ) );
+
+		global $wpdb;
+		$table = $wpdb->prefix . 'ppq_attempts';
+
+		// WHERE fragments are prepared individually then composed — the same
+		// pattern the my-attempts shortcode uses. user_id is always bound here.
+		$where = [ $wpdb->prepare( 'user_id = %d', $user_id ) ];
+		if ( $quiz_id ) {
+			$where[] = $wpdb->prepare( 'quiz_id = %d', $quiz_id );
+		}
+		if ( '' !== $db_status ) {
+			$where[] = $wpdb->prepare( 'status = %s', $db_status );
+		}
+		$where_clause = implode( ' AND ', $where );
+
+		// Total count.
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- $where_clause is composed from prepared fragments; user history is not cacheable.
+		$total = (int) $wpdb->get_var( "SELECT COUNT(*) FROM {$table} WHERE {$where_clause}" );
+
+		$total_pages = (int) ceil( $total / $per_page );
+		$offset      = ( $page - 1 ) * $per_page;
+
+		// Data query. ORDER direction via hardcoded branches and the column via
+		// %i (SECURITY.md), never interpolated; the composed WHERE carries
+		// already-prepared values.
+		if ( $is_asc ) {
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- $where_clause is composed from prepared fragments; user history is not cacheable.
+			$rows = $wpdb->get_results( $wpdb->prepare( "SELECT * FROM {$table} WHERE {$where_clause} ORDER BY %i ASC, id ASC LIMIT %d OFFSET %d", $order_column, $per_page, $offset ) );
+		} else {
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- $where_clause is composed from prepared fragments; user history is not cacheable.
+			$rows = $wpdb->get_results( $wpdb->prepare( "SELECT * FROM {$table} WHERE {$where_clause} ORDER BY %i DESC, id DESC LIMIT %d OFFSET %d", $order_column, $per_page, $offset ) );
+		}
+
+		$items = $this->format_my_attempts( is_array( $rows ) ? $rows : [] );
+
+		return new WP_REST_Response(
+			[
+				'items'       => $items,
+				'total'       => $total,
+				'total_pages' => $total_pages,
+				'quizzes'     => $this->get_attempted_quizzes( $user_id ),
+			],
+			200
+		);
+	}
+
+	/**
+	 * Get the distinct quizzes a user has attempted (for the My Results filter).
+	 *
+	 * @since 3.0.0
+	 *
+	 * @param int $user_id User ID.
+	 * @return array List of [ id, title ].
+	 */
+	private function get_attempted_quizzes( $user_id ) {
+		global $wpdb;
+
+		$attempts = $wpdb->prefix . 'ppq_attempts';
+		$quizzes  = $wpdb->prefix . 'ppq_quizzes';
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Table names from prefix; user_id bound; filter options for the user's own attempts are not cacheable.
+		$rows = $wpdb->get_results( $wpdb->prepare( "SELECT DISTINCT a.quiz_id AS id, q.title AS title FROM {$attempts} a LEFT JOIN {$quizzes} q ON a.quiz_id = q.id WHERE a.user_id = %d ORDER BY q.title ASC", $user_id ) );
+
+		$out = [];
+		foreach ( (array) $rows as $row ) {
+			$out[] = [
+				'id'    => (int) $row->id,
+				'title' => $row->title ? $row->title : '',
+			];
+		}
+
+		return $out;
+	}
+
+	/**
+	 * Format attempt rows into My Results response items.
+	 *
+	 * Resolves quiz titles in one query (no N+1) and builds the per-attempt
+	 * results/resume URLs from the stored source page.
+	 *
+	 * @since 3.0.0
+	 *
+	 * @param array $rows Attempt rows.
+	 * @return array Response items.
+	 */
+	private function format_my_attempts( $rows ) {
+		global $wpdb;
+
+		// Resolve quiz titles for this page's attempts in a single query.
+		$quiz_ids = [];
+		foreach ( $rows as $row ) {
+			$quiz_ids[ (int) $row->quiz_id ] = true;
+		}
+		$quiz_ids = array_keys( $quiz_ids );
+
+		$quiz_titles = [];
+		if ( ! empty( $quiz_ids ) ) {
+			$placeholders  = implode( ', ', array_fill( 0, count( $quiz_ids ), '%d' ) );
+			$quizzes_table = $wpdb->prefix . 'ppq_quizzes';
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- $placeholders is a literal %d list bound via spread $quiz_ids.
+			$title_rows = $wpdb->get_results( $wpdb->prepare( "SELECT id, title FROM {$quizzes_table} WHERE id IN ($placeholders)", ...$quiz_ids ) );
+			foreach ( $title_rows as $title_row ) {
+				$quiz_titles[ (int) $title_row->id ] = $title_row->title;
+			}
+		}
+
+		$datetime_format = get_option( 'date_format' ) . ' ' . get_option( 'time_format' );
+		$items           = [];
+
+		foreach ( $rows as $row ) {
+			$db_status = $row->status;
+
+			// Build the results/resume base from a page that actually embeds the
+			// quiz (so ?attempt=N can render), then fall back to the attempt's
+			// source page and finally the site home. source_url is where the
+			// attempt was launched, which may be a listing page (e.g. an
+			// "Assigned Quizzes" page) that cannot display quiz results.
+			$base = $this->resolve_quiz_page_url( (int) $row->quiz_id );
+			if ( '' === $base ) {
+				$base = ! empty( $row->source_url ) ? $row->source_url : home_url( '/' );
+			}
+			$action = add_query_arg( 'attempt', (int) $row->id, $base );
+
+			$items[] = [
+				'attempt_id'    => (int) $row->id,
+				'quiz_id'       => (int) $row->quiz_id,
+				'quiz_title'    => isset( $quiz_titles[ (int) $row->quiz_id ] ) ? $quiz_titles[ (int) $row->quiz_id ] : '',
+				'started_at'    => $row->started_at ? wp_date( $datetime_format, strtotime( $row->started_at ) ) : null,
+				'completed_at'  => $row->finished_at ? wp_date( $datetime_format, strtotime( $row->finished_at ) ) : null,
+				'score_percent' => ( null !== $row->score_percent ) ? (float) $row->score_percent : null,
+				'passed'        => ( null !== $row->passed ) ? (bool) (int) $row->passed : null,
+				'status'        => ( 'submitted' === $db_status ) ? 'completed' : $db_status,
+				'results_url'   => ( 'submitted' === $db_status ) ? $action : '',
+				'resume_url'    => ( 'in_progress' === $db_status ) ? $action : '',
+			];
+		}
+
+		return $items;
+	}
+
+	/**
+	 * Resolve the URL of a published page that embeds a quiz.
+	 *
+	 * Results are rendered by the quiz itself (via ?attempt=N), so a "View
+	 * results" link must point at a page that contains the quiz — through the
+	 * [pressprimer_quiz] shortcode or the pressprimer-quiz/quiz block — rather
+	 * than wherever the attempt happened to be launched (which may be a listing
+	 * page such as "Assigned Quizzes"). Cached per request. Returns '' when no
+	 * embedding page is found so the caller can fall back.
+	 *
+	 * @since 3.0.0
+	 *
+	 * @param int $quiz_id Quiz id.
+	 * @return string Page permalink, or '' when none is found.
+	 */
+	private function resolve_quiz_page_url( $quiz_id ) {
+		static $cache = [];
+
+		$quiz_id = (int) $quiz_id;
+
+		if ( $quiz_id <= 0 ) {
+			return '';
+		}
+
+		if ( array_key_exists( $quiz_id, $cache ) ) {
+			return $cache[ $quiz_id ];
+		}
+
+		global $wpdb;
+
+		// Match the shortcode form and the block form (quizId is serialized
+		// first as it is the block's primary attribute).
+		$shortcode = '%' . $wpdb->esc_like( '[pressprimer_quiz id="' . $quiz_id . '"' ) . '%';
+		$block_one = '%' . $wpdb->esc_like( 'pressprimer-quiz/quiz {"quizId":' . $quiz_id . '}' ) . '%';
+		$block_mid = '%' . $wpdb->esc_like( 'pressprimer-quiz/quiz {"quizId":' . $quiz_id . ',' ) . '%';
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+		$page_id = $wpdb->get_var(
+			$wpdb->prepare(
+				"SELECT ID FROM {$wpdb->posts}
+				 WHERE post_status = 'publish'
+				 AND ( post_content LIKE %s OR post_content LIKE %s OR post_content LIKE %s )
+				 ORDER BY ( post_type = 'page' ) DESC, ID ASC
+				 LIMIT 1",
+				$shortcode,
+				$block_one,
+				$block_mid
+			)
+		);
+
+		$url               = $page_id ? (string) get_permalink( (int) $page_id ) : '';
+		$cache[ $quiz_id ] = $url;
+
+		return $url;
+	}
+
+	/**
+	 * List quiz settings templates (presets + saved).
+	 *
+	 * Merges built-in/addon presets (registered behind the
+	 * pressprimer_quiz_settings_template_presets filter; see feature 003,
+	 * Prompt 3.3) with saved template rows. Each item carries a `source` of
+	 * 'preset' or 'template'. Open to any quiz-editing user so they can apply.
+	 *
+	 * @since 3.0.0
+	 *
+	 * @param WP_REST_Request $request Request object.
+	 * @return WP_REST_Response Response with the merged template list.
+	 */
+	public function get_quiz_templates( $request ) {
+		$items = $this->get_template_presets();
+
+		$templates = PressPrimer_Quiz_Quiz_Template::find(
+			array(
+				'order_by' => 'updated_at',
+				'order'    => 'DESC',
+			)
+		);
+
+		foreach ( $templates as $template ) {
+			$items[] = $this->format_quiz_template( $template );
+		}
+
+		// Resolve the site default, auto-clearing a stale (deleted-target) value
+		// so the selector and the "cleared" notice stay accurate (FR-006).
+		$raw_default = PressPrimer_Quiz_Default_Template::get_raw();
+		$default     = PressPrimer_Quiz_Default_Template::get_validated();
+
+		return new WP_REST_Response(
+			array(
+				'items'           => $items,
+				'default'         => $default,
+				'default_cleared' => ( '' !== $raw_default && '' === $default ),
+			),
+			200
+		);
+	}
+
+	/**
+	 * Set (or clear) the default settings template for new quizzes.
+	 *
+	 * @since 3.0.0
+	 *
+	 * @param WP_REST_Request $request Request object.
+	 * @return WP_REST_Response Response with the stored value.
+	 */
+	public function set_default_quiz_template( $request ) {
+		$data  = $request->get_json_params();
+		$value = is_array( $data ) && isset( $data['value'] ) && is_string( $data['value'] ) ? $data['value'] : '';
+
+		$stored = PressPrimer_Quiz_Default_Template::set_value( $value );
+
+		return new WP_REST_Response(
+			array(
+				'success' => true,
+				'default' => $stored,
+			),
+			200
+		);
+	}
+
+	/**
+	 * Create a quiz settings template.
+	 *
+	 * @since 3.0.0
+	 *
+	 * @param WP_REST_Request $request Request object.
+	 * @return WP_REST_Response|WP_Error Response object or error.
+	 */
+	public function create_quiz_template( $request ) {
+		$data = $request->get_json_params();
+		if ( ! is_array( $data ) ) {
+			$data = array();
+		}
+
+		$name = isset( $data['name'] ) ? sanitize_text_field( $data['name'] ) : '';
+		if ( '' === $name ) {
+			return new WP_Error(
+				'rest_template_name_required',
+				__( 'Template name is required.', 'pressprimer-quiz' ),
+				array( 'status' => 400 )
+			);
+		}
+
+		$settings = isset( $data['settings'] ) && is_array( $data['settings'] ) ? $data['settings'] : array();
+
+		$template_id = PressPrimer_Quiz_Quiz_Template::create(
+			array(
+				'name'        => $name,
+				'description' => isset( $data['description'] ) ? $data['description'] : '',
+				'settings'    => $settings,
+			)
+		);
+
+		if ( is_wp_error( $template_id ) ) {
+			$status = 'ppq_template_too_large' === $template_id->get_error_code() ? 400 : 500;
+			return new WP_Error( $template_id->get_error_code(), $template_id->get_error_message(), array( 'status' => $status ) );
+		}
+
+		$response = array(
+			'id'                => absint( $template_id ),
+			'duplicate_warning' => $this->template_name_in_use( $name, $template_id ),
+		);
+
+		$template = PressPrimer_Quiz_Quiz_Template::get( $template_id );
+		if ( $template ) {
+			$response['template'] = $this->format_quiz_template( $template );
+		}
+
+		return new WP_REST_Response( $response, 201 );
+	}
+
+	/**
+	 * Update a quiz settings template (rename, description, overwrite payload).
+	 *
+	 * @since 3.0.0
+	 *
+	 * @param WP_REST_Request $request Request object.
+	 * @return WP_REST_Response|WP_Error Response object or error.
+	 */
+	public function update_quiz_template( $request ) {
+		$template_id = absint( $request['id'] );
+		$data        = $request->get_json_params();
+		if ( ! is_array( $data ) ) {
+			$data = array();
+		}
+
+		$template = PressPrimer_Quiz_Quiz_Template::get( $template_id );
+		if ( ! $template ) {
+			return new WP_Error( 'not_found', __( 'Template not found.', 'pressprimer-quiz' ), array( 'status' => 404 ) );
+		}
+
+		if ( isset( $data['name'] ) ) {
+			$name = sanitize_text_field( $data['name'] );
+			if ( '' === $name ) {
+				return new WP_Error(
+					'rest_template_name_required',
+					__( 'Template name is required.', 'pressprimer-quiz' ),
+					array( 'status' => 400 )
+				);
+			}
+			$template->name = $name;
+		}
+
+		if ( array_key_exists( 'description', $data ) ) {
+			$template->description = $data['description'];
+		}
+
+		if ( isset( $data['settings'] ) && is_array( $data['settings'] ) ) {
+			$template->set_settings( $data['settings'] );
+		}
+
+		$result = $template->save();
+		if ( is_wp_error( $result ) ) {
+			$status = 'ppq_template_too_large' === $result->get_error_code() ? 400 : 500;
+			return new WP_Error( $result->get_error_code(), $result->get_error_message(), array( 'status' => $status ) );
+		}
+
+		$template = PressPrimer_Quiz_Quiz_Template::get( $template_id );
+
+		$response = array(
+			'success'           => true,
+			'duplicate_warning' => $template ? $this->template_name_in_use( $template->name, $template_id ) : false,
+		);
+		if ( $template ) {
+			$response['template'] = $this->format_quiz_template( $template );
+		}
+
+		return new WP_REST_Response( $response, 200 );
+	}
+
+	/**
+	 * Delete a quiz settings template.
+	 *
+	 * @since 3.0.0
+	 *
+	 * @param WP_REST_Request $request Request object.
+	 * @return WP_REST_Response|WP_Error Response object or error.
+	 */
+	public function delete_quiz_template( $request ) {
+		$template_id = absint( $request['id'] );
+
+		$template = PressPrimer_Quiz_Quiz_Template::get( $template_id );
+		if ( ! $template ) {
+			return new WP_Error( 'not_found', __( 'Template not found.', 'pressprimer-quiz' ), array( 'status' => 404 ) );
+		}
+
+		$result = $template->delete();
+		if ( is_wp_error( $result ) ) {
+			return new WP_Error( 'delete_failed', $result->get_error_message(), array( 'status' => 500 ) );
+		}
+
+		return new WP_REST_Response( array( 'success' => true ), 200 );
+	}
+
+	/**
+	 * Get normalized preset entries for the template list.
+	 *
+	 * Presets are code/filter only (never rows). Each preset's settings pass
+	 * through the canonical Quiz sanitizers so a bad filter registration cannot
+	 * inject invalid values into the apply flow.
+	 *
+	 * @since 3.0.0
+	 *
+	 * @return array[] Normalized preset entries (source = 'preset').
+	 */
+	private function get_template_presets() {
+		/**
+		 * Filters the built-in quiz settings template presets.
+		 *
+		 * Each entry is keyed by a preset id and is an array with: label,
+		 * description, settings (a map of quiz settings keys), and optional
+		 * reminders (strings shown after apply). Built-in presets are registered
+		 * in feature 003, Prompt 3.3; addons may add their own.
+		 *
+		 * @since 3.0.0
+		 *
+		 * @param array $presets Map of preset id => preset definition.
+		 */
+		$presets = apply_filters( 'pressprimer_quiz_settings_template_presets', array() );
+
+		$normalized = array();
+
+		if ( ! is_array( $presets ) ) {
+			return $normalized;
+		}
+
+		foreach ( $presets as $key => $preset ) {
+			if ( ! is_string( $key ) || '' === $key || ! is_array( $preset ) ) {
+				continue;
+			}
+
+			$settings = isset( $preset['settings'] ) && is_array( $preset['settings'] )
+				? PressPrimer_Quiz_Quiz::sanitize_settings( $preset['settings'] )
+				: array();
+
+			$reminders = array();
+			if ( isset( $preset['reminders'] ) && is_array( $preset['reminders'] ) ) {
+				foreach ( $preset['reminders'] as $reminder ) {
+					$reminders[] = sanitize_text_field( $reminder );
+				}
+			}
+
+			$normalized[] = array(
+				'id'          => sanitize_key( $key ),
+				'source'      => 'preset',
+				'name'        => isset( $preset['label'] ) ? sanitize_text_field( $preset['label'] ) : sanitize_key( $key ),
+				'description' => isset( $preset['description'] ) ? sanitize_text_field( $preset['description'] ) : '',
+				'settings'    => $settings,
+				'reminders'   => $reminders,
+			);
+		}
+
+		return $normalized;
+	}
+
+	/**
+	 * Format a saved template row for the REST response.
+	 *
+	 * @since 3.0.0
+	 *
+	 * @param PressPrimer_Quiz_Quiz_Template $template Template instance.
+	 * @return array Response-ready template entry (source = 'template').
+	 */
+	private function format_quiz_template( $template ) {
+		$author = get_userdata( absint( $template->created_by ) );
+
+		return array(
+			'id'          => absint( $template->id ),
+			'source'      => 'template',
+			'name'        => $template->name,
+			'description' => (string) $template->description,
+			'settings'    => $template->get_settings(),
+			'created_by'  => absint( $template->created_by ),
+			'author_name' => $author ? $author->display_name : '',
+			'is_mine'     => absint( $template->created_by ) === get_current_user_id(),
+			'created_at'  => $template->created_at,
+			'updated_at'  => $template->updated_at,
+		);
+	}
+
+	/**
+	 * Whether a template name is already used by a different template.
+	 *
+	 * Names are labels, not identity, so duplicates are allowed; this only
+	 * powers the soft warning flag in the create/update response.
+	 *
+	 * @since 3.0.0
+	 *
+	 * @param string $name       Candidate name.
+	 * @param int    $exclude_id Template id to exclude (the one being saved).
+	 * @return bool True if another template already uses the name.
+	 */
+	private function template_name_in_use( $name, $exclude_id = 0 ) {
+		$matches = PressPrimer_Quiz_Quiz_Template::find(
+			array( 'where' => array( 'name' => $name ) )
+		);
+
+		foreach ( $matches as $match ) {
+			if ( absint( $match->id ) !== absint( $exclude_id ) ) {
+				return true;
+			}
+		}
+
+		return false;
 	}
 }

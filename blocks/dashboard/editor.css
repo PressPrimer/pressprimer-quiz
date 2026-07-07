@@ -1,0 +1,10 @@
+/**
+ * Dashboard block — editor styles.
+ *
+ * Only the static editor placeholder is styled here; the live shell styling
+ * ships separately in build/shell.css (feature 002, Prompt 2.4).
+ */
+
+.wp-block-pressprimer-quiz-dashboard .components-placeholder {
+	min-height: 160px;
+}

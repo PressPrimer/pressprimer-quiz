@@ -80,6 +80,11 @@ class PressPrimer_Quiz_Plugin {
 		// Initialize addon manager (allows premium addons to register)
 		$this->init_addon_manager();
 
+		// Register built-in quiz settings template presets (front + admin + REST).
+		if ( class_exists( 'PressPrimer_Quiz_Template_Presets' ) ) {
+			PressPrimer_Quiz_Template_Presets::register();
+		}
+
 		// Initialize components
 		$this->init_admin();
 		$this->init_frontend();
@@ -142,6 +147,12 @@ class PressPrimer_Quiz_Plugin {
 			$admin->init();
 		}
 
+		// Initialize schema self-healing (v3.0): daily admin_init check/repair
+		// plus a persistent notice when auto-repair is exhausted.
+		if ( class_exists( 'PressPrimer_Quiz_Schema_Verifier' ) ) {
+			PressPrimer_Quiz_Schema_Verifier::init();
+		}
+
 		// Initialize onboarding
 		if ( class_exists( 'PressPrimer_Quiz_Onboarding' ) ) {
 			PressPrimer_Quiz_Onboarding::get_instance();
@@ -175,10 +186,20 @@ class PressPrimer_Quiz_Plugin {
 			$shortcodes->init();
 		}
 
+		// Initialize the front-end app shell (v3.0): conditional asset enqueue.
+		if ( class_exists( 'PressPrimer_Quiz_Shell' ) ) {
+			PressPrimer_Quiz_Shell::init();
+		}
+
 		// Initialize AJAX handlers
 		if ( class_exists( 'PressPrimer_Quiz_AJAX_Handler' ) ) {
 			$ajax_handler = new PressPrimer_Quiz_AJAX_Handler();
 			$ajax_handler->init();
+		}
+
+		// Register WordPress privacy (personal data export/erase) for guests.
+		if ( class_exists( 'PressPrimer_Quiz_Privacy' ) ) {
+			PressPrimer_Quiz_Privacy::init();
 		}
 	}
 

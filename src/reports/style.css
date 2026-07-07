@@ -15,6 +15,27 @@
 	padding: 24px;
 }
 
+/*
+ * Reset WordPress admin form styling that leaks into Ant Design Selects.
+ *
+ * WordPress admin (forms.css) styles every <input> with a border, a 30px
+ * min-height, and a blue focus box-shadow. Those leak into Ant Design's Select
+ * search input and render as an oversized, offset blue box when a Select is
+ * focused. Every report mounts inside .ppq-reports-container, so resetting the
+ * inner input here fixes the quiz/group pickers across all report pages (free
+ * and add-on) in one place — Ant draws the focus ring on the selector itself.
+ */
+.ppq-reports-container .ant-select input,
+.ppq-reports-container .ant-select input:focus {
+	min-height: 0;
+	margin: 0;
+	padding: 0;
+	border: 0;
+	box-shadow: none;
+	outline: none;
+	background: transparent;
+}
+
 /* ==========================================================================
    Header
    ========================================================================== */
@@ -230,14 +251,39 @@
 	line-height: 1.5;
 }
 
-.ppq-report-card--coming-soon {
-	opacity: 0.85;
-	cursor: default !important;
+/* Locked (upsell) report cards: shown when the providing add-on is inactive. */
+.ppq-report-card--locked {
+	cursor: default;
+	background: #fafafa;
 }
 
-.ppq-report-card--coming-soon:hover {
+.ppq-report-card--locked:hover {
 	transform: none;
 	box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+}
+
+.ppq-report-card--locked .ppq-report-card-title {
+	color: #646970;
+}
+
+.ppq-report-card-lock {
+	font-size: 13px;
+	color: #8c8c8c;
+}
+
+.ppq-report-card-upsell {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 12px;
+	margin-top: 14px;
+	flex-wrap: wrap;
+}
+
+.ppq-report-card-requires {
+	font-size: 12px;
+	font-weight: 500;
+	color: #8c8c8c;
 }
 
 /* ==========================================================================

@@ -84,6 +84,9 @@ class PressPrimer_Quiz_Blocks {
 
 		// Register My Attempts block
 		$this->register_my_attempts_block();
+
+		// Register Dashboard block (v3.0)
+		$this->register_dashboard_block();
 	}
 
 	/**
@@ -143,69 +146,73 @@ class PressPrimer_Quiz_Blocks {
 				'style'           => 'pressprimer-quiz-quiz-block-style',
 				'render_callback' => [ $this, 'render_quiz_block' ],
 				'attributes'      => [
-					'quizId'                => [
+					'quizId'                  => [
 						'type'    => 'number',
 						'default' => 0,
 					],
-					'preTestId'             => [
+					'preTestId'               => [
 						'type'    => 'number',
 						'default' => 0,
 					],
 					// Start page display options.
-					'showDescription'       => [
+					'showDescription'         => [
 						'type'    => 'boolean',
 						'default' => true,
 					],
-					'showQuestionCount'     => [
+					'showQuestionCount'       => [
 						'type'    => 'boolean',
 						'default' => true,
 					],
-					'showQuizType'          => [
+					'showQuizType'            => [
 						'type'    => 'boolean',
 						'default' => true,
 					],
-					'showTimeLimit'         => [
+					'showTimeLimit'           => [
 						'type'    => 'boolean',
 						'default' => true,
 					],
-					'showPassPercentage'    => [
+					'showPassPercentage'      => [
 						'type'    => 'boolean',
 						'default' => true,
 					],
-					'showAttemptCount'      => [
+					'showAttemptCount'        => [
 						'type'    => 'boolean',
 						'default' => true,
 					],
-					'showAttemptHistory'    => [
+					'showAttemptHistory'      => [
 						'type'    => 'boolean',
 						'default' => true,
 					],
 					// Results page display options.
-					'showScore'             => [
+					'showScore'               => [
 						'type'    => 'boolean',
 						'default' => true,
 					],
-					'showPassFail'          => [
+					'showPassFail'            => [
 						'type'    => 'boolean',
 						'default' => true,
 					],
-					'showTimeSpent'         => [
+					'showTimeSpent'           => [
 						'type'    => 'boolean',
 						'default' => true,
 					],
-					'showAverage'           => [
+					'showAverage'             => [
 						'type'    => 'boolean',
 						'default' => true,
 					],
-					'showCategoryBreakdown' => [
+					'showCategoryBreakdown'   => [
 						'type'    => 'boolean',
 						'default' => true,
 					],
-					'showQuestionReview'    => [
+					'showQuestionReview'      => [
 						'type'    => 'boolean',
 						'default' => true,
 					],
-					'showRetakeButton'      => [
+					'showRetakeButton'        => [
+						'type'    => 'boolean',
+						'default' => true,
+					],
+					'showScoringExplanations' => [
 						'type'    => 'boolean',
 						'default' => true,
 					],
@@ -240,10 +247,10 @@ class PressPrimer_Quiz_Blocks {
 		}
 
 		// Build shortcode attributes. When the block opts into "Use quiz default
-		// settings" (the default for new v2.3 blocks), omit the 14 display keys
+		// settings" (the default for new v2.3 blocks), omit the 15 display keys
 		// entirely so the shortcode handler's extract_display_overrides() sees
 		// them as absent and the renderer resolves from the quiz's defaults.
-		// When the toggle is off, pass all 14 keys as explicit overrides.
+		// When the toggle is off, pass all 15 keys as explicit overrides.
 		$pre_test_id       = isset( $attributes['preTestId'] ) ? absint( $attributes['preTestId'] ) : 0;
 		$use_quiz_defaults = isset( $attributes['useQuizDefaults'] ) ? (bool) $attributes['useQuizDefaults'] : true;
 
@@ -253,22 +260,23 @@ class PressPrimer_Quiz_Blocks {
 		];
 
 		if ( ! $use_quiz_defaults ) {
-			// Per-instance overrides: include all 14 display attributes
+			// Per-instance overrides: include all 15 display attributes
 			// (convert camelCase block attrs to snake_case shortcode atts).
-			$shortcode_atts['show_description']        = isset( $attributes['showDescription'] ) ? ( $attributes['showDescription'] ? 'true' : 'false' ) : 'true';
-			$shortcode_atts['show_question_count']     = isset( $attributes['showQuestionCount'] ) ? ( $attributes['showQuestionCount'] ? 'true' : 'false' ) : 'true';
-			$shortcode_atts['show_quiz_type']          = isset( $attributes['showQuizType'] ) ? ( $attributes['showQuizType'] ? 'true' : 'false' ) : 'true';
-			$shortcode_atts['show_time_limit']         = isset( $attributes['showTimeLimit'] ) ? ( $attributes['showTimeLimit'] ? 'true' : 'false' ) : 'true';
-			$shortcode_atts['show_pass_percentage']    = isset( $attributes['showPassPercentage'] ) ? ( $attributes['showPassPercentage'] ? 'true' : 'false' ) : 'true';
-			$shortcode_atts['show_attempt_count']      = isset( $attributes['showAttemptCount'] ) ? ( $attributes['showAttemptCount'] ? 'true' : 'false' ) : 'true';
-			$shortcode_atts['show_attempt_history']    = isset( $attributes['showAttemptHistory'] ) ? ( $attributes['showAttemptHistory'] ? 'true' : 'false' ) : 'true';
-			$shortcode_atts['show_score']              = isset( $attributes['showScore'] ) ? ( $attributes['showScore'] ? 'true' : 'false' ) : 'true';
-			$shortcode_atts['show_pass_fail']          = isset( $attributes['showPassFail'] ) ? ( $attributes['showPassFail'] ? 'true' : 'false' ) : 'true';
-			$shortcode_atts['show_time_spent']         = isset( $attributes['showTimeSpent'] ) ? ( $attributes['showTimeSpent'] ? 'true' : 'false' ) : 'true';
-			$shortcode_atts['show_average']            = isset( $attributes['showAverage'] ) ? ( $attributes['showAverage'] ? 'true' : 'false' ) : 'true';
-			$shortcode_atts['show_category_breakdown'] = isset( $attributes['showCategoryBreakdown'] ) ? ( $attributes['showCategoryBreakdown'] ? 'true' : 'false' ) : 'true';
-			$shortcode_atts['show_question_review']    = isset( $attributes['showQuestionReview'] ) ? ( $attributes['showQuestionReview'] ? 'true' : 'false' ) : 'true';
-			$shortcode_atts['show_retake_button']      = isset( $attributes['showRetakeButton'] ) ? ( $attributes['showRetakeButton'] ? 'true' : 'false' ) : 'true';
+			$shortcode_atts['show_description']          = isset( $attributes['showDescription'] ) ? ( $attributes['showDescription'] ? 'true' : 'false' ) : 'true';
+			$shortcode_atts['show_question_count']       = isset( $attributes['showQuestionCount'] ) ? ( $attributes['showQuestionCount'] ? 'true' : 'false' ) : 'true';
+			$shortcode_atts['show_quiz_type']            = isset( $attributes['showQuizType'] ) ? ( $attributes['showQuizType'] ? 'true' : 'false' ) : 'true';
+			$shortcode_atts['show_time_limit']           = isset( $attributes['showTimeLimit'] ) ? ( $attributes['showTimeLimit'] ? 'true' : 'false' ) : 'true';
+			$shortcode_atts['show_pass_percentage']      = isset( $attributes['showPassPercentage'] ) ? ( $attributes['showPassPercentage'] ? 'true' : 'false' ) : 'true';
+			$shortcode_atts['show_attempt_count']        = isset( $attributes['showAttemptCount'] ) ? ( $attributes['showAttemptCount'] ? 'true' : 'false' ) : 'true';
+			$shortcode_atts['show_attempt_history']      = isset( $attributes['showAttemptHistory'] ) ? ( $attributes['showAttemptHistory'] ? 'true' : 'false' ) : 'true';
+			$shortcode_atts['show_score']                = isset( $attributes['showScore'] ) ? ( $attributes['showScore'] ? 'true' : 'false' ) : 'true';
+			$shortcode_atts['show_pass_fail']            = isset( $attributes['showPassFail'] ) ? ( $attributes['showPassFail'] ? 'true' : 'false' ) : 'true';
+			$shortcode_atts['show_time_spent']           = isset( $attributes['showTimeSpent'] ) ? ( $attributes['showTimeSpent'] ? 'true' : 'false' ) : 'true';
+			$shortcode_atts['show_average']              = isset( $attributes['showAverage'] ) ? ( $attributes['showAverage'] ? 'true' : 'false' ) : 'true';
+			$shortcode_atts['show_category_breakdown']   = isset( $attributes['showCategoryBreakdown'] ) ? ( $attributes['showCategoryBreakdown'] ? 'true' : 'false' ) : 'true';
+			$shortcode_atts['show_question_review']      = isset( $attributes['showQuestionReview'] ) ? ( $attributes['showQuestionReview'] ? 'true' : 'false' ) : 'true';
+			$shortcode_atts['show_retake_button']        = isset( $attributes['showRetakeButton'] ) ? ( $attributes['showRetakeButton'] ? 'true' : 'false' ) : 'true';
+			$shortcode_atts['show_scoring_explanations'] = isset( $attributes['showScoringExplanations'] ) ? ( $attributes['showScoringExplanations'] ? 'true' : 'false' ) : 'true';
 		}
 
 		// Call the shortcode handler.
@@ -385,6 +393,87 @@ class PressPrimer_Quiz_Blocks {
 
 		// Wrap in block div
 		return '<div class="wp-block-pressprimer-quiz-my-attempts">' . $output . '</div>';
+	}
+
+	/**
+	 * Register Dashboard block
+	 *
+	 * @since 3.0.0
+	 */
+	private function register_dashboard_block() {
+		// Get asset file for dependencies and version (editor placeholder).
+		$asset_file = PRESSPRIMER_QUIZ_PLUGIN_PATH . 'build/blocks/dashboard/index.asset.php';
+
+		if ( ! file_exists( $asset_file ) ) {
+			return;
+		}
+
+		$asset = require $asset_file;
+
+		// Register block script
+		wp_register_script(
+			'pressprimer-quiz-dashboard-block-editor',
+			PRESSPRIMER_QUIZ_PLUGIN_URL . 'build/blocks/dashboard/index.js',
+			$asset['dependencies'],
+			$asset['version']
+		);
+
+		// Register editor style
+		wp_register_style(
+			'pressprimer-quiz-dashboard-block-editor-style',
+			PRESSPRIMER_QUIZ_PLUGIN_URL . 'blocks/dashboard/editor.css',
+			[],
+			PRESSPRIMER_QUIZ_VERSION
+		);
+
+		// Register frontend style
+		wp_register_style(
+			'pressprimer-quiz-dashboard-block-style',
+			PRESSPRIMER_QUIZ_PLUGIN_URL . 'blocks/dashboard/style.css',
+			[],
+			PRESSPRIMER_QUIZ_VERSION
+		);
+
+		// Register block type
+		register_block_type(
+			'pressprimer-quiz/dashboard',
+			[
+				'api_version'     => 3,
+				'title'           => __( 'PressPrimer Quiz Dashboard', 'pressprimer-quiz' ),
+				'description'     => __( 'Front-end dashboard for PressPrimer Quiz.', 'pressprimer-quiz' ),
+				'category'        => 'pressprimer-quiz',
+				'icon'            => 'dashboard',
+				'supports'        => [
+					'html'     => false,
+					'multiple' => false,
+				],
+				'editor_script'   => 'pressprimer-quiz-dashboard-block-editor',
+				'editor_style'    => 'pressprimer-quiz-dashboard-block-editor-style',
+				'style'           => 'pressprimer-quiz-dashboard-block-style',
+				'render_callback' => [ $this, 'render_dashboard_block' ],
+			]
+		);
+	}
+
+	/**
+	 * Render Dashboard block
+	 *
+	 * Delegates to the shell, which renders the mount container only within the
+	 * main query's singular content and enforces one instance per page.
+	 *
+	 * @since 3.0.0
+	 *
+	 * @param array $attributes Block attributes (unused).
+	 * @return string Rendered block HTML, or '' when nothing should render.
+	 */
+	public function render_dashboard_block( $attributes ) {
+		unset( $attributes );
+
+		if ( ! class_exists( 'PressPrimer_Quiz_Shell' ) ) {
+			return '';
+		}
+
+		return PressPrimer_Quiz_Shell::render();
 	}
 
 	/**

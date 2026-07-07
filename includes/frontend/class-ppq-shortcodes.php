@@ -43,6 +43,29 @@ class PressPrimer_Quiz_Shortcodes {
 	public function register_shortcodes() {
 		add_shortcode( 'pressprimer_quiz', [ $this, 'render_quiz' ] );
 		add_shortcode( 'pressprimer_quiz_my_attempts', [ $this, 'render_my_attempts' ] );
+
+		// Front-end dashboard shell (v3.0).
+		add_shortcode( 'pressprimer_quiz_dashboard', [ $this, 'render_dashboard' ] );
+	}
+
+	/**
+	 * Render the front-end dashboard shell.
+	 *
+	 * The [pressprimer_quiz_dashboard] shortcode routes here. The shell
+	 * renders the mount container only in the main query's singular content and
+	 * enforces one instance per page.
+	 *
+	 * @since 3.0.0
+	 *
+	 * @param array $atts Shortcode attributes (unused in 2.2).
+	 * @return string Mount container HTML, or '' when nothing should render.
+	 */
+	public function render_dashboard( $atts = [] ) {
+		if ( ! class_exists( 'PressPrimer_Quiz_Shell' ) ) {
+			return '';
+		}
+
+		return PressPrimer_Quiz_Shell::render( (array) $atts );
 	}
 
 	/**
@@ -66,26 +89,27 @@ class PressPrimer_Quiz_Shortcodes {
 		$display_overrides = PressPrimer_Quiz_Quiz::extract_display_overrides( $raw_atts );
 
 		$defaults = [
-			'id'                      => 0,
-			'context'                 => '', // Base64 encoded JSON for integration context (e.g., LearnDash)
-			'pre_test_id'             => 0, // Override pre-test linking (used by Educator addon).
+			'id'                        => 0,
+			'context'                   => '', // Base64 encoded JSON for integration context (e.g., LearnDash)
+			'pre_test_id'               => 0, // Override pre-test linking (used by Educator addon).
 			// Display defaults retained for backward compatibility with any third-party
 			// filter hooking shortcode_atts_pressprimer_quiz. The renderer no longer
 			// reads these values directly — it consumes $display_overrides above.
-			'show_description'        => 'true',
-			'show_question_count'     => 'true',
-			'show_quiz_type'          => 'true',
-			'show_time_limit'         => 'true',
-			'show_pass_percentage'    => 'true',
-			'show_attempt_count'      => 'true',
-			'show_attempt_history'    => 'true',
-			'show_score'              => 'true',
-			'show_pass_fail'          => 'true',
-			'show_time_spent'         => 'true',
-			'show_average'            => 'true',
-			'show_category_breakdown' => 'true',
-			'show_question_review'    => 'true',
-			'show_retake_button'      => 'true',
+			'show_description'          => 'true',
+			'show_question_count'       => 'true',
+			'show_quiz_type'            => 'true',
+			'show_time_limit'           => 'true',
+			'show_pass_percentage'      => 'true',
+			'show_attempt_count'        => 'true',
+			'show_attempt_history'      => 'true',
+			'show_score'                => 'true',
+			'show_pass_fail'            => 'true',
+			'show_time_spent'           => 'true',
+			'show_average'              => 'true',
+			'show_category_breakdown'   => 'true',
+			'show_question_review'      => 'true',
+			'show_retake_button'        => 'true',
+			'show_scoring_explanations' => 'true',
 		];
 
 		$atts = shortcode_atts( $defaults, $atts, 'pressprimer_quiz' );

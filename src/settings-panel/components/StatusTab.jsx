@@ -7,6 +7,7 @@
 
 import { useState, useCallback, useMemo } from '@wordpress/element';
 import { __, sprintf } from '@wordpress/i18n';
+import apiFetch from '@wordpress/api-fetch';
 import {
 	Typography,
 	Tag,
@@ -20,6 +21,7 @@ import {
 	CloseCircleOutlined,
 	ExclamationCircleOutlined,
 	ToolOutlined,
+	ReloadOutlined,
 	CopyOutlined,
 } from '@ant-design/icons';
 
@@ -50,10 +52,72 @@ const StatusTab = ({ settingsData }) => {
 	const [databaseTables, setDatabaseTables] = useState(initialTables);
 	const [isRepairing, setIsRepairing] = useState(false);
 
+	const initialSchema = settingsData.schemaHealth || {};
+	const [schemaReport, setSchemaReport] = useState(initialSchema.report || null);
+	const [schemaLog, setSchemaLog] = useState(initialSchema.log || []);
+	const [checkingSchema, setCheckingSchema] = useState(false);
+	const [repairingSchema, setRepairingSchema] = useState(false);
+
 	/**
 	 * Check if any tables are missing
 	 */
 	const hasMissingTables = databaseTables.some(table => !table.exists);
+
+	/**
+	 * Schema health derived state
+	 */
+	const schemaTables = schemaReport && schemaReport.tables ? Object.entries(schemaReport.tables) : [];
+	const schemaHasProblems = !!schemaReport && schemaReport.healthy === false;
+
+	/**
+	 * Front-end dashboard page derived state
+	 */
+	const dashboardData = settingsData.dashboard || {};
+	const dashboardPageId = (settingsData.settings && settingsData.settings.dashboard_page_id) || 0;
+	const dashboardPageEntry = (dashboardData.pages || []).find((p) => p.id === dashboardPageId);
+	const dashboardPageTitle = dashboardPageEntry ? dashboardPageEntry.title : '';
+	const dashboardIsFrontPage = dashboardPageId > 0
+		&& dashboardPageId === (dashboardData.frontPageId || 0)
+		&& dashboardData.showOnFront === 'page';
+	const dashboardIsMissing = dashboardPageId > 0 && !dashboardPageEntry;
+
+	/**
+	 * Run a fresh schema check via REST.
+	 */
+	const handleSchemaCheck = async () => {
+		setCheckingSchema(true);
+		try {
+			const res = await apiFetch({ path: '/ppq/v1/status/schema' });
+			setSchemaReport(res.report || null);
+			setSchemaLog(res.log || []);
+			message.success(__('Schema check complete.', 'pressprimer-quiz'));
+		} catch (error) {
+			message.error(__('Schema check failed. Please try again.', 'pressprimer-quiz'));
+		} finally {
+			setCheckingSchema(false);
+		}
+	};
+
+	/**
+	 * Repair schema findings via REST, then re-render from the returned report.
+	 */
+	const handleSchemaRepair = async () => {
+		setRepairingSchema(true);
+		try {
+			const res = await apiFetch({ path: '/ppq/v1/status/schema/repair', method: 'POST' });
+			setSchemaReport(res.report || null);
+			setSchemaLog(res.log || []);
+			if (res.report && res.report.healthy) {
+				message.success(__('Schema repaired successfully.', 'pressprimer-quiz'));
+			} else {
+				message.warning(__('Some schema problems could not be repaired. See the activity log below.', 'pressprimer-quiz'));
+			}
+		} catch (error) {
+			message.error(__('Schema repair failed. Please try again.', 'pressprimer-quiz'));
+		} finally {
+			setRepairingSchema(false);
+		}
+	};
 
 	/**
 	 * Handle repair database tables
@@ -98,6 +162,65 @@ const StatusTab = ({ settingsData }) => {
 		}
 		// Return the plugin prefix + table name (e.g. "ppq_quizzes", "ppqs_xapi_queue")
 		return match[0];
+	};
+
+	/**
+	 * Render the status cell for a schema table row.
+	 */
+	const renderSchemaStatus = (info) => {
+		if (!info || info.status === 'ok') {
+			return (
+				<Tag icon={<CheckCircleOutlined />} color="success">
+					{__('OK', 'pressprimer-quiz')}
+				</Tag>
+			);
+		}
+
+		if (info.status === 'missing_table') {
+			return (
+				<Tag icon={<CloseCircleOutlined />} color="error">
+					{__('Missing table', 'pressprimer-quiz')}
+				</Tag>
+			);
+		}
+
+		const cols = (info.missing_columns || []).join(', ');
+		return (
+			<Space direction="vertical" size={2}>
+				<Tag icon={<CloseCircleOutlined />} color="error">
+					{__('Missing columns', 'pressprimer-quiz')}
+				</Tag>
+				{cols && <code style={{ fontSize: 12 }}>{cols}</code>}
+			</Space>
+		);
+	};
+
+	/**
+	 * Render the status tag for the front-end dashboard page.
+	 */
+	const renderDashboardStatus = () => {
+		if (dashboardPageId === 0) {
+			return <Tag>{__('Not set', 'pressprimer-quiz')}</Tag>;
+		}
+		if (dashboardIsFrontPage) {
+			return (
+				<Tag icon={<CloseCircleOutlined />} color="error">
+					{__('Set as front page (not supported)', 'pressprimer-quiz')}
+				</Tag>
+			);
+		}
+		if (dashboardIsMissing) {
+			return (
+				<Tag icon={<ExclamationCircleOutlined />} color="warning">
+					{__('Missing or unpublished', 'pressprimer-quiz')}
+				</Tag>
+			);
+		}
+		return (
+			<Tag icon={<CheckCircleOutlined />} color="success">
+				{__('OK', 'pressprimer-quiz')}
+			</Tag>
+		);
 	};
 
 	/**
@@ -224,6 +347,21 @@ const StatusTab = ({ settingsData }) => {
 		});
 		lines.push('');
 
+		// Database schema (only the problems, to keep diagnostics concise).
+		if (schemaReport && schemaReport.tables) {
+			lines.push('## Database Schema');
+			lines.push(`Healthy: ${schemaReport.healthy ? 'Yes' : 'No'}`);
+			Object.entries(schemaReport.tables).forEach(([tableName, info]) => {
+				if (info.status !== 'ok') {
+					const detail = info.status === 'missing_table'
+						? 'MISSING TABLE'
+						: `missing columns: ${(info.missing_columns || []).join(', ')}`;
+					lines.push(`${getShortTableName(tableName)}: ${detail}`);
+				}
+			});
+			lines.push('');
+		}
+
 		// Active plugins.
 		const plugins = systemInfo.activePlugins || [];
 		if (plugins.length > 0) {
@@ -234,7 +372,7 @@ const StatusTab = ({ settingsData }) => {
 
 		lines.push(sep);
 		return lines.join('\n');
-	}, [systemInfo, lmsStatus, databaseTables]);
+	}, [systemInfo, lmsStatus, databaseTables, schemaReport]);
 
 	/**
 	 * Copy diagnostic text to clipboard
@@ -595,6 +733,135 @@ const StatusTab = ({ settingsData }) => {
 							{__('Repair Database Tables', 'pressprimer-quiz')}
 						</Button>
 					</div>
+				)}
+			</div>
+
+			{/* Database Schema */}
+			{schemaReport && (
+				<div className="ppq-settings-section">
+					<Title level={4} className="ppq-settings-section-title">
+						{__('Database Schema', 'pressprimer-quiz')}
+					</Title>
+					<Paragraph className="ppq-settings-section-description">
+						{__('Checks that every plugin table has all of its expected columns. Missing columns or tables can be repaired automatically from the plugin schema.', 'pressprimer-quiz')}
+					</Paragraph>
+
+					{schemaHasProblems && (
+						<Alert
+							message={__('Schema Problems Detected', 'pressprimer-quiz')}
+							description={__('Some tables are missing columns or do not exist. Click "Repair now" to restore them from the plugin schema.', 'pressprimer-quiz')}
+							type="error"
+							showIcon
+							icon={<ExclamationCircleOutlined />}
+							style={{ marginBottom: 16 }}
+						/>
+					)}
+
+					<table className="ppq-system-info">
+						<thead>
+							<tr>
+								<th>{__('Table', 'pressprimer-quiz')}</th>
+								<th>{__('Status', 'pressprimer-quiz')}</th>
+							</tr>
+						</thead>
+						<tbody>
+							{schemaTables.map(([tableName, info]) => (
+								<tr key={tableName}>
+									<td><code>{getShortTableName(tableName)}</code></td>
+									<td>{renderSchemaStatus(info)}</td>
+								</tr>
+							))}
+						</tbody>
+					</table>
+
+					{schemaReport.generated_at && (
+						<Paragraph className="ppq-settings-section-description" style={{ marginTop: 12 }}>
+							{
+								/* translators: %s: date and time of the last schema check. */
+								sprintf(__('Last checked: %s', 'pressprimer-quiz'), schemaReport.generated_at)
+							}
+						</Paragraph>
+					)}
+
+					<Space style={{ marginTop: 8 }}>
+						<Button
+							icon={<ReloadOutlined />}
+							onClick={handleSchemaCheck}
+							loading={checkingSchema}
+						>
+							{__('Run check now', 'pressprimer-quiz')}
+						</Button>
+						{schemaHasProblems && (
+							<Button
+								type="primary"
+								danger
+								icon={<ToolOutlined />}
+								onClick={handleSchemaRepair}
+								loading={repairingSchema}
+							>
+								{__('Repair now', 'pressprimer-quiz')}
+							</Button>
+						)}
+					</Space>
+
+					{schemaLog.length > 0 && (
+						<div style={{ marginTop: 16 }}>
+							<Title level={5}>{__('Recent schema activity', 'pressprimer-quiz')}</Title>
+							<ul style={{ fontSize: 13, lineHeight: 1.8, paddingLeft: 20, margin: 0 }}>
+								{schemaLog.slice(0, 5).map((entry, index) => (
+									<li key={index}>
+										<code>{entry.time}</code>
+										{' — '}
+										{entry.action}
+										{entry.table ? ` ${getShortTableName(entry.table)}` : ''}
+										{entry.column ? `.${entry.column}` : ''}
+										{`: ${entry.outcome}`}
+										{entry.message ? ` — ${entry.message}` : ''}
+									</li>
+								))}
+							</ul>
+						</div>
+					)}
+				</div>
+			)}
+
+			{/* Front-End Dashboard */}
+			<div className="ppq-settings-section">
+				<Title level={4} className="ppq-settings-section-title">
+					{__('Front-End Dashboard', 'pressprimer-quiz')}
+				</Title>
+
+				<table className="ppq-system-info">
+					<tbody>
+						<tr>
+							<th>{__('Designated Page', 'pressprimer-quiz')}</th>
+							<td>{dashboardPageTitle || __('Not set', 'pressprimer-quiz')}</td>
+						</tr>
+						<tr>
+							<th>{__('Status', 'pressprimer-quiz')}</th>
+							<td>{renderDashboardStatus()}</td>
+						</tr>
+					</tbody>
+				</table>
+
+				{dashboardIsFrontPage && (
+					<Alert
+						type="error"
+						showIcon
+						style={{ marginTop: 12 }}
+						message={__('Dashboard page is set as the static front page', 'pressprimer-quiz')}
+						description={__('This is not supported. Choose a different page in Settings → General → Dashboard.', 'pressprimer-quiz')}
+					/>
+				)}
+
+				{dashboardIsMissing && (
+					<Alert
+						type="warning"
+						showIcon
+						style={{ marginTop: 12 }}
+						message={__('Dashboard page is missing or unpublished', 'pressprimer-quiz')}
+						description={__('Links to the dashboard are hidden until a published page is selected in Settings → General → Dashboard.', 'pressprimer-quiz')}
+					/>
 				)}
 			</div>
 

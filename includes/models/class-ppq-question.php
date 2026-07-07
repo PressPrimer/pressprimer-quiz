@@ -366,7 +366,10 @@ class PressPrimer_Quiz_Question extends PressPrimer_Quiz_Model {
 				$answer_text = isset( $answer['text'] ) ? wp_strip_all_tags( $answer['text'] ) : '';
 				$answer_text = trim( $answer_text );
 
-				if ( strlen( $answer_text ) >= 2 ) {
+				// An answer counts as having text if it has any content after
+				// trimming — single-character answers (e.g. "2", "A", "0") are
+				// valid, so this must not require a minimum length.
+				if ( strlen( $answer_text ) >= 1 ) {
 					++$valid_answers;
 
 					// Check if this answer is marked as correct

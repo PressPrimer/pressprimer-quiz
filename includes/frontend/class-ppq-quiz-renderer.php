@@ -1428,7 +1428,7 @@ class PressPrimer_Quiz_Quiz_Renderer {
 		<div class="ppq-attempt-card">
 			<div class="ppq-attempt-info">
 				<span class="ppq-attempt-date">
-					<?php echo esc_html( wp_date( get_option( 'date_format' ), strtotime( $attempt->started_at ) ) ); ?>
+					<?php echo esc_html( PressPrimer_Quiz_Helpers::format_local_datetime( $attempt->started_at, get_option( 'date_format' ) ) ); ?>
 				</span>
 				<?php if ( null !== $attempt->score_percent ) : ?>
 					<span class="ppq-attempt-score <?php echo esc_attr( $attempt->passed ? 'ppq-passed' : 'ppq-failed' ); ?>">

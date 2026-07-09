@@ -410,6 +410,73 @@ wp_json_encode( $data );   // JSON in script tags
 
 ---
 
+## Date/Time Handling (CRITICAL)
+
+Getting timezones wrong here is easy and silent — a bug only shows on non-UTC
+sites, so it passes testing on a default (UTC) install. Follow these rules.
+
+### Know the storage basis
+
+| Plugin | Stored as | Written with |
+|--------|-----------|--------------|
+| Free, Educator | **WordPress local time** | `current_time( 'mysql' )` |
+| School, Enterprise | **GMT/UTC** (some columns) | `current_time( 'mysql', true )` |
+
+Attempt `started_at`/`finished_at`, and `created_at`/`updated_at` on questions,
+quizzes, and banks, are all **local** time. Never assume — check how the column
+is written before formatting it.
+
+### Displaying a LOCAL-stored value
+
+**Never** wrap `strtotime()` in `wp_date()` / `date_i18n()` for a local value:
+
+```php
+// WRONG — double shift. strtotime() parses the local string as UTC (WP pins
+// PHP's default TZ to UTC), then wp_date() shifts to the site TZ again. On a
+// non-UTC site the time is off by the site's UTC offset.
+echo esc_html( wp_date( get_option( 'date_format' ), strtotime( $attempt->started_at ) ) );
+
+// CORRECT — the shared helper (free plugin; addons can call it too).
+echo esc_html( PressPrimer_Quiz_Helpers::format_local_datetime( $attempt->started_at ) );
+
+// CORRECT — a specific format (date only, custom format, etc.).
+echo esc_html( PressPrimer_Quiz_Helpers::format_local_datetime( $attempt->started_at, get_option( 'date_format' ) ) );
+
+// CORRECT — plain WordPress equivalent when the helper is unavailable.
+echo esc_html( mysql2date( get_option( 'date_format' ), $attempt->started_at ) );
+```
+
+`mysql2date()` interprets the string as site-local (`wp_timezone()`) and formats
+it in the site timezone — exactly what "show the time in the user's WordPress
+settings" means. `PressPrimer_Quiz_Helpers::format_local_datetime( $value, $format = '' )`
+wraps it, defaults to the site date + time format, and returns `''` for empty
+values.
+
+### Needing the TIMESTAMP of a local-stored value
+
+Use `mysql2date( 'U', $value )` — **not** `strtotime( $value )` — so relative
+math (`human_time_diff()`, `time() - $ts`) uses the correct instant:
+
+```php
+$timestamp = mysql2date( 'U', $item->created_at ); // real epoch, site-local aware
+```
+
+### GMT-stored values (School / Enterprise)
+
+Do **not** use `mysql2date()` (it assumes local). Convert from GMT:
+
+```php
+echo esc_html( get_date_from_gmt( $row->created_at, get_option( 'date_format' ) . ' ' . get_option( 'time_format' ) ) );
+```
+
+### React / front-end
+
+Parse the MySQL string as local wall-clock and do **not** append `'Z'` (which
+marks it UTC and reintroduces the offset). See the reference implementation in
+`src/reports/utils/dateUtils.js` (`formatDate`).
+
+---
+
 ## Prefixing (CRITICAL)
 
 ### 4+ Character Prefix Required

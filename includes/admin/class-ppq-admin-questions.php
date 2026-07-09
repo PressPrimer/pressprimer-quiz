@@ -1393,16 +1393,14 @@ class PressPrimer_Quiz_Questions_List_Table extends WP_List_Table {
 	 * @return string Column content.
 	 */
 	public function column_date( $item ) {
-		$timestamp = strtotime( $item->created_at );
-
-		if ( ! $timestamp ) {
+		if ( empty( $item->created_at ) ) {
 			return '—';
 		}
 
 		return sprintf(
 			'<abbr title="%s">%s</abbr>',
-			esc_attr( wp_date( 'Y/m/d g:i:s a', $timestamp ) ),
-			esc_html( wp_date( 'Y/m/d', $timestamp ) )
+			esc_attr( PressPrimer_Quiz_Helpers::format_local_datetime( $item->created_at, 'Y/m/d g:i:s a' ) ),
+			esc_html( PressPrimer_Quiz_Helpers::format_local_datetime( $item->created_at, 'Y/m/d' ) )
 		);
 	}
 

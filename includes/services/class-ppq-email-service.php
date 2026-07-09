@@ -80,7 +80,7 @@ class PressPrimer_Quiz_Email_Service {
 			'{quiz_title}'   => $quiz->title,
 			'{score}'        => round( (float) $attempt->score_percent, 1 ) . '%',
 			'{passed}'       => $attempt->passed ? __( 'Passed', 'pressprimer-quiz' ) : __( 'Failed', 'pressprimer-quiz' ),
-			'{date}'         => wp_date( get_option( 'date_format' ) . ' ' . get_option( 'time_format' ), strtotime( $attempt->finished_at ) ),
+			'{date}'         => PressPrimer_Quiz_Helpers::format_local_datetime( $attempt->finished_at ),
 			'{points}'       => number_format_i18n( $attempt->score_points, 2 ),
 			'{max_points}'   => number_format_i18n( $attempt->max_points, 2 ),
 			'{site_name}'    => get_bloginfo( 'name' ),

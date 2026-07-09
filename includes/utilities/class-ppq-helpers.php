@@ -410,6 +410,41 @@ class PressPrimer_Quiz_Helpers {
 	}
 
 	/**
+	 * Format a stored local datetime for display.
+	 *
+	 * Attempt, question, quiz, and bank datetimes are stored in WordPress local
+	 * time via current_time( 'mysql' ). This formats such a value in the site's
+	 * timezone and date/time format without the double timezone shift caused by
+	 * wp_date( $format, strtotime( $value ) ) — which parses the already-local
+	 * string as UTC and then shifts it to the site timezone again, producing an
+	 * offset equal to the site's UTC difference on non-UTC sites.
+	 *
+	 * Always use this to display a stored local datetime; never wrap strtotime()
+	 * in wp_date() for a local value. When you need the timestamp of a stored
+	 * local datetime, use mysql2date( 'U', $value ), not strtotime( $value ).
+	 *
+	 * @since 3.0.1
+	 *
+	 * @param string $mysql_datetime MySQL datetime string in WordPress local time.
+	 * @param string $format         Optional. Date format. Defaults to the site
+	 *                               date format plus time format.
+	 * @return string Formatted datetime, or empty string when empty or invalid.
+	 */
+	public static function format_local_datetime( $mysql_datetime, $format = '' ) {
+		if ( empty( $mysql_datetime ) ) {
+			return '';
+		}
+
+		if ( '' === $format ) {
+			$format = get_option( 'date_format' ) . ' ' . get_option( 'time_format' );
+		}
+
+		$formatted = mysql2date( $format, $mysql_datetime );
+
+		return is_string( $formatted ) ? $formatted : '';
+	}
+
+	/**
 	 * Array get with default
 	 *
 	 * Safely gets a value from an array with a default.

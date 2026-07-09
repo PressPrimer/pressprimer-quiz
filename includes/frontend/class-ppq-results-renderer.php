@@ -1741,7 +1741,7 @@ class PressPrimer_Quiz_Results_Renderer {
 
 		// Check attempt delay
 		if ( $quiz->attempt_delay_minutes && $attempt->finished_at ) {
-			$elapsed_minutes = ( time() - strtotime( $attempt->finished_at ) ) / 60;
+			$elapsed_minutes = ( time() - mysql2date( 'U', $attempt->finished_at ) ) / 60;
 
 			if ( $elapsed_minutes < $quiz->attempt_delay_minutes ) {
 				return false;

@@ -355,7 +355,7 @@ class PressPrimer_Quiz_Attempt extends PressPrimer_Quiz_Model {
 		if ( $quiz->attempt_delay_minutes ) {
 			$last_attempt = static::get_last_user_attempt( $quiz_id, $user_id );
 			if ( $last_attempt && $last_attempt->finished_at ) {
-				$elapsed_minutes = ( time() - strtotime( $last_attempt->finished_at ) ) / 60;
+				$elapsed_minutes = ( time() - mysql2date( 'U', $last_attempt->finished_at ) ) / 60;
 				if ( $elapsed_minutes < $quiz->attempt_delay_minutes ) {
 					$wait_minutes = ceil( $quiz->attempt_delay_minutes - $elapsed_minutes );
 					return new WP_Error(
@@ -587,7 +587,7 @@ class PressPrimer_Quiz_Attempt extends PressPrimer_Quiz_Model {
 			}
 
 			if ( ! $has_any_answer ) {
-				$started_timestamp = strtotime( $existing_in_progress->started_at );
+				$started_timestamp = mysql2date( 'U', $existing_in_progress->started_at );
 				$one_hour_ago      = time() - 3600;
 				if ( $started_timestamp < $one_hour_ago ) {
 					$should_abandon_stale = true;

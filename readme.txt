@@ -3,7 +3,7 @@ Contributors: pressprimer
 Tags: quiz, learndash, assessment, lms, elearning
 Requires at least: 6.4
 Tested up to: 7.0
-Stable tag: 3.0.0
+Stable tag: 3.0.1
 Requires PHP: 7.4
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -240,6 +240,11 @@ This plugin also offers optional AI-powered question generation using the Anthro
 5. Admin reporting with analytics
 
 == Changelog ==
+
+= 3.0.1 =
+* Fixed: Quiz attempt and record dates now display in your site's timezone and date format everywhere they appear. On sites not set to UTC, these times could previously be off by the site's timezone offset.
+* Fixed: Retake delays (the required wait between attempts) and the automatic timeout that abandons an unanswered in-progress attempt are now measured in your site's timezone.
+* Fixed: Corrected a broken "assignments" icon on the front-end dashboard that displayed incorrectly and logged an error in the browser console.
 
 = 3.0.0 =
 * Added: A front-end dashboard you can place on any page with the [pressprimer_quiz_dashboard] shortcode or the Dashboard block. Students get a "My Results" area to review their past quiz attempts without visiting the WordPress admin.

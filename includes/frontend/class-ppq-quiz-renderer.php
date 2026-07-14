@@ -248,7 +248,7 @@ class PressPrimer_Quiz_Quiz_Renderer {
 
 				// If no answers and started more than 1 hour ago, abandon it
 				if ( ! $has_any_answer ) {
-					$started_timestamp = strtotime( $in_progress_attempt->started_at );
+					$started_timestamp = mysql2date( 'U', $in_progress_attempt->started_at );
 					$one_hour_ago      = time() - 3600;
 					if ( $started_timestamp < $one_hour_ago ) {
 						$in_progress_attempt->status = 'abandoned';
@@ -287,7 +287,7 @@ class PressPrimer_Quiz_Quiz_Renderer {
 		if ( $can_start && $quiz->attempt_delay_minutes && ! empty( $previous_attempts ) ) {
 			$last_attempt = $previous_attempts[0];
 			if ( $last_attempt && 'submitted' === $last_attempt->status && $last_attempt->finished_at ) {
-				$elapsed_minutes = ( time() - strtotime( $last_attempt->finished_at ) ) / 60;
+				$elapsed_minutes = ( time() - mysql2date( 'U', $last_attempt->finished_at ) ) / 60;
 				if ( $elapsed_minutes < $quiz->attempt_delay_minutes ) {
 					$can_start     = false;
 					$wait_minutes  = ceil( $quiz->attempt_delay_minutes - $elapsed_minutes );
@@ -1428,7 +1428,7 @@ class PressPrimer_Quiz_Quiz_Renderer {
 		<div class="ppq-attempt-card">
 			<div class="ppq-attempt-info">
 				<span class="ppq-attempt-date">
-					<?php echo esc_html( wp_date( get_option( 'date_format' ), strtotime( $attempt->started_at ) ) ); ?>
+					<?php echo esc_html( PressPrimer_Quiz_Helpers::format_local_datetime( $attempt->started_at, get_option( 'date_format' ) ) ); ?>
 				</span>
 				<?php if ( null !== $attempt->score_percent ) : ?>
 					<span class="ppq-attempt-score <?php echo esc_attr( $attempt->passed ? 'ppq-passed' : 'ppq-failed' ); ?>">

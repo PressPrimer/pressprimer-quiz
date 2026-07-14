@@ -1,6 +1,6 @@
 {
   "name": "pressprimer-quiz",
-  "version": "3.0.0",
+  "version": "3.0.1",
   "description": "Enterprise-grade quiz and assessment platform for WordPress educators",
   "scripts": {
     "build": "wp-scripts build",
@@ -11,7 +11,7 @@
     "lint:js": "wp-scripts lint-js",
     "format": "wp-scripts format",
     "packages-update": "wp-scripts packages-update",
-    "plugin-zip": "wp-scripts build && cd /Users/Ryan/Development/wordpress-plugins/pressprimer/pressprimer-quiz && /Applications/Local.app/Contents/Resources/extraResources/lightning-services/php-8.2.27+1/bin/darwin-arm64/bin/php composer.phar install --no-dev --optimize-autoloader && rm -rf dist && mkdir -p dist/pressprimer-quiz && rsync -av --exclude-from='.distignore' ./ dist/pressprimer-quiz/ && cd dist && zip -r pressprimer-quiz.zip pressprimer-quiz && rm -rf pressprimer-quiz && cd /Users/Ryan/Development/wordpress-plugins/pressprimer/pressprimer-quiz && /Applications/Local.app/Contents/Resources/extraResources/lightning-services/php-8.2.27+1/bin/darwin-arm64/bin/php composer.phar install && echo 'Created dist/pressprimer-quiz.zip'",
+    "plugin-zip": "PHP=$(ls -d /Applications/Local.app/Contents/Resources/extraResources/lightning-services/php-8.*/bin/darwin-arm64/bin/php 2>/dev/null | sort -V | tail -n1) && wp-scripts build && cd /Users/Ryan/Development/wordpress-plugins/pressprimer/pressprimer-quiz && \"$PHP\" composer.phar install --no-dev --optimize-autoloader && rm -rf dist && mkdir -p dist/pressprimer-quiz && rsync -av --exclude-from='.distignore' ./ dist/pressprimer-quiz/ && cd dist && zip -r pressprimer-quiz.zip pressprimer-quiz && rm -rf pressprimer-quiz && cd /Users/Ryan/Development/wordpress-plugins/pressprimer/pressprimer-quiz && \"$PHP\" composer.phar install && echo 'Created dist/pressprimer-quiz.zip'",
     "test:e2e": "playwright test",
     "test:e2e:php74": "playwright test --project=php74",
     "test:e2e:php84": "playwright test --project=php84",

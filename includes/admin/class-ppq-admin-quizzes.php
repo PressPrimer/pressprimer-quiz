@@ -1760,7 +1760,10 @@ class PressPrimer_Quiz_Quizzes_List_Table extends WP_List_Table {
 	 * @return string Column content.
 	 */
 	public function column_date( $item ) {
-		$timestamp = strtotime( $item->created_at );
+		// created_at is stored in WordPress local time; resolve it to a real
+		// timestamp with mysql2date() so the relative-time comparison below uses
+		// the correct instant instead of a UTC-parsed one.
+		$timestamp = mysql2date( 'U', $item->created_at );
 
 		if ( ! $timestamp ) {
 			return '—';
@@ -1772,13 +1775,13 @@ class PressPrimer_Quiz_Quizzes_List_Table extends WP_List_Table {
 		if ( $time_diff < DAY_IN_SECONDS ) {
 			return sprintf(
 				'<abbr title="%s">%s</abbr>',
-				esc_attr( wp_date( get_option( 'date_format' ) . ' ' . get_option( 'time_format' ), $timestamp ) ),
+				esc_attr( PressPrimer_Quiz_Helpers::format_local_datetime( $item->created_at ) ),
 				/* translators: %s: human-readable time difference */
 				sprintf( esc_html__( '%s ago', 'pressprimer-quiz' ), human_time_diff( $timestamp ) )
 			);
 		}
 
-		return wp_date( get_option( 'date_format' ), $timestamp );
+		return PressPrimer_Quiz_Helpers::format_local_datetime( $item->created_at, get_option( 'date_format' ) );
 	}
 
 	/**

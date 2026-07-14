@@ -458,9 +458,8 @@ class PressPrimer_Quiz_Banks_List_Table extends WP_List_Table {
 	 * @return string Date column HTML.
 	 */
 	protected function column_date( $item ) {
-		$timestamp = strtotime( $item->created_at );
-		$date      = wp_date( get_option( 'date_format' ), $timestamp );
-		$time      = wp_date( get_option( 'time_format' ), $timestamp );
+		$date = PressPrimer_Quiz_Helpers::format_local_datetime( $item->created_at, get_option( 'date_format' ) );
+		$time = PressPrimer_Quiz_Helpers::format_local_datetime( $item->created_at, get_option( 'time_format' ) );
 
 		return sprintf(
 			'%s<br><span class="ppq-text-muted">%s</span>',

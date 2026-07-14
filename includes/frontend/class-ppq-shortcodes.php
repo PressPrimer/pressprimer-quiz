@@ -731,7 +731,7 @@ class PressPrimer_Quiz_Shortcodes {
 			</td>
 			<?php if ( $show_date ) : ?>
 				<td class="ppq-attempt-date" data-label="<?php esc_attr_e( 'Date', 'pressprimer-quiz' ); ?>">
-					<?php echo esc_html( wp_date( get_option( 'date_format' ) . ' ' . get_option( 'time_format' ), strtotime( $attempt->started_at ) ) ); ?>
+					<?php echo esc_html( PressPrimer_Quiz_Helpers::format_local_datetime( $attempt->started_at ) ); ?>
 				</td>
 			<?php endif; ?>
 			<td class="ppq-attempt-duration" data-label="<?php esc_attr_e( 'Duration', 'pressprimer-quiz' ); ?>">
@@ -810,7 +810,7 @@ class PressPrimer_Quiz_Shortcodes {
 
 		// Check attempt delay
 		if ( $quiz->attempt_delay_minutes && $current_attempt->finished_at ) {
-			$elapsed_minutes = ( time() - strtotime( $current_attempt->finished_at ) ) / 60;
+			$elapsed_minutes = ( time() - mysql2date( 'U', $current_attempt->finished_at ) ) / 60;
 
 			if ( $elapsed_minutes < $quiz->attempt_delay_minutes ) {
 				return false;

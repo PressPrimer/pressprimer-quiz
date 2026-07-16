@@ -3,7 +3,7 @@ Contributors: pressprimer
 Tags: quiz, learndash, assessment, lms, elearning
 Requires at least: 6.4
 Tested up to: 7.0
-Stable tag: 3.0.1
+Stable tag: 3.0.2
 Requires PHP: 7.4
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -240,6 +240,9 @@ This plugin also offers optional AI-powered question generation using the Anthro
 5. Admin reporting with analytics
 
 == Changelog ==
+
+= 3.0.2 =
+* Fixed: Dragging to reorder questions in a fixed quiz now saves reliably.
 
 = 3.0.1 =
 * Fixed: Quiz attempt and record dates now display in your site's timezone and date format everywhere they appear. On sites not set to UTC, these times could previously be off by the site's timezone offset.

@@ -243,6 +243,8 @@ This plugin also offers optional AI-powered question generation using the Anthro
 
 = 3.0.3 =
 * Fixed: Admin screens now display in your site's language when a translation is available, instead of always appearing in English.
+* Fixed: On WordPress multisite, the "Remove all data on uninstall" option now applies per-site based on each site's own setting, instead of being ignored across the network.
+* Fixed: Uninstall now also removes the quiz templates database table, which was previously left behind.
 
 = 3.0.2 =
 * Fixed: Dragging to reorder questions in a fixed quiz now saves reliably.

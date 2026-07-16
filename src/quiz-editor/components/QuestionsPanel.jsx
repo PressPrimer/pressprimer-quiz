@@ -5,7 +5,7 @@
  * @since 1.0.0
  */
 
-import { useState, useEffect } from '@wordpress/element';
+import { useState, useEffect, useRef } from '@wordpress/element';
 import { __, _n, sprintf } from '@wordpress/i18n';
 import apiFetch from '@wordpress/api-fetch';
 import { debugError } from '../../utils/debug';
@@ -62,6 +62,9 @@ const QuestionsPanel = ({ quizId, generationMode }) => {
 	const [categories, setCategories] = useState([]);
 	const [banks, setBanks] = useState([]);
 
+	// Tracks the in-flight reorder request so reloads can wait for it to commit.
+	const pendingReorderRef = useRef(null);
+
 	// Load quiz items
 	useEffect(() => {
 		if (quizId && generationMode === 'fixed') {
@@ -83,6 +86,15 @@ const QuestionsPanel = ({ quizId, generationMode }) => {
 	const loadQuizItems = async () => {
 		try {
 			setLoading(true);
+			// Wait for any in-flight reorder to commit so we never reload a stale
+			// order (e.g. right after adding or removing a question).
+			if (pendingReorderRef.current) {
+				try {
+					await pendingReorderRef.current;
+				} catch (error) {
+					// A failed reorder surfaces its own error; reload regardless.
+				}
+			}
 			const response = await apiFetch({
 				path: `/ppq/v1/quizzes/${quizId}/items`,
 			});
@@ -294,7 +306,7 @@ const QuestionsPanel = ({ quizId, generationMode }) => {
 	/**
 	 * Handle drag end
 	 */
-	const handleDragEnd = (result) => {
+	const handleDragEnd = async (result) => {
 		// Always clear any drag state, even if we don't process the drop
 		if (!result.destination) {
 			// User dropped outside the list or cancelled
@@ -328,18 +340,25 @@ const QuestionsPanel = ({ quizId, generationMode }) => {
 		// Optimistically update UI - this triggers re-render which clears drag state
 		setItems(reorderedItems);
 
-		// Save new order to backend (async, but not awaited to avoid blocking UI)
-		apiFetch({
+		// Persist the new order. Track the request so a subsequent reload (e.g.
+		// after adding or removing a question) waits for it, and await it so rapid
+		// successive reorders can't commit out of order.
+		const reorderPromise = apiFetch({
 			path: `/ppq/v1/quizzes/${quizId}/items/reorder`,
 			method: 'POST',
 			data: {
 				item_ids: reorderedItems.map(item => item.id),
 			},
-		}).catch(() => {
+		});
+		pendingReorderRef.current = reorderPromise;
+
+		try {
+			await reorderPromise;
+		} catch (error) {
 			message.error(__('Failed to save order', 'pressprimer-quiz'));
 			// Reload to reset
 			loadQuizItems();
-		});
+		}
 	};
 
 	if (generationMode !== 'fixed') {

@@ -86,11 +86,13 @@ const getFontFamilyOptions = (themeFont) => {
 		},
 	];
 
-	// Add theme font option if available
-	if (themeFont && themeFont.value) {
+	// Add theme font option if available. Only accept a plain string value —
+	// some themes expose a structured typography object, which would otherwise be
+	// stored on select and crash the control when rendered as a React child.
+	if (themeFont && typeof themeFont.value === 'string' && themeFont.value) {
 		options.push({
 			value: themeFont.value,
-			label: themeFont.name + ' ' + __('(WordPress Theme)', 'pressprimer-quiz'),
+			label: String(themeFont.name || '') + ' ' + __('(WordPress Theme)', 'pressprimer-quiz'),
 		});
 	}
 
@@ -496,7 +498,7 @@ const AppearanceTab = ({ settings, updateSetting, settingsData }) => {
 							}
 						>
 							<Select
-								value={settings.appearance_font_family || ''}
+								value={typeof settings.appearance_font_family === 'string' ? settings.appearance_font_family : ''}
 								onChange={(value) => updateSetting('appearance_font_family', value)}
 								style={{ width: 350 }}
 								options={fontFamilyOptions}

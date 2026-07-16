@@ -3042,7 +3042,14 @@ class PressPrimer_Quiz_REST_Controller {
 			}
 		}
 
-		$result = PressPrimer_Quiz_Quiz_Item::reorder( $item_ids );
+		// The frontend sends item_ids as an ordered list; reorder() expects an
+		// id => order_index map, so key each item by its position in the list.
+		$order_map = [];
+		foreach ( $item_ids as $index => $item_id ) {
+			$order_map[ absint( $item_id ) ] = $index;
+		}
+
+		$result = PressPrimer_Quiz_Quiz_Item::reorder( $order_map );
 
 		if ( is_wp_error( $result ) ) {
 			return new WP_Error( 'reorder_failed', $result->get_error_message(), [ 'status' => 500 ] );

@@ -592,6 +592,8 @@ class PressPrimer_Quiz_Admin_Quizzes {
 			true
 		);
 
+		wp_set_script_translations( 'ppq-quiz-editor', 'pressprimer-quiz', PRESSPRIMER_QUIZ_PLUGIN_PATH . 'languages' );
+
 		wp_enqueue_style(
 			'ppq-quiz-editor',
 			PRESSPRIMER_QUIZ_PLUGIN_URL . 'build/style-quiz-editor.css',

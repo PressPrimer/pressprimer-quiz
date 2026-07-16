@@ -274,6 +274,8 @@ class PressPrimer_Quiz_Admin_Banks {
 			true
 		);
 
+		wp_set_script_translations( 'ppq-bank-editor', 'pressprimer-quiz', PRESSPRIMER_QUIZ_PLUGIN_PATH . 'languages' );
+
 		wp_enqueue_style(
 			'ppq-bank-editor',
 			PRESSPRIMER_QUIZ_PLUGIN_URL . 'build/style-bank-editor.css',

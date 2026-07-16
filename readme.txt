@@ -241,6 +241,9 @@ This plugin also offers optional AI-powered question generation using the Anthro
 
 == Changelog ==
 
+= 3.0.3 =
+* Fixed: Admin screens now display in your site's language when a translation is available, instead of always appearing in English.
+
 = 3.0.2 =
 * Fixed: Dragging to reorder questions in a fixed quiz now saves reliably.
 

@@ -1661,6 +1661,8 @@ Good luck with your studies!',
 			true
 		);
 
+		wp_set_script_translations( 'ppq-settings-panel', 'pressprimer-quiz', PRESSPRIMER_QUIZ_PLUGIN_PATH . 'languages' );
+
 		wp_enqueue_style(
 			'ppq-settings-panel',
 			PRESSPRIMER_QUIZ_PLUGIN_URL . 'build/style-settings-panel.css',

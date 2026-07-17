@@ -577,4 +577,60 @@ class PressPrimer_Quiz_Helpers {
 
 		return false;
 	}
+
+	/**
+	 * Strip trailing empty blocks from rich-text HTML.
+	 *
+	 * TinyMCE leaves a trailing empty paragraph when the author presses Enter at
+	 * the end of a value, filling it with a non-breaking space — so the stored
+	 * content ends in "<p>\xC2\xA0</p>" (a literal U+00A0 character, not the
+	 * "&nbsp;" entity). Pasted content (Word, Google Docs) adds further invisible
+	 * shapes: zero-width characters and <span>/<font>-wrapped blank paragraphs.
+	 * All of these render as an unwanted blank line and extra spacing.
+	 *
+	 * Only the very END of the value is trimmed — the pattern is anchored with
+	 * `\z` — so blank lines the author placed BETWEEN paragraphs are preserved,
+	 * real content is never removed, and paragraphs are never joined. The
+	 * "empty block" test is a whitelist of invisible filler and empty inline
+	 * wrappers, so any real content (text, <img>, <hr>, …) keeps its block.
+	 *
+	 * The `u` (Unicode) modifier is required so the literal U+00A0 and zero-width
+	 * byte sequences are matched as single code points; without it they slip
+	 * through. Applied both when saving answers and when rendering them, so
+	 * existing content heals on display without a re-save.
+	 *
+	 * @since 3.0.3
+	 *
+	 * @param string $html Rich-text HTML.
+	 * @return string HTML with trailing empty blocks removed.
+	 */
+	public static function trim_trailing_empty_html( $html ) {
+		if ( ! is_string( $html ) || '' === $html ) {
+			return '';
+		}
+
+		// One unit of invisible "filler": ASCII/Unicode whitespace (\s matches
+		// Unicode spaces under /u), the non-breaking space (literal U+00A0 or its
+		// entities), the zero-width family (space, joiners, word-joiner, BOM — as
+		// literal chars or entities), and <br>. The pattern uses "~" as its
+		// delimiter because the numeric entities contain "#".
+		$filler = '(?:[\s\x{00A0}\x{200B}\x{200C}\x{200D}\x{2060}\x{FEFF}]'
+			. '|&nbsp;|&#0*160;|&#x0*A0;|&#0*8203;|&#x0*200B;|&#x0*FEFF;|&zwnj;|&zwj;'
+			. '|<br\s*/?>)';
+
+		// A trailing "empty" block: a <p>/<div>/<hN> whose content is nothing but
+		// filler and the empty inline wrappers (<span>/<font>) paste tools add.
+		$inner = '(?:' . $filler . '|<span[^>]*>|</span>|<font[^>]*>|</font>)';
+		$block = '<(p|div|h[1-6])[^>]*>' . $inner . '*</\1>';
+
+		$cleaned = preg_replace(
+			'~(?:' . $filler . '|' . $block . ')+\z~iu',
+			'',
+			$html
+		);
+
+		// preg_replace() returns null on error (e.g. invalid UTF-8); keep the
+		// original value rather than blanking the answer.
+		return null === $cleaned ? $html : $cleaned;
+	}
 }

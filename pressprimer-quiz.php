@@ -175,6 +175,11 @@ function pressprimer_quiz_render_answer_html( $html ) {
 
 	$html = wp_kses_post( $html );
 
+	// Heal answers saved before the trailing-empty-block fix (a stray
+	// "<p>&nbsp;</p>" from pressing Enter in the editor) so they render without
+	// an extra blank line, no re-save required.
+	$html = PressPrimer_Quiz_Helpers::trim_trailing_empty_html( $html );
+
 	return preg_replace_callback(
 		'#<a\b([^>]*?)>#i',
 		static function ( $captures ) {

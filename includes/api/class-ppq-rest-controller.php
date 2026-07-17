@@ -2951,12 +2951,10 @@ class PressPrimer_Quiz_REST_Controller {
 	}
 
 	/**
-	 * Strip trailing empty blocks from rich-text HTML.
+	 * Strip trailing empty blocks from rich-text answer HTML.
 	 *
-	 * TinyMCE can leave a trailing empty paragraph or line break at the end of a
-	 * value (e.g. "<p>Paris</p><p></p>"), which renders as an unwanted blank line
-	 * and extra spacing. Removes any run of trailing empty <p>/<br> blocks and
-	 * whitespace; non-empty content is left untouched.
+	 * Thin wrapper around {@see PressPrimer_Quiz_Helpers::trim_trailing_empty_html()}
+	 * so save-time and render-time cleanup share one implementation.
 	 *
 	 * @since 3.0.3
 	 *
@@ -2964,17 +2962,7 @@ class PressPrimer_Quiz_REST_Controller {
 	 * @return string HTML with trailing empty blocks removed.
 	 */
 	private function trim_trailing_empty_html( $html ) {
-		if ( ! is_string( $html ) || '' === $html ) {
-			return '';
-		}
-
-		$cleaned = preg_replace(
-			'#(?:\s|&nbsp;|<br\s*/?>|<p[^>]*>(?:\s|&nbsp;|<br\s*/?>)*</p>)+\z#i',
-			'',
-			$html
-		);
-
-		return null === $cleaned ? $html : $cleaned;
+		return PressPrimer_Quiz_Helpers::trim_trailing_empty_html( $html );
 	}
 
 	/**

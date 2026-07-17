@@ -1265,9 +1265,9 @@ class PressPrimer_Quiz_REST_Controller {
 				function ( $answer ) {
 					return [
 						'id'         => $answer['id'] ?? '',
-						'text'       => $answer['text'] ?? '',
+						'text'       => $this->trim_trailing_empty_html( $answer['text'] ?? '' ),
 						'is_correct' => $answer['isCorrect'] ?? false,
-						'feedback'   => $answer['feedback'] ?? '',
+						'feedback'   => $this->trim_trailing_empty_html( $answer['feedback'] ?? '' ),
 						'order'      => $answer['order'] ?? 1,
 					];
 				},
@@ -1424,9 +1424,9 @@ class PressPrimer_Quiz_REST_Controller {
 				function ( $answer ) {
 					return [
 						'id'         => $answer['id'] ?? '',
-						'text'       => $answer['text'] ?? '',
+						'text'       => $this->trim_trailing_empty_html( $answer['text'] ?? '' ),
 						'is_correct' => $answer['isCorrect'] ?? false,
-						'feedback'   => $answer['feedback'] ?? '',
+						'feedback'   => $this->trim_trailing_empty_html( $answer['feedback'] ?? '' ),
 						'order'      => $answer['order'] ?? 1,
 					];
 				},
@@ -2948,6 +2948,33 @@ class PressPrimer_Quiz_REST_Controller {
 			$wpdb->query( 'ROLLBACK' );
 			return new WP_Error( 'add_failed', $e->getMessage(), [ 'status' => 500 ] );
 		}
+	}
+
+	/**
+	 * Strip trailing empty blocks from rich-text HTML.
+	 *
+	 * TinyMCE can leave a trailing empty paragraph or line break at the end of a
+	 * value (e.g. "<p>Paris</p><p></p>"), which renders as an unwanted blank line
+	 * and extra spacing. Removes any run of trailing empty <p>/<br> blocks and
+	 * whitespace; non-empty content is left untouched.
+	 *
+	 * @since 3.0.3
+	 *
+	 * @param string $html Rich-text HTML.
+	 * @return string HTML with trailing empty blocks removed.
+	 */
+	private function trim_trailing_empty_html( $html ) {
+		if ( ! is_string( $html ) || '' === $html ) {
+			return '';
+		}
+
+		$cleaned = preg_replace(
+			'#(?:\s|&nbsp;|<br\s*/?>|<p[^>]*>(?:\s|&nbsp;|<br\s*/?>)*</p>)+\z#i',
+			'',
+			$html
+		);
+
+		return null === $cleaned ? $html : $cleaned;
 	}
 
 	/**

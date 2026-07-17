@@ -247,6 +247,8 @@ This plugin also offers optional AI-powered question generation using the Anthro
 * Fixed: Uninstall now also removes the quiz templates database table, which was previously left behind.
 * Fixed: The Appearance settings panel no longer crashes to a blank screen when your theme provides its font through a Customizer typography control (common in many classic themes).
 * Fixed: Question order no longer reverts when you add or remove a question immediately after reordering.
+* Fixed: Answer options no longer keep an extra trailing blank line that caused unwanted spacing.
+* Fixed: Dragging to reorder answer options no longer makes the option below it appear blank.
 
 = 3.0.2 =
 * Fixed: Dragging to reorder questions in a fixed quiz now saves reliably.

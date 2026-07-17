@@ -34,6 +34,7 @@ const AnswerRow = ({
 	questionType,
 	canRemove,
 	dragHandleProps,
+	dragRevision,
 	onUpdate,
 	onRemove,
 }) => {
@@ -110,6 +111,7 @@ const AnswerRow = ({
 
 				{/* Answer Text */}
 				<RichTextEditor
+					key={`answer-text-${dragRevision}`}
 					value={answer.text}
 					onChange={(content) => onUpdate({ text: content })}
 					placeholder={__('Enter answer text...', 'pressprimer-quiz')}
@@ -143,6 +145,7 @@ const AnswerRow = ({
 								{__('Provide explanation about why this answer is correct or incorrect (optional)', 'pressprimer-quiz')}
 							</Text>
 							<RichTextEditor
+								key={`answer-feedback-${dragRevision}`}
 								value={answer.feedback}
 								onChange={(content) => onUpdate({ feedback: content })}
 								placeholder={__('Explain why this answer is correct or incorrect...', 'pressprimer-quiz')}

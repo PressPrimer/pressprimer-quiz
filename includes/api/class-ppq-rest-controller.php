@@ -1265,9 +1265,9 @@ class PressPrimer_Quiz_REST_Controller {
 				function ( $answer ) {
 					return [
 						'id'         => $answer['id'] ?? '',
-						'text'       => $this->trim_trailing_empty_html( $answer['text'] ?? '' ),
+						'text'       => $this->trim_trailing_empty_html( wp_kses_post( $answer['text'] ?? '' ) ),
 						'is_correct' => $answer['isCorrect'] ?? false,
-						'feedback'   => $this->trim_trailing_empty_html( $answer['feedback'] ?? '' ),
+						'feedback'   => $this->trim_trailing_empty_html( wp_kses_post( $answer['feedback'] ?? '' ) ),
 						'order'      => $answer['order'] ?? 1,
 					];
 				},
@@ -1424,9 +1424,9 @@ class PressPrimer_Quiz_REST_Controller {
 				function ( $answer ) {
 					return [
 						'id'         => $answer['id'] ?? '',
-						'text'       => $this->trim_trailing_empty_html( $answer['text'] ?? '' ),
+						'text'       => $this->trim_trailing_empty_html( wp_kses_post( $answer['text'] ?? '' ) ),
 						'is_correct' => $answer['isCorrect'] ?? false,
-						'feedback'   => $this->trim_trailing_empty_html( $answer['feedback'] ?? '' ),
+						'feedback'   => $this->trim_trailing_empty_html( wp_kses_post( $answer['feedback'] ?? '' ) ),
 						'order'      => $answer['order'] ?? 1,
 					];
 				},

@@ -161,6 +161,7 @@ class PressPrimer_Quiz_Shell {
 		foreach ( array_unique( $handles ) as $handle ) {
 			if ( wp_script_is( $handle, 'registered' ) ) {
 				wp_enqueue_script( $handle );
+				wp_set_script_translations( $handle, 'pressprimer-quiz', PRESSPRIMER_QUIZ_PLUGIN_PATH . 'languages' );
 			}
 		}
 

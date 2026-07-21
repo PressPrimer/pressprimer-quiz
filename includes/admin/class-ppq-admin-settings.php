@@ -1661,6 +1661,8 @@ Good luck with your studies!',
 			true
 		);
 
+		wp_set_script_translations( 'ppq-settings-panel', 'pressprimer-quiz', PRESSPRIMER_QUIZ_PLUGIN_PATH . 'languages' );
+
 		wp_enqueue_style(
 			'ppq-settings-panel',
 			PRESSPRIMER_QUIZ_PLUGIN_URL . 'build/style-settings-panel.css',
@@ -2090,8 +2092,9 @@ Good luck with your studies!',
 		if ( function_exists( 'wp_get_global_settings' ) ) {
 			$global_settings = wp_get_global_settings();
 
-			// Check for typography font family
-			if ( ! empty( $global_settings['typography']['fontFamily'] ) ) {
+			// Check for typography font family. Guard is_string() so a structured
+			// value never reaches strpos() (PHP 8 fatal) or the return below.
+			if ( ! empty( $global_settings['typography']['fontFamily'] ) && is_string( $global_settings['typography']['fontFamily'] ) ) {
 				$font_family = $global_settings['typography']['fontFamily'];
 				// Clean up CSS var references like var(--wp--preset--font-family--system-font)
 				if ( strpos( $font_family, 'var(' ) === 0 ) {
@@ -2140,8 +2143,8 @@ Good luck with your studies!',
 		}
 
 		// Try customizer setting (common in classic themes)
-		$body_font = get_theme_mod( 'body_font_family' );
-		if ( ! empty( $body_font ) ) {
+		$body_font = $this->normalize_font_family_value( get_theme_mod( 'body_font_family' ) );
+		if ( '' !== $body_font ) {
 			return [
 				'name'  => __( 'Theme Font', 'pressprimer-quiz' ),
 				'value' => $body_font,
@@ -2151,8 +2154,8 @@ Good luck with your studies!',
 		// Fallback: try common customizer setting names
 		$common_settings = [ 'body_font', 'font_body', 'typography_body_font', 'base_font' ];
 		foreach ( $common_settings as $setting ) {
-			$font = get_theme_mod( $setting );
-			if ( ! empty( $font ) ) {
+			$font = $this->normalize_font_family_value( get_theme_mod( $setting ) );
+			if ( '' !== $font ) {
 				return [
 					'name'  => __( 'Theme Font', 'pressprimer-quiz' ),
 					'value' => $font,
@@ -2161,6 +2164,36 @@ Good luck with your studies!',
 		}
 
 		return null;
+	}
+
+	/**
+	 * Normalize a theme font-family value to a plain string.
+	 *
+	 * Customizer/Kirki typography controls (used by many classic themes) store
+	 * the body font as a structured array, e.g. array( 'font-family' => 'Roboto',
+	 * 'variant' => '400', 'size' => '16px', ... ). Passing that array through to
+	 * the settings UI crashed the React font-family control, so extract just the
+	 * family string. Returns '' when no usable string is available.
+	 *
+	 * @since 3.0.3
+	 *
+	 * @param mixed $value Raw theme_mod / global-settings font value.
+	 * @return string Font-family string, or '' if none.
+	 */
+	private function normalize_font_family_value( $value ) {
+		if ( is_string( $value ) ) {
+			return trim( $value );
+		}
+
+		if ( is_array( $value ) ) {
+			foreach ( array( 'font-family', 'family', 'fontFamily' ) as $key ) {
+				if ( isset( $value[ $key ] ) && is_string( $value[ $key ] ) ) {
+					return trim( $value[ $key ] );
+				}
+			}
+		}
+
+		return '';
 	}
 
 	/**

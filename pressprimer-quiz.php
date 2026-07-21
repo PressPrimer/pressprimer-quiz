@@ -3,7 +3,7 @@
  * Plugin Name:       PressPrimer Quiz
  * Plugin URI:        https://pressprimer.com/quiz
  * Description:       Enterprise-grade quiz and assessment platform for educators with AI question generation, LMS integration, and modern themes.
- * Version:           3.0.2
+ * Version:           3.0.3
  * Requires at least: 6.4
  * Requires PHP:      7.4
  * Author:            PressPrimer
@@ -23,7 +23,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 // Plugin constants
-define( 'PRESSPRIMER_QUIZ_VERSION', '3.0.2' );
+define( 'PRESSPRIMER_QUIZ_VERSION', '3.0.3' );
 define( 'PRESSPRIMER_QUIZ_PLUGIN_FILE', __FILE__ );
 define( 'PRESSPRIMER_QUIZ_PLUGIN_PATH', plugin_dir_path( __FILE__ ) );
 define( 'PRESSPRIMER_QUIZ_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
@@ -174,6 +174,11 @@ function pressprimer_quiz_render_answer_html( $html ) {
 	}
 
 	$html = wp_kses_post( $html );
+
+	// Heal answers saved before the trailing-empty-block fix (a stray
+	// "<p>&nbsp;</p>" from pressing Enter in the editor) so they render without
+	// an extra blank line, no re-save required.
+	$html = PressPrimer_Quiz_Helpers::trim_trailing_empty_html( $html );
 
 	return preg_replace_callback(
 		'#<a\b([^>]*?)>#i',

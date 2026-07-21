@@ -5,9 +5,10 @@
  * Handles complete removal of plugin data when uninstalled.
  * This file is called by WordPress when the user deletes the plugin.
  *
- * IMPORTANT: By default, this script preserves ALL data to prevent accidental data loss.
- * Data is only removed if the user has explicitly enabled "Remove all data on uninstall"
- * in the plugin settings page. This includes:
+ * IMPORTANT: By default, this script preserves ALL data to prevent accidental
+ * data loss. Data is only removed for a site when that site has explicitly
+ * enabled "Remove all data on uninstall" in the plugin settings. On multisite,
+ * each site is evaluated independently (per-site opt-in). Removable data:
  * - Database tables
  * - Options
  * - User meta
@@ -19,76 +20,104 @@
  * @since 1.0.0
  */
 
-// If uninstall not called from WordPress, exit
+// If uninstall not called from WordPress, exit.
 if ( ! defined( 'WP_UNINSTALL_PLUGIN' ) ) {
 	exit;
 }
 
-// Define plugin path constant if not already defined
+// Define plugin path constant if not already defined.
 if ( ! defined( 'PRESSPRIMER_QUIZ_PLUGIN_PATH' ) ) {
 	define( 'PRESSPRIMER_QUIZ_PLUGIN_PATH', plugin_dir_path( __FILE__ ) );
 }
 
 /**
- * Remove plugin data
+ * Remove plugin data.
  *
- * Only runs if user has explicitly opted in to remove all data.
- * By default, all data is preserved to prevent accidental data loss.
+ * On multisite, each site is evaluated independently: a site's data is removed
+ * only if that site has explicitly opted in. Network-global data (user meta and
+ * network options) is shared across all sites and cannot be attributed to one
+ * site, so it is removed once if at least one site opted in. By default all data
+ * is preserved to prevent accidental loss.
+ *
+ * @since 1.0.0
  */
 function pressprimer_quiz_uninstall() {
-	global $wpdb;
+	if ( is_multisite() ) {
+		$site_ids    = get_sites( array( 'fields' => 'ids' ) );
+		$any_removed = false;
 
-	// Get settings - use empty array as default
-	$settings = get_option( 'pressprimer_quiz_settings', [] );
+		foreach ( $site_ids as $site_id ) {
+			switch_to_blog( $site_id );
 
-	// Check if user has EXPLICITLY opted to remove data on uninstall
-	// Default behavior is to KEEP all data for safety
-	// CRITICAL: Only delete data if the setting is EXPLICITLY set to boolean true
-	$remove_data = false;
-	if ( is_array( $settings ) && isset( $settings['remove_data_on_uninstall'] ) ) {
-		$remove_data = ( true === $settings['remove_data_on_uninstall'] || '1' === $settings['remove_data_on_uninstall'] || 1 === $settings['remove_data_on_uninstall'] );
+			if ( pressprimer_quiz_site_wants_removal() ) {
+				pressprimer_quiz_remove_site_data();
+				$any_removed = true;
+			}
+
+			restore_current_blog();
+		}
+
+		// User meta and network options are network-global, so remove them once
+		// if any site opted in.
+		if ( $any_removed ) {
+			pressprimer_quiz_remove_user_meta();
+			pressprimer_quiz_remove_network_options();
+		}
+	} elseif ( pressprimer_quiz_site_wants_removal() ) {
+		pressprimer_quiz_remove_site_data();
+		pressprimer_quiz_remove_user_meta();
+	}
+}
+
+/**
+ * Whether the current site has explicitly opted in to full data removal.
+ *
+ * Must be evaluated in the target site's context (e.g. after switch_to_blog()).
+ * Defaults to false so data is preserved unless explicitly enabled.
+ *
+ * @since 1.0.0
+ *
+ * @return bool True if the current site opted in, false otherwise.
+ */
+function pressprimer_quiz_site_wants_removal() {
+	$settings = get_option( 'pressprimer_quiz_settings', array() );
+
+	if ( ! is_array( $settings ) || ! isset( $settings['remove_data_on_uninstall'] ) ) {
+		return false;
 	}
 
-	if ( ! $remove_data ) {
-		// Keep all data - exit without removing anything
-		return;
-	}
+	$value = $settings['remove_data_on_uninstall'];
 
-	// User has explicitly chosen to remove all data
-	// Proceed with complete removal
+	return ( true === $value || '1' === $value || 1 === $value );
+}
 
-	// Remove all database tables
+/**
+ * Remove all of the current site's plugin data.
+ *
+ * Operates on the current blog only; the caller is responsible for the site
+ * context (switch_to_blog() on multisite).
+ *
+ * @since 1.0.0
+ */
+function pressprimer_quiz_remove_site_data() {
 	pressprimer_quiz_drop_tables();
-
-	// Remove all options
 	pressprimer_quiz_remove_options();
-
-	// Remove all user meta
-	pressprimer_quiz_remove_user_meta();
-
-	// Remove all post meta
 	pressprimer_quiz_remove_post_meta();
-
-	// Remove capabilities and roles
 	pressprimer_quiz_remove_capabilities();
-
-	// Clear any remaining transients
 	pressprimer_quiz_clear_transients();
 }
 
 /**
- * Drop all plugin database tables
+ * Drop the current site's plugin database tables.
  *
- * Handles both single site and multisite installations.
- * For multisite, drops tables for all sites in the network.
+ * Keep this list in sync with includes/database/class-ppq-schema.php.
  *
  * @since 1.0.0
  */
 function pressprimer_quiz_drop_tables() {
 	global $wpdb;
 
-	// Table names without prefix
-	$table_names = [
+	$table_names = array(
 		'ppq_questions',
 		'ppq_question_revisions',
 		'ppq_categories',
@@ -98,148 +127,59 @@ function pressprimer_quiz_drop_tables() {
 		'ppq_quizzes',
 		'ppq_quiz_items',
 		'ppq_quiz_rules',
+		'ppq_quiz_templates',
 		'ppq_groups',
 		'ppq_group_members',
 		'ppq_assignments',
 		'ppq_attempts',
 		'ppq_attempt_items',
 		'ppq_events',
-	];
+	);
 
-	if ( is_multisite() ) {
-		// Get all site IDs in the network
-		$site_ids = get_sites( [ 'fields' => 'ids' ] );
-
-		foreach ( $site_ids as $site_id ) {
-			$prefix = $wpdb->get_blog_prefix( $site_id );
-
-			foreach ( $table_names as $table_name ) {
-				$full_table_name = $prefix . $table_name;
-				$wpdb->query( "DROP TABLE IF EXISTS {$full_table_name}" ); // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-			}
-		}
-	} else {
-		// Single site installation
-		foreach ( $table_names as $table_name ) {
-			$full_table_name = $wpdb->prefix . $table_name;
-			$wpdb->query( "DROP TABLE IF EXISTS {$full_table_name}" ); // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-		}
+	foreach ( $table_names as $table_name ) {
+		$full_table_name = $wpdb->prefix . $table_name;
+		$wpdb->query( "DROP TABLE IF EXISTS {$full_table_name}" ); // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 	}
 }
 
 /**
- * Remove all plugin options
- *
- * Handles both single site and multisite installations.
- * For multisite, removes options from all sites and network options.
+ * Remove the current site's plugin options.
  *
  * @since 1.0.0
  */
 function pressprimer_quiz_remove_options() {
 	global $wpdb;
 
-	if ( is_multisite() ) {
-		// Get all site IDs in the network
-		$site_ids = get_sites( [ 'fields' => 'ids' ] );
-
-		foreach ( $site_ids as $site_id ) {
-			$prefix = $wpdb->get_blog_prefix( $site_id );
-
-			// Delete all options that start with pressprimer_quiz_ for this site
-			$wpdb->query(
-				$wpdb->prepare(
-					"DELETE FROM {$prefix}options WHERE option_name LIKE %s", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-					$wpdb->esc_like( 'pressprimer_quiz_' ) . '%'
-				)
-			);
-		}
-
-		// Delete network-wide site options
-		$wpdb->query(
-			$wpdb->prepare(
-				"DELETE FROM {$wpdb->sitemeta}
-				WHERE meta_key LIKE %s",
-				$wpdb->esc_like( 'pressprimer_quiz_' ) . '%'
-			)
-		);
-	} else {
-		// Single site - delete all options that start with pressprimer_quiz_
-		$wpdb->query(
-			$wpdb->prepare(
-				"DELETE FROM {$wpdb->options}
-				WHERE option_name LIKE %s",
-				$wpdb->esc_like( 'pressprimer_quiz_' ) . '%'
-			)
-		);
-	}
-}
-
-/**
- * Remove all plugin user meta
- *
- * @since 1.0.0
- */
-function pressprimer_quiz_remove_user_meta() {
-	global $wpdb;
-
-	// Delete all user meta that starts with pressprimer_quiz_
 	$wpdb->query(
 		$wpdb->prepare(
-			"DELETE FROM {$wpdb->usermeta}
-			WHERE meta_key LIKE %s",
+			"DELETE FROM {$wpdb->options} WHERE option_name LIKE %s",
 			$wpdb->esc_like( 'pressprimer_quiz_' ) . '%'
 		)
 	);
 }
 
 /**
- * Remove all plugin post meta
+ * Remove the current site's plugin post meta.
  *
  * @since 1.0.0
  */
 function pressprimer_quiz_remove_post_meta() {
 	global $wpdb;
 
-	// Delete all post meta that starts with pressprimer_quiz_
 	$wpdb->query(
 		$wpdb->prepare(
-			"DELETE FROM {$wpdb->postmeta}
-			WHERE meta_key LIKE %s",
+			"DELETE FROM {$wpdb->postmeta} WHERE meta_key LIKE %s",
 			$wpdb->esc_like( 'pressprimer_quiz_' ) . '%'
 		)
 	);
 }
 
 /**
- * Remove capabilities from all roles
- *
- * Handles both single site and multisite installations.
- * For multisite, removes capabilities from all sites.
+ * Remove plugin capabilities and roles from the current site.
  *
  * @since 1.0.0
  */
 function pressprimer_quiz_remove_capabilities() {
-	if ( is_multisite() ) {
-		// Get all site IDs in the network
-		$site_ids = get_sites( [ 'fields' => 'ids' ] );
-
-		foreach ( $site_ids as $site_id ) {
-			switch_to_blog( $site_id );
-			pressprimer_quiz_remove_site_capabilities();
-			restore_current_blog();
-		}
-	} else {
-		pressprimer_quiz_remove_site_capabilities();
-	}
-}
-
-/**
- * Remove capabilities from roles for a single site
- *
- * @since 1.0.0
- */
-function pressprimer_quiz_remove_site_capabilities() {
-	// Remove capabilities from administrator
 	$admin = get_role( 'administrator' );
 	if ( $admin ) {
 		$admin->remove_cap( 'pressprimer_quiz_manage_all' );
@@ -250,48 +190,74 @@ function pressprimer_quiz_remove_site_capabilities() {
 		$admin->remove_cap( 'pressprimer_quiz_manage_settings' );
 	}
 
-	// Remove capabilities from subscriber
 	$subscriber = get_role( 'subscriber' );
 	if ( $subscriber ) {
 		$subscriber->remove_cap( 'pressprimer_quiz_take_quiz' );
 	}
 
-	// Remove custom teacher role
 	remove_role( 'pressprimer_quiz_teacher' );
 }
 
 /**
- * Clear all plugin transients
+ * Clear the current site's plugin transients.
  *
  * @since 1.0.0
  */
 function pressprimer_quiz_clear_transients() {
 	global $wpdb;
 
-	// Delete all transients that start with pressprimer_quiz_
 	$wpdb->query(
 		$wpdb->prepare(
-			"DELETE FROM {$wpdb->options}
-			WHERE option_name LIKE %s
-			OR option_name LIKE %s",
+			"DELETE FROM {$wpdb->options} WHERE option_name LIKE %s OR option_name LIKE %s",
 			$wpdb->esc_like( '_transient_pressprimer_quiz_' ) . '%',
 			$wpdb->esc_like( '_transient_timeout_pressprimer_quiz_' ) . '%'
 		)
 	);
-
-	// If multisite, delete site transients
-	if ( is_multisite() ) {
-		$wpdb->query(
-			$wpdb->prepare(
-				"DELETE FROM {$wpdb->sitemeta}
-				WHERE meta_key LIKE %s
-				OR meta_key LIKE %s",
-				$wpdb->esc_like( '_site_transient_pressprimer_quiz_' ) . '%',
-				$wpdb->esc_like( '_site_transient_timeout_pressprimer_quiz_' ) . '%'
-			)
-		);
-	}
 }
 
-// Run the uninstall
+/**
+ * Remove network-global plugin user meta.
+ *
+ * User meta is shared across all sites in a network, so this runs once.
+ *
+ * @since 1.0.0
+ */
+function pressprimer_quiz_remove_user_meta() {
+	global $wpdb;
+
+	$wpdb->query(
+		$wpdb->prepare(
+			"DELETE FROM {$wpdb->usermeta} WHERE meta_key LIKE %s",
+			$wpdb->esc_like( 'pressprimer_quiz_' ) . '%'
+		)
+	);
+}
+
+/**
+ * Remove network-wide plugin options and site transients (multisite).
+ *
+ * @since 1.0.0
+ */
+function pressprimer_quiz_remove_network_options() {
+	global $wpdb;
+
+	// Network-wide site options.
+	$wpdb->query(
+		$wpdb->prepare(
+			"DELETE FROM {$wpdb->sitemeta} WHERE meta_key LIKE %s",
+			$wpdb->esc_like( 'pressprimer_quiz_' ) . '%'
+		)
+	);
+
+	// Network site transients.
+	$wpdb->query(
+		$wpdb->prepare(
+			"DELETE FROM {$wpdb->sitemeta} WHERE meta_key LIKE %s OR meta_key LIKE %s",
+			$wpdb->esc_like( '_site_transient_pressprimer_quiz_' ) . '%',
+			$wpdb->esc_like( '_site_transient_timeout_pressprimer_quiz_' ) . '%'
+		)
+	);
+}
+
+// Run the uninstall.
 pressprimer_quiz_uninstall();

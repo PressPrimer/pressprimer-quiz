@@ -329,6 +329,8 @@ class PressPrimer_Quiz_Admin {
 			true
 		);
 
+		wp_set_script_translations( 'ppq-dashboard', 'pressprimer-quiz', PRESSPRIMER_QUIZ_PLUGIN_PATH . 'languages' );
+
 		// Enqueue the dashboard styles
 		wp_enqueue_style(
 			'ppq-dashboard',
@@ -422,6 +424,8 @@ class PressPrimer_Quiz_Admin {
 			$asset['version'],
 			true
 		);
+
+		wp_set_script_translations( 'ppq-reports', 'pressprimer-quiz', PRESSPRIMER_QUIZ_PLUGIN_PATH . 'languages' );
 
 		// Enqueue the reports styles
 		wp_enqueue_style(
@@ -522,6 +526,8 @@ class PressPrimer_Quiz_Admin {
 			$asset['version'],
 			true
 		);
+
+		wp_set_script_translations( 'ppq-onboarding', 'pressprimer-quiz', PRESSPRIMER_QUIZ_PLUGIN_PATH . 'languages' );
 
 		// Enqueue the onboarding styles
 		wp_enqueue_style(

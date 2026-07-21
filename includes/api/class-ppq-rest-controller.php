@@ -1265,9 +1265,9 @@ class PressPrimer_Quiz_REST_Controller {
 				function ( $answer ) {
 					return [
 						'id'         => $answer['id'] ?? '',
-						'text'       => $answer['text'] ?? '',
+						'text'       => $this->trim_trailing_empty_html( wp_kses_post( $answer['text'] ?? '' ) ),
 						'is_correct' => $answer['isCorrect'] ?? false,
-						'feedback'   => $answer['feedback'] ?? '',
+						'feedback'   => $this->trim_trailing_empty_html( wp_kses_post( $answer['feedback'] ?? '' ) ),
 						'order'      => $answer['order'] ?? 1,
 					];
 				},
@@ -1424,9 +1424,9 @@ class PressPrimer_Quiz_REST_Controller {
 				function ( $answer ) {
 					return [
 						'id'         => $answer['id'] ?? '',
-						'text'       => $answer['text'] ?? '',
+						'text'       => $this->trim_trailing_empty_html( wp_kses_post( $answer['text'] ?? '' ) ),
 						'is_correct' => $answer['isCorrect'] ?? false,
-						'feedback'   => $answer['feedback'] ?? '',
+						'feedback'   => $this->trim_trailing_empty_html( wp_kses_post( $answer['feedback'] ?? '' ) ),
 						'order'      => $answer['order'] ?? 1,
 					];
 				},
@@ -2948,6 +2948,21 @@ class PressPrimer_Quiz_REST_Controller {
 			$wpdb->query( 'ROLLBACK' );
 			return new WP_Error( 'add_failed', $e->getMessage(), [ 'status' => 500 ] );
 		}
+	}
+
+	/**
+	 * Strip trailing empty blocks from rich-text answer HTML.
+	 *
+	 * Thin wrapper around {@see PressPrimer_Quiz_Helpers::trim_trailing_empty_html()}
+	 * so save-time and render-time cleanup share one implementation.
+	 *
+	 * @since 3.0.3
+	 *
+	 * @param string $html Rich-text HTML.
+	 * @return string HTML with trailing empty blocks removed.
+	 */
+	private function trim_trailing_empty_html( $html ) {
+		return PressPrimer_Quiz_Helpers::trim_trailing_empty_html( $html );
 	}
 
 	/**

@@ -3,7 +3,7 @@ Contributors: pressprimer
 Tags: quiz, learndash, assessment, lms, elearning
 Requires at least: 6.4
 Tested up to: 7.0
-Stable tag: 3.0.2
+Stable tag: 3.0.3
 Requires PHP: 7.4
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -240,6 +240,16 @@ This plugin also offers optional AI-powered question generation using the Anthro
 5. Admin reporting with analytics
 
 == Changelog ==
+
+= 3.0.3 =
+* Fixed: Admin screens now display in your site's language when a translation is available.
+* Fixed: On WordPress multisite, the "Remove all data on uninstall" option now applies per-site based on each site's own setting.
+* Fixed: Uninstall now also removes the quiz templates database table.
+* Fixed: The Appearance settings panel no longer has issues when your theme provides its font through a Customizer typography control.
+* Fixed: Question order no longer reverts when you add or remove a question immediately after reordering.
+* Fixed: Answer options no longer show an extra trailing blank line and unwanted spacing.
+* Fixed: Dragging to reorder answer options no longer makes the option below it appear blank.
+* Improved: Added extra sanitization of answer text and feedback when saving a question.
 
 = 3.0.2 =
 * Fixed: Dragging to reorder questions in a fixed quiz now saves reliably.

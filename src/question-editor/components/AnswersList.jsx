@@ -5,7 +5,7 @@
  * @since 1.0.0
  */
 
-import { useEffect } from '@wordpress/element';
+import { useState, useEffect } from '@wordpress/element';
 import { __ } from '@wordpress/i18n';
 import { Card, Button, Typography, Space, Tooltip, Alert } from 'antd';
 import { PlusOutlined, QuestionCircleOutlined } from '@ant-design/icons';
@@ -17,6 +17,11 @@ const { Title, Text } = Typography;
 const AnswersList = ({ answers, questionType, questionId, onChange }) => {
 	const maxAnswers = questionType === 'tf' ? 2 : 8;
 	const minAnswers = 2;
+
+	// Bumped after each reorder to force the answer editors to re-initialize.
+	// TinyMCE loses its displayed content when react-beautiful-dnd moves its DOM,
+	// so remounting the editors (via a key) restores them from state after a drag.
+	const [dragRevision, setDragRevision] = useState(0);
 
 	/**
 	 * Notify addons when answers change.
@@ -60,6 +65,8 @@ const AnswersList = ({ answers, questionType, questionId, onChange }) => {
 		}));
 
 		onChange(reordered);
+		// Remount the answer editors so they re-sync from state after the DOM move.
+		setDragRevision((r) => r + 1);
 	};
 
 	/**
@@ -178,6 +185,7 @@ const AnswersList = ({ answers, questionType, questionId, onChange }) => {
 														questionType={questionType}
 														canRemove={answers.length > minAnswers}
 														dragHandleProps={provided.dragHandleProps}
+													dragRevision={dragRevision}
 														onUpdate={(updates) => handleUpdateAnswer(answer.id, updates)}
 														onRemove={() => handleRemoveAnswer(answer.id)}
 													/>

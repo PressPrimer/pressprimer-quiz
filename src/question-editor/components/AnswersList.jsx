@@ -9,7 +9,7 @@ import { useState, useEffect } from '@wordpress/element';
 import { __ } from '@wordpress/i18n';
 import { Card, Button, Typography, Space, Tooltip, Alert } from 'antd';
 import { PlusOutlined, QuestionCircleOutlined } from '@ant-design/icons';
-import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd';
+import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
 import AnswerRow from './AnswerRow';
 
 const { Title, Text } = Typography;
@@ -19,7 +19,7 @@ const AnswersList = ({ answers, questionType, questionId, onChange }) => {
 	const minAnswers = 2;
 
 	// Bumped after each reorder to force the answer editors to re-initialize.
-	// TinyMCE loses its displayed content when react-beautiful-dnd moves its DOM,
+	// TinyMCE loses its displayed content when @hello-pangea/dnd moves its DOM,
 	// so remounting the editors (via a key) restores them from state after a drag.
 	const [dragRevision, setDragRevision] = useState(0);
 

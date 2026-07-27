@@ -177,8 +177,9 @@ class PressPrimer_Quiz_Activator {
 		$existing_settings = get_option( 'pressprimer_quiz_settings' );
 
 		if ( false === $existing_settings ) {
-			// Fresh install - set all defaults
-			add_option( 'pressprimer_quiz_settings', $default_settings );
+			// Fresh install - set all defaults. Autoloaded: read on every
+			// request the plugin handles.
+			add_option( 'pressprimer_quiz_settings', $default_settings, '', true );
 		} else {
 			// Existing install - ALWAYS reset remove_data_on_uninstall to false on activation
 			// This is a critical safety measure to prevent accidental data loss
@@ -187,8 +188,9 @@ class PressPrimer_Quiz_Activator {
 		}
 
 		// Site-wide default multiple-answer scoring mode (introduced in 2.3.0).
-		// add_option() does not overwrite an existing value, so this is safe on upgrade.
-		add_option( 'pressprimer_quiz_default_ma_scoring', 'right_minus_wrong' );
+		// add_option() does not overwrite an existing value, so this is safe on
+		// upgrade. Not autoloaded: only read when scoring or rendering a quiz.
+		add_option( 'pressprimer_quiz_default_ma_scoring', 'right_minus_wrong', '', false );
 	}
 
 	/**

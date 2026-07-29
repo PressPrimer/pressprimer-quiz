@@ -57,6 +57,7 @@ const DISPLAY_ATTRIBUTE_KEYS = [
 	'showCategoryBreakdown',
 	'showQuestionReview',
 	'showRetakeButton',
+	'showEmailButton',
 	'showScoringExplanations',
 ];
 
@@ -80,6 +81,7 @@ function Edit( props ) {
 		showCategoryBreakdown,
 		showQuestionReview,
 		showRetakeButton,
+		showEmailButton,
 		showScoringExplanations,
 	} = attributes;
 	const blockProps = useBlockProps();
@@ -339,6 +341,12 @@ function Edit( props ) {
 						label={ __( 'Show Retake Button', 'pressprimer-quiz' ) }
 						checked={ showRetakeButton }
 						onChange={ ( value ) => setAttributes( { showRetakeButton: value } ) }
+					/>
+					<ToggleControl
+						__nextHasNoMarginBottom
+						label={ __( 'Show Email Results Button', 'pressprimer-quiz' ) }
+						checked={ showEmailButton }
+						onChange={ ( value ) => setAttributes( { showEmailButton: value } ) }
 					/>
 					<ToggleControl
 						__nextHasNoMarginBottom

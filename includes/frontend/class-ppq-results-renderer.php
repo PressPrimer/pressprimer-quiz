@@ -48,6 +48,7 @@ class PressPrimer_Quiz_Results_Renderer {
 			'show_category_breakdown'   => true,
 			'show_question_review'      => true,
 			'show_retake_button'        => true,
+			'show_email_button'         => true,
 			'show_scoring_explanations' => true,
 		];
 	}
@@ -894,6 +895,10 @@ class PressPrimer_Quiz_Results_Renderer {
 	 * @param PressPrimer_Quiz_Attempt $attempt Attempt object.
 	 */
 	private function render_email_button( $attempt ) {
+		if ( empty( $this->display['show_email_button'] ) ) {
+			return;
+		}
+
 		// Get email address
 		$email = '';
 		if ( $attempt->user_id ) {

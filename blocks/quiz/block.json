@@ -76,6 +76,10 @@
 			"type": "boolean",
 			"default": true
 		},
+		"showEmailButton": {
+			"type": "boolean",
+			"default": true
+		},
 		"showScoringExplanations": {
 			"type": "boolean",
 			"default": true

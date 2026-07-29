@@ -276,6 +276,7 @@ class PressPrimer_Quiz_Blocks {
 			$shortcode_atts['show_category_breakdown']   = isset( $attributes['showCategoryBreakdown'] ) ? ( $attributes['showCategoryBreakdown'] ? 'true' : 'false' ) : 'true';
 			$shortcode_atts['show_question_review']      = isset( $attributes['showQuestionReview'] ) ? ( $attributes['showQuestionReview'] ? 'true' : 'false' ) : 'true';
 			$shortcode_atts['show_retake_button']        = isset( $attributes['showRetakeButton'] ) ? ( $attributes['showRetakeButton'] ? 'true' : 'false' ) : 'true';
+			$shortcode_atts['show_email_button']         = isset( $attributes['showEmailButton'] ) ? ( $attributes['showEmailButton'] ? 'true' : 'false' ) : 'true';
 			$shortcode_atts['show_scoring_explanations'] = isset( $attributes['showScoringExplanations'] ) ? ( $attributes['showScoringExplanations'] ? 'true' : 'false' ) : 'true';
 		}
 

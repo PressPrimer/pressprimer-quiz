@@ -658,9 +658,9 @@ const QuestionsPanel = ({ quizId, generationMode }) => {
 									handleFilterChange({ type: value || '' });
 								}}
 								options={[
-									{ value: 'mcq', label: __('Multiple Choice', 'pressprimer-quiz') },
+									{ value: 'mc', label: __('Multiple Choice', 'pressprimer-quiz') },
+									{ value: 'ma', label: __('Multiple Answer', 'pressprimer-quiz') },
 									{ value: 'tf', label: __('True/False', 'pressprimer-quiz') },
-									{ value: 'essay', label: __('Essay', 'pressprimer-quiz') },
 								]}
 							/>
 						</Col>

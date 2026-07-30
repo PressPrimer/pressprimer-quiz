@@ -2465,6 +2465,7 @@ class PressPrimer_Quiz_REST_Controller {
 			'show_category_breakdown',
 			'show_question_review',
 			'show_retake_button',
+			'show_email_button',
 			'show_scoring_explanations',
 		);
 

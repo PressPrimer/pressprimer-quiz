@@ -50,24 +50,32 @@ These rules govern how AI assistants work on this codebase.
 
 **Run these checks on ALL code changes before requesting commit approval:**
 
+All PHP commands use Local's bundled PHP. Resolve the newest available binary
+first — Local's bundled version changes with app updates, so never hardcode a
+versioned path:
+
+```bash
+PHP=$(ls -d ~/Library/Application\ Support/Local/lightning-services/php-8.*/bin/darwin-arm64/bin/php /Applications/Local.app/Contents/Resources/extraResources/lightning-services/php-8.*/bin/darwin-arm64/bin/php 2>/dev/null | sort -V | tail -n1)
+```
+
 1. **PHP Syntax Check** - On any new or modified PHP files:
    ```bash
-   "/Applications/Local.app/Contents/Resources/extraResources/lightning-services/php-8.2.27+1/bin/darwin-arm64/bin/php" -l path/to/file.php
+   "$PHP" -l path/to/file.php
    ```
 
 2. **PHPCS (WordPress Coding Standards)** - On modified PHP files:
    ```bash
-   "/Applications/Local.app/Contents/Resources/extraResources/lightning-services/php-8.2.27+1/bin/darwin-arm64/bin/php" ./vendor/bin/phpcs --standard=phpcs.xml.dist --report=full path/to/file.php
+   "$PHP" ./vendor/bin/phpcs --standard=phpcs.xml.dist --report=full path/to/file.php
    ```
 
 3. **Security-Specific Checks** - On files handling user input, database queries, or output:
    ```bash
-   "/Applications/Local.app/Contents/Resources/extraResources/lightning-services/php-8.2.27+1/bin/darwin-arm64/bin/php" ./vendor/bin/phpcs --standard=WordPress-Extra --sniffs=WordPress.Security.EscapeOutput,WordPress.Security.ValidatedSanitizedInput,WordPress.Security.NonceVerification,WordPress.DB.PreparedSQL --report=full path/to/file.php
+   "$PHP" ./vendor/bin/phpcs --standard=WordPress-Extra --sniffs=WordPress.Security.EscapeOutput,WordPress.Security.ValidatedSanitizedInput,WordPress.Security.NonceVerification,WordPress.DB.PreparedSQL --report=full path/to/file.php
    ```
 
 4. **PHP Compatibility (7.4 - 8.4)** - On new PHP files:
    ```bash
-   "/Applications/Local.app/Contents/Resources/extraResources/lightning-services/php-8.2.27+1/bin/darwin-arm64/bin/php" ./vendor/bin/phpcs --standard=PHPCompatibilityWP --runtime-set testVersion 7.4-8.4 --extensions=php path/to/file.php
+   "$PHP" ./vendor/bin/phpcs --standard=PHPCompatibilityWP --runtime-set testVersion 7.4-8.4 --extensions=php path/to/file.php
    ```
 
 5. **JavaScript Lint** - If JavaScript was modified:
@@ -1180,17 +1188,20 @@ pressprimer-quiz/
 ## Running Code Quality Checks
 
 ```bash
+# Resolve the newest Local PHP binary (never hardcode the version)
+PHP=$(ls -d ~/Library/Application\ Support/Local/lightning-services/php-8.*/bin/darwin-arm64/bin/php /Applications/Local.app/Contents/Resources/extraResources/lightning-services/php-8.*/bin/darwin-arm64/bin/php 2>/dev/null | sort -V | tail -n1)
+
 # PHP Syntax check
-"/Applications/Local.app/Contents/Resources/extraResources/lightning-services/php-8.2.27+1/bin/darwin-arm64/bin/php" -l path/to/file.php
+"$PHP" -l path/to/file.php
 
 # PHPCS (WordPress coding standards)
-"/Applications/Local.app/Contents/Resources/extraResources/lightning-services/php-8.2.27+1/bin/darwin-arm64/bin/php" ./vendor/bin/phpcs --standard=phpcs.xml.dist --report=full path/to/file.php
+"$PHP" ./vendor/bin/phpcs --standard=phpcs.xml.dist --report=full path/to/file.php
 
 # Security-specific checks
-"/Applications/Local.app/Contents/Resources/extraResources/lightning-services/php-8.2.27+1/bin/darwin-arm64/bin/php" ./vendor/bin/phpcs --standard=WordPress-Extra --sniffs=WordPress.Security.EscapeOutput,WordPress.Security.ValidatedSanitizedInput,WordPress.Security.NonceVerification,WordPress.DB.PreparedSQL --report=full path/to/file.php
+"$PHP" ./vendor/bin/phpcs --standard=WordPress-Extra --sniffs=WordPress.Security.EscapeOutput,WordPress.Security.ValidatedSanitizedInput,WordPress.Security.NonceVerification,WordPress.DB.PreparedSQL --report=full path/to/file.php
 
 # PHP Compatibility (7.4 - 8.4)
-"/Applications/Local.app/Contents/Resources/extraResources/lightning-services/php-8.2.27+1/bin/darwin-arm64/bin/php" ./vendor/bin/phpcs --standard=PHPCompatibilityWP --runtime-set testVersion 7.4-8.4 --extensions=php path/to/file.php
+"$PHP" ./vendor/bin/phpcs --standard=PHPCompatibilityWP --runtime-set testVersion 7.4-8.4 --extensions=php path/to/file.php
 ```
 
 ---

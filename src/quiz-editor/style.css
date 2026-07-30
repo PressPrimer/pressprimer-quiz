@@ -50,13 +50,8 @@ tbody tr:hover {
 	background-color: #fafafa;
 }
 
-/* Dragging state styles */
-tbody tr[data-rbd-dragging-over-with] {
-	background-color: #f0f7ff !important;
-}
-
 /* Style for the placeholder that shows where item will drop */
-[data-rbd-placeholder-context-id] {
+[data-rfd-placeholder-context-id] {
 	background-color: #e6f7ff;
 	border: 2px dashed #1890ff;
 	border-radius: 4px;

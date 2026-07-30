@@ -33,7 +33,7 @@ import {
 	HolderOutlined,
 	SearchOutlined,
 } from '@ant-design/icons';
-import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd';
+import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
 
 const { Text } = Typography;
 const { Search } = Input;
@@ -226,19 +226,33 @@ const QuestionsPanel = ({ quizId, generationMode }) => {
 
 	/**
 	 * Handle search
+	 *
+	 * @param {string} value Submitted search text.
 	 */
 	const handleSearch = (value) => {
 		setSearchQuery(value);
-		setPagination({ ...pagination, current: 1 });
-		loadAvailableQuestions(1);
+		handleFilterChange({ search: value });
 	};
 
 	/**
 	 * Handle filter change
+	 *
+	 * State setters are async, so the value that just changed must be passed
+	 * explicitly — reading it back from state here would fetch with the
+	 * previous filter values.
+	 *
+	 * @param {Object} changed The filter value(s) that just changed.
 	 */
-	const handleFilterChange = () => {
+	const handleFilterChange = (changed = {}) => {
 		setPagination({ ...pagination, current: 1 });
-		loadAvailableQuestions(1);
+		loadAvailableQuestionsWithPageSize(1, pagination.pageSize, {
+			search: searchQuery,
+			type: filterType,
+			difficulty: filterDifficulty,
+			category: filterCategory,
+			bank: filterBank,
+			...changed,
+		});
 	};
 
 	/**
@@ -641,12 +655,12 @@ const QuestionsPanel = ({ quizId, generationMode }) => {
 								value={filterType || undefined}
 								onChange={(value) => {
 									setFilterType(value || '');
-									handleFilterChange();
+									handleFilterChange({ type: value || '' });
 								}}
 								options={[
-									{ value: 'mcq', label: __('Multiple Choice', 'pressprimer-quiz') },
+									{ value: 'mc', label: __('Multiple Choice', 'pressprimer-quiz') },
+									{ value: 'ma', label: __('Multiple Answer', 'pressprimer-quiz') },
 									{ value: 'tf', label: __('True/False', 'pressprimer-quiz') },
-									{ value: 'essay', label: __('Essay', 'pressprimer-quiz') },
 								]}
 							/>
 						</Col>
@@ -658,7 +672,7 @@ const QuestionsPanel = ({ quizId, generationMode }) => {
 								value={filterDifficulty || undefined}
 								onChange={(value) => {
 									setFilterDifficulty(value || '');
-									handleFilterChange();
+									handleFilterChange({ difficulty: value || '' });
 								}}
 								options={[
 									{ value: 'beginner', label: __('Beginner', 'pressprimer-quiz') },
@@ -676,7 +690,7 @@ const QuestionsPanel = ({ quizId, generationMode }) => {
 								value={filterCategory || undefined}
 								onChange={(value) => {
 									setFilterCategory(value || '');
-									handleFilterChange();
+									handleFilterChange({ category: value || '' });
 								}}
 								options={categories.map(cat => ({
 									value: cat.id.toString(),
@@ -692,7 +706,7 @@ const QuestionsPanel = ({ quizId, generationMode }) => {
 								value={filterBank || undefined}
 								onChange={(value) => {
 									setFilterBank(value || '');
-									handleFilterChange();
+									handleFilterChange({ bank: value || '' });
 								}}
 								options={banks.map(bank => ({
 									value: bank.id.toString(),

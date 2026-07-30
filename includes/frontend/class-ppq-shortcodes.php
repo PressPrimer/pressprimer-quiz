@@ -109,6 +109,7 @@ class PressPrimer_Quiz_Shortcodes {
 			'show_category_breakdown'   => 'true',
 			'show_question_review'      => 'true',
 			'show_retake_button'        => 'true',
+			'show_email_button'         => 'true',
 			'show_scoring_explanations' => 'true',
 		];
 

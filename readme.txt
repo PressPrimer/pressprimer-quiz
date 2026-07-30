@@ -3,7 +3,7 @@ Contributors: pressprimer
 Tags: quiz, learndash, assessment, lms, elearning
 Requires at least: 6.4
 Tested up to: 7.0
-Stable tag: 3.0.3
+Stable tag: 3.0.4
 Requires PHP: 7.4
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -240,6 +240,14 @@ This plugin also offers optional AI-powered question generation using the Anthro
 5. Admin reporting with analytics
 
 == Changelog ==
+
+= 3.0.4 =
+* Fixed: Filters in the quiz editor's "Add Questions" dialog now apply on the first selection.
+* Fixed: The Type filter in the "Add Questions" dialog now correctly matches questions.
+* Fixed: Per-block display overrides on the Quiz block (with "Use quiz default settings" turned off) now save correctly in the editor. Previously the editor silently discarded the override state, so the quiz's own display settings always applied.
+* Improved: The "Email Results" button on the quiz results page can now be hidden — per quiz in the quiz editor, with a toggle on the Quiz block, or via the show_email_button shortcode attribute.
+* Improved: Replaced the drag-and-drop library behind the question, quiz, and rules editors with an actively maintained successor, and updated bundled libraries including the KaTeX math renderer.
+* Improved: Plugin settings now declare explicit database autoload behavior.
 
 = 3.0.3 =
 * Fixed: Admin screens now display in your site's language when a translation is available.

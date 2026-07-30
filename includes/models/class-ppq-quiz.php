@@ -248,7 +248,7 @@ class PressPrimer_Quiz_Quiz extends PressPrimer_Quiz_Model {
 	/**
 	 * Quiz-level display defaults
 	 *
-	 * Sparse JSON object of overrides for the 15 Start Page / Results Page
+	 * Sparse JSON object of overrides for the Start Page / Results Page
 	 * display toggles. NULL or empty means "use hard-coded defaults
 	 * everywhere." Keys must match the snake_case shortcode attribute names.
 	 *
@@ -367,7 +367,7 @@ class PressPrimer_Quiz_Quiz extends PressPrimer_Quiz_Model {
 	private $_rules = null;
 
 	/**
-	 * Hard-coded defaults for the 15 quiz display options
+	 * Hard-coded defaults for the quiz display options
 	 *
 	 * Authoritative key list. All values default to true (existing behavior:
 	 * every section visible) and are overridden by quiz-level JSON or by an
@@ -395,6 +395,7 @@ class PressPrimer_Quiz_Quiz extends PressPrimer_Quiz_Model {
 		'show_category_breakdown'   => true,
 		'show_question_review'      => true,
 		'show_retake_button'        => true,
+		'show_email_button'         => true,
 		'show_scoring_explanations' => true,
 	);
 
@@ -1543,14 +1544,14 @@ class PressPrimer_Quiz_Quiz extends PressPrimer_Quiz_Model {
 	 * Three-tier precedence:
 	 *   1. Instance override (block/shortcode attribute that was explicitly set)
 	 *   2. Quiz default (key present in display_settings_json)
-	 *   3. Hard-coded default (true for all 15 keys)
+	 *   3. Hard-coded default (true for all keys)
 	 *
 	 * Returns true for any unknown key, which keeps the renderer safe if a
 	 * caller misspells a key during development.
 	 *
 	 * @since 2.3.0
 	 *
-	 * @param string $key                One of the 15 display option keys.
+	 * @param string $key                One of the display option keys.
 	 * @param array  $instance_overrides Optional. Block/shortcode attribute values, snake_case keys.
 	 * @return bool Resolved boolean value.
 	 */
@@ -1572,7 +1573,7 @@ class PressPrimer_Quiz_Quiz extends PressPrimer_Quiz_Model {
 	}
 
 	/**
-	 * Resolve all 15 display options for this quiz
+	 * Resolve all display options for this quiz
 	 *
 	 * Convenience wrapper around resolve_display_option() that returns the
 	 * full set so the renderer can iterate without 14 individual calls.
@@ -1580,7 +1581,7 @@ class PressPrimer_Quiz_Quiz extends PressPrimer_Quiz_Model {
 	 * @since 2.3.0
 	 *
 	 * @param array $instance_overrides Optional. Block/shortcode attribute values.
-	 * @return array<string, bool> Map of all 15 display keys → resolved boolean values.
+	 * @return array<string, bool> Map of all display keys → resolved boolean values.
 	 */
 	public function resolve_all_display_options( array $instance_overrides = array() ) {
 		$resolved = array();

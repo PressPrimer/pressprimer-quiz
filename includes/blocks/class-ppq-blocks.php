@@ -154,6 +154,12 @@ class PressPrimer_Quiz_Blocks {
 						'type'    => 'number',
 						'default' => 0,
 					],
+					// When true, the block inherits the quiz's display
+					// defaults and the show* attributes below are ignored.
+					'useQuizDefaults'         => [
+						'type'    => 'boolean',
+						'default' => true,
+					],
 					// Start page display options.
 					'showDescription'         => [
 						'type'    => 'boolean',
@@ -209,6 +215,10 @@ class PressPrimer_Quiz_Blocks {
 						'default' => true,
 					],
 					'showRetakeButton'        => [
+						'type'    => 'boolean',
+						'default' => true,
+					],
+					'showEmailButton'         => [
 						'type'    => 'boolean',
 						'default' => true,
 					],

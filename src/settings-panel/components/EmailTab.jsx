@@ -467,6 +467,10 @@ The {site_name} Team`;
 							token="{results_url}"
 							description={__('Button that links to full results', 'pressprimer-quiz')}
 						/>
+						<TokenItem
+							token="{answers_summary}"
+							description={__("Per-question recap of the student's answers; honors the quiz's review display settings", 'pressprimer-quiz')}
+						/>
 					</div>
 				</div>
 

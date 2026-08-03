@@ -241,6 +241,9 @@ This plugin also offers optional AI-powered question generation using the Anthro
 
 == Changelog ==
 
+= 3.1.0 =
+* Added: New {answers_summary} email token that adds a per-question recap — the question, the student's selected answer(s), and whether each was correct — to results emails. It respects each quiz's review display settings, so quizzes that hide answers on-site never include the recap.
+
 = 3.0.4 =
 * Fixed: Filters in the quiz editor's "Add Questions" dialog now apply on the first selection.
 * Fixed: The Type filter in the "Add Questions" dialog now correctly matches questions.

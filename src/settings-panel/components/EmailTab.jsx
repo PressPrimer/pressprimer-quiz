@@ -404,7 +404,7 @@ The {site_name} Team`;
 						label={__('Subject Line', 'pressprimer-quiz')}
 					>
 						<Input
-							value={settings.email_results_subject ?? defaultResultsSubject}
+							value={settings.email_results_subject || defaultResultsSubject}
 							onChange={(e) => updateSetting('email_results_subject', e.target.value)}
 							style={{ maxWidth: 500 }}
 						/>
@@ -416,7 +416,7 @@ The {site_name} Team`;
 						label={__('Email Body', 'pressprimer-quiz')}
 					>
 						<TextArea
-							value={settings.email_results_body ?? defaultResultsBody}
+							value={settings.email_results_body || defaultResultsBody}
 							onChange={(e) => updateSetting('email_results_body', e.target.value)}
 							rows={12}
 							style={{ fontFamily: 'monospace' }}
@@ -520,7 +520,7 @@ The {site_name} Team`;
 							label={__('Subject Line', 'pressprimer-quiz')}
 						>
 							<Input
-								value={settings.educator_reminder_email_subject ?? defaultReminderSubject}
+								value={settings.educator_reminder_email_subject || defaultReminderSubject}
 								onChange={(e) => updateSetting('educator_reminder_email_subject', e.target.value)}
 								style={{ maxWidth: 500 }}
 							/>
@@ -532,7 +532,7 @@ The {site_name} Team`;
 							label={__('Email Body', 'pressprimer-quiz')}
 						>
 							<TextArea
-								value={settings.educator_reminder_email_body ?? defaultReminderBody}
+								value={settings.educator_reminder_email_body || defaultReminderBody}
 								onChange={(e) => updateSetting('educator_reminder_email_body', e.target.value)}
 								rows={12}
 								style={{ fontFamily: 'monospace' }}
@@ -625,7 +625,7 @@ The {site_name} Team`;
 							label={__('Subject Line', 'pressprimer-quiz')}
 						>
 							<Input
-								value={settings.educator_welcome_email_subject ?? defaultWelcomeSubject}
+								value={settings.educator_welcome_email_subject || defaultWelcomeSubject}
 								onChange={(e) => updateSetting('educator_welcome_email_subject', e.target.value)}
 								style={{ maxWidth: 500 }}
 							/>
@@ -637,7 +637,7 @@ The {site_name} Team`;
 							label={__('Email Body', 'pressprimer-quiz')}
 						>
 							<TextArea
-								value={settings.educator_welcome_email_body ?? defaultWelcomeBody}
+								value={settings.educator_welcome_email_body || defaultWelcomeBody}
 								onChange={(e) => updateSetting('educator_welcome_email_body', e.target.value)}
 								rows={12}
 								style={{ fontFamily: 'monospace' }}
@@ -743,7 +743,7 @@ The {site_name} Team`;
 							label={__('Subject Line', 'pressprimer-quiz')}
 						>
 							<Input
-								value={settings.school_sr_reminder_email_subject ?? defaultSrReminderSubject}
+								value={settings.school_sr_reminder_email_subject || defaultSrReminderSubject}
 								onChange={(e) => updateSetting('school_sr_reminder_email_subject', e.target.value)}
 								style={{ maxWidth: 500 }}
 							/>
@@ -755,7 +755,7 @@ The {site_name} Team`;
 							label={__('Email Body', 'pressprimer-quiz')}
 						>
 							<TextArea
-								value={settings.school_sr_reminder_email_body ?? defaultSrReminderBody}
+								value={settings.school_sr_reminder_email_body || defaultSrReminderBody}
 								onChange={(e) => updateSetting('school_sr_reminder_email_body', e.target.value)}
 								rows={12}
 								style={{ fontFamily: 'monospace' }}

@@ -246,6 +246,29 @@ class PressPrimer_Quiz_Migrator {
 					$assignments => array(),
 				),
 			),
+			array(
+				'version'  => '3.1.0',
+				'callback' => array( __CLASS__, 'migrate_to_3_1_0' ),
+				'targets'  => array(
+					$quizzes  => array( 'is_practice', 'exposure_control' ),
+					$attempts => array( 'is_practice' ),
+				),
+			),
+			array(
+				'version'  => '3.1.0.1',
+				'callback' => array( __CLASS__, 'migrate_to_3_1_0_1' ),
+				// Value-only migration (confidence scale mapping) — no schema
+				// targets, so this step advances immediately after running. It is
+				// deliberately its OWN step, ordered after the 3.1.0 column step:
+				// the mapping is not naturally idempotent (a re-run would promote
+				// post-3.1 "1" = low to "3" = high), so it must never share a step
+				// with retry-prone ALTERs. The callback also self-guards with a
+				// one-time marker option, honoring this chain's idempotent-callback
+				// contract.
+				'targets'  => array(
+					$attempt_items => array(),
+				),
+			),
 		);
 	}
 
@@ -792,6 +815,123 @@ class PressPrimer_Quiz_Migrator {
 				)
 			);
 		}
+	}
+
+	/**
+	 * Migration to version 3.1.0
+	 *
+	 * Adds the v3.1 columns: is_practice and exposure_control on quizzes
+	 * (Practice Mode and Question Exposure Control settings), and is_practice
+	 * on attempts with its index (the per-attempt flag grade-bearing surfaces
+	 * filter on). Each column check is independent so the migration is safe
+	 * to re-run for partially-migrated installations.
+	 *
+	 * @since 3.1.0
+	 *
+	 * @return void
+	 */
+	private static function migrate_to_3_1_0() {
+		global $wpdb;
+
+		$quizzes  = $wpdb->prefix . 'ppq_quizzes';
+		$attempts = $wpdb->prefix . 'ppq_attempts';
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching
+		$column_exists = $wpdb->get_results(
+			$wpdb->prepare( 'SHOW COLUMNS FROM %i LIKE %s', $quizzes, 'is_practice' )
+		);
+		if ( empty( $column_exists ) ) {
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.DirectDatabaseQuery.SchemaChange
+			$wpdb->query(
+				$wpdb->prepare(
+					'ALTER TABLE %i ADD COLUMN is_practice TINYINT(1) NOT NULL DEFAULT 0 AFTER is_review_quiz',
+					$quizzes
+				)
+			);
+		}
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching
+		$column_exists = $wpdb->get_results(
+			$wpdb->prepare( 'SHOW COLUMNS FROM %i LIKE %s', $quizzes, 'exposure_control' )
+		);
+		if ( empty( $column_exists ) ) {
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.DirectDatabaseQuery.SchemaChange
+			$wpdb->query(
+				$wpdb->prepare(
+					'ALTER TABLE %i ADD COLUMN exposure_control TINYINT(1) NOT NULL DEFAULT 0 AFTER is_practice',
+					$quizzes
+				)
+			);
+		}
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching
+		$column_exists = $wpdb->get_results(
+			$wpdb->prepare( 'SHOW COLUMNS FROM %i LIKE %s', $attempts, 'is_practice' )
+		);
+		if ( empty( $column_exists ) ) {
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.DirectDatabaseQuery.SchemaChange
+			$wpdb->query(
+				$wpdb->prepare(
+					'ALTER TABLE %i ADD COLUMN is_practice TINYINT(1) NOT NULL DEFAULT 0 AFTER ma_scoring_mode',
+					$attempts
+				)
+			);
+		}
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching
+		$index_exists = $wpdb->get_results(
+			$wpdb->prepare( 'SHOW INDEX FROM %i WHERE Key_name = %s', $attempts, 'is_practice' )
+		);
+		if ( empty( $index_exists ) ) {
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.DirectDatabaseQuery.SchemaChange
+			$wpdb->query(
+				$wpdb->prepare(
+					'ALTER TABLE %i ADD KEY is_practice (is_practice)',
+					$attempts
+				)
+			);
+		}
+	}
+
+	/**
+	 * Migration to version 3.1.0.1
+	 *
+	 * One-time confidence scale mapping (v3.1 feature 003 FR-002). The shipped
+	 * binary checkbox stored 1 (checked) and 0 (the default unchecked state).
+	 * The 3.1 scale is NULL = not captured, 1 = low, 2 = medium, 3 = high:
+	 * legacy 1 becomes 3 (high); legacy 0 becomes NULL (the unchecked default
+	 * expressed nothing, so it is "not captured" rather than "low").
+	 *
+	 * NOT naturally idempotent: once this has run, a stored "1" means low —
+	 * a re-run would promote it to high. Two guards: the chain isolates this
+	 * as its own step ordered after the 3.1.0 column step (no schema targets,
+	 * so it advances immediately after running and a column-step retry can
+	 * never reach it), and the marker option below makes the callback itself
+	 * run-once, honoring the chain's idempotent-callback contract.
+	 *
+	 * @since 3.1.0
+	 *
+	 * @return void
+	 */
+	private static function migrate_to_3_1_0_1() {
+		global $wpdb;
+
+		if ( get_option( 'pressprimer_quiz_confidence_scale_migrated' ) ) {
+			return;
+		}
+
+		$attempt_items = $wpdb->prefix . 'ppq_attempt_items';
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching
+		$wpdb->query(
+			$wpdb->prepare(
+				'UPDATE %i SET confidence = CASE confidence WHEN 1 THEN 3 WHEN 0 THEN NULL ELSE confidence END WHERE confidence IS NOT NULL',
+				$attempt_items
+			)
+		);
+
+		// Not autoloaded: only read during migration.
+		add_option( 'pressprimer_quiz_confidence_scale_migrated', 1, '', false );
 	}
 
 	/**

@@ -92,141 +92,24 @@ class PressPrimer_Quiz_Blocks {
 	/**
 	 * Register Quiz block
 	 *
+	 * Registered from blocks/quiz/block.json — the single source of truth for
+	 * attributes, supports, and asset references. Only the render callback is
+	 * supplied here; do NOT add attribute arrays in PHP (that duplication is
+	 * what silently broke per-block display overrides before 3.0.4).
+	 *
 	 * @since 1.0.0
+	 * @since 3.1.0 Registered from block.json metadata.
 	 */
 	private function register_quiz_block() {
-		// Get asset file for dependencies and version
-		$asset_file = PRESSPRIMER_QUIZ_PLUGIN_PATH . 'build/blocks/quiz/index.asset.php';
-
-		if ( ! file_exists( $asset_file ) ) {
+		// Skip when the block's build output is missing (source checkout without a build).
+		if ( ! file_exists( PRESSPRIMER_QUIZ_PLUGIN_PATH . 'build/blocks/quiz/index.asset.php' ) ) {
 			return;
 		}
 
-		$asset = require $asset_file;
-
-		// Register block script
-		wp_register_script(
-			'pressprimer-quiz-quiz-block-editor',
-			PRESSPRIMER_QUIZ_PLUGIN_URL . 'build/blocks/quiz/index.js',
-			$asset['dependencies'],
-			$asset['version']
-		);
-
-		// Register editor style
-		wp_register_style(
-			'pressprimer-quiz-quiz-block-editor-style',
-			PRESSPRIMER_QUIZ_PLUGIN_URL . 'blocks/quiz/editor.css',
-			[],
-			PRESSPRIMER_QUIZ_VERSION
-		);
-
-		// Register frontend style
-		wp_register_style(
-			'pressprimer-quiz-quiz-block-style',
-			PRESSPRIMER_QUIZ_PLUGIN_URL . 'blocks/quiz/style.css',
-			[],
-			PRESSPRIMER_QUIZ_VERSION
-		);
-
-		// Register block type
 		register_block_type(
-			'pressprimer-quiz/quiz',
+			PRESSPRIMER_QUIZ_PLUGIN_PATH . 'blocks/quiz/block.json',
 			[
-				'api_version'     => 3,
-				'title'           => __( 'PPQ Quiz', 'pressprimer-quiz' ),
-				'description'     => __( 'Display a quiz for users to take.', 'pressprimer-quiz' ),
-				'category'        => 'pressprimer-quiz',
-				'icon'            => $this->get_checkbox_icon(),
-				'supports'        => [
-					'html'  => false,
-					'align' => [ 'wide', 'full' ],
-				],
-				'editor_script'   => 'pressprimer-quiz-quiz-block-editor',
-				'editor_style'    => 'pressprimer-quiz-quiz-block-editor-style',
-				'style'           => 'pressprimer-quiz-quiz-block-style',
 				'render_callback' => [ $this, 'render_quiz_block' ],
-				'attributes'      => [
-					'quizId'                  => [
-						'type'    => 'number',
-						'default' => 0,
-					],
-					'preTestId'               => [
-						'type'    => 'number',
-						'default' => 0,
-					],
-					// When true, the block inherits the quiz's display
-					// defaults and the show* attributes below are ignored.
-					'useQuizDefaults'         => [
-						'type'    => 'boolean',
-						'default' => true,
-					],
-					// Start page display options.
-					'showDescription'         => [
-						'type'    => 'boolean',
-						'default' => true,
-					],
-					'showQuestionCount'       => [
-						'type'    => 'boolean',
-						'default' => true,
-					],
-					'showQuizType'            => [
-						'type'    => 'boolean',
-						'default' => true,
-					],
-					'showTimeLimit'           => [
-						'type'    => 'boolean',
-						'default' => true,
-					],
-					'showPassPercentage'      => [
-						'type'    => 'boolean',
-						'default' => true,
-					],
-					'showAttemptCount'        => [
-						'type'    => 'boolean',
-						'default' => true,
-					],
-					'showAttemptHistory'      => [
-						'type'    => 'boolean',
-						'default' => true,
-					],
-					// Results page display options.
-					'showScore'               => [
-						'type'    => 'boolean',
-						'default' => true,
-					],
-					'showPassFail'            => [
-						'type'    => 'boolean',
-						'default' => true,
-					],
-					'showTimeSpent'           => [
-						'type'    => 'boolean',
-						'default' => true,
-					],
-					'showAverage'             => [
-						'type'    => 'boolean',
-						'default' => true,
-					],
-					'showCategoryBreakdown'   => [
-						'type'    => 'boolean',
-						'default' => true,
-					],
-					'showQuestionReview'      => [
-						'type'    => 'boolean',
-						'default' => true,
-					],
-					'showRetakeButton'        => [
-						'type'    => 'boolean',
-						'default' => true,
-					],
-					'showEmailButton'         => [
-						'type'    => 'boolean',
-						'default' => true,
-					],
-					'showScoringExplanations' => [
-						'type'    => 'boolean',
-						'default' => true,
-					],
-				],
 			]
 		);
 	}
@@ -301,73 +184,22 @@ class PressPrimer_Quiz_Blocks {
 	/**
 	 * Register My Attempts block
 	 *
+	 * Registered from blocks/my-attempts/block.json — the single source of
+	 * truth for attributes, supports, and asset references.
+	 *
 	 * @since 1.0.0
+	 * @since 3.1.0 Registered from block.json metadata.
 	 */
 	private function register_my_attempts_block() {
-		// Get asset file for dependencies and version
-		$asset_file = PRESSPRIMER_QUIZ_PLUGIN_PATH . 'build/blocks/my-attempts/index.asset.php';
-
-		if ( ! file_exists( $asset_file ) ) {
+		// Skip when the block's build output is missing (source checkout without a build).
+		if ( ! file_exists( PRESSPRIMER_QUIZ_PLUGIN_PATH . 'build/blocks/my-attempts/index.asset.php' ) ) {
 			return;
 		}
 
-		$asset = require $asset_file;
-
-		// Register block script
-		wp_register_script(
-			'pressprimer-quiz-my-attempts-block-editor',
-			PRESSPRIMER_QUIZ_PLUGIN_URL . 'build/blocks/my-attempts/index.js',
-			$asset['dependencies'],
-			$asset['version']
-		);
-
-		// Register editor style
-		wp_register_style(
-			'pressprimer-quiz-my-attempts-block-editor-style',
-			PRESSPRIMER_QUIZ_PLUGIN_URL . 'blocks/my-attempts/editor.css',
-			[],
-			PRESSPRIMER_QUIZ_VERSION
-		);
-
-		// Register frontend style
-		wp_register_style(
-			'pressprimer-quiz-my-attempts-block-style',
-			PRESSPRIMER_QUIZ_PLUGIN_URL . 'blocks/my-attempts/style.css',
-			[],
-			PRESSPRIMER_QUIZ_VERSION
-		);
-
-		// Register block type
 		register_block_type(
-			'pressprimer-quiz/my-attempts',
+			PRESSPRIMER_QUIZ_PLUGIN_PATH . 'blocks/my-attempts/block.json',
 			[
-				'api_version'     => 3,
-				'title'           => __( 'PPQ Quiz Attempts', 'pressprimer-quiz' ),
-				'description'     => __( 'Display a list of the current user\'s quiz attempts.', 'pressprimer-quiz' ),
-				'category'        => 'pressprimer-quiz',
-				'icon'            => 'list-view',
-				'supports'        => [
-					'html'  => false,
-					'align' => true,
-				],
-				'editor_script'   => 'pressprimer-quiz-my-attempts-block-editor',
-				'editor_style'    => 'pressprimer-quiz-my-attempts-block-editor-style',
-				'style'           => 'pressprimer-quiz-my-attempts-block-style',
 				'render_callback' => [ $this, 'render_my_attempts_block' ],
-				'attributes'      => [
-					'showScore' => [
-						'type'    => 'boolean',
-						'default' => true,
-					],
-					'showDate'  => [
-						'type'    => 'boolean',
-						'default' => true,
-					],
-					'perPage'   => [
-						'type'    => 'number',
-						'default' => 20,
-					],
-				],
 			]
 		);
 	}
@@ -409,58 +241,21 @@ class PressPrimer_Quiz_Blocks {
 	/**
 	 * Register Dashboard block
 	 *
+	 * Registered from blocks/dashboard/block.json — the single source of
+	 * truth for supports and asset references.
+	 *
 	 * @since 3.0.0
+	 * @since 3.1.0 Registered from block.json metadata.
 	 */
 	private function register_dashboard_block() {
-		// Get asset file for dependencies and version (editor placeholder).
-		$asset_file = PRESSPRIMER_QUIZ_PLUGIN_PATH . 'build/blocks/dashboard/index.asset.php';
-
-		if ( ! file_exists( $asset_file ) ) {
+		// Skip when the block's build output is missing (source checkout without a build).
+		if ( ! file_exists( PRESSPRIMER_QUIZ_PLUGIN_PATH . 'build/blocks/dashboard/index.asset.php' ) ) {
 			return;
 		}
 
-		$asset = require $asset_file;
-
-		// Register block script
-		wp_register_script(
-			'pressprimer-quiz-dashboard-block-editor',
-			PRESSPRIMER_QUIZ_PLUGIN_URL . 'build/blocks/dashboard/index.js',
-			$asset['dependencies'],
-			$asset['version']
-		);
-
-		// Register editor style
-		wp_register_style(
-			'pressprimer-quiz-dashboard-block-editor-style',
-			PRESSPRIMER_QUIZ_PLUGIN_URL . 'blocks/dashboard/editor.css',
-			[],
-			PRESSPRIMER_QUIZ_VERSION
-		);
-
-		// Register frontend style
-		wp_register_style(
-			'pressprimer-quiz-dashboard-block-style',
-			PRESSPRIMER_QUIZ_PLUGIN_URL . 'blocks/dashboard/style.css',
-			[],
-			PRESSPRIMER_QUIZ_VERSION
-		);
-
-		// Register block type
 		register_block_type(
-			'pressprimer-quiz/dashboard',
+			PRESSPRIMER_QUIZ_PLUGIN_PATH . 'blocks/dashboard/block.json',
 			[
-				'api_version'     => 3,
-				'title'           => __( 'PressPrimer Quiz Dashboard', 'pressprimer-quiz' ),
-				'description'     => __( 'Front-end dashboard for PressPrimer Quiz.', 'pressprimer-quiz' ),
-				'category'        => 'pressprimer-quiz',
-				'icon'            => 'dashboard',
-				'supports'        => [
-					'html'     => false,
-					'multiple' => false,
-				],
-				'editor_script'   => 'pressprimer-quiz-dashboard-block-editor',
-				'editor_style'    => 'pressprimer-quiz-dashboard-block-editor-style',
-				'style'           => 'pressprimer-quiz-dashboard-block-style',
 				'render_callback' => [ $this, 'render_dashboard_block' ],
 			]
 		);

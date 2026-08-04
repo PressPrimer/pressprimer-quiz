@@ -462,12 +462,49 @@ values.
 
 ### Needing the TIMESTAMP of a local-stored value
 
-Use `mysql2date( 'U', $value )` — **not** `strtotime( $value )` — so relative
-math (`human_time_diff()`, `time() - $ts`) uses the correct instant:
+There is exactly ONE correct way. Use the shared helper (free plugin, since
+3.1.0; addons whose minimum core version includes it call it too):
 
 ```php
-$timestamp = mysql2date( 'U', $item->created_at ); // real epoch, site-local aware
+$timestamp = PressPrimer_Quiz_Helpers::local_datetime_to_timestamp( $item->created_at ); // real epoch
 ```
+
+In an addon that cannot assume free 3.1+, use the WordPress equivalent the
+helper wraps:
+
+```php
+$timestamp = (int) get_gmt_from_date( $item->created_at, 'U' ); // real epoch
+```
+
+**Both alternatives are WRONG and are off by the site's UTC offset on non-UTC
+sites** (fixed across free + addons in Aug 2026 — do not reintroduce):
+
+```php
+// WRONG — since WP 5.3, mysql2date( 'U', ... ) returns timestamp PLUS the
+// site's UTC offset (core: a value that "should never be used"). Comparing it
+// against time() drifts by the offset.
+$timestamp = mysql2date( 'U', $item->created_at );
+
+// WRONG — strtotime() parses the local string as UTC (WP pins PHP's default
+// TZ to UTC), also drifting by the offset.
+$timestamp = strtotime( $item->created_at );
+```
+
+### The current time: `time()`, never `current_time( 'timestamp' )`
+
+`current_time( 'timestamp' )` is NOT the current Unix time — it is
+`time() + site offset` (a "WordPress timestamp"). Never compare it against a
+real epoch (`time()`, `strtotime()` of a UTC string,
+`local_datetime_to_timestamp()`, `get_gmt_from_date( ..., 'U' )`) — the
+comparison drifts by the site offset. Standard: all epoch math uses **real
+epochs** — `time()` for now, the helper for stored local values.
+
+**Shifted-pair caution:** legacy code sometimes pairs two equally-shifted
+values (e.g. `strtotime( $local_a ) - strtotime( $local_b )`, or
+`strtotime( current_time( 'mysql' ) )` vs `strtotime( $local_stored )`). The
+difference is coincidentally correct, but the intermediate values are not real
+epochs — never store, emit, or compare them outside the pair. When touching
+such code, convert both sides to real epochs via the helper.
 
 ### GMT-stored values (School / Enterprise)
 
@@ -476,6 +513,10 @@ Do **not** use `mysql2date()` (it assumes local). Convert from GMT:
 ```php
 echo esc_html( get_date_from_gmt( $row->created_at, get_option( 'date_format' ) . ' ' . get_option( 'time_format' ) ) );
 ```
+
+For the timestamp of a GMT-stored value, `strtotime( $row->created_at )` IS
+correct (the string is UTC and PHP's default TZ is pinned to UTC) — compare it
+against `time()`.
 
 ### React / front-end
 

@@ -47,6 +47,9 @@ PressPrimer Quiz includes features in the free version that competitors charge f
 * **Images in questions and answers** – Drag-and-drop uploader with a click-to-zoom lightbox on the front end
 * **Question pool** – Limit the number of questions shown per attempt so each student gets a random subset from the full list
 * **Random distractor subsets** – Maximum Answers Per Question shows each student a random subset of distractors while always showing every correct answer
+* **Practice Mode** – Mark any quiz as practice for unlimited, untimed runs with immediate feedback that never count toward scores or pass rates
+* **Question exposure control** – "Prefer Unseen Questions" keeps dynamic and pooled quiz retakes fresh by choosing questions a student hasn't seen first
+* **Confidence Check** – Three-level confidence ratings per answer, with a results summary that flags confident-but-wrong and unsure-but-correct questions
 * **Customizable Appearance** – Adjust fonts, colors, spacing, and other visual styles; includes Condensed Mode for streamlined quizzes with reduced vertical spacing
 * **Per-quiz display settings** – Choose display options (description, score, pass/fail status, category breakdown, retake button, and more) for every quiz
 * **Uncanny Automator integration** – Triggers for quiz completion, pass, fail, and guest email capture with marketing consent, with a comprehensive set of tokens for use in automations
@@ -242,6 +245,9 @@ This plugin also offers optional AI-powered question generation using the Anthro
 == Changelog ==
 
 = 3.1.0 =
+* Added: Practice Mode — mark any quiz as a practice quiz to give students unlimited, untimed runs with immediate feedback, no matter how the quiz is otherwise configured. Practice attempts are clearly badged, never count toward scores, averages, or pass rates, and your quiz's original mode, time limit, and attempt limits are kept for when you switch practice off.
+* Added: Question Exposure Control — a "Prefer Unseen Questions" option for dynamic and pooled quizzes that picks questions each student hasn't seen before repeating ones they have, so retakes stay fresh.
+* Added: Three-level confidence ratings — students can mark each answer Low, Medium, or High confidence, and their results include a "Confidence Check" that highlights confident-but-wrong and unsure-but-correct questions with links to review each one. Existing confidence data is upgraded automatically.
 * Added: New Uncanny Automator trigger "A guest email is captured with marketing consent" — route consented guest leads to any Automator-connected tool. Works in "Everyone" recipes on both free Uncanny Automator and Automator Pro, and only fires when the guest explicitly opts in.
 * Added: The quiz editor's "Add Questions" dialog now has a Status filter that defaults to Published, so draft and archived questions no longer mix into the list unnoticed. Draft and archived questions are labeled when shown.
 * Fixed: On sites with a non-UTC timezone, several time calculations were off by the site's UTC offset — retake wait times, automatic cleanup of unanswered guest attempts (which silently prevented guests from resuming a quiz in progress), guest results-link expiry, and relative dates in the admin quiz list.

@@ -1206,23 +1206,35 @@ class PressPrimer_Quiz_Quiz_Renderer {
 
 			<?php if ( $this->current_quiz && $this->current_quiz->enable_confidence ) : ?>
 				<?php
-				$confidence_id = 'ppq_confidence_' . $item->id;
-				$is_confident  = (bool) $item->confidence;
+				// v3.1 three-level confidence capture (feature 003 FR-003).
+				// Native radios provide radiogroup semantics and arrow-key
+				// navigation; the JS layer adds click-again-to-clear so the
+				// capture stays optional (NULL is a valid state).
+				$confidence_value  = in_array( (int) $item->confidence, [ 1, 2, 3 ], true ) ? (int) $item->confidence : 0;
+				$confidence_levels = [
+					1 => __( 'Low', 'pressprimer-quiz' ),
+					2 => __( 'Medium', 'pressprimer-quiz' ),
+					3 => __( 'High', 'pressprimer-quiz' ),
+				];
 				?>
-				<div class="ppq-confidence-container">
-					<label class="ppq-confidence-label" for="<?php echo esc_attr( $confidence_id ); ?>">
-						<input type="checkbox"
-								id="<?php echo esc_attr( $confidence_id ); ?>"
-								name="ppq_confidence_<?php echo esc_attr( $item->id ); ?>"
-								class="ppq-confidence-input"
-								data-item-id="<?php echo esc_attr( $item->id ); ?>"
-								<?php checked( $is_confident ); ?>>
-						<span class="ppq-confidence-checkbox"></span>
-						<span class="ppq-confidence-text">
-							<?php esc_html_e( 'I am confident in my answer', 'pressprimer-quiz' ); ?>
-						</span>
-					</label>
-				</div>
+				<fieldset class="ppq-confidence-container ppq-confidence-levels" data-item-id="<?php echo esc_attr( $item->id ); ?>">
+					<legend class="ppq-confidence-text"><?php esc_html_e( 'How confident are you?', 'pressprimer-quiz' ); ?></legend>
+					<div class="ppq-confidence-segments" role="presentation">
+						<?php foreach ( $confidence_levels as $level_value => $level_label ) : ?>
+							<?php $level_id = 'ppq_confidence_' . $item->id . '_' . $level_value; ?>
+							<label class="ppq-confidence-segment" for="<?php echo esc_attr( $level_id ); ?>">
+								<input type="radio"
+										id="<?php echo esc_attr( $level_id ); ?>"
+										name="ppq_confidence_<?php echo esc_attr( $item->id ); ?>"
+										class="ppq-confidence-level-input"
+										value="<?php echo esc_attr( $level_value ); ?>"
+										data-item-id="<?php echo esc_attr( $item->id ); ?>"
+										<?php checked( $confidence_value, $level_value ); ?>>
+								<span class="ppq-confidence-segment-label"><?php echo esc_html( $level_label ); ?></span>
+							</label>
+						<?php endforeach; ?>
+					</div>
+				</fieldset>
 			<?php endif; ?>
 
 			<!-- Check Answer button for tutorial mode (hidden when already checked or in timed mode) -->

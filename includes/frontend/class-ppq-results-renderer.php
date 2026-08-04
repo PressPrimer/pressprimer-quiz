@@ -687,55 +687,95 @@ class PressPrimer_Quiz_Results_Renderer {
 	}
 
 	/**
-	 * Render confidence calibration
+	 * Render the student calibration summary (v3.1 feature 003 FR-005)
+	 *
+	 * Shows where confidence and correctness disagree: high-confidence
+	 * misses framed as "review these first" (with anchors into the
+	 * per-question review below), and low-confidence correct answers as
+	 * encouragement. Renders nothing when no confidence was captured or
+	 * when both lists are empty. Informational and non-scoring: renders
+	 * beside (never inside) the score-transparency explanations.
 	 *
 	 * @since 1.0.0
+	 * @since 3.1.0 Rewritten for the three-level scale as the calibration summary.
 	 *
 	 * @param array $results Results data.
 	 */
 	private function render_confidence_calibration( $results ) {
 		$stats = $results['confidence_stats'];
 
-		// Check if confidence was used
-		$total_confident = $stats['confident_correct'] + $stats['confident_incorrect'];
-		if ( $total_confident === 0 ) {
-			return; // No confidence data
+		if ( empty( $stats['captured_count'] ) ) {
+			return; // No confidence captured on this attempt.
 		}
 
-		$calibration = ( $stats['confident_correct'] / $total_confident ) * 100;
+		$confident_wrong = $stats['confident_wrong_items'];
+		$unsure_correct  = $stats['unsure_correct_items'];
 
-		// Determine calibration message
-		if ( $calibration >= 90 ) {
-			$message = __( 'Your confidence is well-calibrated!', 'pressprimer-quiz' );
-			$icon    = '💡';
-		} elseif ( $calibration >= 70 ) {
-			$message = __( 'Your confidence is fairly good, but there\'s room for improvement.', 'pressprimer-quiz' );
-			$icon    = '📊';
-		} else {
-			$message = __( 'You may be overconfident. Review the questions you marked as confident.', 'pressprimer-quiz' );
-			$icon    = '⚠️';
+		if ( empty( $confident_wrong ) && empty( $unsure_correct ) ) {
+			return; // Perfectly calibrated: nothing to point out.
 		}
 
+		$show_review = ! empty( $this->display['show_question_review'] );
 		?>
 		<div class="ppq-confidence-calibration">
-			<h3 class="ppq-section-title"><?php esc_html_e( 'Confidence Analysis', 'pressprimer-quiz' ); ?></h3>
-			<div class="ppq-confidence-content">
-				<p>
-					<?php
-					printf(
-						/* translators: 1: number of confident answers, 2: number of correct confident answers, 3: calibration percentage */
-						esc_html__( 'You marked %1$d answers as confident. %2$d of those were correct (%3$d%% calibration).', 'pressprimer-quiz' ),
-						(int) $total_confident,
-						(int) $stats['confident_correct'],
-						(int) round( $calibration )
-					);
-					?>
-				</p>
-				<p class="ppq-confidence-message">
-					<span class="ppq-confidence-icon"><?php echo esc_html( $icon ); ?></span>
-					<?php echo esc_html( $message ); ?>
-				</p>
-			</div>
+			<h3 class="ppq-section-title"><?php esc_html_e( 'Confidence Check', 'pressprimer-quiz' ); ?></h3>
+
+			<?php if ( ! empty( $confident_wrong ) ) : ?>
+				<div class="ppq-calibration-group ppq-calibration-confident-wrong">
+					<p>
+						<?php
+						printf(
+							/* translators: %d: number of high-confidence incorrect answers */
+							esc_html(
+								_n(
+									'You felt sure about %d question that did not go your way — a great place to start your review.',
+									'You felt sure about %d questions that did not go your way — a great place to start your review.',
+									count( $confident_wrong ),
+									'pressprimer-quiz'
+								)
+							),
+							count( $confident_wrong )
+						);
+						?>
+					</p>
+					<?php if ( $show_review ) : ?>
+						<p class="ppq-calibration-links">
+							<?php foreach ( $confident_wrong as $entry ) : ?>
+								<a class="ppq-calibration-link" href="<?php echo esc_attr( '#ppq-review-item-' . $entry['item_id'] ); ?>">
+									<?php
+									printf(
+										/* translators: %d: question number */
+										esc_html__( 'Question %d', 'pressprimer-quiz' ),
+										(int) $entry['number']
+									);
+									?>
+								</a>
+							<?php endforeach; ?>
+						</p>
+					<?php endif; ?>
+				</div>
+			<?php endif; ?>
+
+			<?php if ( ! empty( $unsure_correct ) ) : ?>
+				<div class="ppq-calibration-group ppq-calibration-unsure-correct">
+					<p>
+						<?php
+						printf(
+							/* translators: %d: number of low-confidence correct answers */
+							esc_html(
+								_n(
+									'You got %d question right even though you were not sure — you know more than you think.',
+									'You got %d questions right even though you were not sure — you know more than you think.',
+									count( $unsure_correct ),
+									'pressprimer-quiz'
+								)
+							),
+							count( $unsure_correct )
+						);
+						?>
+					</p>
+				</div>
+			<?php endif; ?>
 		</div>
 		<?php
 	}
@@ -1056,7 +1096,7 @@ class PressPrimer_Quiz_Results_Renderer {
 		$status_icon  = $item->is_correct ? '✓' : '✗';
 
 		?>
-		<div class="ppq-review-item <?php echo esc_attr( $status_class ); ?>">
+		<div class="ppq-review-item <?php echo esc_attr( $status_class ); ?>" id="<?php echo esc_attr( 'ppq-review-item-' . $item->id ); ?>">
 			<div class="ppq-review-header">
 				<div class="ppq-review-number">
 					<?php
@@ -1614,10 +1654,16 @@ class PressPrimer_Quiz_Results_Renderer {
 				'confident_incorrect'     => 0,
 				'not_confident_correct'   => 0,
 				'not_confident_incorrect' => 0,
+				'captured_count'          => 0,
+				'confident_wrong_items'   => [],
+				'unsure_correct_items'    => [],
 			],
 		];
 
+		$question_number = 0;
 		foreach ( $items as $item ) {
+			++$question_number;
+
 			// Count correct answers
 			if ( $item->is_correct ) {
 				++$results['correct_count'];
@@ -1645,17 +1691,38 @@ class PressPrimer_Quiz_Results_Renderer {
 				}
 			}
 
-			// Confidence tracking
-			if ( $item->confidence ) {
-				if ( $item->is_correct ) {
-					++$results['confidence_stats']['confident_correct'];
-				} else {
-					++$results['confidence_stats']['confident_incorrect'];
+			// Confidence tracking (v3.1: NULL = not captured, 1 = low,
+			// 2 = medium, 3 = high). Legacy keys treat high as "confident"
+			// for consumers of the pressprimer_quiz_results_data filter.
+			$confidence = in_array( (int) $item->confidence, [ 1, 2, 3 ], true ) ? (int) $item->confidence : null;
+			if ( null !== $confidence ) {
+				++$results['confidence_stats']['captured_count'];
+
+				if ( 3 === $confidence && ! $item->is_correct ) {
+					$results['confidence_stats']['confident_wrong_items'][] = [
+						'item_id' => (int) $item->id,
+						'number'  => $question_number,
+					];
 				}
-			} elseif ( $item->is_correct ) {
+
+				if ( 1 === $confidence && $item->is_correct ) {
+					$results['confidence_stats']['unsure_correct_items'][] = [
+						'item_id' => (int) $item->id,
+						'number'  => $question_number,
+					];
+				}
+
+				if ( 3 === $confidence ) {
+					if ( $item->is_correct ) {
+						++$results['confidence_stats']['confident_correct'];
+					} else {
+						++$results['confidence_stats']['confident_incorrect'];
+					}
+				} elseif ( $item->is_correct ) {
 					++$results['confidence_stats']['not_confident_correct'];
-			} else {
-				++$results['confidence_stats']['not_confident_incorrect'];
+				} else {
+					++$results['confidence_stats']['not_confident_incorrect'];
+				}
 			}
 		}
 

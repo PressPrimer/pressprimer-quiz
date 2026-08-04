@@ -840,7 +840,15 @@ class PressPrimer_Quiz_Attempt extends PressPrimer_Quiz_Model {
 	 * @param bool  $confidence Whether student is confident in answer.
 	 * @return bool|WP_Error True on success, WP_Error on failure.
 	 */
-	public function save_answer( int $item_or_revision_id, array $selected_answers, bool $confidence = false ) {
+	public function save_answer( int $item_or_revision_id, array $selected_answers, $confidence = null ) {
+		// v3.1 three-level confidence: 1 low, 2 medium, 3 high, NULL not
+		// captured. Legacy boolean callers are normalized (true was the
+		// binary "confident" checkbox, which the value migration maps to
+		// high; false meant the default unchecked state, now "not captured").
+		if ( true === $confidence ) {
+			$confidence = 3;
+		}
+		$confidence = in_array( (int) $confidence, [ 1, 2, 3 ], true ) ? (int) $confidence : null;
 		// Validate attempt is in progress
 		if ( 'in_progress' !== $this->status ) {
 			return new WP_Error(
@@ -893,7 +901,7 @@ class PressPrimer_Quiz_Attempt extends PressPrimer_Quiz_Model {
 		$answer_data = [
 			'selected_answers_json' => wp_json_encode( $selected_answers ),
 			'last_answer_at'        => current_time( 'mysql' ),
-			'confidence'            => $confidence ? 1 : 0,
+			'confidence'            => $confidence,
 		];
 
 		// Update the existing item
@@ -901,7 +909,7 @@ class PressPrimer_Quiz_Attempt extends PressPrimer_Quiz_Model {
 			$items_table,
 			$answer_data,
 			[ 'id' => $existing->id ],
-			[ '%s', '%s', '%d' ],
+			[ '%s', '%s', null === $confidence ? null : '%d' ],
 			[ '%d' ]
 		);
 
@@ -918,11 +926,16 @@ class PressPrimer_Quiz_Attempt extends PressPrimer_Quiz_Model {
 	 *
 	 * @since 1.0.0
 	 *
-	 * @param int  $item_id    Attempt item ID.
-	 * @param bool $confidence Confidence value.
+	 * @param int           $item_id    Attempt item ID.
+	 * @param int|bool|null $confidence Confidence value (1-3, null to clear;
+	 *                                  legacy booleans are normalized).
 	 * @return bool|WP_Error True on success, WP_Error on failure.
 	 */
-	public function update_confidence( int $item_id, bool $confidence ) {
+	public function update_confidence( int $item_id, $confidence ) {
+		if ( true === $confidence ) {
+			$confidence = 3;
+		}
+		$confidence = in_array( (int) $confidence, [ 1, 2, 3 ], true ) ? (int) $confidence : null;
 		// Validate attempt is in progress
 		if ( 'in_progress' !== $this->status ) {
 			return new WP_Error(
@@ -950,12 +963,12 @@ class PressPrimer_Quiz_Attempt extends PressPrimer_Quiz_Model {
 			);
 		}
 
-		// Update confidence
+		// Update confidence (1-3, or NULL to clear)
 		$wpdb->update(
 			$items_table,
-			[ 'confidence' => $confidence ? 1 : 0 ],
+			[ 'confidence' => $confidence ],
 			[ 'id' => $item_id ],
-			[ '%d' ],
+			[ null === $confidence ? null : '%d' ],
 			[ '%d' ]
 		);
 

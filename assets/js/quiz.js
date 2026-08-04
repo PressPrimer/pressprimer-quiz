@@ -474,9 +474,30 @@
 				self.handleAnswerChange($(this));
 			});
 
-			// Confidence checkbox
-			$(document).on('change', '.ppq-confidence-input', function() {
+			// Confidence level segments (v3.1: 3-level radios, clearable).
+			$(document).on('change', '.ppq-confidence-level-input', function() {
 				self.handleConfidenceChange($(this));
+			});
+
+			// Click-again-to-clear: capture the pre-click state on mousedown,
+			// then uncheck on click when it was already selected.
+			$(document).on('mousedown', '.ppq-confidence-level-input', function() {
+				$(this).data('ppq-was-checked', $(this).is(':checked'));
+			});
+			$(document).on('click', '.ppq-confidence-level-input', function() {
+				const $input = $(this);
+				if ($input.data('ppq-was-checked')) {
+					$input.prop('checked', false).data('ppq-was-checked', false);
+					self.handleConfidenceClear($input);
+				}
+			});
+
+			// Keyboard clear: Escape or Delete on a focused, selected segment.
+			$(document).on('keydown', '.ppq-confidence-level-input', function(e) {
+				if (('Escape' === e.key || 'Delete' === e.key) && $(this).is(':checked')) {
+					$(this).prop('checked', false);
+					self.handleConfidenceClear($(this));
+				}
 			});
 
 			// Handle clicks on answer options.
@@ -1024,18 +1045,42 @@
 				return;
 			}
 
-			const isConfident = $input.is(':checked');
+			const level = parseInt($input.val(), 10);
 
 			// Mark as having unsaved changes
 			this.hasUnsavedChanges = true;
 
-			// Store confidence value for this item
+			// Store confidence level (1-3) for this item
 			if (!this.pendingConfidence) {
 				this.pendingConfidence = {};
 			}
-			this.pendingConfidence[itemId] = isConfident;
+			this.pendingConfidence[itemId] = level >= 1 && level <= 3 ? level : null;
 
 			// Trigger auto-save (will include confidence when saving)
+			this.triggerConfidenceSave(itemId);
+		},
+
+		/**
+		 * Handle a confidence selection being cleared
+		 *
+		 * @param {jQuery} $input The confidence radio that was cleared
+		 */
+		handleConfidenceClear: function($input) {
+			const itemId = $input.data('item-id');
+
+			if (itemId === undefined || itemId === null || itemId === '') {
+				return;
+			}
+
+			this.hasUnsavedChanges = true;
+
+			if (!this.pendingConfidence) {
+				this.pendingConfidence = {};
+			}
+			// null serializes as an empty value, which the server stores as
+			// NULL (not captured).
+			this.pendingConfidence[itemId] = null;
+
 			this.triggerConfidenceSave(itemId);
 		},
 
@@ -1341,9 +1386,10 @@
 				}
 			});
 
-			// Add confidence values
+			// Add confidence values (1-3, or '' to clear = stored as NULL)
 			Object.keys(confidenceSaves).forEach(function(itemId) {
-				formData['confidence[' + itemId + ']'] = confidenceSaves[itemId] ? '1' : '0';
+				const level = confidenceSaves[itemId];
+				formData['confidence[' + itemId + ']'] = level >= 1 && level <= 3 ? String(level) : '';
 			});
 
 			// Make AJAX request

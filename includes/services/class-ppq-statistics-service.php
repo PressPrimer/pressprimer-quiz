@@ -780,6 +780,7 @@ class PressPrimer_Quiz_Statistics_Service {
 					ai.question_revision_id,
 					ai.selected_answers_json,
 					ai.is_correct,
+					ai.confidence,
 					ai.score_points as points_earned,
 					ai.time_spent_ms,
 					qr.question_id,

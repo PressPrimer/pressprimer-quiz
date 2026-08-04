@@ -330,8 +330,8 @@ class PressPrimer_Quiz_AJAX_Handler {
 		// Save each answer
 		$saved_count = 0;
 		foreach ( $answers as $item_id => $selected_answers ) {
-			// Get confidence for this item if set
-			$confidence = $confidence_values[ $item_id ] ?? false;
+			// Get confidence for this item if set (1-3, or null = not captured).
+			$confidence = array_key_exists( $item_id, $confidence_values ) ? $confidence_values[ $item_id ] : null;
 
 			// Save answer with confidence
 			$result = $attempt->save_answer( $item_id, $selected_answers, $confidence );
@@ -365,12 +365,12 @@ class PressPrimer_Quiz_AJAX_Handler {
 					continue;
 				}
 
-				// Update confidence only for this item
+				// Update confidence only for this item (1-3, or NULL to clear).
 				$wpdb->update(
 					$items_table,
-					[ 'confidence' => $confidence_value ? 1 : 0 ],
+					[ 'confidence' => $confidence_value ],
 					[ 'id' => $item_id ],
-					[ '%d' ],
+					[ null === $confidence_value ? null : '%d' ],
 					[ '%d' ]
 				);
 
@@ -986,7 +986,12 @@ class PressPrimer_Quiz_AJAX_Handler {
 				continue;
 			}
 
-			$sanitized[ $item_id ] = (bool) absint( $confidence_value );
+			// v3.1 three-level scale: 1 low, 2 medium, 3 high. Anything else
+			// (including 0 from stale page-cached pre-3.1 player JS and an
+			// explicit clear) drops to NULL — never a save failure; only the
+			// confidence value degrades (feature 003 FR-004).
+			$confidence_value      = absint( $confidence_value );
+			$sanitized[ $item_id ] = in_array( $confidence_value, [ 1, 2, 3 ], true ) ? $confidence_value : null;
 		}
 
 		return $sanitized;

@@ -88,6 +88,7 @@ const QuizEditor = ({ quizData = {} }) => {
 				questions_per_page: quizData.questions_per_page || 1,
 				show_answers: quizData.show_answers || 'after_submit',
 				is_practice: quizData.is_practice ?? false,
+				exposure_control: quizData.exposure_control ?? false,
 				enable_confidence: quizData.enable_confidence ?? false,
 				show_points: quizData.show_points ?? false,
 				theme: quizData.theme || 'default',
@@ -264,7 +265,7 @@ const QuizEditor = ({ quizData = {} }) => {
 			'allow_skip', 'allow_backward', 'allow_resume',
 			'randomize_questions', 'randomize_answers',
 			'enable_confidence', 'show_points', 'pool_enabled', 'enable_sr',
-			'is_practice',
+			'is_practice', 'exposure_control',
 		];
 
 		const parseJson = (value) => {

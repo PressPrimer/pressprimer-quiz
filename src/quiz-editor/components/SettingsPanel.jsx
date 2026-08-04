@@ -1105,6 +1105,24 @@ const SettingsPanel = ({ form, generationMode, setGenerationMode, quizData = {},
 								</>
 							);
 						})()}
+
+						{(generationMode === 'dynamic' || poolEnabled) && (
+							<Form.Item
+								label={
+									<Space>
+										<span>{__('Prefer Unseen Questions', 'pressprimer-quiz')}</span>
+										<Tooltip title={__('When questions are selected for each attempt, prefer ones the student has not seen before, then the least recently seen. Applies to logged-in students only.', 'pressprimer-quiz')}>
+											<QuestionCircleOutlined style={{ fontSize: 12, color: '#8c8c8c' }} />
+										</Tooltip>
+									</Space>
+								}
+								name="exposure_control"
+								valuePropName="checked"
+								style={{ marginTop: 16, marginBottom: 0 }}
+							>
+								<Switch size="small" />
+							</Form.Item>
+						)}
 					</Col>
 					<Col xs={24} sm={12}>
 						<Form.Item

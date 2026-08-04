@@ -621,6 +621,7 @@ class PressPrimer_Quiz_Quiz extends PressPrimer_Quiz_Model {
 			},
 			'enable_sr'                => $bool,
 			'is_practice'              => $bool,
+			'exposure_control'         => $bool,
 		);
 	}
 
@@ -1209,12 +1210,29 @@ class PressPrimer_Quiz_Quiz extends PressPrimer_Quiz_Model {
 	 * For dynamic quizzes, applies rules to select questions then randomizes if enabled.
 	 * When pool_enabled is true, limits the result to max_questions from the full pool.
 	 *
-	 * @since 1.0.0
+	 * v3.1: at every selection point that discards candidates (each dynamic
+	 * rule's slice and the pool-cap trim), the generation-candidates filter
+	 * (amendment A1) runs first, then exposure control (feature 002) prefers
+	 * unseen questions when enabled. One memoized seen map serves all
+	 * partitions. Exposure never applies for guests, and generation never
+	 * fails: bypassed points behave exactly as before.
 	 *
+	 * @since 1.0.0
+	 * @since 3.1.0 Added $user_id for exposure control and the candidates filter.
+	 *
+	 * @param int $user_id User the attempt is generated for. 0 for guests.
 	 * @return array Array of question IDs.
 	 */
-	public function get_questions_for_attempt() {
+	public function get_questions_for_attempt( $user_id = 0 ) {
+		$user_id      = absint( $user_id );
 		$question_ids = [];
+
+		// Resolve the seen map once per generation; each selection point
+		// reuses it. Null = exposure inactive (off, or guest).
+		$seen_map = null;
+		if ( $this->exposure_control && $user_id > 0 ) {
+			$seen_map = PressPrimer_Quiz_Exposure_Service::get_seen_map( $this->id, $user_id );
+		}
 
 		if ( 'fixed' === $this->generation_mode ) {
 			// Fixed quiz - get questions from items
@@ -1231,9 +1249,18 @@ class PressPrimer_Quiz_Quiz extends PressPrimer_Quiz_Model {
 			foreach ( $rules as $rule ) {
 				$matching_ids = $rule->get_matching_questions();
 
-				// Shuffle and take requested count
-				shuffle( $matching_ids );
-				$selected = array_slice( $matching_ids, 0, $rule->question_count );
+				// A1 candidates filter, then exposure-preferring selection —
+				// per rule, on that rule's own matches, honoring its count.
+				$matching_ids = $this->filter_generation_candidates(
+					$matching_ids,
+					$user_id,
+					[
+						'generation_mode' => 'dynamic',
+						'requested_count' => (int) $rule->question_count,
+					]
+				);
+
+				$selected = $this->select_preferring_unseen( $matching_ids, (int) $rule->question_count, $seen_map );
 
 				$all_question_ids = array_merge( $all_question_ids, $selected );
 			}
@@ -1242,11 +1269,21 @@ class PressPrimer_Quiz_Quiz extends PressPrimer_Quiz_Model {
 			$question_ids = array_unique( $all_question_ids );
 		}
 
-		// Apply pool limit if enabled (after full pool is built).
+		// Apply pool limit if enabled (after full pool is built). The trim
+		// also runs the candidates filter and prefers unseen questions.
 		if ( $this->pool_enabled && $this->max_questions ) {
 			$max = min( (int) $this->max_questions, count( $question_ids ) );
-			shuffle( $question_ids );
-			$question_ids = array_slice( $question_ids, 0, $max );
+
+			$question_ids = $this->filter_generation_candidates(
+				array_values( $question_ids ),
+				$user_id,
+				[
+					'generation_mode' => 'pool',
+					'requested_count' => $max,
+				]
+			);
+
+			$question_ids = $this->select_preferring_unseen( $question_ids, $max, $seen_map );
 		}
 
 		/**
@@ -1268,6 +1305,111 @@ class PressPrimer_Quiz_Quiz extends PressPrimer_Quiz_Model {
 		}
 
 		return $question_ids;
+	}
+
+	/**
+	 * Run the generation-candidates filter over a candidate ID list (A1).
+	 *
+	 * Consumers may only NARROW or REORDER the list — IDs the rules did not
+	 * select are stripped, and an empty or non-array return is ignored so
+	 * generation never fails and never trusts a consumer blindly. Documented
+	 * consumer: School 3.1's measured-difficulty rule narrowing.
+	 *
+	 * @since 3.1.0
+	 *
+	 * @param array $candidate_ids Candidate question IDs at this selection point.
+	 * @param int   $user_id       User the attempt is generated for (0 for guests).
+	 * @param array $context       Selection context: generation_mode ('dynamic'
+	 *                             per-rule or 'pool' at the cap) and
+	 *                             requested_count for this point.
+	 * @return array Filtered candidate IDs (falls back to the input on misuse).
+	 */
+	private function filter_generation_candidates( array $candidate_ids, $user_id, array $context ) {
+		$candidate_ids = array_values( array_unique( array_map( 'absint', $candidate_ids ) ) );
+
+		/**
+		 * Filters the candidate question IDs at a generation selection point.
+		 *
+		 * Runs before the exposure-control partition at each point that
+		 * discards candidates. Returns are sanitized to integers and
+		 * intersected with the original candidates: consumers can narrow or
+		 * reorder, never inject. Empty or invalid returns are ignored.
+		 *
+		 * @since 3.1.0
+		 *
+		 * @param array $candidate_ids Candidate question IDs.
+		 * @param int   $quiz_id       Quiz being generated.
+		 * @param int   $user_id       User the attempt is for (0 for guests).
+		 * @param array $context       { generation_mode: 'dynamic'|'pool',
+		 *                               requested_count: int }.
+		 */
+		$filtered = apply_filters( 'pressprimer_quiz_generation_candidates', $candidate_ids, $this->id, $user_id, $context );
+
+		if ( ! is_array( $filtered ) || empty( $filtered ) ) {
+			return $candidate_ids;
+		}
+
+		// Narrow/reorder only: keep the consumer's order, strip injections.
+		$filtered = array_values( array_intersect( array_map( 'absint', $filtered ), $candidate_ids ) );
+
+		return empty( $filtered ) ? $candidate_ids : $filtered;
+	}
+
+	/**
+	 * Select $count questions from candidates, preferring unseen (feature 002).
+	 *
+	 * With no seen map (exposure off, or guests) this is the pre-3.1
+	 * behavior byte-for-byte: shuffle and slice. Otherwise candidates
+	 * partition into unseen and seen; the unseen partition is shuffled and
+	 * consumed first, and any remainder fills from the seen partition
+	 * ordered least-recently-seen first with ties shuffled.
+	 *
+	 * @since 3.1.0
+	 *
+	 * @param array      $candidates Candidate question IDs.
+	 * @param int        $count      Number of questions to select.
+	 * @param array|null $seen_map   Seen map from the exposure service, or
+	 *                               null when exposure is inactive.
+	 * @return array Selected question IDs.
+	 */
+	private function select_preferring_unseen( array $candidates, $count, $seen_map ) {
+		$count      = max( 0, (int) $count );
+		$candidates = array_values( $candidates );
+
+		// Bypass: exposure inactive, or nothing would be discarded — behave
+		// exactly as before.
+		if ( null === $seen_map || count( $candidates ) <= $count ) {
+			shuffle( $candidates );
+			return array_slice( $candidates, 0, $count );
+		}
+
+		$unseen = [];
+		$seen   = [];
+		foreach ( $candidates as $question_id ) {
+			if ( isset( $seen_map[ $question_id ] ) ) {
+				$seen[] = $question_id;
+			} else {
+				$unseen[] = $question_id;
+			}
+		}
+
+		shuffle( $unseen );
+		$selected = array_slice( $unseen, 0, $count );
+
+		$remaining = $count - count( $selected );
+		if ( $remaining > 0 ) {
+			// Least-recently-seen first; the pre-sort shuffle randomizes ties.
+			shuffle( $seen );
+			usort(
+				$seen,
+				static function ( $a, $b ) use ( $seen_map ) {
+					return strcmp( $seen_map[ $a ], $seen_map[ $b ] );
+				}
+			);
+			$selected = array_merge( $selected, array_slice( $seen, 0, $remaining ) );
+		}
+
+		return $selected;
 	}
 
 	/**

@@ -392,7 +392,7 @@ class PressPrimer_Quiz_Attempt extends PressPrimer_Quiz_Model {
 		}
 
 		// Generate questions for this attempt
-		$question_ids = $quiz->get_questions_for_attempt();
+		$question_ids = $quiz->get_questions_for_attempt( $user_id );
 
 		if ( empty( $question_ids ) ) {
 			return new WP_Error(
@@ -641,7 +641,7 @@ class PressPrimer_Quiz_Attempt extends PressPrimer_Quiz_Model {
 		}
 
 		// Generate questions for this attempt
-		$question_ids = $quiz->get_questions_for_attempt();
+		$question_ids = $quiz->get_questions_for_attempt( 0 );
 
 		if ( empty( $question_ids ) ) {
 			return new WP_Error(

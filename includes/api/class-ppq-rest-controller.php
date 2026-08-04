@@ -2573,6 +2573,7 @@ class PressPrimer_Quiz_REST_Controller {
 			'enable_sr'                => (bool) $quiz->enable_sr,
 			'is_review_quiz'           => (bool) $quiz->is_review_quiz,
 			'is_practice'              => (bool) $quiz->is_practice,
+			'exposure_control'         => (bool) $quiz->exposure_control,
 			'ma_scoring_mode'          => $quiz->ma_scoring_mode,
 			// Cast to object so an empty sparse map serializes as {} rather than [].
 			'display_settings'         => (object) $quiz->get_display_settings(),
@@ -2656,6 +2657,7 @@ class PressPrimer_Quiz_REST_Controller {
 					'enable_sr'                => ! empty( $data['enable_sr'] ),
 					'is_review_quiz'           => ! empty( $data['is_review_quiz'] ),
 					'is_practice'              => ! empty( $data['is_practice'] ),
+					'exposure_control'         => ! empty( $data['exposure_control'] ),
 					'ma_scoring_mode'          => $ma_scoring_mode,
 					'max_answers_per_question' => $max_answers_per_question,
 				]
@@ -2799,6 +2801,7 @@ class PressPrimer_Quiz_REST_Controller {
 			$quiz->enable_sr                = ! empty( $data['enable_sr'] );
 			$quiz->is_review_quiz           = ! empty( $data['is_review_quiz'] );
 			$quiz->is_practice              = ! empty( $data['is_practice'] );
+			$quiz->exposure_control         = ! empty( $data['exposure_control'] );
 			$quiz->ma_scoring_mode          = $ma_scoring_mode;
 			$quiz->max_answers_per_question = $max_answers_per_question;
 

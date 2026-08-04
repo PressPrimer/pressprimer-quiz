@@ -49,7 +49,7 @@ PressPrimer Quiz includes features in the free version that competitors charge f
 * **Random distractor subsets** – Maximum Answers Per Question shows each student a random subset of distractors while always showing every correct answer
 * **Customizable Appearance** – Adjust fonts, colors, spacing, and other visual styles; includes Condensed Mode for streamlined quizzes with reduced vertical spacing
 * **Per-quiz display settings** – Choose display options (description, score, pass/fail status, category breakdown, retake button, and more) for every quiz
-* **Uncanny Automator integration** – Triggers for quiz completion, pass, and fail, with a comprehensive set of tokens for use in automations
+* **Uncanny Automator integration** – Triggers for quiz completion, pass, fail, and guest email capture with marketing consent, with a comprehensive set of tokens for use in automations
 
 = Perfect For =
 
@@ -76,7 +76,7 @@ PressPrimer Quiz automatically detects and integrates with popular WordPress LMS
 
 **LearnPress:** Attach quizzes to lessons via the lesson settings panel. Link passing a quiz to lesson and course completion. Works with open courses, enrolled students, and instructor roles.
 
-**Uncanny Automator:** Three triggers available: User completes a quiz, user passes a quiz, user fails a quiz. 
+**Uncanny Automator:** Four triggers available: User completes a quiz, user passes a quiz, user fails a quiz, and a guest email is captured with marketing consent. The guest-capture trigger runs in "Everyone" recipes (available in both free Uncanny Automator and Automator Pro) and only fires when the guest explicitly opts in to marketing, so consented leads can be routed to any Automator-connected tool.
 
 All integrations are bundled in the free version.
 
@@ -242,6 +242,7 @@ This plugin also offers optional AI-powered question generation using the Anthro
 == Changelog ==
 
 = 3.1.0 =
+* Added: New Uncanny Automator trigger "A guest email is captured with marketing consent" — route consented guest leads to any Automator-connected tool. Works in "Everyone" recipes on both free Uncanny Automator and Automator Pro, and only fires when the guest explicitly opts in.
 * Added: New {answers_summary} email token that adds a per-question recap — the question, the student's selected answer(s), and whether each was correct — to results emails. It respects each quiz's review display settings, so quizzes that hide answers on-site never include the recap.
 * Fixed: Clearing an email template field no longer leaves the settings screen blank — cleared templates now display the default content that is actually used when emails are sent.
 

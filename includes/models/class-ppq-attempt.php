@@ -567,6 +567,7 @@ class PressPrimer_Quiz_Attempt extends PressPrimer_Quiz_Model {
 		// First check by token from cookie (in case user started without email)
 		// Then check by email if provided
 		$existing_in_progress = null;
+		$email_backfilled     = false;
 
 		// Check cookie for existing token
 		$cookie_token = isset( $_COOKIE['pressprimer_quiz_guest_token'] ) ? sanitize_text_field( wp_unslash( $_COOKIE['pressprimer_quiz_guest_token'] ) ) : '';
@@ -580,6 +581,7 @@ class PressPrimer_Quiz_Attempt extends PressPrimer_Quiz_Model {
 				if ( ! empty( $email ) && empty( $existing_in_progress->guest_email ) ) {
 					$existing_in_progress->guest_email = $email;
 					$existing_in_progress->save();
+					$email_backfilled = true;
 				}
 			}
 		}
@@ -632,6 +634,42 @@ class PressPrimer_Quiz_Attempt extends PressPrimer_Quiz_Model {
 						]
 					);
 				}
+
+				// The guest just supplied an email for an attempt that had none —
+				// that is a capture. Fired only on the actual resume so a stale
+				// attempt that gets abandoned below doesn't double-fire (the
+				// replacement attempt fires on creation instead). The resumed
+				// attempt keeps its original consent state, so report what is
+				// stored, not what this request submitted.
+				if ( $email_backfilled ) {
+					/**
+					 * Fires when a guest email is captured on a quiz attempt.
+					 *
+					 * Emitted from the single guest-capture choke point,
+					 * `create_for_guest()`: once when a new guest attempt is
+					 * created with a non-empty email, and once when a returning
+					 * guest supplies an email for a resumed attempt that had
+					 * none. Never fires for logged-in users or empty-email
+					 * guest starts.
+					 *
+					 * @since 3.1.0
+					 *
+					 * @param int         $attempt_id Attempt ID.
+					 * @param int         $quiz_id    Quiz ID.
+					 * @param string      $email      Captured guest email.
+					 * @param int|null    $consent    Marketing consent: 1 opted in, 0 declined, null not asked.
+					 * @param string|null $consent_at Site-local datetime consent was given (as stored), or null.
+					 */
+					do_action(
+						'pressprimer_quiz_guest_email_captured',
+						(int) $existing_in_progress->id,
+						$quiz_id,
+						$email,
+						null === $existing_in_progress->guest_consent ? null : (int) $existing_in_progress->guest_consent,
+						empty( $existing_in_progress->guest_consent_at ) ? null : (string) $existing_in_progress->guest_consent_at
+					);
+				}
+
 				return $existing_in_progress;
 			} else {
 				// If it can't be resumed (timed out or quiz doesn't allow resume), abandon it
@@ -785,6 +823,18 @@ class PressPrimer_Quiz_Attempt extends PressPrimer_Quiz_Model {
 			 * @param PressPrimer_Quiz_Quiz    $quiz    The quiz object.
 			 */
 			do_action( 'pressprimer_quiz_attempt_started', $attempt, $quiz );
+
+			if ( ! empty( $email ) ) {
+				/** This action is documented in includes/models/class-ppq-attempt.php */
+				do_action(
+					'pressprimer_quiz_guest_email_captured',
+					(int) $attempt_id,
+					$quiz_id,
+					$email,
+					$guest_consent,
+					empty( $guest_consent_at ) ? null : (string) $guest_consent_at
+				);
+			}
 		}
 
 		return $attempt;

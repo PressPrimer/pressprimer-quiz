@@ -199,6 +199,19 @@ class PressPrimer_Quiz_Attempt extends PressPrimer_Quiz_Model {
 	public $ma_scoring_mode;
 
 	/**
+	 * Practice flag
+	 *
+	 * Copied from the quiz's is_practice flag at creation time; the attempt
+	 * flag is the source of truth for all downstream consumers, so a quiz
+	 * later toggled off does not retroactively change history (v3.1
+	 * feature 001).
+	 *
+	 * @since 3.1.0
+	 * @var int 0|1
+	 */
+	public $is_practice = 0;
+
+	/**
 	 * Attempt status
 	 *
 	 * @since 1.0.0
@@ -286,6 +299,7 @@ class PressPrimer_Quiz_Attempt extends PressPrimer_Quiz_Model {
 			'passed',
 			'curved_score',
 			'ma_scoring_mode',
+			'is_practice',
 			'status',
 			'current_position',
 			'questions_json',
@@ -336,8 +350,10 @@ class PressPrimer_Quiz_Attempt extends PressPrimer_Quiz_Model {
 			$existing_in_progress->save();
 		}
 
-		// Check attempt limits
-		if ( $quiz->max_attempts ) {
+		// Check attempt limits. Practice quizzes waive the attempt limit and
+		// the retake delay below (v3.1 feature 001 FR-003) — all other gates
+		// (login, availability, access mode) apply unchanged.
+		if ( $quiz->max_attempts && ! $quiz->is_practice ) {
 			$previous_attempts = static::get_user_attempts( $quiz_id, $user_id );
 			if ( count( $previous_attempts ) >= $quiz->max_attempts ) {
 				return new WP_Error(
@@ -352,7 +368,7 @@ class PressPrimer_Quiz_Attempt extends PressPrimer_Quiz_Model {
 		}
 
 		// Check attempt delay
-		if ( $quiz->attempt_delay_minutes ) {
+		if ( $quiz->attempt_delay_minutes && ! $quiz->is_practice ) {
 			$last_attempt = static::get_last_user_attempt( $quiz_id, $user_id );
 			if ( $last_attempt && $last_attempt->finished_at ) {
 				$elapsed_minutes = ( time() - mysql2date( 'U', $last_attempt->finished_at ) ) / 60;
@@ -421,6 +437,7 @@ class PressPrimer_Quiz_Attempt extends PressPrimer_Quiz_Model {
 			'guest_email'      => null,
 			'guest_token'      => null,
 			'source_url'       => $source_url ?: null,
+			'is_practice'      => $quiz->is_practice ? 1 : 0,
 			'status'           => 'in_progress',
 			'current_position' => 0,
 			'questions_json'   => wp_json_encode( $questions_data ),
@@ -677,6 +694,7 @@ class PressPrimer_Quiz_Attempt extends PressPrimer_Quiz_Model {
 			'guest_consent'    => $guest_consent,
 			'guest_consent_at' => $guest_consent_at,
 			'source_url'       => $source_url ?: null,
+			'is_practice'      => $quiz->is_practice ? 1 : 0,
 			'status'           => 'in_progress',
 			'current_position' => 0,
 			'questions_json'   => wp_json_encode( $questions_data ),

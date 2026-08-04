@@ -121,6 +121,12 @@ const SettingsPanel = ({ form, generationMode, setGenerationMode, quizData = {},
 	// Watch access_mode to show/hide login message field
 	const accessMode = Form.useWatch('access_mode', form);
 
+	// Watch is_practice to disable the delivery/limit fields it overrides
+	// (mode, time limit, attempt limit and delay). The stored values are
+	// kept — practice only overrides them at attempt time.
+	const isPractice = Form.useWatch('is_practice', form);
+	const practiceHint = __('Not used while this is a practice quiz — your setting is kept.', 'pressprimer-quiz');
+
 	// Watch pool fields for conditional rendering
 	const poolEnabled = Form.useWatch('pool_enabled', form);
 	const maxQuestions = Form.useWatch('max_questions', form);
@@ -404,6 +410,24 @@ const SettingsPanel = ({ form, generationMode, setGenerationMode, quizData = {},
 				<Form.Item
 					label={
 						<Space>
+							<span>{__('Practice quiz', 'pressprimer-quiz')}</span>
+							<Tooltip title={__('Untimed, unlimited attempts, immediate feedback. Attempts are excluded from grade reports.', 'pressprimer-quiz')}>
+								<QuestionCircleOutlined style={{ fontSize: 12, color: '#8c8c8c' }} />
+							</Tooltip>
+						</Space>
+					}
+					name="is_practice"
+					valuePropName="checked"
+					extra={__('Practice attempts always run tutorial-style with no timer and unlimited retakes — the mode, time limit, and attempt settings below are kept but not used. Students see a Practice badge while taking the quiz, and the results page notes that no grade was recorded.', 'pressprimer-quiz')}
+				>
+					<Switch size="small" />
+				</Form.Item>
+
+				<Divider />
+
+				<Form.Item
+					label={
+						<Space>
 							<span>{__('Quiz Mode', 'pressprimer-quiz')}</span>
 							<Tooltip title={__('Controls when students receive feedback on their answers', 'pressprimer-quiz')}>
 								<QuestionCircleOutlined style={{ fontSize: 12, color: '#8c8c8c' }} />
@@ -411,8 +435,9 @@ const SettingsPanel = ({ form, generationMode, setGenerationMode, quizData = {},
 						</Space>
 					}
 					name="mode"
+					extra={isPractice ? practiceHint : undefined}
 				>
-					<Radio.Group style={{ width: '100%' }}>
+					<Radio.Group style={{ width: '100%' }} disabled={!!isPractice}>
 						<Space direction="vertical" style={{ width: '100%' }} size="small">
 							<Radio value="tutorial">
 								<div>
@@ -453,8 +478,10 @@ const SettingsPanel = ({ form, generationMode, setGenerationMode, quizData = {},
 							}
 							name="time_limit_seconds"
 							style={{ marginBottom: 0 }}
+							extra={isPractice ? practiceHint : undefined}
 						>
 							<InputNumber
+								disabled={!!isPractice}
 								min={60}
 								max={86400}
 								step={60}
@@ -670,6 +697,7 @@ const SettingsPanel = ({ form, generationMode, setGenerationMode, quizData = {},
 								style={{ marginBottom: 0 }}
 							>
 								<InputNumber
+									disabled={!!isPractice}
 									min={1}
 									max={100}
 									size="small"
@@ -678,7 +706,7 @@ const SettingsPanel = ({ form, generationMode, setGenerationMode, quizData = {},
 								/>
 							</Form.Item>
 							<Text type="secondary" style={{ fontSize: 13, display: 'block', marginTop: 4, marginBottom: 24 }}>
-								{__('Empty for unlimited attempts', 'pressprimer-quiz')}
+								{isPractice ? practiceHint : __('Empty for unlimited attempts', 'pressprimer-quiz')}
 							</Text>
 							<Form.Item
 								label={
@@ -690,8 +718,10 @@ const SettingsPanel = ({ form, generationMode, setGenerationMode, quizData = {},
 									</Space>
 								}
 								name="attempt_delay_minutes"
+								extra={isPractice ? practiceHint : undefined}
 							>
 								<InputNumber
+									disabled={!!isPractice}
 									min={0}
 									max={10080}
 									size="small"

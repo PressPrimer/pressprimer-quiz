@@ -814,9 +814,11 @@ class PressPrimer_Quiz_AJAX_Handler {
 			);
 		}
 
-		// Verify this is a tutorial mode quiz
+		// Verify this is a tutorial mode quiz or a practice attempt — practice
+		// attempts deliver tutorial-style regardless of the stored mode (v3.1
+		// feature 001 FR-004).
 		$quiz = $attempt->get_quiz();
-		if ( ! $quiz || 'tutorial' !== $quiz->mode ) {
+		if ( ! $quiz || ( 'tutorial' !== $quiz->mode && empty( $attempt->is_practice ) ) ) {
 			wp_send_json_error(
 				[
 					'message' => __( 'Answer checking is only available in tutorial mode.', 'pressprimer-quiz' ),

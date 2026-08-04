@@ -510,6 +510,12 @@
 	color: var(--ppq-error-strong);
 }
 
+.ppq-shell-badge--practice {
+	margin-left: var(--ppq-space-sm, 8px);
+	background: var(--ppq-info-light, #e6f7ff);
+	color: var(--ppq-info, #1890ff);
+}
+
 /* Filters + pagination ------------------------------------------------- */
 
 .ppq-shell-filters {

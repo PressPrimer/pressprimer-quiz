@@ -168,7 +168,9 @@ class PressPrimer_Quiz_Quiz_Renderer {
 		}
 
 		// Show meta if time limit should display and quiz has time limit.
-		if ( $display['show_time_limit'] && $quiz->time_limit_seconds > 0 ) {
+		// Practice quizzes never advertise a time limit — it is waived at
+		// delivery (v3.1 feature 001).
+		if ( $display['show_time_limit'] && $quiz->time_limit_seconds > 0 && ! $quiz->is_practice ) {
 			return true;
 		}
 
@@ -178,7 +180,7 @@ class PressPrimer_Quiz_Quiz_Renderer {
 		}
 
 		// Show meta if attempt count should display and quiz has max attempts set.
-		if ( $display['show_attempt_count'] && $quiz->max_attempts > 0 ) {
+		if ( $display['show_attempt_count'] && $quiz->max_attempts > 0 && ! $quiz->is_practice ) {
 			return true;
 		}
 
@@ -363,7 +365,9 @@ class PressPrimer_Quiz_Quiz_Renderer {
 			<div class="ppq-quiz-content">
 
 				<header class="ppq-quiz-header">
-					<h1 class="ppq-quiz-title"><?php echo esc_html( $quiz->title ); ?></h1>
+					<h1 class="ppq-quiz-title"><?php echo esc_html( $quiz->title ); ?><?php if ( $quiz->is_practice ) : ?>
+						<span class="ppq-practice-badge"><?php esc_html_e( 'Practice', 'pressprimer-quiz' ); ?></span>
+					<?php endif; ?></h1>
 
 					<?php if ( $display['show_description'] && ! empty( $quiz->description ) ) : ?>
 						<div class="ppq-quiz-description">
@@ -425,7 +429,7 @@ class PressPrimer_Quiz_Quiz_Renderer {
 						</div>
 						<?php endif; ?>
 
-						<?php if ( $display['show_time_limit'] && $quiz->time_limit_seconds ) : ?>
+						<?php if ( $display['show_time_limit'] && $quiz->time_limit_seconds && ! $quiz->is_practice ) : ?>
 							<div class="ppq-meta-item">
 								<span class="ppq-meta-icon" aria-hidden="true">⏰</span>
 								<div class="ppq-meta-content">
@@ -451,7 +455,7 @@ class PressPrimer_Quiz_Quiz_Renderer {
 						</div>
 						<?php endif; ?>
 
-						<?php if ( $display['show_attempt_count'] && $quiz->max_attempts ) : ?>
+						<?php if ( $display['show_attempt_count'] && $quiz->max_attempts && ! $quiz->is_practice ) : ?>
 							<div class="ppq-meta-item">
 								<span class="ppq-meta-icon" aria-hidden="true">✓</span>
 								<div class="ppq-meta-content">
@@ -793,10 +797,18 @@ class PressPrimer_Quiz_Quiz_Renderer {
 				'</p></div>';
 		}
 
+		// Practice attempts always deliver tutorial-style with no timer,
+		// regardless of the quiz's stored mode/time limit — the stored
+		// settings are never mutated (v3.1 feature 001 FR-004). The attempt
+		// flag (not the quiz flag) decides, so in-progress attempts keep
+		// their creation-time semantics if the quiz is toggled mid-attempt.
+		$is_practice_attempt = ! empty( $attempt->is_practice );
+		$effective_mode      = $is_practice_attempt ? 'tutorial' : $quiz->mode;
+
 		// Calculate time remaining (if timed)
 		$time_remaining = null;
 		$time_limit     = null;
-		if ( $quiz->time_limit_seconds ) {
+		if ( $quiz->time_limit_seconds && ! $is_practice_attempt ) {
 			$time_limit = $quiz->time_limit_seconds;
 			// Use timezone-aware calculation - started_at is in WordPress local time
 			$started_timestamp = strtotime( get_gmt_from_date( $attempt->started_at ) );
@@ -910,7 +922,8 @@ class PressPrimer_Quiz_Quiz_Renderer {
 			aria-label="<?php esc_attr_e( 'Quiz', 'pressprimer-quiz' ); ?>"
 			data-attempt-id="<?php echo esc_attr( $attempt->id ); ?>"
 			data-quiz-id="<?php echo esc_attr( $quiz->id ); ?>"
-			data-quiz-mode="<?php echo esc_attr( $quiz->mode ); ?>"
+			data-quiz-mode="<?php echo esc_attr( $effective_mode ); ?>"
+			data-is-practice="<?php echo esc_attr( $is_practice_attempt ? '1' : '0' ); ?>"
 			data-allow-skip="<?php echo esc_attr( $quiz->allow_skip ? '1' : '0' ); ?>"
 			data-allow-backward="<?php echo esc_attr( $allow_backward ? '1' : '0' ); ?>"
 			data-page-mode="<?php echo esc_attr( $page_mode ); ?>"
@@ -939,7 +952,9 @@ class PressPrimer_Quiz_Quiz_Renderer {
 			<!-- Quiz Header -->
 			<div class="ppq-quiz-interface-header">
 				<div class="ppq-quiz-interface-header-content">
-					<h1 class="ppq-quiz-interface-title"><?php echo esc_html( $quiz->title ); ?></h1>
+					<h1 class="ppq-quiz-interface-title"><?php echo esc_html( $quiz->title ); ?><?php if ( $is_practice_attempt ) : ?>
+						<span class="ppq-practice-badge"><?php esc_html_e( 'Practice', 'pressprimer-quiz' ); ?></span>
+					<?php endif; ?></h1>
 
 					<?php
 					$total_questions    = count( $items );

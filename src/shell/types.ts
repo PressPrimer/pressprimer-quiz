@@ -92,6 +92,7 @@ export interface MyAttemptItem {
 	completed_at: string | null;
 	score_percent: number | null;
 	passed: boolean | null;
+	is_practice: boolean;
 	status: string;
 	results_url: string;
 	resume_url: string;
@@ -116,6 +117,7 @@ export interface MyAttemptsParams {
 	status?: string;
 	orderby?: string;
 	order?: string;
+	practice?: string;
 }
 
 /** The public registration API exposed on window.PPQ.shell. */

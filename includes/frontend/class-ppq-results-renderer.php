@@ -282,8 +282,13 @@ class PressPrimer_Quiz_Results_Renderer {
 	private function render_results_header( $attempt, $quiz, $results ) {
 		?>
 		<div class="ppq-results-header">
-			<h2 class="ppq-results-title"><?php esc_html_e( 'Quiz Complete!', 'pressprimer-quiz' ); ?></h2>
+			<h2 class="ppq-results-title"><?php esc_html_e( 'Quiz Complete!', 'pressprimer-quiz' ); ?><?php if ( ! empty( $attempt->is_practice ) ) : ?>
+				<span class="ppq-practice-badge"><?php esc_html_e( 'Practice', 'pressprimer-quiz' ); ?></span>
+			<?php endif; ?></h2>
 			<p class="ppq-quiz-title"><?php echo esc_html( $quiz->title ); ?></p>
+			<?php if ( ! empty( $attempt->is_practice ) ) : ?>
+				<p class="ppq-practice-note"><?php esc_html_e( 'This was a practice attempt — no grade was recorded.', 'pressprimer-quiz' ); ?></p>
+			<?php endif; ?>
 		</div>
 		<?php
 	}

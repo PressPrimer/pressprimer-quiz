@@ -313,6 +313,31 @@ class PressPrimer_Quiz_Quiz extends PressPrimer_Quiz_Model {
 	public $is_review_quiz = 0;
 
 	/**
+	 * Is practice quiz
+	 *
+	 * Practice quizzes deliver tutorial-style regardless of stored mode, waive
+	 * attempt limits and delays, and flag every attempt as practice so
+	 * grade-bearing surfaces exclude them (v3.1 feature 001). Stored settings
+	 * are never mutated by this flag — enforcement is at attempt creation and
+	 * delivery time.
+	 *
+	 * @since 3.1.0
+	 * @var int 0|1
+	 */
+	public $is_practice = 0;
+
+	/**
+	 * Question exposure control enabled
+	 *
+	 * When enabled on pool/dynamic quizzes, per-attempt selection prefers
+	 * questions the student has not seen (v3.1 feature 002).
+	 *
+	 * @since 3.1.0
+	 * @var int 0|1
+	 */
+	public $exposure_control = 0;
+
+	/**
 	 * Question pool enabled
 	 *
 	 * When enabled, each attempt randomly selects a subset of questions
@@ -454,6 +479,8 @@ class PressPrimer_Quiz_Quiz extends PressPrimer_Quiz_Model {
 			'max_questions',
 			'enable_sr',
 			'is_review_quiz',
+			'is_practice',
+			'exposure_control',
 		];
 	}
 
@@ -593,6 +620,7 @@ class PressPrimer_Quiz_Quiz extends PressPrimer_Quiz_Model {
 				return $value >= 1 ? $value : null;
 			},
 			'enable_sr'                => $bool,
+			'is_practice'              => $bool,
 		);
 	}
 

@@ -43,6 +43,7 @@ export default function MyResults( props: ScreenProps ) {
 	const [ status, setStatus ] = useState( 'all' );
 	const [ orderby, setOrderby ] = useState( 'date' );
 	const [ order, setOrder ] = useState( 'desc' );
+	const [ practice, setPractice ] = useState( 'show' );
 
 	useEffect( () => {
 		let active = true;
@@ -60,6 +61,9 @@ export default function MyResults( props: ScreenProps ) {
 		}
 		if ( 'all' !== status ) {
 			params.status = status;
+		}
+		if ( 'hide' === practice ) {
+			params.practice = 'hide';
 		}
 
 		fetchMyAttempts( params )
@@ -84,7 +88,7 @@ export default function MyResults( props: ScreenProps ) {
 		return () => {
 			active = false;
 		};
-	}, [ page, quizId, status, orderby, order ] );
+	}, [ page, quizId, status, orderby, order, practice ] );
 
 	return (
 		<div className="ppq-shell-results">
@@ -126,6 +130,28 @@ export default function MyResults( props: ScreenProps ) {
 						</option>
 						<option value="in_progress">
 							{ __( 'In progress', 'pressprimer-quiz' ) }
+						</option>
+					</select>
+				</label>
+
+				<label
+					className="ppq-shell-field"
+					htmlFor="ppq-shell-filter-practice"
+				>
+					<span>{ __( 'Practice', 'pressprimer-quiz' ) }</span>
+					<select
+						id="ppq-shell-filter-practice"
+						value={ practice }
+						onChange={ ( event ) => {
+							setPractice( event.target.value );
+							setPage( 1 );
+						} }
+					>
+						<option value="show">
+							{ __( 'Show', 'pressprimer-quiz' ) }
+						</option>
+						<option value="hide">
+							{ __( 'Hide', 'pressprimer-quiz' ) }
 						</option>
 					</select>
 				</label>

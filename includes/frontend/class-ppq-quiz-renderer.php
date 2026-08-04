@@ -250,7 +250,7 @@ class PressPrimer_Quiz_Quiz_Renderer {
 
 				// If no answers and started more than 1 hour ago, abandon it
 				if ( ! $has_any_answer ) {
-					$started_timestamp = mysql2date( 'U', $in_progress_attempt->started_at );
+					$started_timestamp = PressPrimer_Quiz_Helpers::local_datetime_to_timestamp( $in_progress_attempt->started_at );
 					$one_hour_ago      = time() - 3600;
 					if ( $started_timestamp < $one_hour_ago ) {
 						$in_progress_attempt->status = 'abandoned';
@@ -289,7 +289,7 @@ class PressPrimer_Quiz_Quiz_Renderer {
 		if ( $can_start && $quiz->attempt_delay_minutes && ! empty( $previous_attempts ) ) {
 			$last_attempt = $previous_attempts[0];
 			if ( $last_attempt && 'submitted' === $last_attempt->status && $last_attempt->finished_at ) {
-				$elapsed_minutes = ( time() - mysql2date( 'U', $last_attempt->finished_at ) ) / 60;
+				$elapsed_minutes = ( time() - PressPrimer_Quiz_Helpers::local_datetime_to_timestamp( $last_attempt->finished_at ) ) / 60;
 				if ( $elapsed_minutes < $quiz->attempt_delay_minutes ) {
 					$can_start     = false;
 					$wait_minutes  = ceil( $quiz->attempt_delay_minutes - $elapsed_minutes );
@@ -811,7 +811,7 @@ class PressPrimer_Quiz_Quiz_Renderer {
 		if ( $quiz->time_limit_seconds && ! $is_practice_attempt ) {
 			$time_limit = $quiz->time_limit_seconds;
 			// Use timezone-aware calculation - started_at is in WordPress local time
-			$started_timestamp = strtotime( get_gmt_from_date( $attempt->started_at ) );
+			$started_timestamp = PressPrimer_Quiz_Helpers::local_datetime_to_timestamp( $attempt->started_at );
 			$elapsed           = time() - $started_timestamp;
 			$time_remaining    = max( 0, $time_limit - $elapsed );
 		}

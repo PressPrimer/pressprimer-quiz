@@ -371,7 +371,7 @@ class PressPrimer_Quiz_Attempt extends PressPrimer_Quiz_Model {
 		if ( $quiz->attempt_delay_minutes && ! $quiz->is_practice ) {
 			$last_attempt = static::get_last_user_attempt( $quiz_id, $user_id );
 			if ( $last_attempt && $last_attempt->finished_at ) {
-				$elapsed_minutes = ( time() - mysql2date( 'U', $last_attempt->finished_at ) ) / 60;
+				$elapsed_minutes = ( time() - PressPrimer_Quiz_Helpers::local_datetime_to_timestamp( $last_attempt->finished_at ) ) / 60;
 				if ( $elapsed_minutes < $quiz->attempt_delay_minutes ) {
 					$wait_minutes = ceil( $quiz->attempt_delay_minutes - $elapsed_minutes );
 					return new WP_Error(
@@ -606,7 +606,7 @@ class PressPrimer_Quiz_Attempt extends PressPrimer_Quiz_Model {
 			}
 
 			if ( ! $has_any_answer ) {
-				$started_timestamp = mysql2date( 'U', $existing_in_progress->started_at );
+				$started_timestamp = PressPrimer_Quiz_Helpers::local_datetime_to_timestamp( $existing_in_progress->started_at );
 				$one_hour_ago      = time() - 3600;
 				if ( $started_timestamp < $one_hour_ago ) {
 					$should_abandon_stale = true;
@@ -1052,7 +1052,7 @@ class PressPrimer_Quiz_Attempt extends PressPrimer_Quiz_Model {
 
 		// Calculate elapsed time using WordPress timezone-aware functions
 		// started_at is stored in WordPress local time via current_time('mysql')
-		$started_timestamp = strtotime( get_gmt_from_date( $this->started_at ) );
+		$started_timestamp = PressPrimer_Quiz_Helpers::local_datetime_to_timestamp( $this->started_at );
 		$now               = time(); // UTC timestamp
 		$elapsed_seconds   = $now - $started_timestamp;
 		$elapsed_ms        = $elapsed_seconds * 1000;
@@ -1184,7 +1184,7 @@ class PressPrimer_Quiz_Attempt extends PressPrimer_Quiz_Model {
 
 		// Calculate elapsed time using WordPress timezone-aware functions
 		// started_at is stored in WordPress local time via current_time('mysql')
-		$started_timestamp = strtotime( get_gmt_from_date( $this->started_at ) );
+		$started_timestamp = PressPrimer_Quiz_Helpers::local_datetime_to_timestamp( $this->started_at );
 		$now               = time(); // UTC timestamp
 		$elapsed_seconds   = $now - $started_timestamp;
 
@@ -1514,8 +1514,11 @@ class PressPrimer_Quiz_Attempt extends PressPrimer_Quiz_Model {
 			return false;
 		}
 
-		// Check if current time is past expiration
-		$now     = current_time( 'timestamp' );
+		// Check if current time is past expiration. token_expires_at is stored
+		// in UTC (written with gmdate()), so strtotime() — which parses it as
+		// UTC — yields the real expiry instant; compare against time(), not
+		// current_time( 'timestamp' ), which is shifted by the site offset.
+		$now     = time();
 		$expires = strtotime( $this->token_expires_at );
 
 		return $now > $expires;

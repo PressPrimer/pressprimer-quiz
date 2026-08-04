@@ -1763,9 +1763,9 @@ class PressPrimer_Quiz_Quizzes_List_Table extends WP_List_Table {
 	 */
 	public function column_date( $item ) {
 		// created_at is stored in WordPress local time; resolve it to a real
-		// timestamp with mysql2date() so the relative-time comparison below uses
-		// the correct instant instead of a UTC-parsed one.
-		$timestamp = mysql2date( 'U', $item->created_at );
+		// timestamp so the relative-time comparison below uses the correct
+		// instant instead of an offset-shifted one.
+		$timestamp = PressPrimer_Quiz_Helpers::local_datetime_to_timestamp( $item->created_at );
 
 		if ( ! $timestamp ) {
 			return '—';

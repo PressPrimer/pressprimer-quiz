@@ -313,9 +313,11 @@ class PressPrimer_Quiz_Results_Renderer {
 			return;
 		}
 
-		// Calculate days until expiration
+		// Calculate days until expiration. token_expires_at is stored in UTC,
+		// so compare real epochs — not current_time( 'timestamp' ), which is
+		// shifted by the site offset.
 		if ( $attempt->token_expires_at ) {
-			$now            = current_time( 'timestamp' );
+			$now            = time();
 			$expires        = strtotime( $attempt->token_expires_at );
 			$days_remaining = max( 0, ceil( ( $expires - $now ) / DAY_IN_SECONDS ) );
 
@@ -1818,7 +1820,7 @@ class PressPrimer_Quiz_Results_Renderer {
 
 		// Check attempt delay
 		if ( $quiz->attempt_delay_minutes && $attempt->finished_at ) {
-			$elapsed_minutes = ( time() - mysql2date( 'U', $attempt->finished_at ) ) / 60;
+			$elapsed_minutes = ( time() - PressPrimer_Quiz_Helpers::local_datetime_to_timestamp( $attempt->finished_at ) ) / 60;
 
 			if ( $elapsed_minutes < $quiz->attempt_delay_minutes ) {
 				return false;

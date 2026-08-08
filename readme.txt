@@ -3,7 +3,7 @@ Contributors: pressprimer
 Tags: quiz, learndash, assessment, lms, elearning
 Requires at least: 6.4
 Tested up to: 7.0
-Stable tag: 3.0.4
+Stable tag: 3.0.5
 Requires PHP: 7.4
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -240,6 +240,9 @@ This plugin also offers optional AI-powered question generation using the Anthro
 5. Admin reporting with analytics
 
 == Changelog ==
+
+= 3.0.5 =
+* Fixed: The results link in quiz completion emails now points to the correct quiz page when the quiz was added with the block or with a shortcode that omits quotation marks around the ID.
 
 = 3.0.4 =
 * Fixed: Filters in the quiz editor's "Add Questions" dialog now apply on the first selection.

@@ -212,32 +212,97 @@ class PressPrimer_Quiz_Email_Service {
 	 * @return string Results URL.
 	 */
 	private static function get_results_url( $attempt ) {
-		// Try to get the quiz page URL
-		$quiz     = $attempt->get_quiz();
 		$base_url = '';
 
-		if ( $quiz ) {
-			// Look for a page that contains the quiz shortcode
-			global $wpdb;
-			$page_id = $wpdb->get_var(
-				$wpdb->prepare(
-					"SELECT ID FROM {$wpdb->posts} WHERE post_status = 'publish' AND post_content LIKE %s LIMIT 1",
-					'%[pressprimer_quiz id="' . $quiz->id . '"%'
-				)
-			);
+		// 1. The exact page where THIS attempt was started. It is recorded per
+		// attempt (with the query string stripped), so it points at the specific
+		// quiz instance that produced this email — regardless of whether the quiz
+		// was placed with the block or the shortcode, and even when the same quiz
+		// appears on more than one page.
+		if ( ! empty( $attempt->source_url ) ) {
+			$base_url = $attempt->source_url;
+		}
 
-			if ( $page_id ) {
-				$base_url = get_permalink( $page_id );
+		// 2. Fallback for attempts with no recorded source page (e.g. created
+		// before source capture, or where no referrer was available): find a
+		// published page that embeds the quiz, matching both the block and the
+		// shortcode.
+		if ( empty( $base_url ) ) {
+			$quiz = $attempt->get_quiz();
+			if ( $quiz ) {
+				$base_url = self::find_quiz_page_url( (int) $quiz->id );
 			}
 		}
 
-		// Fallback to home URL if no quiz page found
+		// 3. Last resort: the site home.
 		if ( empty( $base_url ) ) {
 			$base_url = home_url( '/' );
 		}
 
-		// Use the attempt's get_results_url method which handles tokens for guests
+		// Appends ?attempt=N (plus the secure token for guests) so the page
+		// renders this attempt's results.
 		return $attempt->get_results_url( $base_url );
+	}
+
+	/**
+	 * Find a published page/post that embeds a quiz.
+	 *
+	 * Matches the quiz block (pressprimer-quiz/quiz with "quizId":N) and the
+	 * shortcode in every form — double-quoted, single-quoted, and unquoted
+	 * (id="N" / id='N' / id=N) — so a "view results" link resolves however the
+	 * quiz was placed. Pages are preferred over posts, and the lowest ID wins for
+	 * determinism. This is only a fallback — get_results_url() uses the attempt's
+	 * own source page first.
+	 *
+	 * @since 3.0.5
+	 *
+	 * @param int $quiz_id Quiz ID.
+	 * @return string Page permalink, or '' when none is found.
+	 */
+	private static function find_quiz_page_url( $quiz_id ) {
+		global $wpdb;
+
+		$quiz_id = (int) $quiz_id;
+		if ( $quiz_id <= 0 ) {
+			return '';
+		}
+
+		// Block form: quizId is serialized first as the block's primary attribute,
+		// so it is followed by either '}' (only attribute) or ',' (more follow).
+		$block_end = '%' . $wpdb->esc_like( 'pressprimer-quiz/quiz {"quizId":' . $quiz_id . '}' ) . '%';
+		$block_mid = '%' . $wpdb->esc_like( 'pressprimer-quiz/quiz {"quizId":' . $quiz_id . ',' ) . '%';
+
+		// Shortcode form: double-quoted, single-quoted, or unquoted. The unquoted
+		// value is anchored to its terminator (a closing ']' or a space before the
+		// next attribute) so that id=1 cannot also match id=10 or id=100.
+		$sc_double     = '%' . $wpdb->esc_like( '[pressprimer_quiz id="' . $quiz_id . '"' ) . '%';
+		$sc_single     = '%' . $wpdb->esc_like( "[pressprimer_quiz id='" . $quiz_id . "'" ) . '%';
+		$sc_bare_close = '%' . $wpdb->esc_like( '[pressprimer_quiz id=' . $quiz_id . ']' ) . '%';
+		$sc_bare_space = '%' . $wpdb->esc_like( '[pressprimer_quiz id=' . $quiz_id . ' ' ) . '%';
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Content scan for the embedding page; fallback only, values bound through prepare().
+		$page_id = $wpdb->get_var(
+			$wpdb->prepare(
+				"SELECT ID FROM {$wpdb->posts}
+				WHERE post_status = 'publish'
+				AND post_type IN ( 'post', 'page' )
+				AND (
+					post_content LIKE %s OR post_content LIKE %s
+					OR post_content LIKE %s OR post_content LIKE %s
+					OR post_content LIKE %s OR post_content LIKE %s
+				)
+				ORDER BY ( post_type = 'page' ) DESC, ID ASC
+				LIMIT 1",
+				$block_end,
+				$block_mid,
+				$sc_double,
+				$sc_single,
+				$sc_bare_close,
+				$sc_bare_space
+			)
+		);
+
+		return $page_id ? (string) get_permalink( (int) $page_id ) : '';
 	}
 
 	/**

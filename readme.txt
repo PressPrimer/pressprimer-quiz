@@ -254,6 +254,10 @@ This plugin also offers optional AI-powered question generation using the Anthro
 * Added: New {answers_summary} email token that adds a per-question recap — the question, the student's selected answer(s), and whether each was correct — to results emails. It respects each quiz's review display settings, so quizzes that hide answers on-site never include the recap.
 * Fixed: Clearing an email template field no longer leaves the settings screen blank — cleared templates now display the default content that is actually used when emails are sent.
 
+= 3.0.5 =
+* Fixed: The results link in quiz completion emails now points to the correct quiz page when the quiz was added with the block or with a shortcode that omits quotation marks around the ID.
+* Fixed: Guests taking a quiz without logging in can now use the "Email Results" button on the results page instead of receiving a permission error.
+
 = 3.0.4 =
 * Fixed: Filters in the quiz editor's "Add Questions" dialog now apply on the first selection.
 * Fixed: The Type filter in the "Add Questions" dialog now correctly matches questions.

@@ -219,7 +219,12 @@ class PressPrimer_Quiz_Email_Service {
 		// quiz instance that produced this email — regardless of whether the quiz
 		// was placed with the block or the shortcode, and even when the same quiz
 		// appears on more than one page.
-		if ( ! empty( $attempt->source_url ) ) {
+		//
+		// A source page of just the site root means the ?page_id=N was stripped
+		// at capture on a site using "plain" permalinks; skip it and let the
+		// content search below resolve the page's real permalink instead.
+		if ( ! empty( $attempt->source_url )
+			&& untrailingslashit( $attempt->source_url ) !== untrailingslashit( home_url() ) ) {
 			$base_url = $attempt->source_url;
 		}
 

@@ -635,22 +635,28 @@ class PressPrimer_Quiz_AJAX_Handler {
 			return true;
 		}
 
-		// Check if guest with valid token (from cookie or POST data)
-		// POST data is checked as fallback for environments where cookies may not work
-		// (e.g., SSL termination proxies, strict cookie policies)
+		// Check if guest with a valid token. Both the cookie and the POST body are
+		// considered, and either matching is enough: the results page authorizes a
+		// guest by the URL token, so the button must still work when the cookie is
+		// missing, blocked by a strict cookie policy, or has been overwritten by a
+		// later attempt's token.
 		if ( ! is_user_logged_in() && $attempt->guest_token ) {
-			// First check cookie
-			$token = isset( $_COOKIE['pressprimer_quiz_guest_token'] ) ? sanitize_text_field( wp_unslash( $_COOKIE['pressprimer_quiz_guest_token'] ) ) : '';
+			$candidate_tokens = array();
 
-			// Fallback to POST data if cookie not available
-			// phpcs:ignore WordPress.Security.NonceVerification.Missing -- Nonce verified in calling AJAX handler methods
-			if ( empty( $token ) && isset( $_POST['guest_token'] ) ) {
-				// phpcs:ignore WordPress.Security.NonceVerification.Missing -- Nonce verified in calling AJAX handler methods
-				$token = sanitize_text_field( wp_unslash( $_POST['guest_token'] ) );
+			if ( isset( $_COOKIE['pressprimer_quiz_guest_token'] ) ) {
+				$candidate_tokens[] = sanitize_text_field( wp_unslash( $_COOKIE['pressprimer_quiz_guest_token'] ) );
 			}
 
-			if ( ! empty( $token ) && $token === $attempt->guest_token ) {
-				return true;
+			// phpcs:ignore WordPress.Security.NonceVerification.Missing -- Nonce verified in the calling AJAX handler.
+			if ( isset( $_POST['guest_token'] ) ) {
+				// phpcs:ignore WordPress.Security.NonceVerification.Missing -- Nonce verified in the calling AJAX handler.
+				$candidate_tokens[] = sanitize_text_field( wp_unslash( $_POST['guest_token'] ) );
+			}
+
+			foreach ( $candidate_tokens as $candidate ) {
+				if ( ! empty( $candidate ) && hash_equals( (string) $attempt->guest_token, $candidate ) ) {
+					return true;
+				}
 			}
 		}
 

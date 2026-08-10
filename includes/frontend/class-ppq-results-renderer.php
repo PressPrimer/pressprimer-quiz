@@ -967,6 +967,7 @@ class PressPrimer_Quiz_Results_Renderer {
 			class="ppq-button ppq-email-button"
 			data-attempt-id="<?php echo esc_attr( $attempt->id ); ?>"
 			data-email="<?php echo esc_attr( $email ); ?>"
+			data-guest-token="<?php echo esc_attr( $attempt->guest_token ?? '' ); ?>"
 		>
 			<?php esc_html_e( 'Email Results', 'pressprimer-quiz' ); ?>
 		</button>

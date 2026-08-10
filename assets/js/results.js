@@ -41,6 +41,7 @@
 			const $button = $(e.currentTarget);
 			const attemptId = $button.data('attempt-id');
 			const email = $button.data('email');
+			const guestToken = $button.data('guest-token');
 			const $status = $('.ppq-email-status');
 
 			// Disable button
@@ -61,7 +62,8 @@
 					action: 'pressprimer_quiz_email_results',
 					nonce: pressprimerQuizResults.nonce,
 					attempt_id: attemptId,
-					email: email
+					email: email,
+					guest_token: guestToken || ''
 				},
 				success: function(response) {
 					if (response.success) {

@@ -243,6 +243,7 @@ This plugin also offers optional AI-powered question generation using the Anthro
 
 = 3.0.5 =
 * Fixed: The results link in quiz completion emails now points to the correct quiz page when the quiz was added with the block or with a shortcode that omits quotation marks around the ID.
+* Fixed: Guests taking a quiz without logging in can now use the "Email Results" button on the results page instead of receiving a permission error.
 
 = 3.0.4 =
 * Fixed: Filters in the quiz editor's "Add Questions" dialog now apply on the first selection.

@@ -3379,6 +3379,10 @@ class PressPrimer_Quiz_REST_Controller {
 			$sanitized['email_results_body'] = wp_kses_post( $data['email_results_body'] );
 		}
 
+		if ( isset( $data['email_footer_text'] ) ) {
+			$sanitized['email_footer_text'] = wp_kses_post( $data['email_footer_text'] );
+		}
+
 		if ( isset( $data['email_logo_url'] ) ) {
 			$sanitized['email_logo_url'] = esc_url_raw( $data['email_logo_url'] );
 		}

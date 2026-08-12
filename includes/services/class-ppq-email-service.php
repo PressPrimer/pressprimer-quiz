@@ -738,22 +738,7 @@ class PressPrimer_Quiz_Email_Service {
 	 * @return string Footer HTML.
 	 */
 	private static function build_email_footer( $attempt, $quiz ) {
-		ob_start();
-		?>
-		<div class="email-footer">
-			<p>
-				<?php
-				printf(
-					/* translators: %s: site name */
-					esc_html__( 'This email was sent from %s', 'pressprimer-quiz' ),
-					esc_html( get_bloginfo( 'name' ) )
-				);
-				?>
-			</p>
-			<p><?php echo esc_html( home_url() ); ?></p>
-		</div>
-		<?php
-		$footer = ob_get_clean();
+		$footer = '<div class="email-footer">' . self::build_footer_inner() . '</div>';
 
 		/**
 		 * Filter the email footer HTML.
@@ -765,6 +750,56 @@ class PressPrimer_Quiz_Email_Service {
 		 * @param PressPrimer_Quiz_Quiz    $quiz Quiz object.
 		 */
 		return apply_filters( 'pressprimer_quiz_email_footer', $footer, $attempt, $quiz );
+	}
+
+	/**
+	 * Build the footer's inner content.
+	 *
+	 * When the email_footer_text setting is set, its text renders instead of
+	 * the default "sent from" paragraphs: tokens are replaced, the result is
+	 * sanitized with wp_kses_post(), and line breaks become <br>. Text that
+	 * sanitizes to nothing falls back to the default so the footer is never
+	 * an empty block. Shared by the results email and the settings-page test
+	 * email; the pressprimer_quiz_email_footer filter runs on the wrapped
+	 * result afterwards (results path only, matching pre-3.1 behavior).
+	 *
+	 * @since 3.1.0
+	 *
+	 * @return string Footer inner HTML (without the .email-footer wrapper).
+	 */
+	private static function build_footer_inner() {
+		$settings = get_option( 'pressprimer_quiz_settings', [] );
+		$custom   = isset( $settings['email_footer_text'] ) ? trim( (string) $settings['email_footer_text'] ) : '';
+
+		if ( '' !== $custom ) {
+			$tokens = [
+				'{site_name}' => get_bloginfo( 'name' ),
+				'{site_url}'  => home_url(),
+				'{year}'      => wp_date( 'Y' ),
+			];
+
+			$custom = str_replace( array_keys( $tokens ), array_values( $tokens ), $custom );
+			$custom = trim( wp_kses_post( $custom ) );
+
+			if ( '' !== $custom ) {
+				return nl2br( $custom );
+			}
+		}
+
+		ob_start();
+		?>
+		<p>
+			<?php
+			printf(
+				/* translators: %s: site name */
+				esc_html__( 'This email was sent from %s', 'pressprimer-quiz' ),
+				esc_html( get_bloginfo( 'name' ) )
+			);
+			?>
+		</p>
+		<p><?php echo esc_html( home_url() ); ?></p>
+		<?php
+		return ob_get_clean();
 	}
 
 	/**
@@ -1032,23 +1067,9 @@ You are receiving this email because you have an incomplete assignment.';
 		<?php
 		$header_html = ob_get_clean();
 
-		// Build footer HTML
-		ob_start();
-		?>
-		<div class="email-footer">
-			<p>
-				<?php
-				printf(
-					/* translators: %s: site name */
-					esc_html__( 'This email was sent from %s', 'pressprimer-quiz' ),
-					esc_html( get_bloginfo( 'name' ) )
-				);
-				?>
-			</p>
-			<p><?php echo esc_html( home_url() ); ?></p>
-		</div>
-		<?php
-		$footer_html = ob_get_clean();
+		// Build footer HTML — shared inner builder so the test email previews
+		// the custom footer setting exactly like a real send.
+		$footer_html = '<div class="email-footer">' . self::build_footer_inner() . '</div>';
 
 		// Inline styles required: Email clients do not support external stylesheets.
 		ob_start();

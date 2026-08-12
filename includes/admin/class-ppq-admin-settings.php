@@ -1479,6 +1479,11 @@ Good luck with your studies!',
 			$sanitized['email_results_body'] = wp_kses_post( $input['email_results_body'] );
 		}
 
+		// Sanitize email footer text
+		if ( isset( $input['email_footer_text'] ) ) {
+			$sanitized['email_footer_text'] = wp_kses_post( $input['email_footer_text'] );
+		}
+
 		// Sanitize social sharing fields
 		$sanitized['social_sharing_twitter']       = isset( $input['social_sharing_twitter'] ) && '1' === $input['social_sharing_twitter'];
 		$sanitized['social_sharing_facebook']      = isset( $input['social_sharing_facebook'] ) && '1' === $input['social_sharing_facebook'];

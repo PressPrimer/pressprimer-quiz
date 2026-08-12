@@ -390,6 +390,52 @@ The {site_name} Team`;
 				</div>
 			</div>
 
+			{/* Email Footer Section */}
+			<div className="ppq-settings-section">
+				<Title level={4} className="ppq-settings-section-title">
+					{__('Email Footer', 'pressprimer-quiz')}
+				</Title>
+				<Paragraph className="ppq-settings-section-description">
+					{__('Customize the footer shown at the bottom of every email the plugin sends. Leave empty to use the default footer.', 'pressprimer-quiz')}
+				</Paragraph>
+
+				<div className="ppq-settings-field">
+					<Form.Item
+						label={__('Footer Text', 'pressprimer-quiz')}
+					>
+						<TextArea
+							value={settings.email_footer_text || ''}
+							onChange={(e) => updateSetting('email_footer_text', e.target.value)}
+							rows={4}
+							placeholder={__('This email was sent from {site_name}\n{site_url}', 'pressprimer-quiz')}
+							style={{ fontFamily: 'monospace', maxWidth: 500 }}
+						/>
+					</Form.Item>
+				</div>
+
+				{/* Available Tokens */}
+				<div className="ppq-token-list">
+					<Text strong>{__('Available Tokens:', 'pressprimer-quiz')}</Text>
+					<Text type="secondary" style={{ marginLeft: 8 }}>
+						{__('(click to copy)', 'pressprimer-quiz')}
+					</Text>
+					<div style={{ marginTop: 8 }}>
+						<TokenItem
+							token="{site_name}"
+							description={__('Site name', 'pressprimer-quiz')}
+						/>
+						<TokenItem
+							token="{site_url}"
+							description={__('Site address', 'pressprimer-quiz')}
+						/>
+						<TokenItem
+							token="{year}"
+							description={__('Current year', 'pressprimer-quiz')}
+						/>
+					</div>
+				</div>
+			</div>
+
 			{/* Results Email Template Section */}
 			<div className="ppq-settings-section">
 				<Title level={4} className="ppq-settings-section-title">

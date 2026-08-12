@@ -252,6 +252,7 @@ This plugin also offers optional AI-powered question generation using the Anthro
 * Added: The quiz editor's "Add Questions" dialog now has a Status filter that defaults to Published, so draft and archived questions no longer mix into the list unnoticed. Draft and archived questions are labeled when shown.
 * Fixed: On sites with a non-UTC timezone, several time calculations were off by the site's UTC offset — retake wait times, automatic cleanup of unanswered guest attempts (which silently prevented guests from resuming a quiz in progress), guest results-link expiry, and relative dates in the admin quiz list.
 * Added: New {answers_summary} email token that adds a per-question recap — the question, the student's selected answer(s), and whether each was correct — to results emails. It respects each quiz's review display settings, so quizzes that hide answers on-site never include the recap.
+* Added: Customizable email footer — a new Email Footer setting on Settings > Email replaces the default "sent from" line at the bottom of plugin emails with your own text, with {site_name}, {site_url}, and {year} tokens for things like a copyright line or a privacy policy link.
 * Fixed: Clearing an email template field no longer leaves the settings screen blank — cleared templates now display the default content that is actually used when emails are sent.
 
 = 3.0.5 =

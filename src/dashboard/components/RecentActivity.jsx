@@ -181,7 +181,7 @@ const RecentActivity = ({ attempts = [], loading }) => {
 				</h3>
 				<Button
 					type="link"
-					href="admin.php?page=pressprimer-quiz-reports"
+					href="admin.php?page=pressprimer-quiz-reports&report=recent-attempts"
 					icon={<ArrowRightOutlined />}
 					className="ppq-dashboard-card-action"
 				>

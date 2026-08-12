@@ -254,6 +254,7 @@ This plugin also offers optional AI-powered question generation using the Anthro
 * Added: New {answers_summary} email token that adds a per-question recap — the question, the student's selected answer(s), and whether each was correct — to results emails. It respects each quiz's review display settings, so quizzes that hide answers on-site never include the recap.
 * Added: Customizable email footer — a new Email Footer setting on Settings > Email replaces the default "sent from" line at the bottom of plugin emails with your own text, with {site_name}, {site_url}, and {year} tokens for things like a copyright line or a privacy policy link.
 * Fixed: Clearing an email template field no longer leaves the settings screen blank — cleared templates now display the default content that is actually used when emails are sent.
+* Fixed: The dashboard's Recent Activity "View All" link now opens the Recent Attempts report directly instead of the reports overview page.
 
 = 3.0.5 =
 * Fixed: The results link in quiz completion emails now points to the correct quiz page when the quiz was added with the block or with a shortcode that omits quotation marks around the ID.

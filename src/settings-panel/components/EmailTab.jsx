@@ -407,7 +407,7 @@ The {site_name} Team`;
 							value={settings.email_footer_text || ''}
 							onChange={(e) => updateSetting('email_footer_text', e.target.value)}
 							rows={4}
-							placeholder={__('This email was sent from {site_name}\n{site_url}', 'pressprimer-quiz')}
+							placeholder={`${__('This email was sent from {site_name}', 'pressprimer-quiz')}\n{site_url}`}
 							style={{ fontFamily: 'monospace', maxWidth: 500 }}
 						/>
 					</Form.Item>

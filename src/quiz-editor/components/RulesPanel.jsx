@@ -5,7 +5,7 @@
  * @since 1.0.0
  */
 
-import { useState, useEffect } from '@wordpress/element';
+import { useState, useEffect, useRef } from '@wordpress/element';
 import { __ } from '@wordpress/i18n';
 import apiFetch from '@wordpress/api-fetch';
 import { debugError } from '../../utils/debug';
@@ -48,6 +48,12 @@ const RulesPanel = ({ quizId, generationMode }) => {
 	const [categories, setCategories] = useState([]);
 	const [tags, setTags] = useState([]);
 
+	// Monotonic id for rule loads. Concurrent GETs race on slow hosts (a
+	// reload fires after every add/edit), and whichever response lands LAST
+	// used to win — an early, stale snapshot could wipe rules that were just
+	// added. Only the newest request may apply its result.
+	const loadSeqRef = useRef(0);
+
 	const difficultyOptions = [
 		{ label: __('Beginner', 'pressprimer-quiz'), value: 'beginner' },
 		{ label: __('Intermediate', 'pressprimer-quiz'), value: 'intermediate' },
@@ -67,16 +73,32 @@ const RulesPanel = ({ quizId, generationMode }) => {
 	 * Load quiz rules
 	 */
 	const loadRules = async () => {
+		const seq = ++loadSeqRef.current;
+
 		try {
 			setLoading(true);
 			const response = await apiFetch({ path: `/ppq/v1/quizzes/${quizId}/rules` });
+
+			// A newer load started after this one — drop this stale result.
+			if (seq !== loadSeqRef.current) {
+				return;
+			}
+
 			setRules(response || []);
 		} catch (error) {
 			debugError('Failed to load quiz rules:', error);
+
+			if (seq !== loadSeqRef.current) {
+				return;
+			}
+
+			// Keep whatever is on screen — a failed refresh must not wipe
+			// rules the user just added.
 			message.error(__('Failed to load quiz rules', 'pressprimer-quiz'));
-			setRules([]);
 		} finally {
-			setLoading(false);
+			if (seq === loadSeqRef.current) {
+				setLoading(false);
+			}
 		}
 	};
 
@@ -115,17 +137,19 @@ const RulesPanel = ({ quizId, generationMode }) => {
 			matching_count: 0,
 		};
 
-		setRules([...rules, newRule]);
+		// Functional update: rapid clicks must not lose earlier appends to a
+		// stale closure.
+		setRules((currentRules) => [...currentRules, newRule]);
 
 		// Auto-save the new rule immediately with the rule data
-		saveRuleData(newRule.id, newRule);
+		await saveRuleData(newRule.id, newRule);
 	};
 
 	/**
 	 * Update rule field
 	 */
 	const handleUpdateRule = async (ruleId, field, value) => {
-		setRules(rules.map(rule =>
+		setRules((currentRules) => currentRules.map(rule =>
 			rule.id === ruleId ? { ...rule, [field]: value } : rule
 		));
 
@@ -153,7 +177,7 @@ const RulesPanel = ({ quizId, generationMode }) => {
 			}
 		}
 
-		setRules(rules.filter(rule => rule.id !== ruleId));
+		setRules((currentRules) => currentRules.filter(rule => rule.id !== ruleId));
 	};
 
 	/**

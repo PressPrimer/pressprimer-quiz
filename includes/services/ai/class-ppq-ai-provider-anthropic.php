@@ -130,6 +130,7 @@ class PressPrimer_Quiz_AI_Provider_Anthropic implements PressPrimer_Quiz_AI_Prov
 	 */
 	public function get_models(): array {
 		$models = array(
+			'claude-sonnet-5',             // newest balanced model.
 			self::DEFAULT_MODEL,           // claude-sonnet-4-6 — balanced (default).
 			'claude-opus-4-8',             // most capable.
 			'claude-haiku-4-5-20251001',   // fastest / lowest cost.
@@ -513,6 +514,8 @@ class PressPrimer_Quiz_AI_Provider_Anthropic implements PressPrimer_Quiz_AI_Prov
 
 		// Truncated output (hit max_tokens) is usually cut mid-JSON and would
 		// fail the parser; return a clear error instead (mirrors Assignment).
+		// With thinking-enabled models the whole budget can go to the thinking
+		// block, leaving no text at all — the same truncation, same message.
 		if ( isset( $body['stop_reason'] ) && 'max_tokens' === $body['stop_reason'] ) {
 			return new WP_Error(
 				'ppq_response_truncated',
@@ -520,7 +523,25 @@ class PressPrimer_Quiz_AI_Provider_Anthropic implements PressPrimer_Quiz_AI_Prov
 			);
 		}
 
-		if ( ! isset( $body['content'][0]['text'] ) || ! is_string( $body['content'][0]['text'] ) ) {
+		// The answer is the first TEXT content block. Newer Claude models
+		// (claude-sonnet-5 and later) emit a `thinking` block before the text
+		// block, so the text cannot be assumed to sit at content[0] — scan for
+		// it instead of hardcoding the index.
+		$text = '';
+		if ( isset( $body['content'] ) && is_array( $body['content'] ) ) {
+			foreach ( $body['content'] as $block ) {
+				if ( is_array( $block )
+					&& isset( $block['type'], $block['text'] )
+					&& 'text' === $block['type']
+					&& is_string( $block['text'] )
+					&& '' !== $block['text'] ) {
+					$text = $block['text'];
+					break;
+				}
+			}
+		}
+
+		if ( '' === $text ) {
 			return new WP_Error(
 				'ppq_invalid_response',
 				__( 'Invalid response format from Anthropic.', 'pressprimer-quiz' )
@@ -528,7 +549,7 @@ class PressPrimer_Quiz_AI_Provider_Anthropic implements PressPrimer_Quiz_AI_Prov
 		}
 
 		return array(
-			'content' => $body['content'][0]['text'],
+			'content' => $text,
 			'model'   => $model,
 			'usage'   => ( isset( $body['usage'] ) && is_array( $body['usage'] ) ) ? $body['usage'] : array(),
 			'raw'     => is_array( $body ) ? $body : array(),

@@ -32,6 +32,7 @@ import {
 	ReadOutlined,
 	KeyOutlined,
 	RocketOutlined,
+	TrophyOutlined,
 } from '@ant-design/icons';
 
 import GeneralTab from './GeneralTab';
@@ -55,6 +56,7 @@ const ADDON_ICONS = {
 	educator: <ReadOutlined />,
 	license: <KeyOutlined />,
 	sr: <RocketOutlined />,
+	mastery: <TrophyOutlined />,
 	default: <SettingOutlined />,
 };
 

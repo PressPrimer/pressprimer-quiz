@@ -338,6 +338,20 @@ class PressPrimer_Quiz_Quiz extends PressPrimer_Quiz_Model {
 	public $exposure_control = 0;
 
 	/**
+	 * Use measured difficulty for rule matching (School 3.1).
+	 *
+	 * When on, the School addon narrows difficulty-constrained generation
+	 * candidates by empirical difficulty band where sampled (author rating
+	 * fallback), via the generation-candidates filter. Free stores the flag
+	 * (like enable_sr) so it rides templates and duplication; without School
+	 * active it has no effect.
+	 *
+	 * @since 3.1.0
+	 * @var int 0|1
+	 */
+	public $use_measured_difficulty = 0;
+
+	/**
 	 * Question pool enabled
 	 *
 	 * When enabled, each attempt randomly selects a subset of questions
@@ -481,6 +495,7 @@ class PressPrimer_Quiz_Quiz extends PressPrimer_Quiz_Model {
 			'is_review_quiz',
 			'is_practice',
 			'exposure_control',
+			'use_measured_difficulty',
 		];
 	}
 
@@ -622,6 +637,7 @@ class PressPrimer_Quiz_Quiz extends PressPrimer_Quiz_Model {
 			'enable_sr'                => $bool,
 			'is_practice'              => $bool,
 			'exposure_control'         => $bool,
+			'use_measured_difficulty'  => $bool,
 		);
 	}
 
@@ -908,6 +924,7 @@ class PressPrimer_Quiz_Quiz extends PressPrimer_Quiz_Model {
 			'pool_enabled',
 			'enable_sr',
 			'is_review_quiz',
+			'use_measured_difficulty',
 		];
 
 		foreach ( $boolean_fields as $field ) {
@@ -1465,6 +1482,7 @@ class PressPrimer_Quiz_Quiz extends PressPrimer_Quiz_Model {
 				'pool_enabled'             => $this->pool_enabled,
 				'max_questions'            => $this->max_questions,
 				'enable_sr'                => $this->enable_sr,
+				'use_measured_difficulty'  => $this->use_measured_difficulty,
 			];
 
 			$new_quiz_id = self::create( $new_quiz_data );

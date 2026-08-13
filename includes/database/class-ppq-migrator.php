@@ -269,6 +269,17 @@ class PressPrimer_Quiz_Migrator {
 					$attempt_items => array(),
 				),
 			),
+			array(
+				'version'  => '3.1.0.2',
+				'callback' => array( __CLASS__, 'migrate_to_3_1_0_2' ),
+				// Adds the use_measured_difficulty quiz column (amendment: the
+				// School 3.1 measured-difficulty generation toggle rides a free
+				// quiz column like enable_sr, so templates and duplication carry
+				// it). Guarded ALTER; idempotent.
+				'targets'  => array(
+					$quizzes => array( 'use_measured_difficulty' ),
+				),
+			),
 		);
 	}
 
@@ -932,6 +943,36 @@ class PressPrimer_Quiz_Migrator {
 
 		// Not autoloaded: only read during migration.
 		add_option( 'pressprimer_quiz_confidence_scale_migrated', 1, '', false );
+	}
+
+	/**
+	 * Migration step 3.1.0.2: the use_measured_difficulty quiz column.
+	 *
+	 * Backs the School 3.1 "Use measured difficulty for rule matching"
+	 * per-quiz toggle. A free quiz column (like enable_sr) so the setting
+	 * rides templates, duplication, and the standard editor save path.
+	 * Guarded ALTER; safe to re-run.
+	 *
+	 * @since 3.1.0
+	 */
+	public static function migrate_to_3_1_0_2() {
+		global $wpdb;
+
+		$quizzes = $wpdb->prefix . 'ppq_quizzes';
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching
+		$column_exists = $wpdb->get_results(
+			$wpdb->prepare( 'SHOW COLUMNS FROM %i LIKE %s', $quizzes, 'use_measured_difficulty' )
+		);
+		if ( empty( $column_exists ) ) {
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.DirectDatabaseQuery.SchemaChange
+			$wpdb->query(
+				$wpdb->prepare(
+					'ALTER TABLE %i ADD COLUMN use_measured_difficulty TINYINT(1) NOT NULL DEFAULT 0 AFTER exposure_control',
+					$quizzes
+				)
+			);
+		}
 	}
 
 	/**

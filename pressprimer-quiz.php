@@ -31,7 +31,7 @@ define( 'PRESSPRIMER_QUIZ_PLUGIN_BASENAME', plugin_basename( __FILE__ ) );
 // The 3.1.0 chain has two steps: '3.1.0' (columns; retry-safe) and
 // '3.1.0.1' (one-time confidence value mapping — isolated so a column-step
 // retry can never re-run it). The constant tracks the LAST chain step.
-define( 'PRESSPRIMER_QUIZ_DB_VERSION', '3.1.0.1' );
+define( 'PRESSPRIMER_QUIZ_DB_VERSION', '3.1.0.2' );
 
 // Composer autoloader (for smalot/pdfparser and other vendor dependencies)
 if ( file_exists( PRESSPRIMER_QUIZ_PLUGIN_PATH . 'vendor/autoload.php' ) ) {

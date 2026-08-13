@@ -2571,6 +2571,7 @@ class PressPrimer_Quiz_REST_Controller {
 			'max_questions'            => $quiz->max_questions ? (int) $quiz->max_questions : null,
 			'pool_size'                => $quiz->get_pool_size()['count'],
 			'enable_sr'                => (bool) $quiz->enable_sr,
+			'use_measured_difficulty'  => (bool) $quiz->use_measured_difficulty,
 			'is_review_quiz'           => (bool) $quiz->is_review_quiz,
 			'is_practice'              => (bool) $quiz->is_practice,
 			'exposure_control'         => (bool) $quiz->exposure_control,
@@ -2655,6 +2656,7 @@ class PressPrimer_Quiz_REST_Controller {
 					'pool_enabled'             => ! empty( $data['pool_enabled'] ),
 					'max_questions'            => isset( $data['max_questions'] ) && '' !== $data['max_questions'] && null !== $data['max_questions'] ? absint( $data['max_questions'] ) : null,
 					'enable_sr'                => ! empty( $data['enable_sr'] ),
+					'use_measured_difficulty'  => ! empty( $data['use_measured_difficulty'] ),
 					'is_review_quiz'           => ! empty( $data['is_review_quiz'] ),
 					'is_practice'              => ! empty( $data['is_practice'] ),
 					'exposure_control'         => ! empty( $data['exposure_control'] ),
@@ -2799,6 +2801,7 @@ class PressPrimer_Quiz_REST_Controller {
 			$quiz->pool_enabled             = ! empty( $data['pool_enabled'] );
 			$quiz->max_questions            = isset( $data['max_questions'] ) && '' !== $data['max_questions'] && null !== $data['max_questions'] ? absint( $data['max_questions'] ) : null;
 			$quiz->enable_sr                = ! empty( $data['enable_sr'] );
+			$quiz->use_measured_difficulty  = ! empty( $data['use_measured_difficulty'] );
 			$quiz->is_review_quiz           = ! empty( $data['is_review_quiz'] );
 			$quiz->is_practice              = ! empty( $data['is_practice'] );
 			$quiz->exposure_control         = ! empty( $data['exposure_control'] );

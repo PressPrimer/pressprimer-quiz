@@ -115,6 +115,7 @@ const QuizEditor = ({ quizData = {} }) => {
 			// Add spaced repetition field if School addon is active.
 			if (quizData.schoolActive) {
 				fieldValues.enable_sr = quizData.enable_sr ?? false;
+				fieldValues.use_measured_difficulty = quizData.use_measured_difficulty ?? false;
 			}
 
 			// Add proctoring fields if Enterprise addon is active.
@@ -265,7 +266,7 @@ const QuizEditor = ({ quizData = {} }) => {
 			'allow_skip', 'allow_backward', 'allow_resume',
 			'randomize_questions', 'randomize_answers',
 			'enable_confidence', 'show_points', 'pool_enabled', 'enable_sr',
-			'is_practice', 'exposure_control',
+			'is_practice', 'exposure_control', 'use_measured_difficulty',
 		];
 
 		const parseJson = (value) => {
@@ -306,6 +307,9 @@ const QuizEditor = ({ quizData = {} }) => {
 			}
 			if (key === 'enable_sr' && !quizData.schoolActive) {
 				return; // School addon inactive.
+			}
+			if (key === 'use_measured_difficulty' && !(quizData.schoolActive && quizData.schoolMeasuredAvailable)) {
+				return; // School measured-difficulty unavailable.
 			}
 			if (booleanKeys.includes(key)) {
 				patch[key] = !! Number(value);
@@ -466,7 +470,7 @@ const QuizEditor = ({ quizData = {} }) => {
 		showPremiumTab && {
 			key: 'premium',
 			label: __('Premium Settings', 'pressprimer-quiz'),
-			children: <PremiumSettingsPanel form={form} quizData={quizData} />,
+			children: <PremiumSettingsPanel form={form} quizData={quizData} generationMode={generationMode} />,
 		},
 		{
 			key: 'questions',

@@ -480,6 +480,7 @@ class PressPrimer_Quiz_Schema {
 			is_review_quiz TINYINT(1) NOT NULL DEFAULT 0,
 			is_practice TINYINT(1) NOT NULL DEFAULT 0,
 			exposure_control TINYINT(1) NOT NULL DEFAULT 0,
+			use_measured_difficulty TINYINT(1) NOT NULL DEFAULT 0,
 			created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
 			updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
 			PRIMARY KEY  (id),

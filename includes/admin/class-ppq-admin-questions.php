@@ -791,7 +791,7 @@ class PressPrimer_Quiz_Questions_List_Table extends WP_List_Table {
 	 * @return array Column definitions.
 	 */
 	public function get_columns() {
-		return [
+		$columns = [
 			'cb'         => '<input type="checkbox" />',
 			'id'         => __( 'ID', 'pressprimer-quiz' ),
 			'question'   => __( 'Question', 'pressprimer-quiz' ),
@@ -802,6 +802,41 @@ class PressPrimer_Quiz_Questions_List_Table extends WP_List_Table {
 			'author'     => __( 'Author', 'pressprimer-quiz' ),
 			'date'       => __( 'Date', 'pressprimer-quiz' ),
 		];
+
+		/**
+		 * Filters the Questions list table columns.
+		 *
+		 * Allows addons to add columns (e.g. School's Measured difficulty).
+		 * Custom columns render through the
+		 * `pressprimer_quiz_questions_list_column` action.
+		 *
+		 * @since 3.1.0
+		 *
+		 * @param array $columns Column key => label map.
+		 */
+		return apply_filters( 'pressprimer_quiz_questions_list_columns', $columns );
+	}
+
+	/**
+	 * Render a custom (addon-added) column cell.
+	 *
+	 * @since 3.1.0
+	 *
+	 * @param object $item        Question row.
+	 * @param string $column_name Column key.
+	 */
+	public function column_default( $item, $column_name ) {
+		/**
+		 * Fires to render the cell of a custom Questions list column added
+		 * via the `pressprimer_quiz_questions_list_columns` filter. The
+		 * callback is responsible for escaping its own output.
+		 *
+		 * @since 3.1.0
+		 *
+		 * @param string $column_name The custom column key.
+		 * @param object $item        The question row.
+		 */
+		do_action( 'pressprimer_quiz_questions_list_column', $column_name, $item );
 	}
 
 	/**
@@ -930,6 +965,29 @@ class PressPrimer_Quiz_Questions_List_Table extends WP_List_Table {
 			$where_values[]  = $search_term;
 		}
 
+		/**
+		 * Filters an optional ID constraint on the Questions list query.
+		 *
+		 * Null (default) applies no constraint. An array constrains the list
+		 * to those question IDs (an empty array yields no rows) — used by
+		 * addon filters such as School's Mismatched-difficulty filter.
+		 *
+		 * @since 3.1.0
+		 *
+		 * @param int[]|null $constrain_ids Question IDs to constrain to, or null.
+		 */
+		$constrain_ids = apply_filters( 'pressprimer_quiz_questions_list_constrain_ids', null );
+		if ( is_array( $constrain_ids ) ) {
+			$constrain_ids = array_values( array_unique( array_map( 'absint', $constrain_ids ) ) );
+
+			if ( empty( $constrain_ids ) ) {
+				$where_clauses[] = '1 = 0';
+			} else {
+				$where_clauses[] = 'id IN ( ' . implode( ', ', array_fill( 0, count( $constrain_ids ), '%d' ) ) . ' )';
+				$where_values    = array_merge( $where_values, $constrain_ids );
+			}
+		}
+
 		$where_sql = 'WHERE ' . implode( ' AND ', $where_clauses );
 
 		// Order by - validate against allowed fields
@@ -1002,6 +1060,18 @@ class PressPrimer_Quiz_Questions_List_Table extends WP_List_Table {
 			<?php if ( current_user_can( 'pressprimer_quiz_manage_all' ) ) : ?>
 				<?php $this->render_author_filter(); ?>
 			<?php endif; ?>
+			<?php
+			/**
+			 * Fires inside the Questions list filter row, before the Filter
+			 * button, so addons can render their own filter controls (they
+			 * submit with the same form).
+			 *
+			 * @since 3.1.0
+			 *
+			 * @param string $which 'top' (the action only fires for the top bar).
+			 */
+			do_action( 'pressprimer_quiz_questions_list_filters', $which );
+			?>
 			<?php submit_button( __( 'Filter', 'pressprimer-quiz' ), '', 'filter_action', false ); ?>
 		</div>
 		<?php

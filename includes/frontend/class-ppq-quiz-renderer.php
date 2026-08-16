@@ -621,7 +621,14 @@ class PressPrimer_Quiz_Quiz_Renderer {
 								<?php esc_html_e( 'You have an in-progress attempt. You can resume where you left off.', 'pressprimer-quiz' ); ?>
 							</p>
 						</div>
-						<a href="<?php echo esc_url( add_query_arg( 'attempt', $in_progress_attempt->id, get_permalink() ) ); ?>"
+						<?php
+						// Build the resume URL from the CURRENT request so existing
+						// query args survive (the study-session page needs its plan
+						// parameter; matches the JS buildAttemptUrl behavior). The
+						// stale retake flag is dropped like the JS does.
+						$resume_url = remove_query_arg( 'pressprimer_quiz_retake', add_query_arg( 'attempt', $in_progress_attempt->id ) );
+						?>
+						<a href="<?php echo esc_url( $resume_url ); ?>"
 							class="ppq-button ppq-button-primary ppq-button-large ppq-resume-button">
 							<span class="ppq-button-icon" aria-hidden="true">▶️</span>
 							<?php esc_html_e( 'Resume Quiz', 'pressprimer-quiz' ); ?>

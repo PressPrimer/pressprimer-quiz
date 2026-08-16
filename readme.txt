@@ -257,6 +257,8 @@ This plugin also offers optional AI-powered question generation using the Anthro
 * Fixed: The dashboard's Recent Activity "View All" link now opens the Recent Attempts report directly instead of the reports overview page.
 * Fixed: AI features now work with newer Claude models (including Claude Sonnet 5), which previously failed with an "Invalid response format" error, and Claude Sonnet 5 is available in the model list.
 * Fixed: On slower servers, rules added to a dynamic quiz could briefly appear and then vanish from the Rules tab even though they were saved. The rules list now stays consistent while adding and editing rules.
+* Fixed: The Resume Quiz link kept the page's address parameters, so resuming an in-progress School study session no longer shows "Study plan not found."
+* Fixed: Prevented a site-wide fatal error after updating Tutor LMS on sites where the Tutor Instructor role was missing — the role is now restored automatically and quiz capabilities are mapped onto it.
 
 = 3.0.5 =
 * Fixed: The results link in quiz completion emails now points to the correct quiz page when the quiz was added with the block or with a shortcode that omits quotation marks around the ID.

@@ -1162,7 +1162,25 @@ class PressPrimer_Quiz_TutorLMS {
 	 * @since 2.1.0
 	 */
 	private function map_instructor_capabilities() {
-		$instructor = get_role( 'tutor_instructor' );
+		// Resolve the role name from Tutor when available (it has always been
+		// tutor_instructor, but respect the runtime value if Tutor renames it).
+		$role_name = 'tutor_instructor';
+		if ( function_exists( 'tutor' ) && ! empty( tutor()->instructor_role ) ) {
+			$role_name = tutor()->instructor_role;
+		}
+
+		$instructor = get_role( $role_name );
+
+		if ( ! $instructor ) {
+			// Compatibility shim: Tutor expects its instructor role to exist,
+			// and newer Tutor versions run a one-time capability migration on
+			// init that calls has_cap() on this role WITHOUT a null check —
+			// a fatal on every request when the role is missing. Recreate the
+			// empty role exactly as Tutor's own tools do (add_role with no
+			// caps). We boot on init priority 0, ahead of Tutor's migration
+			// at priority 10, so this heals the site before Tutor's code runs.
+			$instructor = add_role( $role_name, __( 'Tutor Instructor', 'pressprimer-quiz' ), array() );
+		}
 
 		if ( ! $instructor ) {
 			return;

@@ -142,10 +142,18 @@ class PressPrimer_Quiz_Admin_AI_Generation {
 				<h3><?php esc_html_e( 'AI Question Generation', 'pressprimer-quiz' ); ?></h3>
 				<p>
 					<?php
+					// Name every supported provider — the key can be added for
+					// any of them, not just the currently selected default.
+					$ppq_ai_provider_names = array_values( $provider_labels );
+					sort( $ppq_ai_provider_names );
+
+					/* translators: joins the list of AI provider names (e.g. "Anthropic or OpenAI"). */
+					$ppq_ai_provider_list = implode( __( ' or ', 'pressprimer-quiz' ), $ppq_ai_provider_names );
+
 					printf(
-						/* translators: %s: active AI provider name (e.g. OpenAI). */
+						/* translators: %s: list of supported AI providers (e.g. "Anthropic or OpenAI"). */
 						esc_html__( 'Generate quiz questions automatically from your course content using AI. Add your %s API key to get started.', 'pressprimer-quiz' ),
-						esc_html( $provider_label )
+						esc_html( $ppq_ai_provider_list )
 					);
 					?>
 				</p>

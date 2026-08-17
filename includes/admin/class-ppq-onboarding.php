@@ -419,7 +419,7 @@ class PressPrimer_Quiz_Onboarding {
 				'quizBuilderDesc'  => __( 'Create quizzes by selecting specific questions or using rules to pull from your banks.', 'pressprimer-quiz' ),
 				'aiTitle'          => __( 'AI Question Generation', 'pressprimer-quiz' ),
 				'aiDesc'           => __( 'Generate questions automatically from your content using AI. Just paste text or upload a document.', 'pressprimer-quiz' ),
-				'aiNotConfigured'  => __( 'Configure your OpenAI API key in Settings to enable AI generation.', 'pressprimer-quiz' ),
+				'aiNotConfigured'  => __( 'Configure your Anthropic or OpenAI API key in Settings to enable AI generation.', 'pressprimer-quiz' ),
 				'reportsTitle'     => __( 'Track Results', 'pressprimer-quiz' ),
 				'reportsDesc'      => __( 'Monitor quiz performance, view student attempts, and identify areas for improvement.', 'pressprimer-quiz' ),
 				'completionTitle'  => __( "You're All Set!", 'pressprimer-quiz' ),

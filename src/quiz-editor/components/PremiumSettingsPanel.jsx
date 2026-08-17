@@ -73,7 +73,7 @@ const MeasuredDifficultyCard = ({ form, generationMode }) => {
 			<Form.Item
 				label={
 					<Space>
-						<span>{__('Use measured difficulty for rule matching', 'pressprimer-quiz')}</span>
+						<span>{__('Use Measured Difficulty for Rule Matching', 'pressprimer-quiz')}</span>
 						<Tooltip title={__('Questions with enough attempts are matched by their measured difficulty band; questions without enough data fall back to the authored rating. Turn this on when measured data shows some questions are easier or harder than rated.', 'pressprimer-quiz')}>
 							<QuestionCircleOutlined style={{ fontSize: 12, color: '#8c8c8c' }} />
 						</Tooltip>

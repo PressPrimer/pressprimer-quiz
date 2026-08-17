@@ -410,7 +410,7 @@ const SettingsPanel = ({ form, generationMode, setGenerationMode, quizData = {},
 				<Form.Item
 					label={
 						<Space>
-							<span>{__('Practice quiz', 'pressprimer-quiz')}</span>
+							<span>{__('Practice Quiz', 'pressprimer-quiz')}</span>
 							<Tooltip title={__('Untimed, unlimited attempts, immediate feedback. Attempts are excluded from grade reports.', 'pressprimer-quiz')}>
 								<QuestionCircleOutlined style={{ fontSize: 12, color: '#8c8c8c' }} />
 							</Tooltip>

@@ -86,6 +86,15 @@ const BankEditor = ({ bankData = {} }) => {
 				window.location.href = `admin.php?page=pressprimer-quiz-banks&action=view&bank_id=${response.id}&message=bank_created`;
 			} else {
 				setCurrentBankId(response.id);
+
+				// Addon contract: fields slotted into the editor (e.g. School's
+				// Practice Access) persist their own state on this event so the
+				// whole form saves from the one Update Bank button.
+				document.dispatchEvent(
+					new CustomEvent('ppq-bank-saved', {
+						detail: { bankId: response.id },
+					})
+				);
 			}
 		} catch (error) {
 			debugError('Failed to save bank:', error);
@@ -241,12 +250,28 @@ const BankEditor = ({ bankData = {} }) => {
 										</Select.Option>
 									</Select>
 								</Form.Item>
+
+								{/* Addon fields slot: addons render extra bank
+								    fields here (React portal target — must stay
+								    childless in this tree). Slotted fields save
+								    on the ppq-bank-saved event. */}
+								<div id="ppq-bank-editor-fields-slot"></div>
 							</Form>
 						</Card>
 
-						{/* Delete Button (for existing banks) */}
-						{!isNew && (
-							<div style={{ marginTop: 24, textAlign: 'right' }}>
+						{/* Bottom action bar (mirrors the quiz editor) */}
+						<div style={{
+							background: '#fff',
+							padding: '20px 24px',
+							borderRadius: 8,
+							marginTop: 20,
+							display: 'flex',
+							justifyContent: isNew ? 'flex-end' : 'space-between',
+							alignItems: 'center',
+							gap: 12,
+							boxShadow: '0 2px 8px rgba(0, 0, 0, 0.06)',
+						}}>
+							{!isNew && (
 								<Button
 									danger
 									onClick={handleDelete}
@@ -254,8 +279,26 @@ const BankEditor = ({ bankData = {} }) => {
 								>
 									{__('Delete Bank', 'pressprimer-quiz')}
 								</Button>
-							</div>
-						)}
+							)}
+							<Space>
+								<Button
+									icon={<CloseOutlined />}
+									onClick={handleCancel}
+								>
+									{__('Cancel', 'pressprimer-quiz')}
+								</Button>
+								<Button
+									type="primary"
+									icon={<SaveOutlined />}
+									loading={saving}
+									onClick={() => form.submit()}
+								>
+									{isNew
+										? __('Create Bank', 'pressprimer-quiz')
+										: __('Update Bank', 'pressprimer-quiz')}
+								</Button>
+							</Space>
+						</div>
 					</div>
 				</Spin>
 			</Content>

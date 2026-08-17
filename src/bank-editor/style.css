@@ -5,9 +5,10 @@
  * @since 1.0.0
  */
 
+/* No min-height: addons (School's Practice Access) mount content after the
+   editor, and a viewport-height stretch would strand it below empty space. */
 .ppq-bank-editor {
 	background: #f0f0f1;
-	min-height: calc(100vh - 32px);
 }
 
 .ppq-bank-editor .ant-layout-content {

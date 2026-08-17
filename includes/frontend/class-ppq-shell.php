@@ -455,7 +455,9 @@ class PressPrimer_Quiz_Shell {
 				'order' => 10,
 			),
 			'teaching' => array(
-				'label' => __( 'Teaching', 'pressprimer-quiz' ),
+				// Label only — the 'teaching' group KEY is the cross-plugin
+				// contract every addon registers against and must not change.
+				'label' => __( 'Teacher', 'pressprimer-quiz' ),
 				'order' => 20,
 			),
 			'reports'  => array(

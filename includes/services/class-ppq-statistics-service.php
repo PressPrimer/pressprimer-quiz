@@ -585,7 +585,13 @@ class PressPrimer_Quiz_Statistics_Service {
 		$quizzes_table  = $wpdb->prefix . 'ppq_quizzes';
 		$users_table    = $wpdb->users;
 
-		$where = [ "a.status = 'submitted'" ];
+		// Hidden container quizzes (spaced-repetition review and study-plan
+		// containers) never surface on admin activity lists — the containers
+		// themselves are invisible everywhere in wp-admin, so their attempts
+		// must not leak their titles into Recent Activity / Recent Attempts.
+		// Students still see these results on the front end (My Results uses
+		// its own query).
+		$where = [ "a.status = 'submitted'", 'q.is_review_quiz = 0' ];
 
 		if ( $args['quiz_id'] ) {
 			$where[] = $wpdb->prepare( 'a.quiz_id = %d', $args['quiz_id'] );

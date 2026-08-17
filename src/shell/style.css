@@ -241,10 +241,13 @@
 	cursor: pointer;
 }
 
-.ppq-shell-btn:hover,
-.ppq-shell-btn:focus {
+/* Scoped + re-asserted decoration so theme content-link hover styles
+   (e.g. `.entry-content a:hover`) can't underline or recolor these. */
+.ppq-shell .ppq-shell-btn:hover,
+.ppq-shell .ppq-shell-btn:focus {
 	background: var(--ppq-bg-hover);
 	color: var(--ppq-text);
+	text-decoration: none;
 }
 
 .ppq-shell-btn--primary {
@@ -253,8 +256,10 @@
 	color: var(--ppq-text-inverse);
 }
 
-.ppq-shell-btn--primary:hover,
-.ppq-shell-btn--primary:focus {
+/* Same .ppq-shell scoping as the base hover rule above — keeps this
+   variant rule winning it by source order. */
+.ppq-shell .ppq-shell-btn--primary:hover,
+.ppq-shell .ppq-shell-btn--primary:focus {
 	background: var(--ppq-primary-hover);
 	border-color: var(--ppq-primary-hover);
 	color: var(--ppq-text-inverse);
@@ -442,6 +447,43 @@
 .ppq-shell .ant-btn-dangerous:not(.ant-btn-primary):focus,
 .ppq-shell .ant-btn-dangerous:not(.ant-btn-primary):active {
 	color: #ff4d4f;
+}
+
+/* Ant Design Buttons rendered as anchors (Button href — Start / View
+   results on Assigned Quizzes, plan links) are <a> tags, so host themes'
+   content-link styles apply to them: underlines and link colors on
+   hover/focus/visited that button-tag buttons never get. Ant Design v5
+   can't defend itself — its state styles sit in zero-specificity :where()
+   wrappers — so lock the states here. The doubled class out-specifies
+   theme rules like `.entry-content a:hover`. */
+.ppq-shell a.ant-btn.ant-btn,
+.ppq-shell a.ant-btn.ant-btn:hover,
+.ppq-shell a.ant-btn.ant-btn:focus,
+.ppq-shell a.ant-btn.ant-btn:active,
+.ppq-shell a.ant-btn.ant-btn:visited {
+	text-decoration: none;
+}
+
+/* Primary buttons keep white text in every state (mirrors the danger-color
+   lock above). */
+.ppq-shell a.ant-btn.ant-btn-primary,
+.ppq-shell a.ant-btn.ant-btn-primary:hover,
+.ppq-shell a.ant-btn.ant-btn-primary:focus,
+.ppq-shell a.ant-btn.ant-btn-primary:active,
+.ppq-shell a.ant-btn.ant-btn-primary:visited {
+	color: #fff;
+}
+
+/* Default-variant anchor buttons: theme link colors would out-rank antd's
+   states; restore antd's behavior on the shell tokens (white-label safe). */
+.ppq-shell a.ant-btn.ant-btn-default,
+.ppq-shell a.ant-btn.ant-btn-default:visited {
+	color: var(--ppq-text, #1d2327);
+}
+
+.ppq-shell a.ant-btn.ant-btn-default:hover,
+.ppq-shell a.ant-btn.ant-btn-default:focus {
+	color: var(--ppq-primary, #0073aa);
 }
 
 .ppq-shell-muted {

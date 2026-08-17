@@ -454,14 +454,37 @@
    content-link styles apply to them: underlines and link colors on
    hover/focus/visited that button-tag buttons never get. Ant Design v5
    can't defend itself — its state styles sit in zero-specificity :where()
-   wrappers — so lock the states here. The doubled class out-specifies
-   theme rules like `.entry-content a:hover`. */
+   wrappers — so lock the states here. !important because themes commonly
+   assert content-link underlines with !important of their own; a
+   button-styled anchor must never underline, so there is no legitimate
+   cascade case this blocks. */
 .ppq-shell a.ant-btn.ant-btn,
 .ppq-shell a.ant-btn.ant-btn:hover,
 .ppq-shell a.ant-btn.ant-btn:focus,
 .ppq-shell a.ant-btn.ant-btn:active,
 .ppq-shell a.ant-btn.ant-btn:visited {
-	text-decoration: none;
+	text-decoration: none !important;
+}
+
+/* The shell's own button-styled anchors need the same lock: the base
+   .ppq-shell-btn rule sits at single-class specificity, which any
+   `.entry-content a`-style theme rule out-ranks in its STATIC state (the
+   hover state is handled above). Decoration and visited-color pinned across
+   all states. */
+.ppq-shell .ppq-shell-btn,
+.ppq-shell .ppq-shell-btn:hover,
+.ppq-shell .ppq-shell-btn:focus,
+.ppq-shell .ppq-shell-btn:active,
+.ppq-shell .ppq-shell-btn:visited {
+	text-decoration: none !important;
+}
+
+.ppq-shell .ppq-shell-btn:visited {
+	color: var(--ppq-text);
+}
+
+.ppq-shell .ppq-shell-btn--primary:visited {
+	color: var(--ppq-text-inverse);
 }
 
 /* Primary buttons keep white text in every state (mirrors the danger-color

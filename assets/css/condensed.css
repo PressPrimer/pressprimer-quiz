@@ -640,7 +640,12 @@
 
 .ppq-results-container.ppq-quiz--condensed {
 	max-width: var(--ppq-max-width) !important;
-	padding: 0 !important;
+
+	/* Modest interior padding (not 0): themed surfaces (e.g. Modern) paint
+	   these containers, so children must not sit flush against the edges —
+	   and the actions row's bottom margin must not collapse through the
+	   container's bottom edge (buttons flush with the border). */
+	padding: 16px !important;
 }
 
 /* Results Header */
@@ -812,7 +817,7 @@
 .ppq-question-review-container.ppq-quiz--condensed {
 	max-width: var(--ppq-max-width) !important;
 	margin: 20px auto 0 !important;
-	padding: 0 !important;
+	padding: 16px !important; /* see results-container note above */
 }
 
 .ppq-question-review-container.ppq-quiz--condensed .ppq-review-title {

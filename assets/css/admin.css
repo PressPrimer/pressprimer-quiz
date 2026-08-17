@@ -77,6 +77,28 @@
 }
 
 /*
+ * Match attached-button height to its text field in WP admin.
+ *
+ * WordPress admin forms.css sets line-height: 2 on text inputs, inflating an
+ * Ant Design Input to ~40px while the Ant button attached to it (Space.Compact,
+ * e.g. the Send Test Email and API key fields) keeps its designed 32px — the
+ * pair renders with mismatched heights. Stretch the attached button to the
+ * field's rendered height instead of hardcoding a pixel value, so the pair
+ * stays matched whatever height WP gives the input. Loads on every PressPrimer
+ * Quiz admin page (free and add-ons), correcting every connected pair in one
+ * place. Front-end screens are untouched — forms.css does not load there and
+ * both halves already match at 32px.
+ *
+ * @since 3.1.0
+ */
+.ant-space-compact > .ant-input ~ .ant-btn,
+.ant-space-compact > .ant-input-affix-wrapper ~ .ant-btn,
+.ant-space-compact > .ant-input-number ~ .ant-btn {
+	height: auto;
+	align-self: stretch;
+}
+
+/*
  * Fix Ant Design modal close button in WP admin.
  *
  * WordPress admin CSS applies styles to bare <button> elements that interfere

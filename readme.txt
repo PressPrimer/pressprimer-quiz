@@ -14,7 +14,7 @@ Enterprise-grade quiz and assessment platform for educators with AI question gen
 
 **PressPrimer Quiz** is a professional assessment plugin that bridges the gap between basic quiz plugins and expensive enterprise platforms. Create beautiful, engaging quizzes with AI-powered question generation, deep LMS integration, and the reporting features serious educators need—all without monthly fees or per-student pricing.
 
-**This isn't a crippled trial.** The free version is genuinely useful forever with unlimited quizzes, unlimited questions, AI generation, LMS integration, and three professional themes. We earn upgrades by delivering specialized features, not by hobbling what you get for free.
+**This isn't a crippled trial.** The free version is genuinely useful forever with unlimited quizzes, unlimited questions, AI generation, LMS integration, and six professional themes. We earn upgrades by delivering specialized features, not by hobbling what you get for free.
 
 https://www.youtube.com/watch?v=YHyooYXKLo0
 
@@ -38,7 +38,7 @@ PressPrimer Quiz includes features in the free version that competitors charge f
 
 * **Front-end dashboard** – Add a "My Results" area to any page with the [pressprimer_quiz_dashboard] shortcode or block
 * **Math & equation rendering** – Write LaTeX in questions and answers, rendered with bundled KaTeX
-* **Quiz  templates** – Save and reuse quiz settings
+* **Quiz templates** – Save and reuse quiz settings
 * **Question banks** – Organize and reuse questions across quizzes
 * **Dynamic quiz generation** – Pull random questions based on category, difficulty, and question bank
 * **Guest support** – Optional GDPR-compliant email capture for non-registered users
@@ -52,6 +52,7 @@ PressPrimer Quiz includes features in the free version that competitors charge f
 * **Confidence Check** – Three-level confidence ratings per answer, with a results summary that flags confident-but-wrong and unsure-but-correct questions
 * **Customizable Appearance** – Adjust fonts, colors, spacing, and other visual styles; includes Condensed Mode for streamlined quizzes with reduced vertical spacing
 * **Per-quiz display settings** – Choose display options (description, score, pass/fail status, category breakdown, retake button, and more) for every quiz
+* **Results emails** – Customizable email templates with a per-question answer recap token and your own footer text
 * **Uncanny Automator integration** – Triggers for quiz completion, pass, fail, and guest email capture with marketing consent, with a comprehensive set of tokens for use in automations
 
 = Perfect For =
@@ -85,28 +86,39 @@ All integrations are bundled in the free version.
 
 = Premium Features =
 
-Unlock additional premium features at [pressprimer.com](https://pressprimer.com/):
+Unlock additional premium features at [pressprimer.com](https://pressprimer.com/). The tiers build on each other — School includes everything in Educator, and Enterprise includes everything in School.
+
+**Educator**
 
 * **Groups & Assignments** – Organize students into groups, assign quizzes with due dates, and track completion progress
-* **Front-End Teacher Dashboard** – Manage groups and assignments from a front-end page instead of wp-admin, with native LearnDash Groups support
-* **Spaced Repetition** – Schedule review sessions using the SM-2 and FSRS algorithms with a student dashboard, email reminders, and educator tracking
+* **Front-End Dashboard for Teachers & Students** – Groups, assignments, and the full reporting suite on a front-end page, with an option to keep instructors and students out of wp-admin entirely
+* **Contacts & Email Campaigns** – A deduplicated view of guest emails captured from your quizzes, with consent state, CSV export, and erasure. Send campaigns to opted-in contacts, groups, or roles, with sender identification and one-click unsubscribe in every email. It's a basic CRM built right into your quiz platform.
 * **Import/Export** – Move questions between sites or migrate from other quiz plugins with CSV, JSON, and XML support
 * **Pre-/Post-Test Analysis** – Link quizzes as pre/post pairs and measure learning gain with score and category comparison charts
 * **Quiz Detail Reports** – Per-quiz analytics dashboard with score distribution, category performance, question difficulty analysis, and score trends over time
-* **Group Performance Reports** – Compare groups side by side, drill into individual member results, and track weekly score trends
-* **Question Quality Analytics** – Identify problem questions with difficulty indexes, discrimination analysis, and distractor effectiveness analysis
-* **LearnDash & LifterLMS Quiz Import** – Migrate entire quizzes with questions from LearnDash or LifterLMS, individually or in batches
-* **Quiz Proctoring** – Monitor tab switches and fullscreen exits during quiz attempts with configurable flag thresholds, incident reports, per-quiz overrides, and desktop-only enforcement
-* **Integrity Analytics** – Flag completed attempts with statistically unusual patterns (timing, answer similarity, shared devices, concurrent sessions) for review
 * **Assignment Reminder Emails** – Automated reminder emails for students approaching assignment deadlines, with configurable timing windows and customizable templates
-* **Branching Logic** – Create rules that skip or jump to questions based on student answers, with path-through-quiz visualization in reports
-* **Curve Grading** – Apply grading curves to quiz scores with multiple methods
+* **AI Distractor Generation** – Generate plausible wrong answers for multiple choice questions using OpenAI or Anthropic (Claude), with individual review and bulk generation across entire question banks
+
+**School**
+
+* **Student Study Plans** – Students build their own scheduled practice plans from teacher-granted question banks, with sessions weighted toward their weak areas, streaks, and an exam-readiness trend
+* **Mastery Tracking** – Per-category mastery scores built from every answer, with a student mastery map and an admin rebuild tool
+* **Spaced Repetition** – Schedule review sessions using the SM-2 and FSRS algorithms with a student dashboard, email reminders, and educator tracking
+* **Group Performance Reports** – Compare groups side by side, drill into individual member results, and track weekly score trends
+* **Question Quality Analytics** – Identify problem questions with detailed analysis
+* **Curve Grading** – Apply grading curves to quiz scores with multiple methods, right from the dashboard or wp-admin
+* **LearnDash & LifterLMS Quiz Import** – Migrate entire quizzes with questions from LearnDash or LifterLMS, individually or in batches
 * **xAPI/LRS Integration** – Send detailed learning data to your Learning Record Store for compliance and analytics
 * **WP Fusion Integration** – Apply CRM tags on quiz registration, completion, pass, or fail across 60+ CRMs through WP Fusion
+
+**Enterprise**
+
+* **Quiz Proctoring** – Monitor tab switches and fullscreen exits during quiz attempts with configurable flag thresholds, incident reports, per-quiz overrides, and desktop-only enforcement — including review views on the front-end dashboard
+* **Integrity Analytics** – Flag completed attempts with statistically unusual patterns (timing, answer similarity, shared devices, concurrent sessions) for review
+* **Branching Logic** – Create rules that skip or jump to questions based on student answers, with path-through-quiz visualization in reports
 * **White-Label Branding** – Remove all PressPrimer branding across the admin and the front-end dashboard, and customize with your own logos, colors, and plugin name
 * **Audit Logging** – Read-only log of every quiz, question, settings, and attempt change for compliance and accountability
 * **Question Recovery & Version History** – Restore deleted questions and track every edit with one-click rollback to previous versions
-* **AI Distractor Generation** – Generate plausible wrong answers for multiple choice questions using OpenAI, with individual review and bulk generation across entire question banks
 
 = Scale-Ready Architecture =
 
@@ -149,7 +161,7 @@ Math notation rendering uses [KaTeX](https://katex.org/) (version 0.17.0, MIT li
 = After Activation =
 
 1. Go to **PressPrimer Quiz → Settings** to configure defaults
-2. (Optional) Add your OpenAI API key for AI question generation
+2. (Optional) Add your OpenAI or Anthropic (Claude) API key for AI question generation
 3. Create your first question bank under **Question Banks**
 4. Build a quiz under **Quizzes → Add New**
 5. Embed using Gutenberg blocks, shortcodes, or LMS integration
@@ -162,7 +174,7 @@ If you have LearnDash, Tutor LMS, LifterLMS, or LearnPress installed, integratio
 
 = Is this really free forever, or is it a limited trial? =
 
-It's really free forever and not locked down. PressPrimer Quiz includes unlimited quizzes, unlimited questions, AI generation (with your own API key), LMS integrations, confidence ratings, per-question feedback, and three professional themes in the free version. We believe in earning upgrades by offering genuinely valuable premium features, not by crippling the free experience.
+It's really free forever and not locked down. PressPrimer Quiz includes unlimited quizzes, unlimited questions, AI generation (with your own API key), LMS integrations, confidence ratings, per-question feedback, and six professional themes in the free version. We believe in earning upgrades by offering genuinely valuable premium features, not by crippling the free experience.
 
 = How does AI question generation work? =
 
@@ -245,20 +257,26 @@ This plugin also offers optional AI-powered question generation using the Anthro
 == Changelog ==
 
 = 3.1.0 =
-* Added: Practice Mode — mark any quiz as a practice quiz to give students unlimited, untimed runs with immediate feedback, no matter how the quiz is otherwise configured. Practice attempts are clearly badged, never count toward scores, averages, or pass rates, and your quiz's original mode, time limit, and attempt limits are kept for when you switch practice off.
+* Added: Practice Mode — mark any quiz as a practice quiz to give students unlimited, untimed runs with immediate feedback, no matter how the quiz is otherwise configured.
 * Added: Question Exposure Control — a "Prefer Unseen Questions" option for dynamic and pooled quizzes that picks questions each student hasn't seen before repeating ones they have, so retakes stay fresh.
 * Added: Three-level confidence ratings — students can mark each answer Low, Medium, or High confidence, and their results include a "Confidence Check" that highlights confident-but-wrong and unsure-but-correct questions with links to review each one. Existing confidence data is upgraded automatically.
 * Added: New Uncanny Automator trigger "A guest email is captured with marketing consent" — route consented guest leads to any Automator-connected tool. Works in "Everyone" recipes on both free Uncanny Automator and Automator Pro, and only fires when the guest explicitly opts in.
-* Added: The quiz editor's "Add Questions" dialog now has a Status filter that defaults to Published, so draft and archived questions no longer mix into the list unnoticed. Draft and archived questions are labeled when shown.
-* Fixed: On sites with a non-UTC timezone, several time calculations were off by the site's UTC offset — retake wait times, automatic cleanup of unanswered guest attempts (which silently prevented guests from resuming a quiz in progress), guest results-link expiry, and relative dates in the admin quiz list.
+* Added: The quiz editor's "Add Questions" dialog now has a Status filter that defaults to Published, so draft and archived questions no longer mix into the list unnoticed. 
 * Added: New {answers_summary} email token that adds a per-question recap — the question, the student's selected answer(s), and whether each was correct — to results emails. It respects each quiz's review display settings, so quizzes that hide answers on-site never include the recap.
 * Added: Customizable email footer — a new Email Footer setting on Settings > Email replaces the default "sent from" line at the bottom of plugin emails with your own text, with {site_name}, {site_url}, and {year} tokens for things like a copyright line or a privacy policy link.
-* Fixed: Clearing an email template field no longer leaves the settings screen blank — cleared templates now display the default content that is actually used when emails are sent.
+* Fixed: Clearing an email template field no longer leaves the settings screen blank.
 * Fixed: The dashboard's Recent Activity "View All" link now opens the Recent Attempts report directly instead of the reports overview page.
 * Fixed: AI features now work with newer Claude models (including Claude Sonnet 5), which previously failed with an "Invalid response format" error, and Claude Sonnet 5 is available in the model list.
-* Fixed: On slower servers, rules added to a dynamic quiz could briefly appear and then vanish from the Rules tab even though they were saved. The rules list now stays consistent while adding and editing rules.
-* Fixed: The Resume Quiz link kept the page's address parameters, so resuming an in-progress School study session no longer shows "Study plan not found."
+* Fixed: On sites with a non-UTC timezone, several time calculations were off by the site's UTC offset.
+* Fixed: On slower servers, rules added to a dynamic quiz could briefly appear and then vanish from the Rules tab even though they were saved.
 * Fixed: Prevented a site-wide fatal error after updating Tutor LMS on sites where the Tutor Instructor role was missing — the role is now restored automatically and quiz capabilities are mapped onto it.
+* Fixed: Buttons on the front-end dashboard no longer pick up the site theme's link styling — themes that underline or recolor content links (such as Astra) were underlining button text on the Assigned Quizzes, My Results, and other dashboard screens.
+* Fixed: Saving settings now notifies addon settings tabs immediately, so options gated on a core setting unlock without reloading the page.
+* Fixed: In Condensed display density, the quiz results page keeps interior spacing, so score panels, question cards, and the action buttons no longer sit flush against the box edges on themed quizzes.
+* Fixed: The question bank editor's action buttons now appear at both the top and bottom of the form (matching the quiz editor).
+* Fixed: Text fields with an attached button in admin settings (like the email test fields) now match their button's height.
+* Fixed: The AI question generation introduction now mentions both Anthropic and OpenAI, matching the providers actually supported.
+* Changed: The front-end dashboard's "Teaching" navigation heading is now "Teacher", matching the "Student" heading style.
 
 = 3.0.5 =
 * Fixed: The results link in quiz completion emails now points to the correct quiz page when the quiz was added with the block or with a shortcode that omits quotation marks around the ID.

@@ -1442,16 +1442,33 @@ class PressPrimer_Quiz_REST_Controller {
 			// Check if feedback changed (feedback is also part of revision content).
 			$feedback_changed = false;
 			if ( $current_revision ) {
-				$feedback_changed = ( $current_revision->feedback_correct !== $new_feedback_correct )
-					|| ( $current_revision->feedback_incorrect !== $new_feedback_incorrect );
+				$feedback_changed = ( (string) $current_revision->feedback_correct !== $new_feedback_correct )
+					|| ( (string) $current_revision->feedback_incorrect !== $new_feedback_incorrect );
 			}
 
-			if ( ! $current_revision || $current_revision->content_hash !== $new_hash || $feedback_changed ) {
+			// The content hash normalizes for DEDUPE semantics — it strips
+			// tags, lowercases, and reduces answers to text + correctness.
+			// That made three kinds of edits invisible to the gate, so no
+			// revision was written and the submitted content was silently
+			// DISCARDED while the save reported success: per-answer feedback
+			// edits (not hashed at all), formatting-only stem/answer edits
+			// (bolding, links, images, markup cleanup — strip_tags erases
+			// them), and case-only text edits (lowercased away).
+			// Compare the sanitized stored values directly; the hash stays
+			// untouched so its dedupe meaning elsewhere is unchanged.
+			$new_stem_kses       = wp_kses_post( $data['stem'] ?? '' );
+			$raw_content_changed = false;
+			if ( $current_revision ) {
+				$raw_content_changed = ( (string) $current_revision->stem !== $new_stem_kses )
+					|| ( (string) $current_revision->answers_json !== wp_json_encode( $answers ) );
+			}
+
+			if ( ! $current_revision || $current_revision->content_hash !== $new_hash || $feedback_changed || $raw_content_changed ) {
 				// Create new revision
 				$revision                     = new PressPrimer_Quiz_Question_Revision();
 				$revision->question_id        = $question->id;
 				$revision->version            = $current_revision ? $current_revision->version + 1 : 1;
-				$revision->stem               = wp_kses_post( $data['stem'] ?? '' );
+				$revision->stem               = $new_stem_kses;
 				$revision->answers_json       = wp_json_encode( $answers );
 				$revision->settings_json      = wp_json_encode( [] );
 				$revision->feedback_correct   = $new_feedback_correct;

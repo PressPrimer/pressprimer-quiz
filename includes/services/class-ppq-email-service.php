@@ -99,6 +99,10 @@ class PressPrimer_Quiz_Email_Service {
 		$results_summary_html        = self::build_results_summary_html( $attempt );
 		$tokens['{results_summary}'] = $results_summary_html;
 
+		// Per-question recap for the {answers_summary} token (gated on the
+		// quiz's review display settings — may resolve to '').
+		$tokens['{answers_summary}'] = self::build_answers_summary_html( $attempt, $quiz );
+
 		// Replace tokens in subject
 		$subject = str_replace( array_keys( $tokens ), array_values( $tokens ), $subject_template );
 
@@ -519,6 +523,152 @@ class PressPrimer_Quiz_Email_Service {
 	}
 
 	/**
+	 * Build answers summary HTML for the {answers_summary} token
+	 *
+	 * Per-question recap: stem, the student's selected answer(s), and a
+	 * correct/incorrect/not-answered marker, in attempt order. Correct-answer
+	 * text is never included — the recap shows what the student chose and
+	 * whether it was right, nothing an email leak could turn into an answer
+	 * key beyond the stems themselves.
+	 *
+	 * Exam-security gate: renders only what the on-site review would show.
+	 * Requires the quiz's resolved show_question_review AND a show_answers
+	 * policy that permits review for this attempt (after_pass honors the
+	 * passed flag). Returns '' when gated, matching the {results_url}
+	 * empty-token precedent.
+	 *
+	 * @since 3.1.0
+	 *
+	 * @param PressPrimer_Quiz_Attempt $attempt Attempt object.
+	 * @param PressPrimer_Quiz_Quiz    $quiz    Quiz object.
+	 * @return string HTML for the recap, or '' when gated or empty.
+	 */
+	private static function build_answers_summary_html( $attempt, $quiz ) {
+		if ( ! $quiz->resolve_display_option( 'show_question_review' ) ) {
+			return '';
+		}
+
+		if ( 'never' === $quiz->show_answers ) {
+			return '';
+		}
+
+		if ( 'after_pass' === $quiz->show_answers && ! $attempt->passed ) {
+			return '';
+		}
+
+		$items = $attempt->get_items();
+		if ( empty( $items ) ) {
+			return '';
+		}
+
+		$rows   = '';
+		$number = 0;
+
+		foreach ( $items as $item ) {
+			$revision = $item->get_question_revision();
+			if ( ! $revision ) {
+				continue;
+			}
+
+			++$number;
+
+			$stem = wp_strip_all_tags( $revision->stem );
+
+			// Resolve selected revision indices to answer text.
+			$selected       = $item->get_selected_answers();
+			$answers        = $revision->get_answers();
+			$selected_texts = [];
+			foreach ( $selected as $answer_index ) {
+				if ( isset( $answers[ $answer_index ]['text'] ) ) {
+					$selected_texts[] = wp_strip_all_tags( $answers[ $answer_index ]['text'] );
+				}
+			}
+
+			if ( empty( $selected_texts ) ) {
+				$marker_label = __( 'Not answered', 'pressprimer-quiz' );
+				$marker_color = '#666666';
+				$answer_text  = '&#8212;';
+			} else {
+				$answer_text = esc_html( implode( ', ', $selected_texts ) );
+				if ( $item->is_correct ) {
+					$marker_label = __( 'Correct', 'pressprimer-quiz' );
+					$marker_color = '#10b981';
+				} else {
+					$marker_label = __( 'Incorrect', 'pressprimer-quiz' );
+					$marker_color = '#ef4444';
+				}
+			}
+
+			$rows .= '<div style="padding: 10px 0; border-bottom: 1px solid #eeeeee;">';
+			$rows .= '<div style="font-weight: 600; color: #1a1a1a; margin-bottom: 4px;">' . esc_html( $number . '. ' ) . esc_html( $stem ) . '</div>';
+			$rows .= '<div style="font-size: 14px; color: #666666;">' . esc_html__( 'Your answer:', 'pressprimer-quiz' ) . ' ' . $answer_text;
+			$rows .= ' <span style="color: ' . esc_attr( $marker_color ) . '; font-weight: 600;">&#8226; ' . esc_html( $marker_label ) . '</span></div>';
+			$rows .= '</div>';
+		}
+
+		if ( '' === $rows ) {
+			return '';
+		}
+
+		$html  = '<div style="margin-bottom: 20px;">';
+		$html .= '<div style="font-size: 16px; font-weight: 700; color: #1a1a1a; margin-bottom: 6px;">' . esc_html__( 'Your Answers', 'pressprimer-quiz' ) . '</div>';
+		$html .= $rows;
+		$html .= '</div>';
+
+		return $html;
+	}
+
+	/**
+	 * Build test answers summary HTML for test emails
+	 *
+	 * Seeded three-row preview of the {answers_summary} token.
+	 *
+	 * @since 3.1.0
+	 *
+	 * @return string HTML for the sample recap.
+	 */
+	private static function build_test_answers_summary_html() {
+		$sample_rows = [
+			[
+				'stem'   => __( 'Which planet is known as the Red Planet?', 'pressprimer-quiz' ),
+				'answer' => __( 'Mars', 'pressprimer-quiz' ),
+				'label'  => __( 'Correct', 'pressprimer-quiz' ),
+				'color'  => '#10b981',
+			],
+			[
+				'stem'   => __( 'What is the boiling point of water at sea level?', 'pressprimer-quiz' ),
+				'answer' => __( '90°C', 'pressprimer-quiz' ),
+				'label'  => __( 'Incorrect', 'pressprimer-quiz' ),
+				'color'  => '#ef4444',
+			],
+			[
+				'stem'   => __( 'True or false: sound travels faster in water than in air.', 'pressprimer-quiz' ),
+				'answer' => __( 'True', 'pressprimer-quiz' ),
+				'label'  => __( 'Correct', 'pressprimer-quiz' ),
+				'color'  => '#10b981',
+			],
+		];
+
+		$rows   = '';
+		$number = 0;
+		foreach ( $sample_rows as $row ) {
+			++$number;
+			$rows .= '<div style="padding: 10px 0; border-bottom: 1px solid #eeeeee;">';
+			$rows .= '<div style="font-weight: 600; color: #1a1a1a; margin-bottom: 4px;">' . esc_html( $number . '. ' ) . esc_html( $row['stem'] ) . '</div>';
+			$rows .= '<div style="font-size: 14px; color: #666666;">' . esc_html__( 'Your answer:', 'pressprimer-quiz' ) . ' ' . esc_html( $row['answer'] );
+			$rows .= ' <span style="color: ' . esc_attr( $row['color'] ) . '; font-weight: 600;">&#8226; ' . esc_html( $row['label'] ) . '</span></div>';
+			$rows .= '</div>';
+		}
+
+		$html  = '<div style="margin-bottom: 20px;">';
+		$html .= '<div style="font-size: 16px; font-weight: 700; color: #1a1a1a; margin-bottom: 6px;">' . esc_html__( 'Your Answers', 'pressprimer-quiz' ) . '</div>';
+		$html .= $rows;
+		$html .= '</div>';
+
+		return $html;
+	}
+
+	/**
 	 * Build results button HTML for token
 	 *
 	 * Creates the "View Full Results" button HTML.
@@ -588,22 +738,7 @@ class PressPrimer_Quiz_Email_Service {
 	 * @return string Footer HTML.
 	 */
 	private static function build_email_footer( $attempt, $quiz ) {
-		ob_start();
-		?>
-		<div class="email-footer">
-			<p>
-				<?php
-				printf(
-					/* translators: %s: site name */
-					esc_html__( 'This email was sent from %s', 'pressprimer-quiz' ),
-					esc_html( get_bloginfo( 'name' ) )
-				);
-				?>
-			</p>
-			<p><?php echo esc_html( home_url() ); ?></p>
-		</div>
-		<?php
-		$footer = ob_get_clean();
+		$footer = '<div class="email-footer">' . self::build_footer_inner() . '</div>';
 
 		/**
 		 * Filter the email footer HTML.
@@ -615,6 +750,56 @@ class PressPrimer_Quiz_Email_Service {
 		 * @param PressPrimer_Quiz_Quiz    $quiz Quiz object.
 		 */
 		return apply_filters( 'pressprimer_quiz_email_footer', $footer, $attempt, $quiz );
+	}
+
+	/**
+	 * Build the footer's inner content.
+	 *
+	 * When the email_footer_text setting is set, its text renders instead of
+	 * the default "sent from" paragraphs: tokens are replaced, the result is
+	 * sanitized with wp_kses_post(), and line breaks become <br>. Text that
+	 * sanitizes to nothing falls back to the default so the footer is never
+	 * an empty block. Shared by the results email and the settings-page test
+	 * email; the pressprimer_quiz_email_footer filter runs on the wrapped
+	 * result afterwards (results path only, matching pre-3.1 behavior).
+	 *
+	 * @since 3.1.0
+	 *
+	 * @return string Footer inner HTML (without the .email-footer wrapper).
+	 */
+	private static function build_footer_inner() {
+		$settings = get_option( 'pressprimer_quiz_settings', [] );
+		$custom   = isset( $settings['email_footer_text'] ) ? trim( (string) $settings['email_footer_text'] ) : '';
+
+		if ( '' !== $custom ) {
+			$tokens = [
+				'{site_name}' => get_bloginfo( 'name' ),
+				'{site_url}'  => home_url(),
+				'{year}'      => wp_date( 'Y' ),
+			];
+
+			$custom = str_replace( array_keys( $tokens ), array_values( $tokens ), $custom );
+			$custom = trim( wp_kses_post( $custom ) );
+
+			if ( '' !== $custom ) {
+				return nl2br( $custom );
+			}
+		}
+
+		ob_start();
+		?>
+		<p>
+			<?php
+			printf(
+				/* translators: %s: site name */
+				esc_html__( 'This email was sent from %s', 'pressprimer-quiz' ),
+				esc_html( get_bloginfo( 'name' ) )
+			);
+			?>
+		</p>
+		<p><?php echo esc_html( home_url() ); ?></p>
+		<?php
+		return ob_get_clean();
 	}
 
 	/**
@@ -764,6 +949,9 @@ Good luck with your studies!
 			// Build sample results summary HTML for test email.
 			$tokens['{results_summary}'] = self::build_test_results_summary_html();
 
+			// Build sample answers recap HTML for test email.
+			$tokens['{answers_summary}'] = self::build_test_answers_summary_html();
+
 			// Build results button HTML for test email.
 			$tokens['{results_url}'] = self::build_results_button_html( home_url( '/sample-quiz-results/' ) );
 		}
@@ -879,23 +1067,9 @@ You are receiving this email because you have an incomplete assignment.';
 		<?php
 		$header_html = ob_get_clean();
 
-		// Build footer HTML
-		ob_start();
-		?>
-		<div class="email-footer">
-			<p>
-				<?php
-				printf(
-					/* translators: %s: site name */
-					esc_html__( 'This email was sent from %s', 'pressprimer-quiz' ),
-					esc_html( get_bloginfo( 'name' ) )
-				);
-				?>
-			</p>
-			<p><?php echo esc_html( home_url() ); ?></p>
-		</div>
-		<?php
-		$footer_html = ob_get_clean();
+		// Build footer HTML — shared inner builder so the test email previews
+		// the custom footer setting exactly like a real send.
+		$footer_html = '<div class="email-footer">' . self::build_footer_inner() . '</div>';
 
 		// Inline styles required: Email clients do not support external stylesheets.
 		ob_start();

@@ -52,6 +52,7 @@ class PressPrimer_Quiz_Automator_Loader {
 		new PressPrimer_Quiz_Quiz_Completed( $helpers );
 		new PressPrimer_Quiz_Quiz_Passed( $helpers );
 		new PressPrimer_Quiz_Quiz_Failed( $helpers );
+		new PressPrimer_Quiz_Guest_Captured( $helpers );
 	}
 
 	/**
@@ -67,5 +68,6 @@ class PressPrimer_Quiz_Automator_Loader {
 		require_once $base_path . 'triggers/class-ppq-quiz-completed.php';
 		require_once $base_path . 'triggers/class-ppq-quiz-passed.php';
 		require_once $base_path . 'triggers/class-ppq-quiz-failed.php';
+		require_once $base_path . 'triggers/class-ppq-guest-captured.php';
 	}
 }

@@ -68,6 +68,11 @@ export default function AttemptList( { items }: { items: MyAttemptItem[] } ) {
 						<div className="ppq-shell-attempt-main">
 							<span className="ppq-shell-attempt-title">
 								{ item.quiz_title }
+								{ item.is_practice && (
+									<span className="ppq-shell-badge ppq-shell-badge--practice">
+										{ __( 'Practice', 'pressprimer-quiz' ) }
+									</span>
+								) }
 							</span>
 							<span className="ppq-shell-attempt-meta">{ meta }</span>
 						</div>

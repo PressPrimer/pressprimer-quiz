@@ -139,6 +139,52 @@ class PressPrimer_Quiz_Automator_Helpers {
 	}
 
 	/**
+	 * Get token data for the guest email captured trigger
+	 *
+	 * Builds token values from the guest-capture action arguments, loading the
+	 * attempt for the guest name and source URL and the quiz for its title.
+	 *
+	 * @since 3.1.0
+	 *
+	 * @param int         $attempt_id Attempt ID.
+	 * @param int         $quiz_id    Quiz ID.
+	 * @param string      $email      Captured guest email.
+	 * @param string|null $consent_at Site-local datetime consent was given, or null.
+	 * @return array Token data.
+	 */
+	public function get_guest_capture_token_data( $attempt_id, $quiz_id, $email, $consent_at ) {
+		$data = array(
+			'GUEST_EMAIL'  => $email,
+			'GUEST_NAME'   => '',
+			'QUIZ_ID'      => $quiz_id,
+			'QUIZ_TITLE'   => '',
+			'CONSENT_DATE' => '',
+			'SOURCE_URL'   => '',
+		);
+
+		if ( $consent_at && class_exists( 'PressPrimer_Quiz_Helpers' ) ) {
+			$data['CONSENT_DATE'] = PressPrimer_Quiz_Helpers::format_local_datetime( $consent_at );
+		}
+
+		if ( class_exists( 'PressPrimer_Quiz_Attempt' ) ) {
+			$attempt = \PressPrimer_Quiz_Attempt::get( $attempt_id );
+			if ( $attempt ) {
+				$data['GUEST_NAME'] = $attempt->guest_name ? $attempt->guest_name : '';
+				$data['SOURCE_URL'] = $attempt->source_url ? $attempt->source_url : '';
+			}
+		}
+
+		if ( class_exists( 'PressPrimer_Quiz_Quiz' ) ) {
+			$quiz = \PressPrimer_Quiz_Quiz::get( $quiz_id );
+			if ( $quiz ) {
+				$data['QUIZ_TITLE'] = $quiz->title ?? '';
+			}
+		}
+
+		return $data;
+	}
+
+	/**
 	 * Get quiz URL
 	 *
 	 * @since 1.0.0

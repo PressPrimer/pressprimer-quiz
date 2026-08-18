@@ -104,6 +104,15 @@ const GeneralTab = ({ settings, updateSetting, settingsData = {} }) => {
 					forId: res.pageId,
 				});
 				message.success(__('Dashboard page created and selected.', 'pressprimer-quiz'));
+
+				// The page is created AND designated server-side immediately
+				// (no Save needed), so notify addon tabs gated on it — same
+				// contract as the post-save dispatch in SettingsPage.
+				document.dispatchEvent(
+					new CustomEvent('ppq-settings-saved', {
+						detail: { settings: { dashboard_page_id: res.pageId } },
+					})
+				);
 			} else {
 				message.error(__('Could not create the dashboard page.', 'pressprimer-quiz'));
 			}

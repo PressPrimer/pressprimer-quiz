@@ -421,7 +421,9 @@ class PressPrimer_Quiz_Helpers {
 	 *
 	 * Always use this to display a stored local datetime; never wrap strtotime()
 	 * in wp_date() for a local value. When you need the timestamp of a stored
-	 * local datetime, use mysql2date( 'U', $value ), not strtotime( $value ).
+	 * local datetime, use local_datetime_to_timestamp() — NOT strtotime() and
+	 * NOT mysql2date( 'U', $value ), both of which are off by the site's UTC
+	 * offset on non-UTC sites.
 	 *
 	 * @since 3.0.1
 	 *
@@ -442,6 +444,37 @@ class PressPrimer_Quiz_Helpers {
 		$formatted = mysql2date( $format, $mysql_datetime );
 
 		return is_string( $formatted ) ? $formatted : '';
+	}
+
+	/**
+	 * Get the real Unix timestamp of a stored local datetime.
+	 *
+	 * Attempt, question, quiz, and bank datetimes are stored in WordPress
+	 * local time via current_time( 'mysql' ). This is the ONLY correct way to
+	 * turn such a value into an epoch for comparison against time() or for
+	 * relative math like human_time_diff().
+	 *
+	 * Do NOT use the alternatives — both drift by the site's UTC offset on
+	 * non-UTC sites:
+	 * - mysql2date( 'U', $value ) returns timestamp PLUS the site offset
+	 *   (since WordPress 5.3; core calls it a value that "should never be
+	 *   used").
+	 * - strtotime( $value ) parses the local string as UTC (WordPress pins
+	 *   PHP's default timezone to UTC).
+	 *
+	 * @since 3.1.0
+	 *
+	 * @param string $mysql_datetime MySQL datetime string in WordPress local time.
+	 * @return int Unix timestamp, or 0 for empty or invalid values.
+	 */
+	public static function local_datetime_to_timestamp( $mysql_datetime ) {
+		if ( empty( $mysql_datetime ) ) {
+			return 0;
+		}
+
+		$timestamp = get_gmt_from_date( $mysql_datetime, 'U' );
+
+		return is_numeric( $timestamp ) ? (int) $timestamp : 0;
 	}
 
 	/**

@@ -32,6 +32,7 @@ import {
 	ReadOutlined,
 	KeyOutlined,
 	RocketOutlined,
+	TrophyOutlined,
 } from '@ant-design/icons';
 
 import GeneralTab from './GeneralTab';
@@ -55,6 +56,7 @@ const ADDON_ICONS = {
 	educator: <ReadOutlined />,
 	license: <KeyOutlined />,
 	sr: <RocketOutlined />,
+	mastery: <TrophyOutlined />,
 	default: <SettingOutlined />,
 };
 
@@ -256,6 +258,16 @@ const SettingsPage = ({ settingsData = {} }) => {
 			if (response.success) {
 				message.success(__('Settings saved successfully!', 'pressprimer-quiz'));
 				setHasChanges(false);
+
+				// Addon contract: addon settings tabs live in their own React
+				// roots and cannot see this save. Anything gated on a core
+				// setting (e.g. Educator's front-end-only access, which needs
+				// a dashboard page) listens and re-fetches its state.
+				document.dispatchEvent(
+					new CustomEvent('ppq-settings-saved', {
+						detail: { settings },
+					})
+				);
 			} else {
 				message.error(response.message || __('Failed to save settings.', 'pressprimer-quiz'));
 			}

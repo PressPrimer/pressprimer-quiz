@@ -478,6 +478,9 @@ class PressPrimer_Quiz_Schema {
 			max_questions INT UNSIGNED DEFAULT NULL,
 			enable_sr TINYINT(1) NOT NULL DEFAULT 0,
 			is_review_quiz TINYINT(1) NOT NULL DEFAULT 0,
+			is_practice TINYINT(1) NOT NULL DEFAULT 0,
+			exposure_control TINYINT(1) NOT NULL DEFAULT 0,
+			use_measured_difficulty TINYINT(1) NOT NULL DEFAULT 0,
 			created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
 			updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
 			PRIMARY KEY  (id),
@@ -648,6 +651,7 @@ class PressPrimer_Quiz_Schema {
 			passed TINYINT(1) DEFAULT NULL,
 			curved_score DECIMAL(5,2) DEFAULT NULL,
 			ma_scoring_mode VARCHAR(32) DEFAULT NULL,
+			is_practice TINYINT(1) NOT NULL DEFAULT 0,
 			status ENUM('in_progress', 'submitted', 'abandoned') NOT NULL DEFAULT 'in_progress',
 			current_position SMALLINT UNSIGNED NOT NULL DEFAULT 0,
 			questions_json LONGTEXT NOT NULL,
@@ -661,7 +665,8 @@ class PressPrimer_Quiz_Schema {
 			KEY status (status),
 			KEY started_at (started_at),
 			KEY finished_at (finished_at),
-			KEY token_expires_at (token_expires_at)
+			KEY token_expires_at (token_expires_at),
+			KEY is_practice (is_practice)
 		) $charset_collate;\n";
 	}
 

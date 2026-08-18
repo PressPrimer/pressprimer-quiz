@@ -2,11 +2,11 @@
 	"$schema": "https://schemas.wp.org/trunk/block.json",
 	"apiVersion": 3,
 	"name": "pressprimer-quiz/dashboard",
-	"version": "3.0.0",
-	"title": "PPQ Dashboard",
+	"version": "3.1.0",
+	"title": "PressPrimer Quiz Dashboard",
 	"category": "pressprimer-quiz",
 	"icon": "dashboard",
-	"description": "Front-end dashboard for PressPrimer Quiz students and, with add-ons, instructors.",
+	"description": "Front-end dashboard for PressPrimer Quiz.",
 	"supports": {
 		"html": false,
 		"multiple": false

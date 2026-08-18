@@ -199,6 +199,19 @@ class PressPrimer_Quiz_Attempt extends PressPrimer_Quiz_Model {
 	public $ma_scoring_mode;
 
 	/**
+	 * Practice flag
+	 *
+	 * Copied from the quiz's is_practice flag at creation time; the attempt
+	 * flag is the source of truth for all downstream consumers, so a quiz
+	 * later toggled off does not retroactively change history (v3.1
+	 * feature 001).
+	 *
+	 * @since 3.1.0
+	 * @var int 0|1
+	 */
+	public $is_practice = 0;
+
+	/**
 	 * Attempt status
 	 *
 	 * @since 1.0.0
@@ -286,6 +299,7 @@ class PressPrimer_Quiz_Attempt extends PressPrimer_Quiz_Model {
 			'passed',
 			'curved_score',
 			'ma_scoring_mode',
+			'is_practice',
 			'status',
 			'current_position',
 			'questions_json',
@@ -336,8 +350,10 @@ class PressPrimer_Quiz_Attempt extends PressPrimer_Quiz_Model {
 			$existing_in_progress->save();
 		}
 
-		// Check attempt limits
-		if ( $quiz->max_attempts ) {
+		// Check attempt limits. Practice quizzes waive the attempt limit and
+		// the retake delay below (v3.1 feature 001 FR-003) — all other gates
+		// (login, availability, access mode) apply unchanged.
+		if ( $quiz->max_attempts && ! $quiz->is_practice ) {
 			$previous_attempts = static::get_user_attempts( $quiz_id, $user_id );
 			if ( count( $previous_attempts ) >= $quiz->max_attempts ) {
 				return new WP_Error(
@@ -352,10 +368,10 @@ class PressPrimer_Quiz_Attempt extends PressPrimer_Quiz_Model {
 		}
 
 		// Check attempt delay
-		if ( $quiz->attempt_delay_minutes ) {
+		if ( $quiz->attempt_delay_minutes && ! $quiz->is_practice ) {
 			$last_attempt = static::get_last_user_attempt( $quiz_id, $user_id );
 			if ( $last_attempt && $last_attempt->finished_at ) {
-				$elapsed_minutes = ( time() - mysql2date( 'U', $last_attempt->finished_at ) ) / 60;
+				$elapsed_minutes = ( time() - PressPrimer_Quiz_Helpers::local_datetime_to_timestamp( $last_attempt->finished_at ) ) / 60;
 				if ( $elapsed_minutes < $quiz->attempt_delay_minutes ) {
 					$wait_minutes = ceil( $quiz->attempt_delay_minutes - $elapsed_minutes );
 					return new WP_Error(
@@ -376,7 +392,7 @@ class PressPrimer_Quiz_Attempt extends PressPrimer_Quiz_Model {
 		}
 
 		// Generate questions for this attempt
-		$question_ids = $quiz->get_questions_for_attempt();
+		$question_ids = $quiz->get_questions_for_attempt( $user_id );
 
 		if ( empty( $question_ids ) ) {
 			return new WP_Error(
@@ -421,6 +437,7 @@ class PressPrimer_Quiz_Attempt extends PressPrimer_Quiz_Model {
 			'guest_email'      => null,
 			'guest_token'      => null,
 			'source_url'       => $source_url ?: null,
+			'is_practice'      => $quiz->is_practice ? 1 : 0,
 			'status'           => 'in_progress',
 			'current_position' => 0,
 			'questions_json'   => wp_json_encode( $questions_data ),
@@ -550,6 +567,7 @@ class PressPrimer_Quiz_Attempt extends PressPrimer_Quiz_Model {
 		// First check by token from cookie (in case user started without email)
 		// Then check by email if provided
 		$existing_in_progress = null;
+		$email_backfilled     = false;
 
 		// Check cookie for existing token
 		$cookie_token = isset( $_COOKIE['pressprimer_quiz_guest_token'] ) ? sanitize_text_field( wp_unslash( $_COOKIE['pressprimer_quiz_guest_token'] ) ) : '';
@@ -563,6 +581,7 @@ class PressPrimer_Quiz_Attempt extends PressPrimer_Quiz_Model {
 				if ( ! empty( $email ) && empty( $existing_in_progress->guest_email ) ) {
 					$existing_in_progress->guest_email = $email;
 					$existing_in_progress->save();
+					$email_backfilled = true;
 				}
 			}
 		}
@@ -587,7 +606,7 @@ class PressPrimer_Quiz_Attempt extends PressPrimer_Quiz_Model {
 			}
 
 			if ( ! $has_any_answer ) {
-				$started_timestamp = mysql2date( 'U', $existing_in_progress->started_at );
+				$started_timestamp = PressPrimer_Quiz_Helpers::local_datetime_to_timestamp( $existing_in_progress->started_at );
 				$one_hour_ago      = time() - 3600;
 				if ( $started_timestamp < $one_hour_ago ) {
 					$should_abandon_stale = true;
@@ -615,6 +634,42 @@ class PressPrimer_Quiz_Attempt extends PressPrimer_Quiz_Model {
 						]
 					);
 				}
+
+				// The guest just supplied an email for an attempt that had none —
+				// that is a capture. Fired only on the actual resume so a stale
+				// attempt that gets abandoned below doesn't double-fire (the
+				// replacement attempt fires on creation instead). The resumed
+				// attempt keeps its original consent state, so report what is
+				// stored, not what this request submitted.
+				if ( $email_backfilled ) {
+					/**
+					 * Fires when a guest email is captured on a quiz attempt.
+					 *
+					 * Emitted from the single guest-capture choke point,
+					 * `create_for_guest()`: once when a new guest attempt is
+					 * created with a non-empty email, and once when a returning
+					 * guest supplies an email for a resumed attempt that had
+					 * none. Never fires for logged-in users or empty-email
+					 * guest starts.
+					 *
+					 * @since 3.1.0
+					 *
+					 * @param int         $attempt_id Attempt ID.
+					 * @param int         $quiz_id    Quiz ID.
+					 * @param string      $email      Captured guest email.
+					 * @param int|null    $consent    Marketing consent: 1 opted in, 0 declined, null not asked.
+					 * @param string|null $consent_at Site-local datetime consent was given (as stored), or null.
+					 */
+					do_action(
+						'pressprimer_quiz_guest_email_captured',
+						(int) $existing_in_progress->id,
+						$quiz_id,
+						$email,
+						null === $existing_in_progress->guest_consent ? null : (int) $existing_in_progress->guest_consent,
+						empty( $existing_in_progress->guest_consent_at ) ? null : (string) $existing_in_progress->guest_consent_at
+					);
+				}
+
 				return $existing_in_progress;
 			} else {
 				// If it can't be resumed (timed out or quiz doesn't allow resume), abandon it
@@ -624,7 +679,7 @@ class PressPrimer_Quiz_Attempt extends PressPrimer_Quiz_Model {
 		}
 
 		// Generate questions for this attempt
-		$question_ids = $quiz->get_questions_for_attempt();
+		$question_ids = $quiz->get_questions_for_attempt( 0 );
 
 		if ( empty( $question_ids ) ) {
 			return new WP_Error(
@@ -677,6 +732,7 @@ class PressPrimer_Quiz_Attempt extends PressPrimer_Quiz_Model {
 			'guest_consent'    => $guest_consent,
 			'guest_consent_at' => $guest_consent_at,
 			'source_url'       => $source_url ?: null,
+			'is_practice'      => $quiz->is_practice ? 1 : 0,
 			'status'           => 'in_progress',
 			'current_position' => 0,
 			'questions_json'   => wp_json_encode( $questions_data ),
@@ -767,6 +823,18 @@ class PressPrimer_Quiz_Attempt extends PressPrimer_Quiz_Model {
 			 * @param PressPrimer_Quiz_Quiz    $quiz    The quiz object.
 			 */
 			do_action( 'pressprimer_quiz_attempt_started', $attempt, $quiz );
+
+			if ( ! empty( $email ) ) {
+				/** This action is documented in includes/models/class-ppq-attempt.php */
+				do_action(
+					'pressprimer_quiz_guest_email_captured',
+					(int) $attempt_id,
+					$quiz_id,
+					$email,
+					$guest_consent,
+					empty( $guest_consent_at ) ? null : (string) $guest_consent_at
+				);
+			}
 		}
 
 		return $attempt;
@@ -822,7 +890,15 @@ class PressPrimer_Quiz_Attempt extends PressPrimer_Quiz_Model {
 	 * @param bool  $confidence Whether student is confident in answer.
 	 * @return bool|WP_Error True on success, WP_Error on failure.
 	 */
-	public function save_answer( int $item_or_revision_id, array $selected_answers, bool $confidence = false ) {
+	public function save_answer( int $item_or_revision_id, array $selected_answers, $confidence = null ) {
+		// v3.1 three-level confidence: 1 low, 2 medium, 3 high, NULL not
+		// captured. Legacy boolean callers are normalized (true was the
+		// binary "confident" checkbox, which the value migration maps to
+		// high; false meant the default unchecked state, now "not captured").
+		if ( true === $confidence ) {
+			$confidence = 3;
+		}
+		$confidence = in_array( (int) $confidence, [ 1, 2, 3 ], true ) ? (int) $confidence : null;
 		// Validate attempt is in progress
 		if ( 'in_progress' !== $this->status ) {
 			return new WP_Error(
@@ -875,7 +951,7 @@ class PressPrimer_Quiz_Attempt extends PressPrimer_Quiz_Model {
 		$answer_data = [
 			'selected_answers_json' => wp_json_encode( $selected_answers ),
 			'last_answer_at'        => current_time( 'mysql' ),
-			'confidence'            => $confidence ? 1 : 0,
+			'confidence'            => $confidence,
 		];
 
 		// Update the existing item
@@ -883,7 +959,7 @@ class PressPrimer_Quiz_Attempt extends PressPrimer_Quiz_Model {
 			$items_table,
 			$answer_data,
 			[ 'id' => $existing->id ],
-			[ '%s', '%s', '%d' ],
+			[ '%s', '%s', null === $confidence ? null : '%d' ],
 			[ '%d' ]
 		);
 
@@ -900,11 +976,16 @@ class PressPrimer_Quiz_Attempt extends PressPrimer_Quiz_Model {
 	 *
 	 * @since 1.0.0
 	 *
-	 * @param int  $item_id    Attempt item ID.
-	 * @param bool $confidence Confidence value.
+	 * @param int           $item_id    Attempt item ID.
+	 * @param int|bool|null $confidence Confidence value (1-3, null to clear;
+	 *                                  legacy booleans are normalized).
 	 * @return bool|WP_Error True on success, WP_Error on failure.
 	 */
-	public function update_confidence( int $item_id, bool $confidence ) {
+	public function update_confidence( int $item_id, $confidence ) {
+		if ( true === $confidence ) {
+			$confidence = 3;
+		}
+		$confidence = in_array( (int) $confidence, [ 1, 2, 3 ], true ) ? (int) $confidence : null;
 		// Validate attempt is in progress
 		if ( 'in_progress' !== $this->status ) {
 			return new WP_Error(
@@ -932,12 +1013,12 @@ class PressPrimer_Quiz_Attempt extends PressPrimer_Quiz_Model {
 			);
 		}
 
-		// Update confidence
+		// Update confidence (1-3, or NULL to clear)
 		$wpdb->update(
 			$items_table,
-			[ 'confidence' => $confidence ? 1 : 0 ],
+			[ 'confidence' => $confidence ],
 			[ 'id' => $item_id ],
-			[ '%d' ],
+			[ null === $confidence ? null : '%d' ],
 			[ '%d' ]
 		);
 
@@ -971,7 +1052,7 @@ class PressPrimer_Quiz_Attempt extends PressPrimer_Quiz_Model {
 
 		// Calculate elapsed time using WordPress timezone-aware functions
 		// started_at is stored in WordPress local time via current_time('mysql')
-		$started_timestamp = strtotime( get_gmt_from_date( $this->started_at ) );
+		$started_timestamp = PressPrimer_Quiz_Helpers::local_datetime_to_timestamp( $this->started_at );
 		$now               = time(); // UTC timestamp
 		$elapsed_seconds   = $now - $started_timestamp;
 		$elapsed_ms        = $elapsed_seconds * 1000;
@@ -1103,7 +1184,7 @@ class PressPrimer_Quiz_Attempt extends PressPrimer_Quiz_Model {
 
 		// Calculate elapsed time using WordPress timezone-aware functions
 		// started_at is stored in WordPress local time via current_time('mysql')
-		$started_timestamp = strtotime( get_gmt_from_date( $this->started_at ) );
+		$started_timestamp = PressPrimer_Quiz_Helpers::local_datetime_to_timestamp( $this->started_at );
 		$now               = time(); // UTC timestamp
 		$elapsed_seconds   = $now - $started_timestamp;
 
@@ -1433,8 +1514,11 @@ class PressPrimer_Quiz_Attempt extends PressPrimer_Quiz_Model {
 			return false;
 		}
 
-		// Check if current time is past expiration
-		$now     = current_time( 'timestamp' );
+		// Check if current time is past expiration. token_expires_at is stored
+		// in UTC (written with gmdate()), so strtotime() — which parses it as
+		// UTC — yields the real expiry instant; compare against time(), not
+		// current_time( 'timestamp' ), which is shifted by the site offset.
+		$now     = time();
 		$expires = strtotime( $this->token_expires_at );
 
 		return $now > $expires;

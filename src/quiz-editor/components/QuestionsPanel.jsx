@@ -25,6 +25,7 @@ import {
 	Col,
 	Tooltip,
 	Alert,
+	Tag,
 } from 'antd';
 import {
 	PlusOutlined,
@@ -57,6 +58,9 @@ const QuestionsPanel = ({ quizId, generationMode }) => {
 	const [filterDifficulty, setFilterDifficulty] = useState('');
 	const [filterCategory, setFilterCategory] = useState('');
 	const [filterBank, setFilterBank] = useState('');
+	// Defaults to published so drafts and archived questions never mix in
+	// silently; '' means all statuses.
+	const [filterStatus, setFilterStatus] = useState('published');
 	const [pagination, setPagination] = useState({ current: 1, pageSize: 10, total: 0 });
 	const [loadingQuestions, setLoadingQuestions] = useState(false);
 	const [categories, setCategories] = useState([]);
@@ -130,6 +134,7 @@ const QuestionsPanel = ({ quizId, generationMode }) => {
 			const difficulty = filters ? filters.difficulty  : filterDifficulty;
 			const category   = filters ? filters.category   : filterCategory;
 			const bank       = filters ? filters.bank       : filterBank;
+			const status     = filters ? filters.status     : filterStatus;
 
 			// Build query params
 			const params = new URLSearchParams({
@@ -151,6 +156,9 @@ const QuestionsPanel = ({ quizId, generationMode }) => {
 			}
 			if (bank) {
 				params.append('bank_id', bank);
+			}
+			if (status) {
+				params.append('status', status);
 			}
 
 			// Exclude questions already in the quiz
@@ -209,18 +217,20 @@ const QuestionsPanel = ({ quizId, generationMode }) => {
 		setFilterDifficulty('');
 		setFilterCategory('');
 		setFilterBank('');
+		setFilterStatus('published');
 		setPagination({ current: 1, pageSize: 10, total: 0 });
 		setSelectedQuestionIds([]);
 		setModalVisible(true);
 		loadFilterOptions();
 
-		// Pass empty filters explicitly to avoid stale closure state.
+		// Pass reset filters explicitly to avoid stale closure state.
 		loadAvailableQuestionsWithPageSize(1, 10, {
 			search: '',
 			type: '',
 			difficulty: '',
 			category: '',
 			bank: '',
+			status: 'published',
 		});
 	};
 
@@ -251,6 +261,7 @@ const QuestionsPanel = ({ quizId, generationMode }) => {
 			difficulty: filterDifficulty,
 			category: filterCategory,
 			bank: filterBank,
+			status: filterStatus,
 			...changed,
 		});
 	};
@@ -486,6 +497,28 @@ const QuestionsPanel = ({ quizId, generationMode }) => {
 			render: (type) => type ? type.toUpperCase() : '',
 		},
 		{
+			title: __('Status', 'pressprimer-quiz'),
+			dataIndex: 'status',
+			key: 'status',
+			width: 100,
+			render: (status) => {
+				// Published rows stay unmarked; only flag the exceptions so
+				// Draft/All views stay readable.
+				if (!status || status === 'published') {
+					return '';
+				}
+				const statusLabels = {
+					draft: __('Draft', 'pressprimer-quiz'),
+					archived: __('Archived', 'pressprimer-quiz'),
+				};
+				return (
+					<Tag color={status === 'draft' ? 'gold' : 'default'}>
+						{statusLabels[status] || status}
+					</Tag>
+				);
+			},
+		},
+		{
 			title: __('Date', 'pressprimer-quiz'),
 			dataIndex: 'created_at',
 			key: 'created_at',
@@ -647,7 +680,7 @@ const QuestionsPanel = ({ quizId, generationMode }) => {
 
 					{/* Filters */}
 					<Row gutter={8}>
-						<Col span={6}>
+						<Col span={5}>
 							<Select
 								placeholder={__('Type', 'pressprimer-quiz')}
 								allowClear
@@ -664,7 +697,7 @@ const QuestionsPanel = ({ quizId, generationMode }) => {
 								]}
 							/>
 						</Col>
-						<Col span={6}>
+						<Col span={5}>
 							<Select
 								placeholder={__('Difficulty', 'pressprimer-quiz')}
 								allowClear
@@ -682,7 +715,7 @@ const QuestionsPanel = ({ quizId, generationMode }) => {
 								]}
 							/>
 						</Col>
-						<Col span={6}>
+						<Col span={5}>
 							<Select
 								placeholder={__('Category', 'pressprimer-quiz')}
 								allowClear
@@ -698,7 +731,7 @@ const QuestionsPanel = ({ quizId, generationMode }) => {
 								}))}
 							/>
 						</Col>
-						<Col span={6}>
+						<Col span={5}>
 							<Select
 								placeholder={__('Bank', 'pressprimer-quiz')}
 								allowClear
@@ -712,6 +745,21 @@ const QuestionsPanel = ({ quizId, generationMode }) => {
 									value: bank.id.toString(),
 									label: bank.name,
 								}))}
+							/>
+						</Col>
+						<Col span={4}>
+							<Select
+								style={{ width: '100%' }}
+								value={filterStatus}
+								onChange={(value) => {
+									setFilterStatus(value);
+									handleFilterChange({ status: value });
+								}}
+								options={[
+									{ value: 'published', label: __('Published', 'pressprimer-quiz') },
+									{ value: 'draft', label: __('Draft', 'pressprimer-quiz') },
+									{ value: '', label: __('All statuses', 'pressprimer-quiz') },
+								]}
 							/>
 						</Col>
 					</Row>

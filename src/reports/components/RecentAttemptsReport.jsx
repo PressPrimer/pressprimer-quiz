@@ -45,6 +45,7 @@ const RecentAttemptsReport = () => {
 	const [search, setSearch] = useState('');
 	const [quizFilter, setQuizFilter] = useState(null);
 	const [statusFilter, setStatusFilter] = useState(null);
+	const [practiceFilter, setPracticeFilter] = useState('show');
 	const [sortField, setSortField] = useState('finished_at');
 	const [sortOrder, setSortOrder] = useState('descend');
 	const [selectedAttempt, setSelectedAttempt] = useState(null);
@@ -95,6 +96,9 @@ const RecentAttemptsReport = () => {
 			if (statusFilter !== null) {
 				params.append('passed', statusFilter);
 			}
+			if (practiceFilter === 'hide') {
+				params.append('practice', 'hide');
+			}
 			if (dates.from) {
 				params.append('date_from', dates.from);
 			}
@@ -118,7 +122,7 @@ const RecentAttemptsReport = () => {
 		} finally {
 			setLoading(false);
 		}
-	}, [pagination.current, pagination.pageSize, sortField, sortOrder, search, quizFilter, statusFilter, getEffectiveDates]);
+	}, [pagination.current, pagination.pageSize, sortField, sortOrder, search, quizFilter, statusFilter, practiceFilter, getEffectiveDates]);
 
 	// Initial fetch
 	useEffect(() => {
@@ -199,7 +203,16 @@ const RecentAttemptsReport = () => {
 			key: 'quiz_title',
 			sorter: true,
 			sortOrder: sortField === 'quiz_title' ? sortOrder : null,
-			render: (title) => title || '-',
+			render: (title, record) => (
+				<span>
+					{title || '-'}
+					{(record.is_practice === 1 || record.is_practice === '1' || record.is_practice === true) && (
+						<Tag color="blue" style={{ marginLeft: 8 }}>
+							{__('Practice', 'pressprimer-quiz')}
+						</Tag>
+					)}
+				</span>
+			),
 		},
 		{
 			title: __('Score', 'pressprimer-quiz'),
@@ -336,6 +349,18 @@ const RecentAttemptsReport = () => {
 							options={[
 								{ value: 1, label: __('Passed', 'pressprimer-quiz') },
 								{ value: 0, label: __('Failed', 'pressprimer-quiz') },
+							]}
+						/>
+						<Select
+							value={practiceFilter}
+							onChange={(value) => {
+								setPracticeFilter(value);
+								setPagination((prev) => ({ ...prev, current: 1 }));
+							}}
+							className="ppq-reports-filter-select--small"
+							options={[
+								{ value: 'show', label: __('Show practice', 'pressprimer-quiz') },
+								{ value: 'hide', label: __('Hide practice', 'pressprimer-quiz') },
 							]}
 						/>
 						<Search

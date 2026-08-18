@@ -168,7 +168,9 @@ class PressPrimer_Quiz_Quiz_Renderer {
 		}
 
 		// Show meta if time limit should display and quiz has time limit.
-		if ( $display['show_time_limit'] && $quiz->time_limit_seconds > 0 ) {
+		// Practice quizzes never advertise a time limit — it is waived at
+		// delivery (v3.1 feature 001).
+		if ( $display['show_time_limit'] && $quiz->time_limit_seconds > 0 && ! $quiz->is_practice ) {
 			return true;
 		}
 
@@ -178,7 +180,7 @@ class PressPrimer_Quiz_Quiz_Renderer {
 		}
 
 		// Show meta if attempt count should display and quiz has max attempts set.
-		if ( $display['show_attempt_count'] && $quiz->max_attempts > 0 ) {
+		if ( $display['show_attempt_count'] && $quiz->max_attempts > 0 && ! $quiz->is_practice ) {
 			return true;
 		}
 
@@ -248,7 +250,7 @@ class PressPrimer_Quiz_Quiz_Renderer {
 
 				// If no answers and started more than 1 hour ago, abandon it
 				if ( ! $has_any_answer ) {
-					$started_timestamp = mysql2date( 'U', $in_progress_attempt->started_at );
+					$started_timestamp = PressPrimer_Quiz_Helpers::local_datetime_to_timestamp( $in_progress_attempt->started_at );
 					$one_hour_ago      = time() - 3600;
 					if ( $started_timestamp < $one_hour_ago ) {
 						$in_progress_attempt->status = 'abandoned';
@@ -287,7 +289,7 @@ class PressPrimer_Quiz_Quiz_Renderer {
 		if ( $can_start && $quiz->attempt_delay_minutes && ! empty( $previous_attempts ) ) {
 			$last_attempt = $previous_attempts[0];
 			if ( $last_attempt && 'submitted' === $last_attempt->status && $last_attempt->finished_at ) {
-				$elapsed_minutes = ( time() - mysql2date( 'U', $last_attempt->finished_at ) ) / 60;
+				$elapsed_minutes = ( time() - PressPrimer_Quiz_Helpers::local_datetime_to_timestamp( $last_attempt->finished_at ) ) / 60;
 				if ( $elapsed_minutes < $quiz->attempt_delay_minutes ) {
 					$can_start     = false;
 					$wait_minutes  = ceil( $quiz->attempt_delay_minutes - $elapsed_minutes );
@@ -363,7 +365,9 @@ class PressPrimer_Quiz_Quiz_Renderer {
 			<div class="ppq-quiz-content">
 
 				<header class="ppq-quiz-header">
-					<h1 class="ppq-quiz-title"><?php echo esc_html( $quiz->title ); ?></h1>
+					<h1 class="ppq-quiz-title"><?php echo esc_html( $quiz->title ); ?><?php if ( $quiz->is_practice ) : ?>
+						<span class="ppq-practice-badge"><?php esc_html_e( 'Practice', 'pressprimer-quiz' ); ?></span>
+					<?php endif; ?></h1>
 
 					<?php if ( $display['show_description'] && ! empty( $quiz->description ) ) : ?>
 						<div class="ppq-quiz-description">
@@ -425,7 +429,7 @@ class PressPrimer_Quiz_Quiz_Renderer {
 						</div>
 						<?php endif; ?>
 
-						<?php if ( $display['show_time_limit'] && $quiz->time_limit_seconds ) : ?>
+						<?php if ( $display['show_time_limit'] && $quiz->time_limit_seconds && ! $quiz->is_practice ) : ?>
 							<div class="ppq-meta-item">
 								<span class="ppq-meta-icon" aria-hidden="true">⏰</span>
 								<div class="ppq-meta-content">
@@ -451,7 +455,7 @@ class PressPrimer_Quiz_Quiz_Renderer {
 						</div>
 						<?php endif; ?>
 
-						<?php if ( $display['show_attempt_count'] && $quiz->max_attempts ) : ?>
+						<?php if ( $display['show_attempt_count'] && $quiz->max_attempts && ! $quiz->is_practice ) : ?>
 							<div class="ppq-meta-item">
 								<span class="ppq-meta-icon" aria-hidden="true">✓</span>
 								<div class="ppq-meta-content">
@@ -617,7 +621,14 @@ class PressPrimer_Quiz_Quiz_Renderer {
 								<?php esc_html_e( 'You have an in-progress attempt. You can resume where you left off.', 'pressprimer-quiz' ); ?>
 							</p>
 						</div>
-						<a href="<?php echo esc_url( add_query_arg( 'attempt', $in_progress_attempt->id, get_permalink() ) ); ?>"
+						<?php
+						// Build the resume URL from the CURRENT request so existing
+						// query args survive (the study-session page needs its plan
+						// parameter; matches the JS buildAttemptUrl behavior). The
+						// stale retake flag is dropped like the JS does.
+						$resume_url = remove_query_arg( 'pressprimer_quiz_retake', add_query_arg( 'attempt', $in_progress_attempt->id ) );
+						?>
+						<a href="<?php echo esc_url( $resume_url ); ?>"
 							class="ppq-button ppq-button-primary ppq-button-large ppq-resume-button">
 							<span class="ppq-button-icon" aria-hidden="true">▶️</span>
 							<?php esc_html_e( 'Resume Quiz', 'pressprimer-quiz' ); ?>
@@ -793,13 +804,21 @@ class PressPrimer_Quiz_Quiz_Renderer {
 				'</p></div>';
 		}
 
+		// Practice attempts always deliver tutorial-style with no timer,
+		// regardless of the quiz's stored mode/time limit — the stored
+		// settings are never mutated (v3.1 feature 001 FR-004). The attempt
+		// flag (not the quiz flag) decides, so in-progress attempts keep
+		// their creation-time semantics if the quiz is toggled mid-attempt.
+		$is_practice_attempt = ! empty( $attempt->is_practice );
+		$effective_mode      = $is_practice_attempt ? 'tutorial' : $quiz->mode;
+
 		// Calculate time remaining (if timed)
 		$time_remaining = null;
 		$time_limit     = null;
-		if ( $quiz->time_limit_seconds ) {
+		if ( $quiz->time_limit_seconds && ! $is_practice_attempt ) {
 			$time_limit = $quiz->time_limit_seconds;
 			// Use timezone-aware calculation - started_at is in WordPress local time
-			$started_timestamp = strtotime( get_gmt_from_date( $attempt->started_at ) );
+			$started_timestamp = PressPrimer_Quiz_Helpers::local_datetime_to_timestamp( $attempt->started_at );
 			$elapsed           = time() - $started_timestamp;
 			$time_remaining    = max( 0, $time_limit - $elapsed );
 		}
@@ -910,7 +929,8 @@ class PressPrimer_Quiz_Quiz_Renderer {
 			aria-label="<?php esc_attr_e( 'Quiz', 'pressprimer-quiz' ); ?>"
 			data-attempt-id="<?php echo esc_attr( $attempt->id ); ?>"
 			data-quiz-id="<?php echo esc_attr( $quiz->id ); ?>"
-			data-quiz-mode="<?php echo esc_attr( $quiz->mode ); ?>"
+			data-quiz-mode="<?php echo esc_attr( $effective_mode ); ?>"
+			data-is-practice="<?php echo esc_attr( $is_practice_attempt ? '1' : '0' ); ?>"
 			data-allow-skip="<?php echo esc_attr( $quiz->allow_skip ? '1' : '0' ); ?>"
 			data-allow-backward="<?php echo esc_attr( $allow_backward ? '1' : '0' ); ?>"
 			data-page-mode="<?php echo esc_attr( $page_mode ); ?>"
@@ -939,7 +959,9 @@ class PressPrimer_Quiz_Quiz_Renderer {
 			<!-- Quiz Header -->
 			<div class="ppq-quiz-interface-header">
 				<div class="ppq-quiz-interface-header-content">
-					<h1 class="ppq-quiz-interface-title"><?php echo esc_html( $quiz->title ); ?></h1>
+					<h1 class="ppq-quiz-interface-title"><?php echo esc_html( $quiz->title ); ?><?php if ( $is_practice_attempt ) : ?>
+						<span class="ppq-practice-badge"><?php esc_html_e( 'Practice', 'pressprimer-quiz' ); ?></span>
+					<?php endif; ?></h1>
 
 					<?php
 					$total_questions    = count( $items );
@@ -1191,23 +1213,35 @@ class PressPrimer_Quiz_Quiz_Renderer {
 
 			<?php if ( $this->current_quiz && $this->current_quiz->enable_confidence ) : ?>
 				<?php
-				$confidence_id = 'ppq_confidence_' . $item->id;
-				$is_confident  = (bool) $item->confidence;
+				// v3.1 three-level confidence capture (feature 003 FR-003).
+				// Native radios provide radiogroup semantics and arrow-key
+				// navigation; the JS layer adds click-again-to-clear so the
+				// capture stays optional (NULL is a valid state).
+				$confidence_value  = in_array( (int) $item->confidence, [ 1, 2, 3 ], true ) ? (int) $item->confidence : 0;
+				$confidence_levels = [
+					1 => __( 'Low', 'pressprimer-quiz' ),
+					2 => __( 'Medium', 'pressprimer-quiz' ),
+					3 => __( 'High', 'pressprimer-quiz' ),
+				];
 				?>
-				<div class="ppq-confidence-container">
-					<label class="ppq-confidence-label" for="<?php echo esc_attr( $confidence_id ); ?>">
-						<input type="checkbox"
-								id="<?php echo esc_attr( $confidence_id ); ?>"
-								name="ppq_confidence_<?php echo esc_attr( $item->id ); ?>"
-								class="ppq-confidence-input"
-								data-item-id="<?php echo esc_attr( $item->id ); ?>"
-								<?php checked( $is_confident ); ?>>
-						<span class="ppq-confidence-checkbox"></span>
-						<span class="ppq-confidence-text">
-							<?php esc_html_e( 'I am confident in my answer', 'pressprimer-quiz' ); ?>
-						</span>
-					</label>
-				</div>
+				<fieldset class="ppq-confidence-container ppq-confidence-levels" data-item-id="<?php echo esc_attr( $item->id ); ?>">
+					<legend class="ppq-confidence-text"><?php esc_html_e( 'How confident are you?', 'pressprimer-quiz' ); ?></legend>
+					<div class="ppq-confidence-segments" role="presentation">
+						<?php foreach ( $confidence_levels as $level_value => $level_label ) : ?>
+							<?php $level_id = 'ppq_confidence_' . $item->id . '_' . $level_value; ?>
+							<label class="ppq-confidence-segment" for="<?php echo esc_attr( $level_id ); ?>">
+								<input type="radio"
+										id="<?php echo esc_attr( $level_id ); ?>"
+										name="ppq_confidence_<?php echo esc_attr( $item->id ); ?>"
+										class="ppq-confidence-level-input"
+										value="<?php echo esc_attr( $level_value ); ?>"
+										data-item-id="<?php echo esc_attr( $item->id ); ?>"
+										<?php checked( $confidence_value, $level_value ); ?>>
+								<span class="ppq-confidence-segment-label"><?php echo esc_html( $level_label ); ?></span>
+							</label>
+						<?php endforeach; ?>
+					</div>
+				</fieldset>
 			<?php endif; ?>
 
 			<!-- Check Answer button for tutorial mode (hidden when already checked or in timed mode) -->

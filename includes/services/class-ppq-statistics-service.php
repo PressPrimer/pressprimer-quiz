@@ -170,7 +170,7 @@ class PressPrimer_Quiz_Statistics_Service {
 						SUM(CASE WHEN a.passed = 1 THEN 1 ELSE 0 END) as passed
 					 FROM {$attempts_table} a
 					 INNER JOIN {$quizzes_table} q ON a.quiz_id = q.id
-					 WHERE a.status = 'submitted' AND a.finished_at >= %s AND q.owner_id = %d", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Table names safely constructed from $wpdb->prefix
+					 WHERE a.status = 'submitted' AND a.is_practice = 0 AND a.finished_at >= %s AND q.owner_id = %d", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Table names safely constructed from $wpdb->prefix
 					$seven_days_ago,
 					$owner_id
 				)
@@ -182,7 +182,7 @@ class PressPrimer_Quiz_Statistics_Service {
 						COUNT(*) as total,
 						SUM(CASE WHEN passed = 1 THEN 1 ELSE 0 END) as passed
 					 FROM {$attempts_table}
-					 WHERE status = 'submitted' AND finished_at >= %s", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Table name safely constructed from $wpdb->prefix
+					 WHERE status = 'submitted' AND is_practice = 0 AND finished_at >= %s", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Table name safely constructed from $wpdb->prefix
 					$seven_days_ago
 				)
 			); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Results cached at method level
@@ -340,7 +340,9 @@ class PressPrimer_Quiz_Statistics_Service {
 		$attempts_table = $wpdb->prefix . 'ppq_attempts';
 		$quizzes_table  = $wpdb->prefix . 'ppq_quizzes';
 
-		$where = [ "a.status = 'submitted'" ];
+		// Reports-screen aggregates are grade-bearing and exclude practice
+		// attempts (v3.1 feature 001 FR-005 / SCOPE Q7).
+		$where = [ "a.status = 'submitted'", 'a.is_practice = 0' ];
 
 		if ( $owner_id ) {
 			$where[] = $wpdb->prepare( 'q.owner_id = %d', $owner_id );
@@ -477,8 +479,11 @@ class PressPrimer_Quiz_Statistics_Service {
 
 		$where_sql = implode( ' AND ', $where );
 
-		// Build date filtering for attempts
-		$date_where = "a.status = 'submitted'";
+		// Build date filtering for attempts. Reports-screen aggregates are
+		// grade-bearing and exclude practice attempts (v3.1 feature 001
+		// FR-005 / SCOPE Q7); the mixed-era columns below let the UI show a
+		// notice when a quiz has both practice and graded history.
+		$date_where = "a.status = 'submitted' AND a.is_practice = 0";
 		if ( $args['date_from'] ) {
 			$date_where .= $wpdb->prepare( ' AND a.finished_at >= %s', $args['date_from'] );
 		}
@@ -518,7 +523,9 @@ class PressPrimer_Quiz_Statistics_Service {
 						(SUM(CASE WHEN {$date_where} AND a.passed = 1 THEN 1 ELSE 0 END) /
 						 NULLIF(COUNT(CASE WHEN {$date_where} THEN a.id END), 0)) * 100,
 					1) as pass_rate,
-					ROUND(AVG(CASE WHEN {$date_where} THEN a.elapsed_ms END) / 1000) as avg_time
+					ROUND(AVG(CASE WHEN {$date_where} THEN a.elapsed_ms END) / 1000) as avg_time,
+					MAX(CASE WHEN a.status = 'submitted' AND a.is_practice = 1 THEN 1 ELSE 0 END) as has_practice_attempts,
+					MAX(CASE WHEN a.status = 'submitted' AND a.is_practice = 0 THEN 1 ELSE 0 END) as has_graded_attempts
 				 FROM {$quizzes_table} q
 				 LEFT JOIN {$attempts_table} a ON q.id = a.quiz_id
 				 WHERE {$where_sql}
@@ -561,6 +568,7 @@ class PressPrimer_Quiz_Statistics_Service {
 			'quiz_id'   => null,
 			'user_id'   => null,
 			'passed'    => null, // null = all, 1 = passed, 0 = failed
+			'practice'  => null, // null/'show' = include practice attempts, 'hide' = exclude
 			'date_from' => null,
 			'date_to'   => null,
 			'search'    => '',
@@ -577,7 +585,13 @@ class PressPrimer_Quiz_Statistics_Service {
 		$quizzes_table  = $wpdb->prefix . 'ppq_quizzes';
 		$users_table    = $wpdb->users;
 
-		$where = [ "a.status = 'submitted'" ];
+		// Hidden container quizzes (spaced-repetition review and study-plan
+		// containers) never surface on admin activity lists — the containers
+		// themselves are invisible everywhere in wp-admin, so their attempts
+		// must not leak their titles into Recent Activity / Recent Attempts.
+		// Students still see these results on the front end (My Results uses
+		// its own query).
+		$where = [ "a.status = 'submitted'", 'q.is_review_quiz = 0' ];
 
 		if ( $args['quiz_id'] ) {
 			$where[] = $wpdb->prepare( 'a.quiz_id = %d', $args['quiz_id'] );
@@ -589,6 +603,12 @@ class PressPrimer_Quiz_Statistics_Service {
 
 		if ( $args['passed'] !== null ) {
 			$where[] = $wpdb->prepare( 'a.passed = %d', $args['passed'] );
+		}
+
+		// Attempt lists include practice attempts (badged in the UI) by
+		// default; 'hide' excludes them (v3.1 feature 001 FR-005).
+		if ( isset( $args['practice'] ) && 'hide' === $args['practice'] ) {
+			$where[] = 'a.is_practice = 0';
 		}
 
 		if ( $args['date_from'] ) {
@@ -650,6 +670,7 @@ class PressPrimer_Quiz_Statistics_Service {
 					a.score_points,
 					a.score_percent,
 					a.passed,
+					a.is_practice,
 					a.started_at,
 					a.finished_at,
 					a.elapsed_ms,
@@ -734,6 +755,7 @@ class PressPrimer_Quiz_Statistics_Service {
 					a.score_points,
 					a.score_percent,
 					a.passed,
+					a.is_practice,
 					a.started_at,
 					a.finished_at,
 					a.elapsed_ms,
@@ -764,6 +786,7 @@ class PressPrimer_Quiz_Statistics_Service {
 					ai.question_revision_id,
 					ai.selected_answers_json,
 					ai.is_correct,
+					ai.confidence,
 					ai.score_points as points_earned,
 					ai.time_spent_ms,
 					qr.question_id,
@@ -891,7 +914,7 @@ class PressPrimer_Quiz_Statistics_Service {
 			"SELECT
 				DATE(a.finished_at) as date,
 				COUNT(*) as completions,
-				ROUND(AVG(a.score_percent), 1) as avg_score
+				ROUND(AVG(CASE WHEN a.is_practice = 0 THEN a.score_percent END), 1) as avg_score
 			 FROM {$attempts_table} a
 			 INNER JOIN {$quizzes_table} q ON a.quiz_id = q.id
 			 WHERE {$where_sql}

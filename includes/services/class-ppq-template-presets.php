@@ -110,9 +110,10 @@ class PressPrimer_Quiz_Template_Presets {
 			),
 			'open_practice'   => array(
 				'label'       => __( 'Open Practice', 'pressprimer-quiz' ),
-				'description' => __( 'Relaxed practice: untimed, unlimited attempts, free navigation, answers shown after each submission.', 'pressprimer-quiz' ),
+				'description' => __( 'Relaxed practice: untimed, unlimited attempts, free navigation, answers shown after each submission. Attempts are marked as practice and excluded from grade reports.', 'pressprimer-quiz' ),
 				'settings'    => array(
 					'mode'                => 'tutorial',
+					'is_practice'         => 1,
 					'allow_skip'          => 1,
 					'allow_backward'      => 1,
 					'allow_resume'        => 1,
@@ -121,6 +122,9 @@ class PressPrimer_Quiz_Template_Presets {
 					'randomize_questions' => 0,
 					'randomize_answers'   => 0,
 					'page_mode'           => 'single',
+				),
+				'reminders'   => array(
+					__( 'Practice attempts are excluded from grade reports and averages.', 'pressprimer-quiz' ),
 				),
 			),
 			'standard_graded' => array(

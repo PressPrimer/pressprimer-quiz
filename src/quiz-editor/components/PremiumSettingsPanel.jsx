@@ -37,7 +37,62 @@ const { Title, Text } = Typography;
  * @param {Object} props.form Ant Design form instance
  * @param {Object} props.quizData Initial quiz data (includes addon fields)
  */
-const PremiumSettingsPanel = ({ form, quizData = {} }) => {
+/**
+ * Measured Difficulty card (School 3.1).
+ *
+ * Shown only for dynamic/pool quizzes — the toggle reinterprets existing
+ * difficulty rules, so fixed quizzes have nothing for it to do. Watches the
+ * form so switching generation mode shows/hides it live.
+ *
+ * @param {Object} props                Component props.
+ * @param {Object} props.form           The quiz editor form instance.
+ * @param {string} props.generationMode The editor's generation mode state.
+ * @return {JSX.Element|null} The card, or null for fixed quizzes.
+ */
+const MeasuredDifficultyCard = ({ form, generationMode }) => {
+	const poolEnabled = Form.useWatch('pool_enabled', form);
+
+	if (generationMode !== 'dynamic' && !poolEnabled) {
+		return null;
+	}
+
+	return (
+		<Card
+			title={
+				<Space>
+					<Title level={4} style={{ margin: 0 }}>
+						{__('Measured Difficulty', 'pressprimer-quiz')}
+					</Title>
+					<Tooltip title={__('Uses each question’s measured difficulty — how students actually perform on it — instead of the authored rating when difficulty rules pick questions.', 'pressprimer-quiz')}>
+						<QuestionCircleOutlined style={{ color: '#8c8c8c' }} />
+					</Tooltip>
+				</Space>
+			}
+			style={{ marginBottom: 24 }}
+		>
+			<Form.Item
+				label={
+					<Space>
+						<span>{__('Use Measured Difficulty for Rule Matching', 'pressprimer-quiz')}</span>
+						<Tooltip title={__('Questions with enough attempts are matched by their measured difficulty band; questions without enough data fall back to the authored rating. Turn this on when measured data shows some questions are easier or harder than rated.', 'pressprimer-quiz')}>
+							<QuestionCircleOutlined style={{ fontSize: 12, color: '#8c8c8c' }} />
+						</Tooltip>
+					</Space>
+				}
+				name="use_measured_difficulty"
+				valuePropName="checked"
+				style={{ marginBottom: 0 }}
+			>
+				<Switch size="small" />
+			</Form.Item>
+			<Text type="secondary" style={{ fontSize: 12, display: 'block', marginTop: 8 }}>
+				{__('See the Measured column on the Questions screen for each question’s current measurement.', 'pressprimer-quiz')}
+			</Text>
+		</Card>
+	);
+};
+
+const PremiumSettingsPanel = ({ form, quizData = {}, generationMode = 'fixed' }) => {
 	// Pre-test selector state (only used when Educator addon is active).
 	const [preTestOptions, setPreTestOptions] = useState([]);
 	const [preTestLoading, setPreTestLoading] = useState(false);
@@ -392,6 +447,11 @@ const PremiumSettingsPanel = ({ form, quizData = {} }) => {
 						{__('Students will see review prompts and can generate personalized review quizzes from questions they need to practice.', 'pressprimer-quiz')}
 					</Text>
 				</Card>
+			)}
+
+			{/* Measured Difficulty - School addon, dynamic/pool quizzes only */}
+			{quizData.schoolActive && quizData.schoolMeasuredAvailable && (
+				<MeasuredDifficultyCard form={form} generationMode={generationMode} />
 			)}
 
 			{/* WP Fusion - Only shown when the School WP Fusion feature is active */}

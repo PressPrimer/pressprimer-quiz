@@ -390,6 +390,52 @@ The {site_name} Team`;
 				</div>
 			</div>
 
+			{/* Email Footer Section */}
+			<div className="ppq-settings-section">
+				<Title level={4} className="ppq-settings-section-title">
+					{__('Email Footer', 'pressprimer-quiz')}
+				</Title>
+				<Paragraph className="ppq-settings-section-description">
+					{__('Customize the footer shown at the bottom of every email the plugin sends. Leave empty to use the default footer.', 'pressprimer-quiz')}
+				</Paragraph>
+
+				<div className="ppq-settings-field">
+					<Form.Item
+						label={__('Footer Text', 'pressprimer-quiz')}
+					>
+						<TextArea
+							value={settings.email_footer_text || ''}
+							onChange={(e) => updateSetting('email_footer_text', e.target.value)}
+							rows={4}
+							placeholder={`${__('This email was sent from {site_name}', 'pressprimer-quiz')}\n{site_url}`}
+							style={{ fontFamily: 'monospace', maxWidth: 500 }}
+						/>
+					</Form.Item>
+				</div>
+
+				{/* Available Tokens */}
+				<div className="ppq-token-list">
+					<Text strong>{__('Available Tokens:', 'pressprimer-quiz')}</Text>
+					<Text type="secondary" style={{ marginLeft: 8 }}>
+						{__('(click to copy)', 'pressprimer-quiz')}
+					</Text>
+					<div style={{ marginTop: 8 }}>
+						<TokenItem
+							token="{site_name}"
+							description={__('Site name', 'pressprimer-quiz')}
+						/>
+						<TokenItem
+							token="{site_url}"
+							description={__('Site address', 'pressprimer-quiz')}
+						/>
+						<TokenItem
+							token="{year}"
+							description={__('Current year', 'pressprimer-quiz')}
+						/>
+					</div>
+				</div>
+			</div>
+
 			{/* Results Email Template Section */}
 			<div className="ppq-settings-section">
 				<Title level={4} className="ppq-settings-section-title">
@@ -404,7 +450,7 @@ The {site_name} Team`;
 						label={__('Subject Line', 'pressprimer-quiz')}
 					>
 						<Input
-							value={settings.email_results_subject ?? defaultResultsSubject}
+							value={settings.email_results_subject || defaultResultsSubject}
 							onChange={(e) => updateSetting('email_results_subject', e.target.value)}
 							style={{ maxWidth: 500 }}
 						/>
@@ -416,7 +462,7 @@ The {site_name} Team`;
 						label={__('Email Body', 'pressprimer-quiz')}
 					>
 						<TextArea
-							value={settings.email_results_body ?? defaultResultsBody}
+							value={settings.email_results_body || defaultResultsBody}
 							onChange={(e) => updateSetting('email_results_body', e.target.value)}
 							rows={12}
 							style={{ fontFamily: 'monospace' }}
@@ -467,6 +513,10 @@ The {site_name} Team`;
 							token="{results_url}"
 							description={__('Button that links to full results', 'pressprimer-quiz')}
 						/>
+						<TokenItem
+							token="{answers_summary}"
+							description={__("Per-question recap of the student's answers; honors the quiz's review display settings", 'pressprimer-quiz')}
+						/>
 					</div>
 				</div>
 
@@ -516,7 +566,7 @@ The {site_name} Team`;
 							label={__('Subject Line', 'pressprimer-quiz')}
 						>
 							<Input
-								value={settings.educator_reminder_email_subject ?? defaultReminderSubject}
+								value={settings.educator_reminder_email_subject || defaultReminderSubject}
 								onChange={(e) => updateSetting('educator_reminder_email_subject', e.target.value)}
 								style={{ maxWidth: 500 }}
 							/>
@@ -528,7 +578,7 @@ The {site_name} Team`;
 							label={__('Email Body', 'pressprimer-quiz')}
 						>
 							<TextArea
-								value={settings.educator_reminder_email_body ?? defaultReminderBody}
+								value={settings.educator_reminder_email_body || defaultReminderBody}
 								onChange={(e) => updateSetting('educator_reminder_email_body', e.target.value)}
 								rows={12}
 								style={{ fontFamily: 'monospace' }}
@@ -621,7 +671,7 @@ The {site_name} Team`;
 							label={__('Subject Line', 'pressprimer-quiz')}
 						>
 							<Input
-								value={settings.educator_welcome_email_subject ?? defaultWelcomeSubject}
+								value={settings.educator_welcome_email_subject || defaultWelcomeSubject}
 								onChange={(e) => updateSetting('educator_welcome_email_subject', e.target.value)}
 								style={{ maxWidth: 500 }}
 							/>
@@ -633,7 +683,7 @@ The {site_name} Team`;
 							label={__('Email Body', 'pressprimer-quiz')}
 						>
 							<TextArea
-								value={settings.educator_welcome_email_body ?? defaultWelcomeBody}
+								value={settings.educator_welcome_email_body || defaultWelcomeBody}
 								onChange={(e) => updateSetting('educator_welcome_email_body', e.target.value)}
 								rows={12}
 								style={{ fontFamily: 'monospace' }}
@@ -739,7 +789,7 @@ The {site_name} Team`;
 							label={__('Subject Line', 'pressprimer-quiz')}
 						>
 							<Input
-								value={settings.school_sr_reminder_email_subject ?? defaultSrReminderSubject}
+								value={settings.school_sr_reminder_email_subject || defaultSrReminderSubject}
 								onChange={(e) => updateSetting('school_sr_reminder_email_subject', e.target.value)}
 								style={{ maxWidth: 500 }}
 							/>
@@ -751,7 +801,7 @@ The {site_name} Team`;
 							label={__('Email Body', 'pressprimer-quiz')}
 						>
 							<TextArea
-								value={settings.school_sr_reminder_email_body ?? defaultSrReminderBody}
+								value={settings.school_sr_reminder_email_body || defaultSrReminderBody}
 								onChange={(e) => updateSetting('school_sr_reminder_email_body', e.target.value)}
 								rows={12}
 								style={{ fontFamily: 'monospace' }}

@@ -2,7 +2,7 @@
 	"$schema": "https://schemas.wp.org/trunk/block.json",
 	"apiVersion": 3,
 	"name": "pressprimer-quiz/quiz",
-	"version": "2.1.0",
+	"version": "3.1.0",
 	"title": "PPQ Quiz",
 	"category": "pressprimer-quiz",
 	"icon": "welcome-learn-more",
@@ -13,6 +13,10 @@
 	},
 	"attributes": {
 		"quizId": {
+			"type": "number",
+			"default": 0
+		},
+		"preTestId": {
 			"type": "number",
 			"default": 0
 		},

@@ -3,7 +3,7 @@
  * Plugin Name:       PressPrimer Quiz
  * Plugin URI:        https://pressprimer.com/quiz
  * Description:       Enterprise-grade quiz and assessment platform for educators with AI question generation, LMS integration, and modern themes.
- * Version:           3.0.5
+ * Version:           3.1.0
  * Requires at least: 6.4
  * Requires PHP:      7.4
  * Author:            PressPrimer
@@ -23,12 +23,15 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 // Plugin constants
-define( 'PRESSPRIMER_QUIZ_VERSION', '3.0.5' );
+define( 'PRESSPRIMER_QUIZ_VERSION', '3.1.0' );
 define( 'PRESSPRIMER_QUIZ_PLUGIN_FILE', __FILE__ );
 define( 'PRESSPRIMER_QUIZ_PLUGIN_PATH', plugin_dir_path( __FILE__ ) );
 define( 'PRESSPRIMER_QUIZ_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
 define( 'PRESSPRIMER_QUIZ_PLUGIN_BASENAME', plugin_basename( __FILE__ ) );
-define( 'PRESSPRIMER_QUIZ_DB_VERSION', '3.0.1' );
+// The 3.1.0 chain has two steps: '3.1.0' (columns; retry-safe) and
+// '3.1.0.1' (one-time confidence value mapping — isolated so a column-step
+// retry can never re-run it). The constant tracks the LAST chain step.
+define( 'PRESSPRIMER_QUIZ_DB_VERSION', '3.1.0.2' );
 
 // Composer autoloader (for smalot/pdfparser and other vendor dependencies)
 if ( file_exists( PRESSPRIMER_QUIZ_PLUGIN_PATH . 'vendor/autoload.php' ) ) {

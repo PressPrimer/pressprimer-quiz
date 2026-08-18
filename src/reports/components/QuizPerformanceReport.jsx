@@ -231,6 +231,19 @@ const QuizPerformanceReport = () => {
 			/>
 
 			{/* Data Table */}
+			{data.some(
+				(row) =>
+					Number(row.has_practice_attempts) === 1 &&
+					Number(row.has_graded_attempts) === 1
+			) && (
+				<Alert
+					type="info"
+					showIcon
+					message={__('Some quizzes have both practice and graded attempts. The figures below cover graded attempts only; practice attempts are excluded.', 'pressprimer-quiz')}
+					style={{ marginBottom: 16 }}
+				/>
+			)}
+
 			<Card className="ppq-reports-card ppq-reports-table-card">
 				<div className="ppq-reports-table-header">
 					<Search

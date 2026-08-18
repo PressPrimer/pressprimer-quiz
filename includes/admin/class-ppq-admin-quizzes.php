@@ -638,6 +638,10 @@ class PressPrimer_Quiz_Admin_Quizzes {
 					'max_questions'            => $quiz->max_questions,
 					'pool_size'                => $quiz->get_pool_size()['count'],
 					'enable_sr'                => (bool) $quiz->enable_sr,
+					'show_points'              => (bool) $quiz->show_points,
+					'is_practice'              => (bool) $quiz->is_practice,
+					'exposure_control'         => (bool) $quiz->exposure_control,
+					'use_measured_difficulty'  => (bool) $quiz->use_measured_difficulty,
 					'ma_scoring_mode'          => $quiz->ma_scoring_mode,
 					// Cast to object so empty {} round-trips through wp_localize_script
 					// instead of being serialized as a JSON array [].
@@ -1763,9 +1767,9 @@ class PressPrimer_Quiz_Quizzes_List_Table extends WP_List_Table {
 	 */
 	public function column_date( $item ) {
 		// created_at is stored in WordPress local time; resolve it to a real
-		// timestamp with mysql2date() so the relative-time comparison below uses
-		// the correct instant instead of a UTC-parsed one.
-		$timestamp = mysql2date( 'U', $item->created_at );
+		// timestamp so the relative-time comparison below uses the correct
+		// instant instead of an offset-shifted one.
+		$timestamp = PressPrimer_Quiz_Helpers::local_datetime_to_timestamp( $item->created_at );
 
 		if ( ! $timestamp ) {
 			return '—';

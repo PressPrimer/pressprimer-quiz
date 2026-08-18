@@ -40,6 +40,9 @@ export function fetchMyAttempts(
 	if ( params.order ) {
 		query.order = params.order;
 	}
+	if ( params.practice ) {
+		query.practice = params.practice;
+	}
 
 	const qs = new URLSearchParams( query ).toString();
 

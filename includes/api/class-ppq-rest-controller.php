@@ -2571,7 +2571,10 @@ class PressPrimer_Quiz_REST_Controller {
 			'max_questions'            => $quiz->max_questions ? (int) $quiz->max_questions : null,
 			'pool_size'                => $quiz->get_pool_size()['count'],
 			'enable_sr'                => (bool) $quiz->enable_sr,
+			'use_measured_difficulty'  => (bool) $quiz->use_measured_difficulty,
 			'is_review_quiz'           => (bool) $quiz->is_review_quiz,
+			'is_practice'              => (bool) $quiz->is_practice,
+			'exposure_control'         => (bool) $quiz->exposure_control,
 			'ma_scoring_mode'          => $quiz->ma_scoring_mode,
 			// Cast to object so an empty sparse map serializes as {} rather than [].
 			'display_settings'         => (object) $quiz->get_display_settings(),
@@ -2653,7 +2656,10 @@ class PressPrimer_Quiz_REST_Controller {
 					'pool_enabled'             => ! empty( $data['pool_enabled'] ),
 					'max_questions'            => isset( $data['max_questions'] ) && '' !== $data['max_questions'] && null !== $data['max_questions'] ? absint( $data['max_questions'] ) : null,
 					'enable_sr'                => ! empty( $data['enable_sr'] ),
+					'use_measured_difficulty'  => ! empty( $data['use_measured_difficulty'] ),
 					'is_review_quiz'           => ! empty( $data['is_review_quiz'] ),
+					'is_practice'              => ! empty( $data['is_practice'] ),
+					'exposure_control'         => ! empty( $data['exposure_control'] ),
 					'ma_scoring_mode'          => $ma_scoring_mode,
 					'max_answers_per_question' => $max_answers_per_question,
 				]
@@ -2795,7 +2801,10 @@ class PressPrimer_Quiz_REST_Controller {
 			$quiz->pool_enabled             = ! empty( $data['pool_enabled'] );
 			$quiz->max_questions            = isset( $data['max_questions'] ) && '' !== $data['max_questions'] && null !== $data['max_questions'] ? absint( $data['max_questions'] ) : null;
 			$quiz->enable_sr                = ! empty( $data['enable_sr'] );
+			$quiz->use_measured_difficulty  = ! empty( $data['use_measured_difficulty'] );
 			$quiz->is_review_quiz           = ! empty( $data['is_review_quiz'] );
+			$quiz->is_practice              = ! empty( $data['is_practice'] );
+			$quiz->exposure_control         = ! empty( $data['exposure_control'] );
 			$quiz->ma_scoring_mode          = $ma_scoring_mode;
 			$quiz->max_answers_per_question = $max_answers_per_question;
 
@@ -3371,6 +3380,10 @@ class PressPrimer_Quiz_REST_Controller {
 
 		if ( isset( $data['email_results_body'] ) ) {
 			$sanitized['email_results_body'] = wp_kses_post( $data['email_results_body'] );
+		}
+
+		if ( isset( $data['email_footer_text'] ) ) {
+			$sanitized['email_footer_text'] = wp_kses_post( $data['email_footer_text'] );
 		}
 
 		if ( isset( $data['email_logo_url'] ) ) {
@@ -4034,6 +4047,7 @@ class PressPrimer_Quiz_REST_Controller {
 		$args = [
 			'quiz_id'   => $request->get_param( 'quiz_id' ) ? absint( $request->get_param( 'quiz_id' ) ) : null,
 			'passed'    => $request->get_param( 'passed' ) !== null ? absint( $request->get_param( 'passed' ) ) : null,
+			'practice'  => 'hide' === $request->get_param( 'practice' ) ? 'hide' : null,
 			'date_from' => $request->get_param( 'date_from' ),
 			'date_to'   => $request->get_param( 'date_to' ),
 			'search'    => $request->get_param( 'search' ) ?? '',
@@ -4360,6 +4374,12 @@ class PressPrimer_Quiz_REST_Controller {
 		if ( '' !== $db_status ) {
 			$where[] = $wpdb->prepare( 'status = %s', $db_status );
 		}
+
+		// Optional practice filter (v3.1 feature 001 FR-005): lists include
+		// practice attempts by default; 'hide' excludes them.
+		if ( 'hide' === $request->get_param( 'practice' ) ) {
+			$where[] = 'is_practice = 0';
+		}
 		$where_clause = implode( ' AND ', $where );
 
 		// Total count.
@@ -4478,6 +4498,7 @@ class PressPrimer_Quiz_REST_Controller {
 				'completed_at'  => $row->finished_at ? PressPrimer_Quiz_Helpers::format_local_datetime( $row->finished_at, $datetime_format ) : null,
 				'score_percent' => ( null !== $row->score_percent ) ? (float) $row->score_percent : null,
 				'passed'        => ( null !== $row->passed ) ? (bool) (int) $row->passed : null,
+				'is_practice'   => ! empty( $row->is_practice ),
 				'status'        => ( 'submitted' === $db_status ) ? 'completed' : $db_status,
 				'results_url'   => ( 'submitted' === $db_status ) ? $action : '',
 				'resume_url'    => ( 'in_progress' === $db_status ) ? $action : '',

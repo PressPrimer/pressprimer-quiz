@@ -189,6 +189,7 @@ class PressPrimer_Quiz_Migrator {
 		$attempt_items = $wpdb->prefix . 'ppq_attempt_items';
 		$templates     = $wpdb->prefix . 'ppq_quiz_templates';
 		$assignments   = $wpdb->prefix . 'ppq_assignments';
+		$quiz_items    = $wpdb->prefix . 'ppq_quiz_items';
 
 		return array(
 			array(
@@ -278,6 +279,18 @@ class PressPrimer_Quiz_Migrator {
 				// it). Guarded ALTER; idempotent.
 				'targets'  => array(
 					$quizzes => array( 'use_measured_difficulty' ),
+				),
+			),
+			array(
+				'version'  => '3.1.2',
+				'callback' => array( __CLASS__, 'migrate_to_3_1_2' ),
+				// Data-only cleanup (no schema targets): purges quiz item and
+				// bank membership rows that reference soft-deleted or missing
+				// questions — references that question deletion left behind
+				// before the 3.1.2 delete cascade. Idempotent (the DELETEs
+				// match nothing on a re-run).
+				'targets'  => array(
+					$quiz_items => array(),
 				),
 			),
 		);
@@ -973,6 +986,66 @@ class PressPrimer_Quiz_Migrator {
 				)
 			);
 		}
+	}
+
+	/**
+	 * Migration step 3.1.2: purge quiz/bank references to deleted questions.
+	 *
+	 * Before 3.1.2, soft-deleting a question left its quiz item and bank
+	 * membership rows behind; fixed-mode quizzes then kept serving the
+	 * deleted question (the Questions list hides it, so the reference was
+	 * undiscoverable). 3.1.2's delete cascade prevents new strays; this step
+	 * removes the historical ones — including rows whose question no longer
+	 * exists at all — and refreshes bank counts. Data-only and idempotent:
+	 * the DELETEs match nothing on a re-run.
+	 *
+	 * @since 3.1.2
+	 */
+	public static function migrate_to_3_1_2() {
+		global $wpdb;
+
+		$questions      = $wpdb->prefix . 'ppq_questions';
+		$quiz_items     = $wpdb->prefix . 'ppq_quiz_items';
+		$bank_questions = $wpdb->prefix . 'ppq_bank_questions';
+		$banks          = $wpdb->prefix . 'ppq_banks';
+
+		// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Custom tables; one-time data cleanup.
+		$wpdb->query(
+			$wpdb->prepare(
+				'DELETE qi FROM %i qi
+				LEFT JOIN %i q ON q.id = qi.question_id
+				WHERE q.id IS NULL OR q.deleted_at IS NOT NULL',
+				$quiz_items,
+				$questions
+			)
+		);
+
+		$wpdb->query(
+			$wpdb->prepare(
+				'DELETE bq FROM %i bq
+				LEFT JOIN %i q ON q.id = bq.question_id
+				WHERE q.id IS NULL OR q.deleted_at IS NOT NULL',
+				$bank_questions,
+				$questions
+			)
+		);
+
+		// Refresh bank counts with the same live-question semantics the Bank
+		// model's own recount uses.
+		$wpdb->query(
+			$wpdb->prepare(
+				'UPDATE %i b SET question_count = (
+					SELECT COUNT(*)
+					FROM %i bq
+					INNER JOIN %i q ON q.id = bq.question_id
+					WHERE bq.bank_id = b.id AND q.deleted_at IS NULL
+				)',
+				$banks,
+				$bank_questions,
+				$questions
+			)
+		);
+		// phpcs:enable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
 	}
 
 	/**

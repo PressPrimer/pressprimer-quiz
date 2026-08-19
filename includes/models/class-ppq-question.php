@@ -442,9 +442,16 @@ class PressPrimer_Quiz_Question extends PressPrimer_Quiz_Model {
 	/**
 	 * Delete question (soft delete)
 	 *
-	 * Sets deleted_at timestamp instead of removing the record.
+	 * Sets deleted_at timestamp instead of removing the record, then removes
+	 * the question from every authoring surface: its quiz items and bank
+	 * memberships are deleted. Revisions, attempt items, and taxonomy terms
+	 * are kept — attempt history must keep rendering, and a restore
+	 * (Enterprise) returns the question with its terms, but not these
+	 * placements.
 	 *
 	 * @since 1.0.0
+	 * @since 3.1.2 Cascades: removes the question's quiz items and bank
+	 *              membership rows.
 	 *
 	 * @return bool|WP_Error True on success, WP_Error on failure.
 	 */
@@ -463,7 +470,25 @@ class PressPrimer_Quiz_Question extends PressPrimer_Quiz_Model {
 
 		// Update question counts for all banks containing this question.
 		if ( true === $result ) {
+			// Recount BEFORE removing membership rows: the recount resolves
+			// banks via this question's memberships, and its count query
+			// already excludes soft-deleted questions.
 			$this->update_bank_counts();
+
+			global $wpdb;
+
+			// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Custom tables; intentional cascade on delete.
+			$wpdb->delete(
+				$wpdb->prefix . 'ppq_quiz_items',
+				[ 'question_id' => $this->id ],
+				[ '%d' ]
+			);
+			$wpdb->delete(
+				$wpdb->prefix . 'ppq_bank_questions',
+				[ 'question_id' => $this->id ],
+				[ '%d' ]
+			);
+			// phpcs:enable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
 
 			/**
 			 * Fires after a question is soft-deleted.

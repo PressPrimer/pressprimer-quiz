@@ -405,7 +405,7 @@ class PressPrimer_Quiz_Attempt extends PressPrimer_Quiz_Model {
 		$questions_data = [];
 		foreach ( $question_ids as $index => $question_id ) {
 			$question = PressPrimer_Quiz_Question::get( $question_id );
-			if ( ! $question || ! $question->current_revision_id ) {
+			if ( ! $question || $question->deleted_at || ! $question->current_revision_id ) {
 				continue;
 			}
 
@@ -692,7 +692,7 @@ class PressPrimer_Quiz_Attempt extends PressPrimer_Quiz_Model {
 		$questions_data = [];
 		foreach ( $question_ids as $index => $question_id ) {
 			$question = PressPrimer_Quiz_Question::get( $question_id );
-			if ( ! $question || ! $question->current_revision_id ) {
+			if ( ! $question || $question->deleted_at || ! $question->current_revision_id ) {
 				continue;
 			}
 

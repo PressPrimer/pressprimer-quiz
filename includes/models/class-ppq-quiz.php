@@ -1258,6 +1258,13 @@ class PressPrimer_Quiz_Quiz extends PressPrimer_Quiz_Model {
 			foreach ( $items as $item ) {
 				$question_ids[] = $item->question_id;
 			}
+
+			// Serve only questions that meet the same servability criteria
+			// dynamic-mode rules enforce (non-deleted, published or draft).
+			// Quiz items can outlive their question — e.g. references left
+			// behind before the 3.1.2 delete cascade — and those must never
+			// reach learners.
+			$question_ids = $this->filter_servable_question_ids( $question_ids );
 		} else {
 			// Dynamic quiz - generate from rules
 			$rules            = $this->get_rules();
@@ -1322,6 +1329,56 @@ class PressPrimer_Quiz_Quiz extends PressPrimer_Quiz_Model {
 		}
 
 		return $question_ids;
+	}
+
+	/**
+	 * Filter a question ID list down to servable questions.
+	 *
+	 * Applies the same servability criteria dynamic-mode rule matching has
+	 * always enforced — `deleted_at IS NULL AND status IN ('published',
+	 * 'draft')` — so fixed quizzes cannot serve soft-deleted or archived
+	 * questions through stale item references. Order and duplicates in the
+	 * input are preserved; only unservable IDs are dropped.
+	 *
+	 * @since 3.1.2
+	 *
+	 * @param array $question_ids Question IDs in item order.
+	 * @return array Servable question IDs, original order preserved.
+	 */
+	private function filter_servable_question_ids( array $question_ids ) {
+		global $wpdb;
+
+		$unique_ids = array_values( array_unique( array_map( 'absint', $question_ids ) ) );
+
+		if ( empty( $unique_ids ) ) {
+			return [];
+		}
+
+		$questions_table = $wpdb->prefix . 'ppq_questions';
+		$placeholders    = implode( ', ', array_fill( 0, count( $unique_ids ), '%d' ) );
+
+		// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQL.NotPrepared -- Table from $wpdb->prefix; the IN list is a fixed %d placeholder set bound through prepare().
+		$servable = $wpdb->get_col(
+			$wpdb->prepare(
+				"SELECT id FROM {$questions_table}
+				WHERE id IN ( {$placeholders} )
+					AND deleted_at IS NULL
+					AND status IN ( 'published', 'draft' )",
+				$unique_ids
+			)
+		);
+		// phpcs:enable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQL.NotPrepared
+
+		$servable_lookup = array_flip( array_map( 'intval', (array) $servable ) );
+
+		$filtered = [];
+		foreach ( $question_ids as $question_id ) {
+			if ( isset( $servable_lookup[ (int) $question_id ] ) ) {
+				$filtered[] = $question_id;
+			}
+		}
+
+		return $filtered;
 	}
 
 	/**

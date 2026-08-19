@@ -2,14 +2,14 @@
 # This file is distributed under the GPL v2 or later.
 msgid ""
 msgstr ""
-"Project-Id-Version: PressPrimer Quiz 3.1.0\n"
+"Project-Id-Version: PressPrimer Quiz 3.1.1\n"
 "Report-Msgid-Bugs-To: https://wordpress.org/support/plugin/pressprimer-quiz\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"POT-Creation-Date: 2026-08-17T17:31:49+00:00\n"
+"POT-Creation-Date: 2026-08-19T13:39:32+00:00\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "X-Generator: WP-CLI 2.12.0\n"
 "X-Domain: pressprimer-quiz\n"
@@ -446,9 +446,9 @@ msgstr ""
 #: includes/admin/class-ppq-admin-banks.php:1390
 #: includes/admin/class-ppq-admin-banks.php:1450
 #: includes/admin/class-ppq-admin.php:1068
-#: includes/api/class-ppq-rest-controller.php:2001
-#: includes/api/class-ppq-rest-controller.php:2098
-#: includes/api/class-ppq-rest-controller.php:2159
+#: includes/api/class-ppq-rest-controller.php:2018
+#: includes/api/class-ppq-rest-controller.php:2115
+#: includes/api/class-ppq-rest-controller.php:2176
 #: includes/models/class-ppq-quiz-rule.php:159
 msgid "Bank not found."
 msgstr ""
@@ -553,7 +553,7 @@ msgstr ""
 #: includes/admin/class-ppq-admin-banks.php:1395
 #: includes/admin/class-ppq-admin-banks.php:1455
 #: includes/admin/class-ppq-admin.php:1073
-#: includes/api/class-ppq-rest-controller.php:2104
+#: includes/api/class-ppq-rest-controller.php:2121
 msgid "You do not have permission to edit this bank."
 msgstr ""
 
@@ -897,7 +897,7 @@ msgid "You do not have permission to perform this action."
 msgstr ""
 
 #: includes/admin/class-ppq-admin-banks.php:1240
-#: includes/api/class-ppq-rest-controller.php:2038
+#: includes/api/class-ppq-rest-controller.php:2055
 #: includes/models/class-ppq-bank.php:223
 msgid "Bank name is required."
 msgstr ""
@@ -912,7 +912,7 @@ msgid "Invalid request."
 msgstr ""
 
 #: includes/admin/class-ppq-admin-banks.php:1332
-#: includes/api/class-ppq-rest-controller.php:2165
+#: includes/api/class-ppq-rest-controller.php:2182
 msgid "You do not have permission to delete this bank."
 msgstr ""
 
@@ -1097,7 +1097,7 @@ msgstr[1] ""
 #: includes/admin/class-ppq-admin-questions.php:569
 #: includes/api/class-ppq-rest-controller.php:1148
 #: includes/api/class-ppq-rest-controller.php:1370
-#: includes/api/class-ppq-rest-controller.php:1560
+#: includes/api/class-ppq-rest-controller.php:1577
 #: includes/frontend/class-ppq-ajax-handler.php:841
 #: includes/models/class-ppq-bank.php:282
 #: includes/models/class-ppq-quiz-item.php:128
@@ -1253,8 +1253,8 @@ msgstr ""
 #: includes/admin/class-ppq-admin-quizzes.php:1216
 #: includes/admin/class-ppq-admin-quizzes.php:1282
 #: includes/api/class-ppq-rest-controller.php:730
-#: includes/api/class-ppq-rest-controller.php:2534
-#: includes/api/class-ppq-rest-controller.php:2739
+#: includes/api/class-ppq-rest-controller.php:2551
+#: includes/api/class-ppq-rest-controller.php:2756
 #: includes/frontend/class-ppq-ajax-handler.php:119
 #: includes/frontend/class-ppq-quiz-renderer.php:791
 #: includes/frontend/class-ppq-results-renderer.php:122
@@ -1393,9 +1393,9 @@ msgid "Invalid item ID."
 msgstr ""
 
 #: includes/admin/class-ppq-admin-quizzes.php:1276
-#: includes/api/class-ppq-rest-controller.php:2999
-#: includes/api/class-ppq-rest-controller.php:3031
-#: includes/api/class-ppq-rest-controller.php:3066
+#: includes/api/class-ppq-rest-controller.php:3016
+#: includes/api/class-ppq-rest-controller.php:3048
+#: includes/api/class-ppq-rest-controller.php:3083
 msgid "Quiz item not found."
 msgstr ""
 
@@ -1889,7 +1889,7 @@ msgstr ""
 
 #: includes/admin/class-ppq-admin-settings.php:1043
 #: includes/admin/class-ppq-admin-settings.php:2254
-#: includes/api/class-ppq-rest-controller.php:3877
+#: includes/api/class-ppq-rest-controller.php:3894
 msgid "Model preference saved."
 msgstr ""
 
@@ -1967,7 +1967,7 @@ msgid "OpenAI API key saved successfully."
 msgstr ""
 
 #: includes/admin/class-ppq-admin-settings.php:1793
-#: includes/api/class-ppq-rest-controller.php:3311
+#: includes/api/class-ppq-rest-controller.php:3328
 #: includes/frontend/class-ppq-quiz-renderer.php:668
 msgid "Add me to the newsletter. I understand that I can unsubscribe at any time."
 msgstr ""
@@ -2013,7 +2013,7 @@ msgid "Theme Font"
 msgstr ""
 
 #: includes/admin/class-ppq-admin-settings.php:2247
-#: includes/api/class-ppq-rest-controller.php:3725
+#: includes/api/class-ppq-rest-controller.php:3742
 msgid "API key saved and validated successfully."
 msgstr ""
 
@@ -2023,8 +2023,8 @@ msgstr ""
 
 #: includes/admin/class-ppq-admin-settings.php:2282
 #: includes/admin/class-ppq-admin-settings.php:2347
-#: includes/api/class-ppq-rest-controller.php:3774
-#: includes/api/class-ppq-rest-controller.php:3816
+#: includes/api/class-ppq-rest-controller.php:3791
+#: includes/api/class-ppq-rest-controller.php:3833
 msgid "No API key configured."
 msgstr ""
 
@@ -2034,7 +2034,7 @@ msgid "API key is valid and working correctly."
 msgstr ""
 
 #: includes/admin/class-ppq-admin-settings.php:2322
-#: includes/api/class-ppq-rest-controller.php:3751
+#: includes/api/class-ppq-rest-controller.php:3768
 msgid "API key removed successfully."
 msgstr ""
 
@@ -2074,7 +2074,7 @@ msgstr ""
 
 #: includes/admin/class-ppq-admin.php:110
 #: includes/admin/class-ppq-admin.php:111
-#: includes/api/class-ppq-rest-controller.php:4266
+#: includes/api/class-ppq-rest-controller.php:4283
 #: src/onboarding/tourSteps.js:76
 #: src/settings-panel/components/GeneralTab.jsx:98
 #: src/settings-panel/components/GeneralTab.jsx:344
@@ -2166,8 +2166,8 @@ msgstr ""
 #: includes/api/class-ppq-rest-controller.php:734
 #: includes/api/class-ppq-rest-controller.php:1153
 #: includes/api/class-ppq-rest-controller.php:1375
-#: includes/api/class-ppq-rest-controller.php:2539
-#: includes/api/class-ppq-rest-controller.php:2744
+#: includes/api/class-ppq-rest-controller.php:2556
+#: includes/api/class-ppq-rest-controller.php:2761
 msgid "You do not have permission."
 msgstr ""
 
@@ -2844,123 +2844,123 @@ msgstr ""
 msgid "Failed to load created question."
 msgstr ""
 
-#: includes/api/class-ppq-rest-controller.php:1570
+#: includes/api/class-ppq-rest-controller.php:1587
 msgid "You do not have permission to upload images to this question."
 msgstr ""
 
-#: includes/api/class-ppq-rest-controller.php:1580
-#: includes/api/class-ppq-rest-controller.php:1737
+#: includes/api/class-ppq-rest-controller.php:1597
+#: includes/api/class-ppq-rest-controller.php:1754
 #: includes/services/class-ppq-file-processor.php:144
 msgid "No file was uploaded."
 msgstr ""
 
-#: includes/api/class-ppq-rest-controller.php:1591
-#: includes/api/class-ppq-rest-controller.php:1748
+#: includes/api/class-ppq-rest-controller.php:1608
+#: includes/api/class-ppq-rest-controller.php:1765
 msgid "Upload failed."
 msgstr ""
 
 #. translators: %s: maximum file size in MB
-#: includes/api/class-ppq-rest-controller.php:1612
-#: includes/api/class-ppq-rest-controller.php:1769
+#: includes/api/class-ppq-rest-controller.php:1629
+#: includes/api/class-ppq-rest-controller.php:1786
 #, php-format
 msgid "File too large. Maximum allowed: %s MB."
 msgstr ""
 
-#: includes/api/class-ppq-rest-controller.php:1648
-#: includes/api/class-ppq-rest-controller.php:1799
+#: includes/api/class-ppq-rest-controller.php:1665
+#: includes/api/class-ppq-rest-controller.php:1816
 #: src/question-editor/components/ImageUploadModal.jsx:55
 msgid "Unsupported file type. Allowed: JPG, PNG, GIF, WebP."
 msgstr ""
 
-#: includes/api/class-ppq-rest-controller.php:2006
+#: includes/api/class-ppq-rest-controller.php:2023
 msgid "You do not have permission to access this bank."
 msgstr ""
 
-#: includes/api/class-ppq-rest-controller.php:2059
+#: includes/api/class-ppq-rest-controller.php:2076
 msgid "Failed to create bank."
 msgstr ""
 
-#: includes/api/class-ppq-rest-controller.php:2325
+#: includes/api/class-ppq-rest-controller.php:2342
 msgid "max_answers_per_question must be an integer between 2 and 8, or null."
 msgstr ""
 
-#: includes/api/class-ppq-rest-controller.php:2334
+#: includes/api/class-ppq-rest-controller.php:2351
 msgid "max_answers_per_question must be between 2 and 8."
 msgstr ""
 
-#: includes/api/class-ppq-rest-controller.php:2399
+#: includes/api/class-ppq-rest-controller.php:2416
 msgid "(untitled)"
 msgstr ""
 
 #. translators: 1: question stem preview, 2: number of correct answers, 3: configured cap
-#: includes/api/class-ppq-rest-controller.php:2403
+#: includes/api/class-ppq-rest-controller.php:2420
 #, php-format
 msgid "Question \"%1$s\" has %2$d correct answers, more than your cap of %3$d. All correct answers will be shown for that question."
 msgstr ""
 
 #. translators: %d: configured cap
-#: includes/api/class-ppq-rest-controller.php:2414
+#: includes/api/class-ppq-rest-controller.php:2431
 #, php-format
 msgid "No questions in this quiz have more than %d answers. This setting will not affect anything until you add a question with more options."
 msgstr ""
 
-#: includes/api/class-ppq-rest-controller.php:2447
+#: includes/api/class-ppq-rest-controller.php:2464
 msgid "display_settings must be an object."
 msgstr ""
 
 #. translators: %s: invalid display option key
-#: includes/api/class-ppq-rest-controller.php:2479
+#: includes/api/class-ppq-rest-controller.php:2496
 #, php-format
 msgid "Unknown display option key: %s"
 msgstr ""
 
-#: includes/api/class-ppq-rest-controller.php:2516
+#: includes/api/class-ppq-rest-controller.php:2533
 msgid "Invalid scoring mode. Allowed values: right_minus_wrong, proportional, partial_no_wrong, all_or_nothing."
 msgstr ""
 
 #. translators: %d: pool size
-#: includes/api/class-ppq-rest-controller.php:2691
-#: includes/api/class-ppq-rest-controller.php:2832
+#: includes/api/class-ppq-rest-controller.php:2708
+#: includes/api/class-ppq-rest-controller.php:2849
 #, php-format
 msgid "Maximum questions cannot exceed pool size (%d)."
 msgstr ""
 
-#: includes/api/class-ppq-rest-controller.php:2933
+#: includes/api/class-ppq-rest-controller.php:2950
 msgid "No questions provided."
 msgstr ""
 
-#: includes/api/class-ppq-rest-controller.php:3058
+#: includes/api/class-ppq-rest-controller.php:3075
 msgid "No items provided."
 msgstr ""
 
-#: includes/api/class-ppq-rest-controller.php:3181
-#: includes/api/class-ppq-rest-controller.php:3226
-#: includes/api/class-ppq-rest-controller.php:3264
+#: includes/api/class-ppq-rest-controller.php:3198
+#: includes/api/class-ppq-rest-controller.php:3243
+#: includes/api/class-ppq-rest-controller.php:3281
 msgid "Quiz rule not found."
 msgstr ""
 
-#: includes/api/class-ppq-rest-controller.php:3253
+#: includes/api/class-ppq-rest-controller.php:3270
 msgid "No rules provided."
 msgstr ""
 
-#: includes/api/class-ppq-rest-controller.php:3677
+#: includes/api/class-ppq-rest-controller.php:3694
 msgid "Settings saved successfully."
 msgstr ""
 
-#: includes/api/class-ppq-rest-controller.php:3700
+#: includes/api/class-ppq-rest-controller.php:3717
 msgid "Please provide an API key."
 msgstr ""
 
-#: includes/api/class-ppq-rest-controller.php:3705
-#: includes/api/class-ppq-rest-controller.php:3896
+#: includes/api/class-ppq-rest-controller.php:3722
+#: includes/api/class-ppq-rest-controller.php:3913
 msgid "Unknown AI provider."
 msgstr ""
 
-#: includes/api/class-ppq-rest-controller.php:3789
+#: includes/api/class-ppq-rest-controller.php:3806
 msgid "API key is valid."
 msgstr ""
 
-#: includes/api/class-ppq-rest-controller.php:4087
+#: includes/api/class-ppq-rest-controller.php:4104
 #: includes/frontend/class-ppq-ajax-handler.php:277
 #: includes/frontend/class-ppq-ajax-handler.php:436
 #: includes/frontend/class-ppq-ajax-handler.php:509
@@ -2971,48 +2971,48 @@ msgstr ""
 msgid "Attempt not found."
 msgstr ""
 
-#: includes/api/class-ppq-rest-controller.php:4168
+#: includes/api/class-ppq-rest-controller.php:4185
 #: includes/models/class-ppq-attempt.php:545
 msgid "Please provide a valid email address."
 msgstr ""
 
-#: includes/api/class-ppq-rest-controller.php:4178
+#: includes/api/class-ppq-rest-controller.php:4195
 msgid "Test email sent successfully."
 msgstr ""
 
-#: includes/api/class-ppq-rest-controller.php:4183
+#: includes/api/class-ppq-rest-controller.php:4200
 msgid "Failed to send test email. Please check your email configuration."
 msgstr ""
 
-#: includes/api/class-ppq-rest-controller.php:4200
-#: includes/api/class-ppq-rest-controller.php:4227
+#: includes/api/class-ppq-rest-controller.php:4217
+#: includes/api/class-ppq-rest-controller.php:4244
 msgid "Schema verifier is unavailable."
 msgstr ""
 
-#: includes/api/class-ppq-rest-controller.php:4256
+#: includes/api/class-ppq-rest-controller.php:4273
 msgid "You do not have permission to create pages."
 msgstr ""
 
-#: includes/api/class-ppq-rest-controller.php:4321
+#: includes/api/class-ppq-rest-controller.php:4338
 msgid "The user_id parameter is not allowed on this endpoint."
 msgstr ""
 
-#: includes/api/class-ppq-rest-controller.php:4343
+#: includes/api/class-ppq-rest-controller.php:4360
 msgid "Invalid status filter."
 msgstr ""
 
-#: includes/api/class-ppq-rest-controller.php:4358
+#: includes/api/class-ppq-rest-controller.php:4375
 msgid "Invalid orderby value."
 msgstr ""
 
-#: includes/api/class-ppq-rest-controller.php:4650
-#: includes/api/class-ppq-rest-controller.php:4708
+#: includes/api/class-ppq-rest-controller.php:4667
+#: includes/api/class-ppq-rest-controller.php:4725
 #: includes/models/class-ppq-quiz-template.php:235
 msgid "Template name is required."
 msgstr ""
 
-#: includes/api/class-ppq-rest-controller.php:4700
-#: includes/api/class-ppq-rest-controller.php:4755
+#: includes/api/class-ppq-rest-controller.php:4717
+#: includes/api/class-ppq-rest-controller.php:4772
 msgid "Template not found."
 msgstr ""
 
@@ -5994,7 +5994,7 @@ msgstr ""
 
 #: src/question-editor/components/MathInsertModal.jsx:144
 #: src/question-editor/components/RichTextEditor.jsx:71
-#: src/question-editor/components/StemEditor.jsx:69
+#: src/question-editor/components/StemEditor.jsx:70
 msgid "Insert math"
 msgstr ""
 
@@ -6160,15 +6160,15 @@ msgid "Select the type of question you want to create. This determines how stude
 msgstr ""
 
 #: src/question-editor/components/RichTextEditor.jsx:62
-#: src/question-editor/components/StemEditor.jsx:60
+#: src/question-editor/components/StemEditor.jsx:61
 msgid "Insert image"
 msgstr ""
 
-#: src/question-editor/components/StemEditor.jsx:182
+#: src/question-editor/components/StemEditor.jsx:230
 msgid "Question Text"
 msgstr ""
 
-#: src/question-editor/components/StemEditor.jsx:184
+#: src/question-editor/components/StemEditor.jsx:232
 msgid "Enter the main question text. You can use the formatting tools to add emphasis, lists, links, or images."
 msgstr ""
 

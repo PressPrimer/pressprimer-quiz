@@ -2,8 +2,8 @@
 Contributors: pressprimer
 Tags: quiz, learndash, assessment, lms, elearning
 Requires at least: 6.4
-Tested up to: 7.0
-Stable tag: 3.1.0
+Tested up to: 7.1
+Stable tag: 3.1.1
 Requires PHP: 7.4
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -255,6 +255,10 @@ This plugin also offers optional AI-powered question generation using the Anthro
 5. Admin reporting with analytics
 
 == Changelog ==
+
+= 3.1.1 =
+* Fixed: Question edits that only changed answer feedback, text formatting, or capitalization now always save.
+* Fixed: Edits made in the question editor's Code view save more reliably.
 
 = 3.1.0 =
 * Added: Practice Mode — mark any quiz as a practice quiz to give students unlimited, untimed runs with immediate feedback, no matter how the quiz is otherwise configured.

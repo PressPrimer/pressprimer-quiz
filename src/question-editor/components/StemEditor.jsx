@@ -23,6 +23,7 @@ const StemEditor = ({ value, onChange }) => {
 	const [mathModalOpen, setMathModalOpen] = useState(false);
 	const editorRef = useRef(null);
 	const editorInstanceRef = useRef(null);
+	const textareaSyncRef = useRef(null);
 	const maxChars = 10000;
 	const editorId = 'ppq-stem-editor';
 	const [isInitialized, setIsInitialized] = useState(false);
@@ -100,6 +101,33 @@ const StemEditor = ({ value, onChange }) => {
 						quicktags: true,
 						mediaButtons: false,
 					});
+
+					// Code (Text) view edits happen directly in the underlying
+					// textarea, which TinyMCE's events never see — without this
+					// listener, an edit made only in Code view is silently
+					// DISCARDED on save (the form state still holds the Visual
+					// editor's last content). Visual mode only writes to the
+					// textarea programmatically (no input events), so this
+					// never double-fires.
+					if (editorRef.current && !textareaSyncRef.current) {
+						const textareaNode = editorRef.current;
+						const syncFromTextarea = (event) => {
+							onChangeRef.current(event.target.value);
+							setCharCount(
+								event.target.value.replace(/<[^>]*>/g, '').length
+							);
+						};
+						textareaSyncRef.current = {
+							node: textareaNode,
+							handler: syncFromTextarea,
+						};
+						// 'change' as well as 'input': quicktags toolbar
+						// buttons insert programmatically (no input event),
+						// and change fires on blur — which clicking Save
+						// triggers — so button-only edits are captured too.
+						textareaNode.addEventListener('input', syncFromTextarea);
+						textareaNode.addEventListener('change', syncFromTextarea);
+					}
 				} catch (error) {
 					// Editor initialization failed - will retry
 				}
@@ -114,6 +142,17 @@ const StemEditor = ({ value, onChange }) => {
 
 		return () => {
 			clearTimeout(timeoutId);
+			if (textareaSyncRef.current) {
+				textareaSyncRef.current.node.removeEventListener(
+					'input',
+					textareaSyncRef.current.handler
+				);
+				textareaSyncRef.current.node.removeEventListener(
+					'change',
+					textareaSyncRef.current.handler
+				);
+				textareaSyncRef.current = null;
+			}
 			if (editorInstanceRef.current) {
 				try {
 					window.wp.editor.remove(editorId);
@@ -129,6 +168,15 @@ const StemEditor = ({ value, onChange }) => {
 	// Update editor content when value prop changes
 	useEffect(() => {
 		if (isInitialized && editorInstanceRef.current && value !== undefined) {
+			// Never push into TinyMCE while the Code (Text) tab is active:
+			// the user is editing the textarea directly, and a programmatic
+			// setContent here echoes back through TinyMCE's change event,
+			// re-normalizing (and autop-wrapping) the markup they just typed.
+			// switchEditors performs the sync when they return to Visual.
+			const wrap = document.getElementById(`wp-${editorId}-wrap`);
+			if (wrap && wrap.classList.contains('html-active')) {
+				return;
+			}
 			const currentContent = editorInstanceRef.current.getContent();
 			// Only update if the content is different to avoid cursor jumps
 			if (currentContent !== value) {

@@ -256,6 +256,11 @@ This plugin also offers optional AI-powered question generation using the Anthro
 
 == Changelog ==
 
+= 3.1.2 =
+* Fixed: Quizzes with a fixed question list no longer show questions that were previously deleted from the question library. Archived questions also no longer appear in fixed-list quizzes, matching how dynamically generated quizzes already treat them.
+* Fixed: Deleting a question now also removes it from any quizzes and question banks that were using it, and the confirmation names the quizzes it was removed from.
+* Fixed: Cleaned up leftover quiz and question bank references to questions that were deleted in earlier versions.
+
 = 3.1.1 =
 * Fixed: Question edits that only changed answer feedback, text formatting, or capitalization now always save.
 * Fixed: Edits made in the question editor's Code view save more reliably.

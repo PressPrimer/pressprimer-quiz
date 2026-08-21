@@ -159,16 +159,44 @@ class PressPrimer_Quiz_Admin_Questions {
 
 		// Deleted notice
 		if ( isset( $_GET['deleted'] ) ) {
-			$count = absint( wp_unslash( $_GET['deleted'] ) );
+			$count   = absint( wp_unslash( $_GET['deleted'] ) );
+			$message = sprintf(
+				/* translators: %d: number of questions deleted */
+				_n( '%d question deleted.', '%d questions deleted.', $count, 'pressprimer-quiz' ),
+				$count
+			);
+
+			// Cascade detail stored by the delete handlers (which quiz
+			// references the delete also removed) — too long for a query arg.
+			$cascade_key = 'pressprimer_quiz_delete_cascade_' . get_current_user_id();
+			$cascade     = get_transient( $cascade_key );
+
+			if ( is_array( $cascade ) ) {
+				delete_transient( $cascade_key );
+
+				if ( ! empty( $cascade['titles'] ) ) {
+					$message .= ' ' . sprintf(
+						/* translators: %s: comma-separated list of quiz titles */
+						__( 'It was also removed from: %s.', 'pressprimer-quiz' ),
+						implode( ', ', array_map( 'sanitize_text_field', (array) $cascade['titles'] ) )
+					);
+				} elseif ( ! empty( $cascade['placements'] ) ) {
+					$message .= ' ' . sprintf(
+						/* translators: %d: number of quiz placements removed */
+						_n(
+							'%d quiz placement was also removed.',
+							'%d quiz placements were also removed.',
+							(int) $cascade['placements'],
+							'pressprimer-quiz'
+						),
+						(int) $cascade['placements']
+					);
+				}
+			}
+
 			printf(
 				'<div class="notice notice-success is-dismissible"><p>%s</p></div>',
-				esc_html(
-					sprintf(
-						/* translators: %d: number of questions deleted */
-						_n( '%d question deleted.', '%d questions deleted.', $count, 'pressprimer-quiz' ),
-						$count
-					)
-				)
+				esc_html( $message )
 			);
 		}
 		// phpcs:enable WordPress.Security.NonceVerification.Recommended
@@ -457,6 +485,67 @@ class PressPrimer_Quiz_Admin_Questions {
 
 
 	/**
+	 * Get the titles of quizzes whose item lists use a question.
+	 *
+	 * Read before `PressPrimer_Quiz_Question::delete()` runs — the delete
+	 * cascade removes the underlying quiz item rows.
+	 *
+	 * @since 3.1.2
+	 *
+	 * @param int $question_id Question ID.
+	 * @return string[] Quiz titles, alphabetical.
+	 */
+	private function get_quiz_titles_using_question( $question_id ) {
+		global $wpdb;
+
+		$items_table   = $wpdb->prefix . 'ppq_quiz_items';
+		$quizzes_table = $wpdb->prefix . 'ppq_quizzes';
+
+		// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Custom tables from $wpdb->prefix; pre-delete reference lookup.
+		$titles = $wpdb->get_col(
+			$wpdb->prepare(
+				"SELECT DISTINCT qz.title
+				FROM {$items_table} qi
+				INNER JOIN {$quizzes_table} qz ON qz.id = qi.quiz_id
+				WHERE qi.question_id = %d
+				ORDER BY qz.title ASC",
+				$question_id
+			)
+		);
+		// phpcs:enable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+
+		return array_map( 'strval', (array) $titles );
+	}
+
+	/**
+	 * Count a question's quiz item placements.
+	 *
+	 * Read before `PressPrimer_Quiz_Question::delete()` runs — the delete
+	 * cascade removes the underlying quiz item rows.
+	 *
+	 * @since 3.1.2
+	 *
+	 * @param int $question_id Question ID.
+	 * @return int Number of quiz item rows using the question.
+	 */
+	private function count_quiz_placements( $question_id ) {
+		global $wpdb;
+
+		$items_table = $wpdb->prefix . 'ppq_quiz_items';
+
+		// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Custom table from $wpdb->prefix; pre-delete reference count.
+		$count = $wpdb->get_var(
+			$wpdb->prepare(
+				"SELECT COUNT(*) FROM {$items_table} WHERE question_id = %d",
+				$question_id
+			)
+		);
+		// phpcs:enable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+
+		return absint( $count );
+	}
+
+	/**
 	 * Handle single question delete
 	 *
 	 * @since 1.0.0
@@ -485,11 +574,23 @@ class PressPrimer_Quiz_Admin_Questions {
 			wp_die( esc_html__( 'You do not have permission to delete this question.', 'pressprimer-quiz' ) );
 		}
 
+		// Capture the quizzes referencing this question BEFORE the delete
+		// cascade removes those rows — the success notice names them.
+		$quiz_titles = $this->get_quiz_titles_using_question( $question_id );
+
 		// Soft delete
 		$result = $question->delete();
 
 		if ( is_wp_error( $result ) ) {
 			wp_die( esc_html( $result->get_error_message() ) );
+		}
+
+		if ( ! empty( $quiz_titles ) ) {
+			set_transient(
+				'pressprimer_quiz_delete_cascade_' . get_current_user_id(),
+				[ 'titles' => $quiz_titles ],
+				MINUTE_IN_SECONDS
+			);
 		}
 
 		// Clear dashboard stats cache
@@ -516,6 +617,7 @@ class PressPrimer_Quiz_Admin_Questions {
 		// phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotValidated -- Validated above via check_admin_referer
 		$question_ids = isset( $_GET['questions'] ) ? array_map( 'absint', wp_unslash( $_GET['questions'] ) ) : [];
 		$deleted      = 0;
+		$placements   = 0;
 
 		foreach ( $question_ids as $question_id ) {
 			$question = PressPrimer_Quiz_Question::get( $question_id );
@@ -529,11 +631,24 @@ class PressPrimer_Quiz_Admin_Questions {
 				continue;
 			}
 
+			// Count quiz placements BEFORE the delete cascade removes them —
+			// the success notice reports the total.
+			$placement_count = $this->count_quiz_placements( $question_id );
+
 			$result = $question->delete();
 
 			if ( ! is_wp_error( $result ) ) {
 				++$deleted;
+				$placements += $placement_count;
 			}
+		}
+
+		if ( $placements > 0 ) {
+			set_transient(
+				'pressprimer_quiz_delete_cascade_' . get_current_user_id(),
+				[ 'placements' => $placements ],
+				MINUTE_IN_SECONDS
+			);
 		}
 
 		// Clear dashboard stats cache if any questions were deleted

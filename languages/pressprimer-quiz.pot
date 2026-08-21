@@ -2,14 +2,14 @@
 # This file is distributed under the GPL v2 or later.
 msgid ""
 msgstr ""
-"Project-Id-Version: PressPrimer Quiz 3.1.1\n"
+"Project-Id-Version: PressPrimer Quiz 3.1.2\n"
 "Report-Msgid-Bugs-To: https://wordpress.org/support/plugin/pressprimer-quiz\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"POT-Creation-Date: 2026-08-19T13:39:32+00:00\n"
+"POT-Creation-Date: 2026-08-21T13:22:36+00:00\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "X-Generator: WP-CLI 2.12.0\n"
 "X-Domain: pressprimer-quiz\n"
@@ -231,8 +231,8 @@ msgstr ""
 #: includes/admin/class-ppq-admin-banks.php:877
 #: includes/admin/class-ppq-admin-banks.php:995
 #: includes/admin/class-ppq-admin-banks.php:1088
-#: includes/admin/class-ppq-admin-questions.php:1093
-#: includes/admin/class-ppq-admin-questions.php:1336
+#: includes/admin/class-ppq-admin-questions.php:1208
+#: includes/admin/class-ppq-admin-questions.php:1451
 #: includes/admin/class-ppq-admin-quizzes.php:496
 #: includes/admin/class-ppq-admin-quizzes.php:500
 #: includes/admin/class-ppq-admin.php:824
@@ -246,8 +246,8 @@ msgstr ""
 #: includes/admin/class-ppq-admin-banks.php:878
 #: includes/admin/class-ppq-admin-banks.php:998
 #: includes/admin/class-ppq-admin-banks.php:1089
-#: includes/admin/class-ppq-admin-questions.php:1096
-#: includes/admin/class-ppq-admin-questions.php:1337
+#: includes/admin/class-ppq-admin-questions.php:1211
+#: includes/admin/class-ppq-admin-questions.php:1452
 #: includes/admin/class-ppq-admin-quizzes.php:497
 #: includes/admin/class-ppq-admin-quizzes.php:501
 #: includes/admin/class-ppq-admin.php:825
@@ -261,8 +261,8 @@ msgstr ""
 #: includes/admin/class-ppq-admin-banks.php:879
 #: includes/admin/class-ppq-admin-banks.php:1001
 #: includes/admin/class-ppq-admin-banks.php:1090
-#: includes/admin/class-ppq-admin-questions.php:1099
-#: includes/admin/class-ppq-admin-questions.php:1338
+#: includes/admin/class-ppq-admin-questions.php:1214
+#: includes/admin/class-ppq-admin-questions.php:1453
 #: includes/admin/class-ppq-admin-quizzes.php:498
 #: includes/admin/class-ppq-admin-quizzes.php:502
 #: includes/admin/class-ppq-admin.php:826
@@ -294,8 +294,8 @@ msgstr ""
 #: includes/admin/class-ppq-admin-banks.php:890
 #: includes/admin/class-ppq-admin-banks.php:1017
 #: includes/admin/class-ppq-admin-banks.php:1099
-#: includes/admin/class-ppq-admin-questions.php:1127
-#: includes/admin/class-ppq-admin-questions.php:1361
+#: includes/admin/class-ppq-admin-questions.php:1242
+#: includes/admin/class-ppq-admin-questions.php:1476
 #: includes/admin/class-ppq-admin.php:835
 #: includes/admin/class-ppq-admin.php:996
 #: src/question-editor/components/MetadataPanel.jsx:38
@@ -401,7 +401,7 @@ msgstr ""
 #: includes/admin/class-ppq-review-notice.php:282
 #: includes/admin/class-ppq-review-notice.php:304
 #: includes/admin/class-ppq-review-notice.php:323
-#: includes/database/class-ppq-migrator.php:1229
+#: includes/database/class-ppq-migrator.php:1302
 #: includes/integrations/class-ppq-learndash.php:1326
 #: includes/integrations/class-ppq-learnpress.php:420
 #: includes/integrations/class-ppq-lifterlms.php:1131
@@ -498,7 +498,7 @@ msgstr ""
 
 #: includes/admin/class-ppq-admin-banks.php:142
 #: includes/admin/class-ppq-admin-categories.php:74
-#: includes/admin/class-ppq-admin-questions.php:186
+#: includes/admin/class-ppq-admin-questions.php:214
 #: includes/admin/class-ppq-admin-quizzes.php:267
 #: includes/admin/class-ppq-admin-settings.php:1622
 #: includes/admin/class-ppq-admin.php:559
@@ -510,7 +510,7 @@ msgstr ""
 #: includes/admin/class-ppq-admin-banks.php:237
 #: includes/admin/class-ppq-admin-banks.php:675
 #: includes/admin/class-ppq-admin-categories.php:75
-#: includes/admin/class-ppq-admin-questions.php:187
+#: includes/admin/class-ppq-admin-questions.php:215
 #: includes/admin/class-ppq-admin-settings.php:1623
 #: includes/admin/class-ppq-admin.php:560
 #: includes/admin/class-ppq-admin.php:651
@@ -528,7 +528,7 @@ msgid "Question Banks"
 msgstr ""
 
 #: includes/admin/class-ppq-admin-banks.php:185
-#: includes/admin/class-ppq-admin-questions.php:220
+#: includes/admin/class-ppq-admin-questions.php:248
 #: includes/admin/class-ppq-admin-quizzes.php:301
 msgid "Add New"
 msgstr ""
@@ -594,7 +594,7 @@ msgstr ""
 
 #: includes/admin/class-ppq-admin-banks.php:349
 #: includes/admin/class-ppq-admin-banks.php:1071
-#: includes/admin/class-ppq-admin-questions.php:797
+#: includes/admin/class-ppq-admin-questions.php:912
 #: src/quiz-editor/components/QuestionsPanel.jsx:422
 #: src/quiz-editor/components/QuestionsPanel.jsx:480
 #: src/reports/components/AttemptDetailModal.jsx:149
@@ -605,7 +605,7 @@ msgstr ""
 
 #: includes/admin/class-ppq-admin-banks.php:350
 #: includes/admin/class-ppq-admin-banks.php:1072
-#: includes/admin/class-ppq-admin-questions.php:798
+#: includes/admin/class-ppq-admin-questions.php:913
 #: includes/frontend/class-ppq-quiz-renderer.php:416
 #: src/quiz-editor/components/QuestionsPanel.jsx:428
 #: src/quiz-editor/components/QuestionsPanel.jsx:493
@@ -615,7 +615,7 @@ msgstr ""
 
 #: includes/admin/class-ppq-admin-banks.php:351
 #: includes/admin/class-ppq-admin-banks.php:1073
-#: includes/admin/class-ppq-admin-questions.php:799
+#: includes/admin/class-ppq-admin-questions.php:914
 #: src/question-editor/components/MetadataPanel.jsx:67
 #: src/quiz-editor/components/QuestionsPanel.jsx:702
 msgid "Difficulty"
@@ -740,7 +740,7 @@ msgstr ""
 
 #: includes/admin/class-ppq-admin-banks.php:876
 #: includes/admin/class-ppq-admin-banks.php:993
-#: includes/admin/class-ppq-admin-questions.php:1091
+#: includes/admin/class-ppq-admin-questions.php:1206
 msgid "All Types"
 msgstr ""
 
@@ -750,15 +750,15 @@ msgstr ""
 
 #: includes/admin/class-ppq-admin-banks.php:886
 #: includes/admin/class-ppq-admin-banks.php:1006
-#: includes/admin/class-ppq-admin-questions.php:1116
+#: includes/admin/class-ppq-admin-questions.php:1231
 msgid "All Difficulties"
 msgstr ""
 
 #: includes/admin/class-ppq-admin-banks.php:887
 #: includes/admin/class-ppq-admin-banks.php:1008
 #: includes/admin/class-ppq-admin-banks.php:1096
-#: includes/admin/class-ppq-admin-questions.php:1118
-#: includes/admin/class-ppq-admin-questions.php:1358
+#: includes/admin/class-ppq-admin-questions.php:1233
+#: includes/admin/class-ppq-admin-questions.php:1473
 #: includes/admin/class-ppq-admin.php:832
 #: includes/admin/class-ppq-admin.php:993
 #: src/question-editor/components/MetadataPanel.jsx:23
@@ -770,8 +770,8 @@ msgstr ""
 #: includes/admin/class-ppq-admin-banks.php:888
 #: includes/admin/class-ppq-admin-banks.php:1011
 #: includes/admin/class-ppq-admin-banks.php:1097
-#: includes/admin/class-ppq-admin-questions.php:1121
-#: includes/admin/class-ppq-admin-questions.php:1359
+#: includes/admin/class-ppq-admin-questions.php:1236
+#: includes/admin/class-ppq-admin-questions.php:1474
 #: includes/admin/class-ppq-admin.php:833
 #: includes/admin/class-ppq-admin.php:994
 #: src/question-editor/components/MetadataPanel.jsx:28
@@ -783,8 +783,8 @@ msgstr ""
 #: includes/admin/class-ppq-admin-banks.php:889
 #: includes/admin/class-ppq-admin-banks.php:1014
 #: includes/admin/class-ppq-admin-banks.php:1098
-#: includes/admin/class-ppq-admin-questions.php:1124
-#: includes/admin/class-ppq-admin-questions.php:1360
+#: includes/admin/class-ppq-admin-questions.php:1239
+#: includes/admin/class-ppq-admin-questions.php:1475
 #: includes/admin/class-ppq-admin-settings.php:1840
 #: includes/admin/class-ppq-admin.php:834
 #: includes/admin/class-ppq-admin.php:995
@@ -801,7 +801,7 @@ msgstr ""
 
 #: includes/admin/class-ppq-admin-banks.php:897
 #: includes/admin/class-ppq-admin-banks.php:1030
-#: includes/admin/class-ppq-admin-questions.php:1149
+#: includes/admin/class-ppq-admin-questions.php:1264
 msgid "All Categories"
 msgstr ""
 
@@ -822,7 +822,7 @@ msgid "Search question text..."
 msgstr ""
 
 #: includes/admin/class-ppq-admin-banks.php:952
-#: includes/admin/class-ppq-admin-questions.php:229
+#: includes/admin/class-ppq-admin-questions.php:257
 msgid "Search Questions"
 msgstr ""
 
@@ -839,7 +839,7 @@ msgid "Questions in Bank"
 msgstr ""
 
 #: includes/admin/class-ppq-admin-banks.php:1040
-#: includes/admin/class-ppq-admin-questions.php:1075
+#: includes/admin/class-ppq-admin-questions.php:1190
 #: includes/admin/class-ppq-admin-quizzes.php:1819
 #: includes/frontend/class-ppq-shortcodes.php:597
 msgid "Filter"
@@ -871,7 +871,7 @@ msgid "None"
 msgstr ""
 
 #: includes/admin/class-ppq-admin-banks.php:1120
-#: includes/admin/class-ppq-admin-questions.php:1288
+#: includes/admin/class-ppq-admin-questions.php:1403
 #: includes/admin/class-ppq-admin-quizzes.php:1571
 #: includes/admin/class-ppq-banks-list-table.php:380
 #: includes/admin/class-ppq-categories-list-table.php:285
@@ -904,8 +904,8 @@ msgstr ""
 
 #: includes/admin/class-ppq-admin-banks.php:1302
 #: includes/admin/class-ppq-admin-categories.php:510
-#: includes/admin/class-ppq-admin-questions.php:466
 #: includes/admin/class-ppq-admin-questions.php:555
+#: includes/admin/class-ppq-admin-questions.php:670
 #: includes/admin/class-ppq-admin-quizzes.php:893
 #: includes/admin/class-ppq-admin-quizzes.php:1010
 msgid "Invalid request."
@@ -952,7 +952,7 @@ msgstr ""
 
 #: includes/admin/class-ppq-admin-categories.php:105
 #: includes/admin/class-ppq-admin-categories.php:239
-#: includes/admin/class-ppq-admin-questions.php:800
+#: includes/admin/class-ppq-admin-questions.php:915
 #: includes/admin/class-ppq-admin.php:150
 #: includes/admin/class-ppq-admin.php:151
 #: src/question-editor/components/TaxonomySelector.jsx:29
@@ -1026,7 +1026,7 @@ msgid "Edit %s"
 msgstr ""
 
 #: includes/admin/class-ppq-admin-categories.php:337
-#: includes/admin/class-ppq-admin-questions.php:218
+#: includes/admin/class-ppq-admin-questions.php:246
 #: includes/admin/class-ppq-admin-quizzes.php:469
 #: includes/admin/class-ppq-admin-quizzes.php:1338
 #: includes/admin/class-ppq-admin.php:130
@@ -1085,16 +1085,30 @@ msgid "Question duplicated successfully."
 msgstr ""
 
 #. translators: %d: number of questions deleted
-#: includes/admin/class-ppq-admin-questions.php:168
+#: includes/admin/class-ppq-admin-questions.php:165
 #, php-format
 msgid "%d question deleted."
 msgid_plural "%d questions deleted."
 msgstr[0] ""
 msgstr[1] ""
 
-#: includes/admin/class-ppq-admin-questions.php:252
-#: includes/admin/class-ppq-admin-questions.php:480
+#. translators: %s: comma-separated list of quiz titles
+#: includes/admin/class-ppq-admin-questions.php:180
+#, php-format
+msgid "It was also removed from: %s."
+msgstr ""
+
+#. translators: %d: number of quiz placements removed
+#: includes/admin/class-ppq-admin-questions.php:186
+#, php-format
+msgid "%d quiz placement was also removed."
+msgid_plural "%d quiz placements were also removed."
+msgstr[0] ""
+msgstr[1] ""
+
+#: includes/admin/class-ppq-admin-questions.php:280
 #: includes/admin/class-ppq-admin-questions.php:569
+#: includes/admin/class-ppq-admin-questions.php:684
 #: includes/api/class-ppq-rest-controller.php:1148
 #: includes/api/class-ppq-rest-controller.php:1370
 #: includes/api/class-ppq-rest-controller.php:1577
@@ -1104,52 +1118,52 @@ msgstr[1] ""
 msgid "Question not found."
 msgstr ""
 
-#: includes/admin/class-ppq-admin-questions.php:257
+#: includes/admin/class-ppq-admin-questions.php:285
 msgid "You do not have permission to edit this question."
 msgstr ""
 
-#: includes/admin/class-ppq-admin-questions.php:473
-#: includes/admin/class-ppq-admin-questions.php:513
+#: includes/admin/class-ppq-admin-questions.php:562
+#: includes/admin/class-ppq-admin-questions.php:614
 msgid "You do not have permission to delete questions."
 msgstr ""
 
-#: includes/admin/class-ppq-admin-questions.php:485
+#: includes/admin/class-ppq-admin-questions.php:574
 msgid "You do not have permission to delete this question."
 msgstr ""
 
-#: includes/admin/class-ppq-admin-questions.php:562
+#: includes/admin/class-ppq-admin-questions.php:677
 msgid "You do not have permission to duplicate questions."
 msgstr ""
 
-#: includes/admin/class-ppq-admin-questions.php:574
+#: includes/admin/class-ppq-admin-questions.php:689
 msgid "You do not have permission to duplicate this question."
 msgstr ""
 
-#: includes/admin/class-ppq-admin-questions.php:581
+#: includes/admin/class-ppq-admin-questions.php:696
 msgid "Question revision not found."
 msgstr ""
 
-#: includes/admin/class-ppq-admin-questions.php:609
+#: includes/admin/class-ppq-admin-questions.php:724
 msgid "Failed to load duplicated question."
 msgstr ""
 
-#: includes/admin/class-ppq-admin-questions.php:796
+#: includes/admin/class-ppq-admin-questions.php:911
 #: includes/admin/class-ppq-admin-quizzes.php:1336
 msgid "ID"
 msgstr ""
 
-#: includes/admin/class-ppq-admin-questions.php:801
+#: includes/admin/class-ppq-admin-questions.php:916
 msgid "Banks"
 msgstr ""
 
-#: includes/admin/class-ppq-admin-questions.php:802
+#: includes/admin/class-ppq-admin-questions.php:917
 #: includes/admin/class-ppq-admin-quizzes.php:1341
 #: includes/admin/class-ppq-banks-list-table.php:57
 #: src/settings-panel/components/TemplatesTab.jsx:190
 msgid "Author"
 msgstr ""
 
-#: includes/admin/class-ppq-admin-questions.php:803
+#: includes/admin/class-ppq-admin-questions.php:918
 #: includes/admin/class-ppq-admin-quizzes.php:1342
 #: includes/admin/class-ppq-banks-list-table.php:58
 #: includes/frontend/class-ppq-shortcodes.php:583
@@ -1160,8 +1174,8 @@ msgstr ""
 msgid "Date"
 msgstr ""
 
-#: includes/admin/class-ppq-admin-questions.php:887
-#: includes/admin/class-ppq-admin-questions.php:1315
+#: includes/admin/class-ppq-admin-questions.php:1002
+#: includes/admin/class-ppq-admin-questions.php:1430
 #: includes/admin/class-ppq-admin-quizzes.php:1393
 #: includes/admin/class-ppq-admin-quizzes.php:1609
 #: includes/admin/class-ppq-admin.php:297
@@ -1174,26 +1188,26 @@ msgstr ""
 msgid "Delete"
 msgstr ""
 
-#: includes/admin/class-ppq-admin-questions.php:1176
+#: includes/admin/class-ppq-admin-questions.php:1291
 msgid "All Banks"
 msgstr ""
 
-#: includes/admin/class-ppq-admin-questions.php:1208
-#: includes/admin/class-ppq-admin-questions.php:1215
+#: includes/admin/class-ppq-admin-questions.php:1323
+#: includes/admin/class-ppq-admin-questions.php:1330
 #: includes/admin/class-ppq-admin-quizzes.php:1905
 msgid "All Authors"
 msgstr ""
 
-#: includes/admin/class-ppq-admin-questions.php:1260
+#: includes/admin/class-ppq-admin-questions.php:1375
 msgid "(No content)"
 msgstr ""
 
-#: includes/admin/class-ppq-admin-questions.php:1302
+#: includes/admin/class-ppq-admin-questions.php:1417
 #: includes/admin/class-ppq-admin-quizzes.php:1590
 msgid "Duplicate"
 msgstr ""
 
-#: includes/admin/class-ppq-admin-questions.php:1485
+#: includes/admin/class-ppq-admin-questions.php:1600
 #: includes/frontend/class-ppq-results-renderer.php:1025
 msgid "No questions found."
 msgstr ""
@@ -4518,19 +4532,19 @@ msgstr ""
 msgid "True/False questions must have exactly one correct answer."
 msgstr ""
 
-#: includes/models/class-ppq-question.php:455
+#: includes/models/class-ppq-question.php:462
 msgid "Cannot delete question without ID."
 msgstr ""
 
-#: includes/models/class-ppq-question.php:626
+#: includes/models/class-ppq-question.php:651
 msgid "Cannot restore question without ID."
 msgstr ""
 
-#: includes/models/class-ppq-question.php:733
+#: includes/models/class-ppq-question.php:758
 msgid "Cannot set categories without question ID."
 msgstr ""
 
-#: includes/models/class-ppq-question.php:797
+#: includes/models/class-ppq-question.php:822
 msgid "Cannot set tags without question ID."
 msgstr ""
 
@@ -4618,15 +4632,15 @@ msgstr ""
 msgid "Attempt delay must be between 0 and 10080 minutes (1 week)."
 msgstr ""
 
-#: includes/models/class-ppq-quiz.php:1452
+#: includes/models/class-ppq-quiz.php:1509
 msgid "(Copy)"
 msgstr ""
 
-#: includes/models/class-ppq-quiz.php:1497
+#: includes/models/class-ppq-quiz.php:1554
 msgid "Failed to load duplicated quiz."
 msgstr ""
 
-#: includes/models/class-ppq-quiz.php:1629
+#: includes/models/class-ppq-quiz.php:1686
 #: src/settings-panel/components/GeneralTab.jsx:216
 msgid "Please log in to take this quiz."
 msgstr ""

@@ -524,6 +524,26 @@ class PressPrimer_Quiz_Helpers {
 	}
 
 	/**
+	 * Whether the_content is running for something other than the page body
+	 *
+	 * WordPress builds automatic excerpts by running the_content, and SEO and
+	 * social plugins (Jetpack, Yoast, …) do that in <head> or the footer to
+	 * produce meta descriptions. LMS integrations that render a quiz once per
+	 * page must skip these passes — otherwise the quiz lands in a hidden meta
+	 * tag and the visible lesson body gets nothing.
+	 *
+	 * @since 3.1.3
+	 *
+	 * @return bool True when the current the_content call is not the page body.
+	 */
+	public static function is_non_body_content_pass() {
+		return doing_filter( 'get_the_excerpt' )
+			|| doing_action( 'wp_head' )
+			|| doing_action( 'wp_footer' )
+			|| is_feed();
+	}
+
+	/**
 	 * Generate random string
 	 *
 	 * Generates a random string of specified length.

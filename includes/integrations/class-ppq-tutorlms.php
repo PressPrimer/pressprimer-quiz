@@ -730,6 +730,12 @@ class PressPrimer_Quiz_TutorLMS {
 			return $content;
 		}
 
+		// Excerpt-building and <head>/footer passes aren't the page body —
+		// rendering there would consume the once-per-page guard below.
+		if ( PressPrimer_Quiz_Helpers::is_non_body_content_pass() ) {
+			return $content;
+		}
+
 		// Prevent double-rendering (the_content can fire multiple times).
 		if ( $this->lesson_quiz_rendered ) {
 			return $content;

@@ -3,7 +3,7 @@ Contributors: pressprimer
 Tags: quiz, learndash, assessment, lms, elearning
 Requires at least: 6.4
 Tested up to: 7.1
-Stable tag: 3.1.2
+Stable tag: 3.1.3
 Requires PHP: 7.4
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -256,6 +256,13 @@ This plugin also offers optional AI-powered question generation using the Anthro
 
 == Changelog ==
 
+= 3.1.3 =
+* Fixed: Question content added through imports, AI question generation, and LMS quiz importers is now cleaned the same way as the question editor.
+* Fixed: Quizzes attached to LearnDash, LifterLMS, and Tutor LMS lessons now always appear, even on sites where an SEO or social sharing plugin generates page descriptions. Quiz text also no longer shows up in those page descriptions.
+* Fixed: On Tutor LMS 4, the "Mark as Complete" button stays hidden until the student passes the attached quiz when a passing score is required.
+* Fixed: Tutor LMS lessons that require a passing quiz score can no longer be marked complete without one, in any Tutor LMS version. Lessons that also have a PressPrimer Assignment attached complete only after both are passed.
+* Fixed: Deleting a quiz that's attached to a Tutor LMS lesson no longer leaves the lesson's "Mark as Complete" button hidden.
+
 = 3.1.2 =
 * Fixed: Quizzes with a fixed question list no longer show questions that were previously deleted from the question library. Archived questions also no longer appear in fixed-list quizzes, matching how dynamically generated quizzes already treat them.
 * Fixed: Deleting a question now also removes it from any quizzes and question banks that were using it, and the confirmation names the quizzes it was removed from.
@@ -439,6 +446,9 @@ This plugin also offers optional AI-powered question generation using the Anthro
 * Full internationalization support
 
 == Upgrade Notice ==
+
+= 3.1.3 =
+Security hardening for imported question content, plus fixes for quizzes on LearnDash, LifterLMS, and Tutor LMS lessons. Recommended for all sites.
 
 = 2.3.1 =
 Tightens permission checks on quiz items and rules so teachers can only manage their own quizzes. No impact on single-teacher sites.

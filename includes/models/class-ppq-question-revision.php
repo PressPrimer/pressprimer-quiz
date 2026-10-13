@@ -166,6 +166,9 @@ class PressPrimer_Quiz_Question_Revision extends PressPrimer_Quiz_Model {
 			);
 		}
 
+		// Sanitize before validating and hashing, so both reflect what is stored.
+		$data = self::sanitize_content( $data );
+
 		// Validate required fields
 		$validation = self::validate_data( $data );
 		if ( is_wp_error( $validation ) ) {
@@ -217,6 +220,70 @@ class PressPrimer_Quiz_Question_Revision extends PressPrimer_Quiz_Model {
 		);
 
 		return $revision_id;
+	}
+
+	/**
+	 * Sanitize the author-content fields of revision data
+	 *
+	 * Every revision write funnels through here: the question editor, file
+	 * imports, AI generation, LMS importers, and question duplication. Content
+	 * is therefore safe to render no matter which path or user role saved it.
+	 * wp_kses_post() leaves already-clean content unchanged, so editor saves
+	 * (which sanitize the same way) are unaffected.
+	 *
+	 * @since 3.1.3
+	 *
+	 * @param array $data Revision data (stem, answers or answers_json, feedback).
+	 * @return array Data with the stem, answer text and feedback, and the
+	 *               question-level feedback sanitized.
+	 */
+	public static function sanitize_content( array $data ) {
+		foreach ( [ 'stem', 'feedback_correct', 'feedback_incorrect' ] as $field ) {
+			if ( isset( $data[ $field ] ) && is_string( $data[ $field ] ) ) {
+				$data[ $field ] = wp_kses_post( $data[ $field ] );
+			}
+		}
+
+		if ( isset( $data['answers'] ) && is_array( $data['answers'] ) ) {
+			$data['answers'] = self::sanitize_answers( $data['answers'] );
+		} elseif ( ! empty( $data['answers_json'] ) && is_string( $data['answers_json'] ) ) {
+			$answers = json_decode( $data['answers_json'], true );
+
+			if ( is_array( $answers ) ) {
+				$sanitized = self::sanitize_answers( $answers );
+
+				// Re-encode only when something changed, so clean JSON keeps its exact bytes.
+				if ( $sanitized !== $answers ) {
+					$data['answers_json'] = wp_json_encode( $sanitized );
+				}
+			}
+		}
+
+		return $data;
+	}
+
+	/**
+	 * Sanitize the text and per-answer feedback of each answer option
+	 *
+	 * @since 3.1.3
+	 *
+	 * @param array $answers Answer option arrays.
+	 * @return array Answers with text and feedback sanitized; other keys untouched.
+	 */
+	private static function sanitize_answers( array $answers ) {
+		foreach ( $answers as $index => $answer ) {
+			if ( ! is_array( $answer ) ) {
+				continue;
+			}
+
+			foreach ( [ 'text', 'feedback' ] as $key ) {
+				if ( isset( $answer[ $key ] ) && is_string( $answer[ $key ] ) ) {
+					$answers[ $index ][ $key ] = wp_kses_post( $answer[ $key ] );
+				}
+			}
+		}
+
+		return $answers;
 	}
 
 	/**
@@ -575,6 +642,15 @@ class PressPrimer_Quiz_Question_Revision extends PressPrimer_Quiz_Model {
 					__( 'No valid data to save.', 'pressprimer-quiz' )
 				);
 			}
+
+			// Sanitize content and keep the object in step with what is stored.
+			$data = self::sanitize_content( $data );
+			foreach ( [ 'stem', 'answers_json', 'feedback_correct', 'feedback_incorrect' ] as $field ) {
+				if ( array_key_exists( $field, $data ) ) {
+					$this->$field = $data[ $field ];
+				}
+			}
+			$this->_answers = null;
 
 			$table = static::get_full_table_name();
 

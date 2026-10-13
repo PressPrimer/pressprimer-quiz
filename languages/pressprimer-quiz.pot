@@ -2,14 +2,14 @@
 # This file is distributed under the GPL v2 or later.
 msgid ""
 msgstr ""
-"Project-Id-Version: PressPrimer Quiz 3.1.2\n"
+"Project-Id-Version: PressPrimer Quiz 3.1.3\n"
 "Report-Msgid-Bugs-To: https://wordpress.org/support/plugin/pressprimer-quiz\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"POT-Creation-Date: 2026-08-21T13:22:36+00:00\n"
+"POT-Creation-Date: 2026-10-13T15:26:08+00:00\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "X-Generator: WP-CLI 2.12.0\n"
 "X-Domain: pressprimer-quiz\n"
@@ -23,8 +23,8 @@ msgstr ""
 #: includes/integrations/class-ppq-learndash.php:607
 #: includes/integrations/class-ppq-learnpress.php:142
 #: includes/integrations/class-ppq-lifterlms.php:113
-#: includes/integrations/class-ppq-tutorlms.php:142
-#: includes/integrations/class-ppq-tutorlms.php:521
+#: includes/integrations/class-ppq-tutorlms.php:149
+#: includes/integrations/class-ppq-tutorlms.php:528
 #: includes/utilities/class-ppq-privacy.php:130
 #: assets/js/learndash-editor.js:237
 #: assets/js/tutorlms-editor.js:206
@@ -384,9 +384,9 @@ msgstr ""
 #: includes/frontend/class-ppq-ajax-handler.php:414
 #: includes/frontend/class-ppq-ajax-handler.php:487
 #: includes/frontend/class-ppq-ajax-handler.php:777
-#: includes/integrations/class-ppq-learndash.php:1321
+#: includes/integrations/class-ppq-learndash.php:1327
 #: includes/integrations/class-ppq-learnpress.php:415
-#: includes/integrations/class-ppq-tutorlms.php:644
+#: includes/integrations/class-ppq-tutorlms.php:651
 msgid "Security check failed."
 msgstr ""
 
@@ -402,12 +402,12 @@ msgstr ""
 #: includes/admin/class-ppq-review-notice.php:304
 #: includes/admin/class-ppq-review-notice.php:323
 #: includes/database/class-ppq-migrator.php:1302
-#: includes/integrations/class-ppq-learndash.php:1326
+#: includes/integrations/class-ppq-learndash.php:1332
 #: includes/integrations/class-ppq-learnpress.php:420
-#: includes/integrations/class-ppq-lifterlms.php:1131
-#: includes/integrations/class-ppq-lifterlms.php:1184
-#: includes/integrations/class-ppq-tutorlms.php:649
-#: includes/integrations/class-ppq-tutorlms.php:1455
+#: includes/integrations/class-ppq-lifterlms.php:1147
+#: includes/integrations/class-ppq-lifterlms.php:1200
+#: includes/integrations/class-ppq-tutorlms.php:656
+#: includes/integrations/class-ppq-tutorlms.php:1547
 msgid "Permission denied."
 msgstr ""
 
@@ -1274,8 +1274,8 @@ msgstr ""
 #: includes/frontend/class-ppq-results-renderer.php:122
 #: includes/frontend/class-ppq-results-renderer.php:1018
 #: includes/frontend/class-ppq-shortcodes.php:207
-#: includes/integrations/class-ppq-lifterlms.php:1146
-#: includes/integrations/class-ppq-tutorlms.php:1469
+#: includes/integrations/class-ppq-lifterlms.php:1162
+#: includes/integrations/class-ppq-tutorlms.php:1561
 #: includes/models/class-ppq-attempt.php:328
 #: includes/models/class-ppq-attempt.php:554
 #: includes/models/class-ppq-quiz-item.php:120
@@ -1292,7 +1292,7 @@ msgstr ""
 
 #: includes/admin/class-ppq-admin-quizzes.php:359
 #: includes/frontend/class-ppq-ajax-handler.php:108
-#: includes/frontend/class-ppq-ajax-handler.php:1035
+#: includes/frontend/class-ppq-ajax-handler.php:1037
 msgid "Invalid quiz ID."
 msgstr ""
 
@@ -3060,7 +3060,7 @@ msgstr ""
 
 #: includes/frontend/class-ppq-ajax-handler.php:97
 #: includes/frontend/class-ppq-ajax-handler.php:683
-#: includes/frontend/class-ppq-ajax-handler.php:1020
+#: includes/frontend/class-ppq-ajax-handler.php:1022
 msgid "Security check failed. Please refresh the page and try again."
 msgstr ""
 
@@ -3163,7 +3163,7 @@ msgstr ""
 msgid "Question data not found."
 msgstr ""
 
-#: includes/frontend/class-ppq-ajax-handler.php:1045
+#: includes/frontend/class-ppq-ajax-handler.php:1047
 msgid "Not logged in."
 msgstr ""
 
@@ -3340,8 +3340,8 @@ msgstr ""
 #: includes/frontend/class-ppq-quiz-renderer.php:929
 #: includes/frontend/class-ppq-shortcodes.php:622
 #: includes/frontend/class-ppq-shortcodes.php:702
-#: includes/integrations/class-ppq-learndash.php:655
-#: includes/integrations/class-ppq-learndash.php:748
+#: includes/integrations/class-ppq-learndash.php:661
+#: includes/integrations/class-ppq-learndash.php:754
 #: includes/integrations/uncanny-automator/triggers/class-ppq-guest-captured.php:89
 #: includes/integrations/uncanny-automator/triggers/class-ppq-quiz-completed.php:82
 #: includes/integrations/uncanny-automator/triggers/class-ppq-quiz-failed.php:82
@@ -3963,15 +3963,15 @@ msgstr ""
 
 #: includes/integrations/class-ppq-learndash.php:172
 #: includes/integrations/class-ppq-lifterlms.php:144
-#: includes/integrations/class-ppq-tutorlms.php:174
+#: includes/integrations/class-ppq-tutorlms.php:181
 msgid "Select Quiz:"
 msgstr ""
 
 #: includes/integrations/class-ppq-learndash.php:180
 #: includes/integrations/class-ppq-learnpress.php:154
 #: includes/integrations/class-ppq-lifterlms.php:152
-#: includes/integrations/class-ppq-tutorlms.php:182
-#: includes/integrations/class-ppq-tutorlms.php:523
+#: includes/integrations/class-ppq-tutorlms.php:189
+#: includes/integrations/class-ppq-tutorlms.php:530
 #: assets/js/learndash-editor.js:135
 #: assets/js/tutorlms-editor.js:133
 msgid "Click to browse or type to search..."
@@ -3983,8 +3983,8 @@ msgstr ""
 #: includes/integrations/class-ppq-learnpress.php:304
 #: includes/integrations/class-ppq-lifterlms.php:165
 #: includes/integrations/class-ppq-lifterlms.php:215
-#: includes/integrations/class-ppq-tutorlms.php:195
-#: includes/integrations/class-ppq-tutorlms.php:250
+#: includes/integrations/class-ppq-tutorlms.php:202
+#: includes/integrations/class-ppq-tutorlms.php:257
 #: assets/js/learndash-editor.js:123
 #: assets/js/tutorlms-editor.js:121
 msgid "Remove quiz"
@@ -4012,8 +4012,8 @@ msgstr ""
 #: includes/integrations/class-ppq-learnpress.php:248
 #: includes/integrations/class-ppq-learnpress.php:284
 #: includes/integrations/class-ppq-lifterlms.php:214
-#: includes/integrations/class-ppq-tutorlms.php:249
-#: includes/integrations/class-ppq-tutorlms.php:577
+#: includes/integrations/class-ppq-tutorlms.php:256
+#: includes/integrations/class-ppq-tutorlms.php:584
 #: assets/js/learndash-editor.js:155
 #: assets/js/tutorlms-editor.js:153
 #: src/quiz-editor/components/PremiumSettingsPanel.jsx:272
@@ -4034,7 +4034,7 @@ msgid "Restrict quiz access until course content is complete"
 msgstr ""
 
 #: includes/integrations/class-ppq-learndash.php:608
-#: includes/integrations/class-ppq-tutorlms.php:522
+#: includes/integrations/class-ppq-tutorlms.php:529
 #: assets/js/learndash-editor.js:206
 #: assets/js/tutorlms-editor.js:186
 #: blocks/quiz/index.js:222
@@ -4046,15 +4046,15 @@ msgid "Search for a quiz..."
 msgstr ""
 
 #: includes/integrations/class-ppq-learndash.php:610
-#: includes/integrations/class-ppq-tutorlms.php:524
+#: includes/integrations/class-ppq-tutorlms.php:531
 msgid "No quiz selected"
 msgstr ""
 
-#: includes/integrations/class-ppq-learndash.php:660
+#: includes/integrations/class-ppq-learndash.php:666
 msgid "Complete all topics in this lesson to unlock the quiz."
 msgstr ""
 
-#: includes/integrations/class-ppq-learndash.php:752
+#: includes/integrations/class-ppq-learndash.php:758
 #: src/settings-panel/components/IntegrationsTab.jsx:391
 msgid "Complete all lessons and topics to unlock this quiz."
 msgstr ""
@@ -4068,44 +4068,44 @@ msgid "Require quiz pass to complete lesson"
 msgstr ""
 
 #: includes/integrations/class-ppq-lifterlms.php:174
-#: includes/integrations/class-ppq-tutorlms.php:209
-#: includes/integrations/class-ppq-tutorlms.php:525
+#: includes/integrations/class-ppq-tutorlms.php:216
+#: includes/integrations/class-ppq-tutorlms.php:532
 #: assets/js/tutorlms-editor.js:194
 msgid "Require passing score to complete lesson"
 msgstr ""
 
 #: includes/integrations/class-ppq-lifterlms.php:178
-#: includes/integrations/class-ppq-tutorlms.php:213
-#: includes/integrations/class-ppq-tutorlms.php:526
+#: includes/integrations/class-ppq-tutorlms.php:220
+#: includes/integrations/class-ppq-tutorlms.php:533
 #: assets/js/tutorlms-editor.js:200
 msgid "When enabled, students must pass this quiz to mark the lesson complete."
 msgstr ""
 
-#: includes/integrations/class-ppq-lifterlms.php:591
-#: includes/integrations/class-ppq-lifterlms.php:668
-#: includes/integrations/class-ppq-tutorlms.php:754
+#: includes/integrations/class-ppq-lifterlms.php:602
+#: includes/integrations/class-ppq-lifterlms.php:684
+#: includes/integrations/class-ppq-tutorlms.php:767
 msgid "Enroll in this course to access the quiz."
 msgstr ""
 
-#: includes/integrations/class-ppq-lifterlms.php:1120
-#: includes/integrations/class-ppq-tutorlms.php:1436
+#: includes/integrations/class-ppq-lifterlms.php:1136
+#: includes/integrations/class-ppq-tutorlms.php:1528
 msgid "Invalid lesson."
 msgstr ""
 
-#: includes/integrations/class-ppq-tutorlms.php:576
+#: includes/integrations/class-ppq-tutorlms.php:583
 #: src/reports/components/QuizPerformanceReport.jsx:250
 msgid "Search quizzes..."
 msgstr ""
 
-#: includes/integrations/class-ppq-tutorlms.php:578
+#: includes/integrations/class-ppq-tutorlms.php:585
 msgid "Error loading quizzes"
 msgstr ""
 
-#: includes/integrations/class-ppq-tutorlms.php:1182
+#: includes/integrations/class-ppq-tutorlms.php:1274
 msgid "Tutor Instructor"
 msgstr ""
 
-#: includes/integrations/class-ppq-tutorlms.php:1422
+#: includes/integrations/class-ppq-tutorlms.php:1514
 msgid "Please save the lesson first before attaching a quiz."
 msgstr ""
 
@@ -4407,7 +4407,7 @@ msgid "Cannot save record without ID."
 msgstr ""
 
 #: includes/models/class-ppq-model.php:213
-#: includes/models/class-ppq-question-revision.php:575
+#: includes/models/class-ppq-question-revision.php:642
 msgid "No valid data to save."
 msgstr ""
 
@@ -4431,56 +4431,56 @@ msgstr ""
 msgid "Record not found in database."
 msgstr ""
 
-#: includes/models/class-ppq-question-revision.php:235
+#: includes/models/class-ppq-question-revision.php:302
 msgid "Question stem is required."
 msgstr ""
 
-#: includes/models/class-ppq-question-revision.php:244
+#: includes/models/class-ppq-question-revision.php:311
 msgid "Question stem cannot exceed 10,000 characters."
 msgstr ""
 
-#: includes/models/class-ppq-question-revision.php:251
+#: includes/models/class-ppq-question-revision.php:318
 msgid "Question stem cannot be empty or only whitespace."
 msgstr ""
 
-#: includes/models/class-ppq-question-revision.php:264
+#: includes/models/class-ppq-question-revision.php:331
 msgid "Invalid answers JSON format."
 msgstr ""
 
-#: includes/models/class-ppq-question-revision.php:273
+#: includes/models/class-ppq-question-revision.php:340
 msgid "Question must have at least 2 answer options."
 msgstr ""
 
-#: includes/models/class-ppq-question-revision.php:281
+#: includes/models/class-ppq-question-revision.php:348
 msgid "Question cannot have more than 8 answer options."
 msgstr ""
 
-#: includes/models/class-ppq-question-revision.php:292
+#: includes/models/class-ppq-question-revision.php:359
 msgid "Each answer option must have non-empty text."
 msgstr ""
 
-#: includes/models/class-ppq-question-revision.php:303
+#: includes/models/class-ppq-question-revision.php:370
 msgid "Answer text cannot exceed 2,000 characters."
 msgstr ""
 
-#: includes/models/class-ppq-question-revision.php:316
+#: includes/models/class-ppq-question-revision.php:383
 msgid "Question must have at least one correct answer."
 msgstr ""
 
-#: includes/models/class-ppq-question-revision.php:326
-#: includes/models/class-ppq-question-revision.php:333
+#: includes/models/class-ppq-question-revision.php:393
+#: includes/models/class-ppq-question-revision.php:400
 msgid "Feedback cannot exceed 2,000 characters."
 msgstr ""
 
-#: includes/models/class-ppq-question-revision.php:587
+#: includes/models/class-ppq-question-revision.php:663
 msgid "Database error: Failed to create revision."
 msgstr ""
 
-#: includes/models/class-ppq-question-revision.php:599
+#: includes/models/class-ppq-question-revision.php:675
 msgid "Revisions cannot be updated. Create a new revision instead."
 msgstr ""
 
-#: includes/models/class-ppq-question-revision.php:615
+#: includes/models/class-ppq-question-revision.php:691
 msgid "Revisions cannot be deleted. They are permanent for historical accuracy."
 msgstr ""
 

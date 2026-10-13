@@ -519,6 +519,12 @@ class PressPrimer_Quiz_LifterLMS {
 	 * @param LLMS_Student $student The student object.
 	 */
 	public function display_quiz_in_lesson( $lesson, $student ) {
+		// LifterLMS builds classic lesson templates (buttons included) inside
+		// the_content, so this fires during excerpt and <head> passes too.
+		if ( PressPrimer_Quiz_Helpers::is_non_body_content_pass() ) {
+			return;
+		}
+
 		$lesson_id = $lesson->get( 'id' );
 		$quiz_id   = get_post_meta( $lesson_id, self::META_KEY_QUIZ_ID, true );
 
@@ -559,6 +565,11 @@ class PressPrimer_Quiz_LifterLMS {
 	 * @since 1.0.0
 	 */
 	public function display_quiz_before_navigation_block() {
+		// Blocks render wherever the_content runs, including <head>/footer passes.
+		if ( PressPrimer_Quiz_Helpers::is_non_body_content_pass() ) {
+			return;
+		}
+
 		// Don't render if already rendered by the primary hook.
 		if ( $this->quiz_rendered ) {
 			return;
@@ -631,6 +642,11 @@ class PressPrimer_Quiz_LifterLMS {
 	public function append_quiz_to_content( $content ) {
 		// Only run on single lesson pages in the main query.
 		if ( ! is_singular( 'lesson' ) || ! in_the_loop() || ! is_main_query() ) {
+			return $content;
+		}
+
+		// Excerpt-building passes inside the loop aren't the page body.
+		if ( PressPrimer_Quiz_Helpers::is_non_body_content_pass() ) {
 			return $content;
 		}
 

@@ -917,12 +917,14 @@ class PressPrimer_Quiz_AJAX_Handler {
 		sort( $sorted_correct );
 		$is_correct = ( $sorted_selected === $sorted_correct );
 
-		// Get appropriate feedback text
+		// Get appropriate feedback text. Sanitized here as well as on save:
+		// quiz.js inserts it as HTML, and content saved before 3.1.3 may not
+		// have been sanitized.
 		$feedback_text = '';
 		if ( $is_correct && ! empty( $revision->feedback_correct ) ) {
-			$feedback_text = $revision->feedback_correct;
+			$feedback_text = wp_kses_post( $revision->feedback_correct );
 		} elseif ( ! $is_correct && ! empty( $revision->feedback_incorrect ) ) {
-			$feedback_text = $revision->feedback_incorrect;
+			$feedback_text = wp_kses_post( $revision->feedback_incorrect );
 		}
 
 		// Return response with correct answers revealed

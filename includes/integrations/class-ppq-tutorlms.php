@@ -112,8 +112,15 @@ class PressPrimer_Quiz_TutorLMS {
 		add_action( 'tutor_course/single/enrolled/after/lesson_list', [ $this, 'display_topic_quizzes' ] );
 		add_filter( 'tutor_course/single/enrolled/topic_contents', [ $this, 'inject_topic_quiz_content' ], 10, 2 );
 
-		// Hide Tutor's mark complete button when quiz is attached.
+		// Hide Tutor's mark complete button when quiz is attached. Tutor 4.0
+		// moved lessons to the "learning area" layout, which renders the button
+		// through a new filter; the legacy one still covers 2.x/3.x.
 		add_filter( 'tutor_lesson/single/complete_form', [ $this, 'maybe_hide_complete_button' ] );
+		add_filter( 'tutor_learning_area_lesson_mark_as_complete', [ $this, 'maybe_hide_complete_button' ] );
+
+		// Hiding the button is cosmetic — also refuse the completion request
+		// itself (filter present since Tutor 2.x).
+		add_filter( 'tutor_validate_lesson_complete', [ $this, 'validate_lesson_complete' ], 10, 3 );
 
 		// Completion tracking.
 		add_action( 'pressprimer_quiz_quiz_passed', [ $this, 'handle_quiz_passed' ], 10, 2 );
@@ -730,6 +737,12 @@ class PressPrimer_Quiz_TutorLMS {
 			return $content;
 		}
 
+		// Excerpt-building and <head>/footer passes aren't the page body —
+		// rendering there would consume the once-per-page guard below.
+		if ( PressPrimer_Quiz_Helpers::is_non_body_content_pass() ) {
+			return $content;
+		}
+
 		// Prevent double-rendering (the_content can fire multiple times).
 		if ( $this->lesson_quiz_rendered ) {
 			return $content;
@@ -914,34 +927,64 @@ class PressPrimer_Quiz_TutorLMS {
 	 * @return string Modified form HTML.
 	 */
 	public function maybe_hide_complete_button( $form ) {
-		$post_id = get_the_ID();
-		$quiz_id = get_post_meta( $post_id, self::META_KEY_QUIZ_ID, true );
+		return $this->is_completion_blocked( get_the_ID(), get_current_user_id() ) ? '' : $form;
+	}
 
-		if ( $quiz_id ) {
-			// Only hide the complete button if "Require passing score" is enabled.
-			$require_pass = get_post_meta( $post_id, self::META_KEY_REQUIRE_PASS, true );
-
-			if ( '1' === $require_pass ) {
-				// If the lesson is already marked complete, don't hide the button.
-				if ( function_exists( 'tutor_utils' ) ) {
-					$completed = tutor_utils()->is_completed_lesson( $post_id, get_current_user_id() );
-					if ( false !== $completed ) {
-						return $form;
-					}
-				}
-
-				// If the user has already passed this quiz, don't hide the button.
-				$user_id = get_current_user_id();
-				if ( $user_id && $this->user_has_passed_quiz( (int) $quiz_id, $user_id ) ) {
-					return $form;
-				}
-
-				// Return empty to hide the complete button - user must pass quiz.
-				return '';
-			}
+	/**
+	 * Refuse a lesson completion request until the quiz is passed
+	 *
+	 * Server-side counterpart of maybe_hide_complete_button(): hiding the
+	 * button doesn't stop a crafted request, so the completion handler's own
+	 * validation filter enforces the same gate. Our quiz-passed path marks
+	 * lessons complete through LessonModel directly, so it is unaffected.
+	 *
+	 * @since 3.1.3
+	 *
+	 * @param bool $validated Whether Tutor will allow the completion.
+	 * @param int  $user_id   User completing the lesson.
+	 * @param int  $lesson_id Lesson post ID.
+	 * @return bool False when the attached quiz must be passed first.
+	 */
+	public function validate_lesson_complete( $validated, $user_id, $lesson_id ) {
+		if ( ! $validated ) {
+			return $validated;
 		}
 
-		return $form;
+		return ! $this->is_completion_blocked( (int) $lesson_id, (int) $user_id );
+	}
+
+	/**
+	 * Whether the attached quiz still blocks lesson completion
+	 *
+	 * Blocks only when an existing quiz is attached with "require passing
+	 * score" on, the lesson isn't already complete, and the user hasn't
+	 * passed the quiz yet.
+	 *
+	 * @since 3.1.3
+	 *
+	 * @param int $lesson_id Lesson post ID.
+	 * @param int $user_id   User ID.
+	 * @return bool True when completion must wait for a passing attempt.
+	 */
+	private function is_completion_blocked( $lesson_id, $user_id ) {
+		$lesson_id = absint( $lesson_id );
+		$quiz_id   = $lesson_id ? get_post_meta( $lesson_id, self::META_KEY_QUIZ_ID, true ) : '';
+
+		// No mapping, or a stale one (the quiz was deleted).
+		if ( ! $quiz_id || ! PressPrimer_Quiz_Quiz::get( $quiz_id ) ) {
+			return false;
+		}
+
+		if ( '1' !== get_post_meta( $lesson_id, self::META_KEY_REQUIRE_PASS, true ) ) {
+			return false;
+		}
+
+		// An already-completed lesson stays completable.
+		if ( function_exists( 'tutor_utils' ) && false !== tutor_utils()->is_completed_lesson( $lesson_id, $user_id ) ) {
+			return false;
+		}
+
+		return ! ( $user_id && $this->user_has_passed_quiz( (int) $quiz_id, (int) $user_id ) );
 	}
 
 	/**
@@ -990,9 +1033,58 @@ class PressPrimer_Quiz_TutorLMS {
 			$require_pass = get_post_meta( $lesson->ID, self::META_KEY_REQUIRE_PASS, true );
 
 			if ( '1' === $require_pass ) {
+				// Cross-plugin check: if PressPrimer Assignment also requires a
+				// passing grade on this lesson, only complete when BOTH are passed.
+				if ( ! $this->is_assignment_requirement_satisfied( $lesson->ID, (int) $attempt->user_id ) ) {
+					continue;
+				}
+
 				$this->mark_lesson_complete( $lesson->ID, $attempt->user_id );
 			}
 		}
+	}
+
+	/**
+	 * Check if a PressPrimer Assignment requirement on the same lesson is satisfied
+	 *
+	 * Mirrors PressPrimer Assignment's own check for a Quiz requirement: when
+	 * both are attached to one lesson with "require pass" on, neither plugin
+	 * completes the lesson until both are passed. Our completion goes through
+	 * LessonModel directly, which bypasses Assignment's
+	 * tutor_validate_lesson_complete gate, so the check has to happen here.
+	 *
+	 * @since 3.1.3
+	 *
+	 * @param int $lesson_id Lesson post ID.
+	 * @param int $user_id   User ID.
+	 * @return bool True if no assignment requirement exists, or it has been passed.
+	 */
+	private function is_assignment_requirement_satisfied( $lesson_id, $user_id ) {
+		$assignment_id = get_post_meta( $lesson_id, '_ppa_tutorlms_assignment_id', true );
+
+		if ( ! $assignment_id || '1' !== get_post_meta( $lesson_id, '_ppa_tutorlms_require_pass', true ) ) {
+			return true;
+		}
+
+		// Assignment inactive, or a stale mapping — there is nothing the
+		// student could pass, so don't hold the lesson back.
+		if ( ! class_exists( 'PressPrimer_Assignment_Assignment' ) || ! PressPrimer_Assignment_Assignment::get( $assignment_id ) ) {
+			return true;
+		}
+
+		global $wpdb;
+		$table = $wpdb->prefix . 'ppa_submissions';
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Cross-plugin check, not suitable for caching.
+		$passed = $wpdb->get_var(
+			$wpdb->prepare(
+				"SELECT COUNT(*) FROM {$table} WHERE user_id = %d AND assignment_id = %d AND passed = 1", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Table name is constructed from $wpdb->prefix.
+				$user_id,
+				(int) $assignment_id
+			)
+		);
+
+		return (int) $passed > 0;
 	}
 
 	/**

@@ -1130,17 +1130,32 @@ class PressPrimer_Quiz_Results_Renderer {
 					</span>
 				<?php endif; ?>
 
-				<?php if ( $quiz->enable_confidence && null !== $item->confidence ) : ?>
+				<?php
+				// v3.1 three-level rating (feature 003): 1 low, 2 medium, 3 high.
+				$review_confidence = in_array( (int) $item->confidence, [ 1, 2, 3 ], true ) ? (int) $item->confidence : 0;
+				?>
+				<?php if ( $quiz->enable_confidence && $review_confidence ) : ?>
 					<span class="ppq-review-confidence">
 						<?php
-						/* translators: Student's confidence level when answering the question */
-						$confidence_text = $item->confidence
-							? __( 'Confident', 'pressprimer-quiz' )
-							: __( 'Not Confident', 'pressprimer-quiz' );
-						$confidence_icon = $item->confidence ? '💪' : '🤔';
+						$confidence_labels = [
+							1 => __( 'Low', 'pressprimer-quiz' ),
+							2 => __( 'Medium', 'pressprimer-quiz' ),
+							3 => __( 'High', 'pressprimer-quiz' ),
+						];
+						$confidence_icons  = [
+							1 => '🤔',
+							2 => '🙂',
+							3 => '💪',
+						];
 						?>
-						<span class="ppq-meta-icon"><?php echo esc_html( $confidence_icon ); ?></span>
-						<?php echo esc_html( $confidence_text ); ?>
+						<span class="ppq-meta-icon"><?php echo esc_html( $confidence_icons[ $review_confidence ] ); ?></span>
+						<?php
+						printf(
+							/* translators: %s: the student's confidence rating (Low, Medium, or High) */
+							esc_html__( 'Confidence: %s', 'pressprimer-quiz' ),
+							esc_html( $confidence_labels[ $review_confidence ] )
+						);
+						?>
 					</span>
 				<?php endif; ?>
 

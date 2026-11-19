@@ -327,53 +327,24 @@ class PressPrimer_Quiz_AJAX_Handler {
 			);
 		}
 
-		// Save each answer
+		// Save each answer. Confidence ratings are saved separately below,
+		// because the player sends a rating only when it changes, and an
+		// answer saved without one keeps the stored rating.
 		$saved_count = 0;
 		foreach ( $answers as $item_id => $selected_answers ) {
-			// Get confidence for this item if set (1-3, or null = not captured).
-			$confidence = array_key_exists( $item_id, $confidence_values ) ? $confidence_values[ $item_id ] : null;
-
-			// Save answer with confidence
-			$result = $attempt->save_answer( $item_id, $selected_answers, $confidence );
+			$result = $attempt->save_answer( $item_id, $selected_answers );
 
 			if ( ! is_wp_error( $result ) ) {
 				++$saved_count;
 			}
 		}
 
-		// Save confidence-only updates (when confidence changes without answer change)
-		if ( ! empty( $confidence_values ) ) {
-			global $wpdb;
-			$items_table = $wpdb->prefix . 'ppq_attempt_items';
+		// Save confidence ratings (1-3, or NULL to clear).
+		foreach ( $confidence_values as $item_id => $confidence_value ) {
+			$result = $attempt->update_confidence( $item_id, $confidence_value );
 
-			foreach ( $confidence_values as $item_id => $confidence_value ) {
-				// Skip if we already saved this item with its answer above
-				if ( isset( $answers[ $item_id ] ) ) {
-					continue;
-				}
-
-				// Verify the item belongs to this attempt
-				$exists = $wpdb->get_var(
-					$wpdb->prepare(
-						"SELECT id FROM {$items_table} WHERE id = %d AND attempt_id = %d", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-						$item_id,
-						$attempt->id
-					)
-				);
-
-				if ( ! $exists ) {
-					continue;
-				}
-
-				// Update confidence only for this item (1-3, or NULL to clear).
-				$wpdb->update(
-					$items_table,
-					[ 'confidence' => $confidence_value ],
-					[ 'id' => $item_id ],
-					[ null === $confidence_value ? null : '%d' ],
-					[ '%d' ]
-				);
-
+			// An item saved with its answer above is already counted.
+			if ( ! is_wp_error( $result ) && ! isset( $answers[ $item_id ] ) ) {
 				++$saved_count;
 			}
 		}
@@ -875,6 +846,14 @@ class PressPrimer_Quiz_AJAX_Handler {
 
 		// Save the answer
 		$attempt->save_answer( $item_id, $selected_answers );
+
+		// Save the confidence rating the student had when checking: it is
+		// the captured value (v3.1 feature 003 FR-005), and the check locks
+		// it with the answer. Players from before 3.1.4 don't send it, so
+		// the rating the autosave stored is kept.
+		if ( isset( $_POST['confidence'] ) && ! is_array( $_POST['confidence'] ) ) {
+			$attempt->update_confidence( $item_id, absint( wp_unslash( $_POST['confidence'] ) ) );
+		}
 
 		// Mark answer as checked (locks it from future changes)
 		global $wpdb;

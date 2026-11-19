@@ -1194,18 +1194,27 @@
 			this.isCheckingAnswer = true;
 			$button.prop('disabled', true).text(pressprimerQuiz.strings.checking || 'Checking...');
 
+			const requestData = {
+				action: 'pressprimer_quiz_check_answer',
+				nonce: pressprimerQuiz.nonce,
+				attempt_id: this.attemptId,
+				item_id: itemId,
+				answers: selectedAnswers,
+				guest_token: this.guestToken
+			};
+
+			// Send the confidence rating as it is now, even if the autosave
+			// hasn't run yet: the check records it and locks it with the answer.
+			const $confidenceInputs = $question.find('.ppq-confidence-level-input');
+			if ($confidenceInputs.length) {
+				requestData.confidence = $confidenceInputs.filter(':checked').val() || '';
+			}
+
 			// Submit to server
 			$.ajax({
 				url: pressprimerQuiz.ajaxUrl,
 				type: 'POST',
-				data: {
-					action: 'pressprimer_quiz_check_answer',
-					nonce: pressprimerQuiz.nonce,
-					attempt_id: this.attemptId,
-					item_id: itemId,
-					answers: selectedAnswers,
-					guest_token: this.guestToken
-				},
+				data: requestData,
 				success: function(response) {
 					self.isCheckingAnswer = false;
 
@@ -1240,8 +1249,8 @@
 			// Hide Check button
 			$question.find('.ppq-check-answer-container').hide();
 
-			// Disable answer inputs
-			$question.find('.ppq-answer-input').prop('disabled', true);
+			// Disable answer inputs and the confidence rating (the check locks both)
+			$question.find('.ppq-answer-input, .ppq-confidence-level-input').prop('disabled', true);
 			$question.addClass('ppq-feedback-shown');
 
 			// Show correct/incorrect styling on answers

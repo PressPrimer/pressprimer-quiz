@@ -1945,6 +1945,17 @@
 	outline-offset: -2px;
 }
 
+/* Rating locked after Check Answer (tutorial mode and practice) */
+.ppq-question.ppq-feedback-shown .ppq-confidence-segment,
+.ppq-question.ppq-feedback-shown .ppq-confidence-level-input {
+	cursor: default;
+}
+
+.ppq-question.ppq-feedback-shown .ppq-confidence-level-input:not(:checked) + .ppq-confidence-segment-label {
+	background: var(--ppq-background, #ffffff);
+	color: var(--ppq-text-light, #666666);
+}
+
 .ppq-quiz--condensed .ppq-confidence-levels {
 	margin-top: 8px;
 }

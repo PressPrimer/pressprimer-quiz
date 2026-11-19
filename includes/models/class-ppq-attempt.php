@@ -884,13 +884,19 @@ class PressPrimer_Quiz_Attempt extends PressPrimer_Quiz_Model {
 	 * Accepts either an attempt_item_id or question_revision_id.
 	 *
 	 * @since 1.0.0
+	 * @since 3.1.4 Leaves the stored confidence rating unchanged when no
+	 *              rating is passed, so saving an answer no longer clears it.
 	 *
-	 * @param int   $item_or_revision_id Attempt item ID or question revision ID.
-	 * @param array $selected_answers Array of selected answer indices.
-	 * @param bool  $confidence Whether student is confident in answer.
+	 * @param int           $item_or_revision_id Attempt item ID or question revision ID.
+	 * @param array         $selected_answers    Array of selected answer indices.
+	 * @param int|bool|null $confidence          Optional. Confidence rating (1 low, 2 medium,
+	 *                                           3 high). Null leaves the stored rating
+	 *                                           unchanged; update_confidence() clears it.
 	 * @return bool|WP_Error True on success, WP_Error on failure.
 	 */
 	public function save_answer( int $item_or_revision_id, array $selected_answers, $confidence = null ) {
+		$save_confidence = null !== $confidence;
+
 		// v3.1 three-level confidence: 1 low, 2 medium, 3 high, NULL not
 		// captured. Legacy boolean callers are normalized (true was the
 		// binary "confident" checkbox, which the value migration maps to
@@ -938,28 +944,30 @@ class PressPrimer_Quiz_Attempt extends PressPrimer_Quiz_Model {
 		}
 
 		// Block answer changes for already-checked items in tutorial mode.
-		if ( ! empty( $existing->answer_checked_at ) ) {
-			$quiz = $this->get_quiz();
-			if ( $quiz && 'tutorial' === $quiz->mode ) {
-				return new WP_Error(
-					'ppq_answer_locked',
-					__( 'This answer has already been checked and cannot be changed.', 'pressprimer-quiz' )
-				);
-			}
+		if ( $this->is_checked_item_locked( $existing ) ) {
+			return new WP_Error(
+				'ppq_answer_locked',
+				__( 'This answer has already been checked and cannot be changed.', 'pressprimer-quiz' )
+			);
 		}
 
 		$answer_data = [
 			'selected_answers_json' => wp_json_encode( $selected_answers ),
 			'last_answer_at'        => current_time( 'mysql' ),
-			'confidence'            => $confidence,
 		];
+		$formats     = [ '%s', '%s' ];
+
+		if ( $save_confidence ) {
+			$answer_data['confidence'] = $confidence;
+			$formats[]                 = null === $confidence ? null : '%d';
+		}
 
 		// Update the existing item
 		$wpdb->update(
 			$items_table,
 			$answer_data,
 			[ 'id' => $existing->id ],
-			[ '%s', '%s', null === $confidence ? null : '%d' ],
+			$formats,
 			[ '%d' ]
 		);
 
@@ -1013,6 +1021,15 @@ class PressPrimer_Quiz_Attempt extends PressPrimer_Quiz_Model {
 			);
 		}
 
+		// Checking an answer also locks its rating: the rating at check time
+		// is the captured value (v3.1 feature 003 FR-005).
+		if ( $this->is_checked_item_locked( $existing ) ) {
+			return new WP_Error(
+				'ppq_confidence_locked',
+				__( 'This answer has already been checked, so its confidence rating cannot be changed.', 'pressprimer-quiz' )
+			);
+		}
+
 		// Update confidence (1-3, or NULL to clear)
 		$wpdb->update(
 			$items_table,
@@ -1026,6 +1043,32 @@ class PressPrimer_Quiz_Attempt extends PressPrimer_Quiz_Model {
 		$this->_items = null;
 
 		return true;
+	}
+
+	/**
+	 * Whether an attempt item's checked answer is locked
+	 *
+	 * Checking an answer locks it and its confidence rating in tutorial-mode
+	 * quizzes and in practice attempts, which run tutorial-style whatever
+	 * the quiz's stored mode.
+	 *
+	 * @since 3.1.4
+	 *
+	 * @param object $item Attempt item row.
+	 * @return bool True when the item was checked and can no longer change.
+	 */
+	private function is_checked_item_locked( $item ) {
+		if ( empty( $item->answer_checked_at ) ) {
+			return false;
+		}
+
+		if ( ! empty( $this->is_practice ) ) {
+			return true;
+		}
+
+		$quiz = $this->get_quiz();
+
+		return $quiz && 'tutorial' === $quiz->mode;
 	}
 
 	/**

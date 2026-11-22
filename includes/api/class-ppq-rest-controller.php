@@ -737,6 +737,59 @@ class PressPrimer_Quiz_REST_Controller {
 	}
 
 	/**
+	 * Find the questions the current user may not add to a quiz.
+	 *
+	 * Applies the question picker's rule (get_questions()): users with
+	 * pressprimer_quiz_manage_all may use any question; everyone else may
+	 * use the questions they wrote plus those in banks the
+	 * pressprimer_quiz_accessible_bank_ids filter grants them (Educator's
+	 * shared banks). Deleted and missing questions are never usable, so a
+	 * request can't leave empty rows in a quiz.
+	 *
+	 * @since 3.1.4
+	 *
+	 * @param int[] $question_ids Question IDs to check.
+	 * @return int[] The IDs the user may not use; empty when all are usable.
+	 */
+	private function get_unusable_question_ids( $question_ids ) {
+		global $wpdb;
+
+		if ( empty( $question_ids ) ) {
+			return [];
+		}
+
+		$placeholders = implode( ',', array_fill( 0, count( $question_ids ), '%d' ) );
+		$where        = [ "q.id IN ({$placeholders})", 'q.deleted_at IS NULL' ];
+		$where_values = $question_ids;
+
+		if ( ! current_user_can( 'pressprimer_quiz_manage_all' ) ) {
+			$user_id = get_current_user_id();
+
+			/** This filter is documented in includes/api/class-ppq-rest-controller.php */
+			$accessible_bank_ids = apply_filters( 'pressprimer_quiz_accessible_bank_ids', [], $user_id );
+			$accessible_bank_ids = array_filter( array_map( 'absint', $accessible_bank_ids ) );
+
+			if ( ! empty( $accessible_bank_ids ) ) {
+				$bank_placeholders = implode( ',', array_fill( 0, count( $accessible_bank_ids ), '%d' ) );
+				$where[]           = "(q.author_id = %d OR q.id IN (SELECT question_id FROM {$wpdb->prefix}ppq_bank_questions WHERE bank_id IN ({$bank_placeholders})))";
+				$where_values[]    = $user_id;
+				$where_values      = array_merge( $where_values, $accessible_bank_ids );
+			} else {
+				$where[]        = 'q.author_id = %d';
+				$where_values[] = $user_id;
+			}
+		}
+
+		$where_clause = implode( ' AND ', $where );
+		$query        = "SELECT q.id FROM {$wpdb->prefix}ppq_questions q WHERE {$where_clause}";
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Permission check before a write; must not be cached.
+		$usable = array_map( 'absint', $wpdb->get_col( $wpdb->prepare( $query, $where_values ) ) ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
+
+		return array_values( array_diff( $question_ids, $usable ) );
+	}
+
+	/**
 	 * Check editor permission for block usage
 	 *
 	 * Allows users who can edit posts to see the list of published quizzes
@@ -2948,6 +3001,14 @@ class PressPrimer_Quiz_REST_Controller {
 
 		if ( empty( $question_ids ) ) {
 			return new WP_Error( 'no_questions', __( 'No questions provided.', 'pressprimer-quiz' ), [ 'status' => 400 ] );
+		}
+
+		// Only questions the user can use may be added. The question picker
+		// offers nothing else, so this stops crafted requests from adding
+		// another teacher's questions (or deleted ones) to a quiz.
+		$question_ids = array_map( 'absint', (array) $question_ids );
+		if ( ! empty( $this->get_unusable_question_ids( array_values( array_unique( $question_ids ) ) ) ) ) {
+			return new WP_Error( 'question_not_allowed', __( 'You can\'t add one or more of these questions to this quiz.', 'pressprimer-quiz' ), [ 'status' => 403 ] );
 		}
 
 		global $wpdb;

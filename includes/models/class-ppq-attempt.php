@@ -878,6 +878,37 @@ class PressPrimer_Quiz_Attempt extends PressPrimer_Quiz_Model {
 	}
 
 	/**
+	 * Get the attempt items to include in results
+	 *
+	 * Returns the items the student's results are built from: the correct
+	 * count, category breakdown, and question review on the results page and
+	 * in results emails. This is every item unless an addon removes some.
+	 *
+	 * @since 3.1.4
+	 *
+	 * @return array Array of PressPrimer_Quiz_Attempt_Item objects.
+	 */
+	public function get_result_items() {
+		$items = $this->get_items();
+
+		/**
+		 * Filters the attempt items included in results.
+		 *
+		 * Lets addons leave out questions the student was never shown, such
+		 * as the ones an Enterprise branching rule skipped, so the results
+		 * match what the student actually answered.
+		 *
+		 * @since 3.1.4
+		 *
+		 * @param array                    $items   Array of PressPrimer_Quiz_Attempt_Item objects.
+		 * @param PressPrimer_Quiz_Attempt $attempt The attempt.
+		 */
+		$result_items = apply_filters( 'pressprimer_quiz_attempt_result_items', $items, $this );
+
+		return is_array( $result_items ) ? array_values( $result_items ) : $items;
+	}
+
+	/**
 	 * Save answer for a question
 	 *
 	 * Saves student's selected answer(s) for a specific question.

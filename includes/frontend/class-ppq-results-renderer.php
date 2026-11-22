@@ -581,7 +581,7 @@ class PressPrimer_Quiz_Results_Renderer {
 			return false;
 		}
 
-		foreach ( $attempt->get_items() as $item ) {
+		foreach ( $attempt->get_result_items() as $item ) {
 			$question = $item->get_question();
 			if ( $question && in_array( $question->type, array( 'multiple_answer', 'ma' ), true ) ) {
 				return true;
@@ -1019,7 +1019,7 @@ class PressPrimer_Quiz_Results_Renderer {
 		}
 
 		// Get all attempt items
-		$items = $attempt->get_items();
+		$items = $attempt->get_result_items();
 
 		if ( empty( $items ) ) {
 			return '<div class="ppq-error">' . esc_html__( 'No questions found.', 'pressprimer-quiz' ) . '</div>';
@@ -1658,7 +1658,7 @@ class PressPrimer_Quiz_Results_Renderer {
 	 * @return array Results data.
 	 */
 	private function calculate_results( $attempt ) {
-		$items = $attempt->get_items();
+		$items = $attempt->get_result_items();
 
 		$results = [
 			'score_points'     => $attempt->score_points,

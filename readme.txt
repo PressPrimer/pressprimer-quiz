@@ -256,6 +256,15 @@ This plugin also offers optional AI-powered question generation using the Anthro
 
 == Changelog ==
 
+= 3.1.4 =
+* Fixed: Confidence ratings can no longer be lost when a student changes an answer or clicks Check Answer.
+* Fixed: The Question Review on the results page now shows each confidence rating as Low, Medium, or High, instead of "Confident" or "Not Confident."
+* Fixed: In tutorial mode and practice quizzes, the confidence rating now locks along with the answer once the answer is checked.
+* Fixed: Teachers can now add only their own questions, or questions from question banks shared with them, to their quizzes. Administrators can still add any question.
+* Fixed: When "Allow Skip Questions" is turned off, the right arrow key no longer moves past an unanswered question.
+* Fixed: On quizzes that show several questions per page, the "Go to Question" button in the unanswered-questions warning now opens the page with that question.
+* Fixed: Quizzes with PressPrimer Quiz Enterprise branching rules now go to the right question after each rule, and the results page and result emails count only the questions the student was shown.
+
 = 3.1.3 =
 * Fixed: Question content added through imports, AI question generation, and LMS quiz importers is now cleaned the same way as the question editor.
 * Fixed: Quizzes attached to LearnDash, LifterLMS, and Tutor LMS lessons now always appear, even on sites where an SEO or social sharing plugin generates page descriptions. Quiz text also no longer shows up in those page descriptions.
@@ -446,6 +455,9 @@ This plugin also offers optional AI-powered question generation using the Anthro
 * Full internationalization support
 
 == Upgrade Notice ==
+
+= 3.1.4 =
+Tightens which questions teachers can add to their quizzes, and fixes confidence ratings and quiz navigation. Recommended for all sites.
 
 = 3.1.3 =
 Security hardening for imported question content, plus fixes for quizzes on LearnDash, LifterLMS, and Tutor LMS lessons. Recommended for all sites.

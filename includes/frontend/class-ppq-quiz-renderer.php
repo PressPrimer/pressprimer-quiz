@@ -1236,7 +1236,8 @@ class PressPrimer_Quiz_Quiz_Renderer {
 										class="ppq-confidence-level-input"
 										value="<?php echo esc_attr( $level_value ); ?>"
 										data-item-id="<?php echo esc_attr( $item->id ); ?>"
-										<?php checked( $confidence_value, $level_value ); ?>>
+										<?php checked( $confidence_value, $level_value ); ?>
+										<?php disabled( $is_answer_checked ); ?>>
 								<span class="ppq-confidence-segment-label"><?php echo esc_html( $level_label ); ?></span>
 							</label>
 						<?php endforeach; ?>

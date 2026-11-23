@@ -537,10 +537,19 @@
 					e.preventDefault();
 					self.previousQuestion();
 				}
-				// Right arrow - next
-				else if (e.key === 'ArrowRight' && $('#ppq-next-button').is(':visible')) {
+				// Right arrow - next (only if button is visible and not disabled)
+				else if (e.key === 'ArrowRight' && $('#ppq-next-button').is(':visible') && !$('#ppq-next-button').prop('disabled')) {
 					e.preventDefault();
 					self.nextQuestion();
+				}
+			});
+
+			// Addons can move the quiz to a specific question, for example
+			// when an Enterprise branching rule jumps ahead.
+			document.addEventListener('pressprimer-quiz-go-to-question', function(e) {
+				const index = e.detail ? parseInt(e.detail.questionIndex, 10) : NaN;
+				if (!isNaN(index)) {
+					self.goToQuestion(index);
 				}
 			});
 
@@ -760,6 +769,36 @@
 		},
 
 		/**
+		 * Show the question at an index, or the page that contains it
+		 *
+		 * @param {number} index Question index (0-based)
+		 */
+		goToQuestion: function(index) {
+			if (this.pageMode === 'paged') {
+				this.showPage(Math.floor(index / this.questionsPerPage));
+			} else {
+				this.showSingleQuestion(index);
+			}
+		},
+
+		/**
+		 * Dispatch a quiz event on the document for addons
+		 *
+		 * @param {string}  name       Event name
+		 * @param {Object}  detail     Event-specific detail (attempt and quiz IDs are added)
+		 * @param {boolean} cancelable Whether a listener can cancel the default action
+		 * @return {boolean} False if a listener cancelled the event
+		 */
+		dispatchQuizEvent: function(name, detail, cancelable) {
+			const event = new CustomEvent(name, {
+				cancelable: !!cancelable,
+				detail: $.extend({ attemptId: this.attemptId, quizId: this.quizId }, detail)
+			});
+
+			return document.dispatchEvent(event);
+		},
+
+		/**
 		 * Show a single question (single question per page mode)
 		 *
 		 * @param {number} index Question index (0-based)
@@ -799,6 +838,12 @@
 
 			// Move focus to the question for keyboard users
 			$question.attr('tabindex', '-1').focus();
+
+			this.dispatchQuizEvent('pressprimer-quiz-question-shown', {
+				questionIndex: index,
+				questionIndices: [ index ],
+				page: this.currentPage
+			});
 		},
 
 		/**
@@ -819,8 +864,10 @@
 			const endIndex = Math.min(startIndex + this.questionsPerPage, this.totalQuestions);
 
 			// Show questions for this page
+			const shownIndices = [];
 			for (let i = startIndex; i < endIndex; i++) {
 				$('.ppq-question[data-question-index="' + i + '"]').fadeIn(200);
+				shownIndices.push(i);
 			}
 
 			// Update current page and question index (use first question on page)
@@ -846,6 +893,12 @@
 
 			// Move focus to the first question on page for keyboard users
 			$('.ppq-question[data-question-index="' + startIndex + '"]').attr('tabindex', '-1').focus();
+
+			this.dispatchQuizEvent('pressprimer-quiz-question-shown', {
+				questionIndex: startIndex,
+				questionIndices: shownIndices,
+				page: pageIndex
+			});
 		},
 
 		/**
@@ -875,14 +928,31 @@
 		 * Navigate to next question/page
 		 */
 		nextQuestion: function() {
+			const hasNext = this.pageMode === 'paged'
+				? this.currentPage < this.totalPages - 1
+				: this.currentQuestionIndex < this.totalQuestions - 1;
+
+			if (!hasNext) {
+				return;
+			}
+
+			// Let addons take over forward navigation, for example Enterprise
+			// branching rules that jump ahead or end the quiz. A listener that
+			// cancels this event moves the quiz on itself, usually by
+			// dispatching pressprimer-quiz-go-to-question.
+			const proceed = this.dispatchQuizEvent('pressprimer-quiz-before-next', {
+				questionIndex: this.currentQuestionIndex,
+				page: this.currentPage
+			}, true);
+
+			if (!proceed) {
+				return;
+			}
+
 			if (this.pageMode === 'paged') {
-				if (this.currentPage < this.totalPages - 1) {
-					this.showPage(this.currentPage + 1);
-				}
+				this.showPage(this.currentPage + 1);
 			} else {
-				if (this.currentQuestionIndex < this.totalQuestions - 1) {
-					this.showSingleQuestion(this.currentQuestionIndex + 1);
-				}
+				this.showSingleQuestion(this.currentQuestionIndex + 1);
 			}
 		},
 
@@ -1194,18 +1264,27 @@
 			this.isCheckingAnswer = true;
 			$button.prop('disabled', true).text(pressprimerQuiz.strings.checking || 'Checking...');
 
+			const requestData = {
+				action: 'pressprimer_quiz_check_answer',
+				nonce: pressprimerQuiz.nonce,
+				attempt_id: this.attemptId,
+				item_id: itemId,
+				answers: selectedAnswers,
+				guest_token: this.guestToken
+			};
+
+			// Send the confidence rating as it is now, even if the autosave
+			// hasn't run yet: the check records it and locks it with the answer.
+			const $confidenceInputs = $question.find('.ppq-confidence-level-input');
+			if ($confidenceInputs.length) {
+				requestData.confidence = $confidenceInputs.filter(':checked').val() || '';
+			}
+
 			// Submit to server
 			$.ajax({
 				url: pressprimerQuiz.ajaxUrl,
 				type: 'POST',
-				data: {
-					action: 'pressprimer_quiz_check_answer',
-					nonce: pressprimerQuiz.nonce,
-					attempt_id: this.attemptId,
-					item_id: itemId,
-					answers: selectedAnswers,
-					guest_token: this.guestToken
-				},
+				data: requestData,
 				success: function(response) {
 					self.isCheckingAnswer = false;
 
@@ -1240,8 +1319,8 @@
 			// Hide Check button
 			$question.find('.ppq-check-answer-container').hide();
 
-			// Disable answer inputs
-			$question.find('.ppq-answer-input').prop('disabled', true);
+			// Disable answer inputs and the confidence rating (the check locks both)
+			$question.find('.ppq-answer-input, .ppq-confidence-level-input').prop('disabled', true);
 			$question.addClass('ppq-feedback-shown');
 
 			// Show correct/incorrect styling on answers
@@ -1997,12 +2076,15 @@
 		getUnansweredQuestions: function() {
 			const unanswered = [];
 
-			$('.ppq-question').each(function(index) {
+			// Use each question's own index: addons can remove questions from
+			// this set (Enterprise drops the ones branching skipped), so the
+			// position in the set may not match the question index.
+			$('.ppq-question').each(function() {
 				const $question = $(this);
 				const hasAnswer = $question.find('.ppq-answer-input:checked').length > 0;
 
 				if (!hasAnswer) {
-					unanswered.push(index);
+					unanswered.push(parseInt($question.data('question-index'), 10));
 				}
 			});
 
@@ -2053,7 +2135,7 @@
 			// Bind events
 			$overlay.find('.ppq-go-to-first').on('click', function() {
 				$overlay.remove();
-				self.showQuestion(unanswered[0]);
+				self.goToQuestion(unanswered[0]);
 			});
 
 			$overlay.find('.ppq-submit-anyway').on('click', function() {

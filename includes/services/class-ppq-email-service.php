@@ -340,7 +340,7 @@ class PressPrimer_Quiz_Email_Service {
 		// Get counts
 		$correct_count = 0;
 		$total_count   = 0;
-		$items         = $attempt->get_items();
+		$items         = $attempt->get_result_items();
 		foreach ( $items as $item ) {
 			++$total_count;
 			if ( $item->is_correct ) {
@@ -467,7 +467,7 @@ class PressPrimer_Quiz_Email_Service {
 		// Get counts
 		$correct_count = 0;
 		$total_count   = 0;
-		$items         = $attempt->get_items();
+		$items         = $attempt->get_result_items();
 		foreach ( $items as $item ) {
 			++$total_count;
 			if ( $item->is_correct ) {
@@ -556,7 +556,7 @@ class PressPrimer_Quiz_Email_Service {
 			return '';
 		}
 
-		$items = $attempt->get_items();
+		$items = $attempt->get_result_items();
 		if ( empty( $items ) ) {
 			return '';
 		}

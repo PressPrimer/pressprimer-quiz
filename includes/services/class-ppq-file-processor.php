@@ -216,7 +216,8 @@ class PressPrimer_Quiz_File_Processor {
 
 		$finfo         = finfo_open( FILEINFO_MIME_TYPE );
 		$detected_type = finfo_file( $finfo, $file_path );
-		finfo_close( $finfo );
+		// Frees the handle on PHP 7.4; finfo_close() is deprecated since PHP 8.5.
+		unset( $finfo );
 
 		if ( false === $detected_type ) {
 			return new WP_Error(
@@ -256,7 +257,8 @@ class PressPrimer_Quiz_File_Processor {
 			// Fallback to finfo
 			$finfo     = finfo_open( FILEINFO_MIME_TYPE );
 			$mime_type = finfo_file( $finfo, $file_path );
-			finfo_close( $finfo );
+			// Frees the handle on PHP 7.4; finfo_close() is deprecated since PHP 8.5.
+			unset( $finfo );
 		} elseif ( function_exists( 'mime_content_type' ) ) {
 			// Fallback to mime_content_type
 			$mime_type = mime_content_type( $file_path );
@@ -1228,7 +1230,8 @@ class PressPrimer_Quiz_File_Processor {
 		if ( function_exists( 'finfo_open' ) ) {
 			$finfo     = finfo_open( FILEINFO_MIME_TYPE );
 			$mime_type = finfo_file( $finfo, $file_path );
-			finfo_close( $finfo );
+			// Frees the handle on PHP 7.4; finfo_close() is deprecated since PHP 8.5.
+			unset( $finfo );
 		} elseif ( function_exists( 'mime_content_type' ) ) {
 			$mime_type = mime_content_type( $file_path );
 		}

@@ -88,7 +88,7 @@ class PressPrimer_Quiz_LearnDash {
 		// Frontend hooks
 		add_filter( 'the_content', [ $this, 'maybe_display_quiz' ], 20 );
 		add_filter( 'learndash_content_tabs', [ $this, 'maybe_add_course_quiz_tab' ], 10, 4 );
-		add_filter( 'learndash_mark_complete_button', [ $this, 'maybe_hide_mark_complete' ], 10, 2 );
+		add_filter( 'learndash_mark_complete', [ $this, 'maybe_hide_mark_complete' ], 10, 2 );
 
 		// Completion tracking
 		add_action( 'pressprimer_quiz_quiz_passed', [ $this, 'handle_quiz_passed' ], 10, 2 );
@@ -780,18 +780,25 @@ class PressPrimer_Quiz_LearnDash {
 	/**
 	 * Maybe hide Mark Complete button
 	 *
-	 * @since 1.0.0
+	 * Hides the LearnDash Mark Complete button while a quiz is attached and the
+	 * user hasn't passed it. Every LearnDash layout (the modern design, Focus
+	 * Mode and the classic templates) builds the button through
+	 * learndash_mark_complete(); the modern design shows its own disabled
+	 * button when the HTML comes back empty.
 	 *
-	 * @param string $button Button HTML.
-	 * @param array  $args   Button arguments.
+	 * @since 1.0.0
+	 * @since 3.1.5 Hooked to learndash_mark_complete, which receives the post.
+	 *
+	 * @param string      $button Mark Complete form HTML.
+	 * @param WP_Post|int $post   Lesson or topic being displayed.
 	 * @return string Modified button HTML.
 	 */
-	public function maybe_hide_mark_complete( $button, $args ) {
-		if ( empty( $args['post'] ) ) {
+	public function maybe_hide_mark_complete( $button, $post ) {
+		if ( empty( $post ) ) {
 			return $button;
 		}
 
-		$post_id   = is_object( $args['post'] ) ? $args['post']->ID : $args['post'];
+		$post_id   = is_object( $post ) ? $post->ID : absint( $post );
 		$post_type = get_post_type( $post_id );
 
 		// Only hide for lessons and topics

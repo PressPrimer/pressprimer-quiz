@@ -293,6 +293,13 @@ class PressPrimer_Quiz_Migrator {
 					$quiz_items => array(),
 				),
 			),
+			// 3.2.0 chain: data-only steps, appended in this order as they land.
+			// PRESSPRIMER_QUIZ_DB_VERSION moves to each step's version when it is
+			// added (the constant tracks the LAST chain step), so it stays 3.1.2
+			// until the first one exists. Planned: '3.2.0' rule-scope disclosure
+			// scan (PHASES Prompt 2.2); '3.2.0.1' publish existing draft questions
+			// (Prompt 2.5); '3.2.0.2' delete the unread activation and
+			// deactivation time options (Prompt 10.1).
 		);
 	}
 

@@ -21,9 +21,6 @@ node_modules/
 *.sublime-workspace
 .DS_Store
 
-# Composer
-composer.lock
-
 # Build files
 /build/
 /dist/

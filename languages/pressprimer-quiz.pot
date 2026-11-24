@@ -2,14 +2,14 @@
 # This file is distributed under the GPL v2 or later.
 msgid ""
 msgstr ""
-"Project-Id-Version: PressPrimer Quiz 3.1.4\n"
+"Project-Id-Version: PressPrimer Quiz 3.1.5\n"
 "Report-Msgid-Bugs-To: https://wordpress.org/support/plugin/pressprimer-quiz\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"POT-Creation-Date: 2026-11-23T17:43:46+00:00\n"
+"POT-Creation-Date: 2026-11-24T15:38:30+00:00\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "X-Generator: WP-CLI 2.12.0\n"
 "X-Domain: pressprimer-quiz\n"
@@ -22,7 +22,7 @@ msgstr ""
 #: includes/integrations/class-ppq-learndash.php:139
 #: includes/integrations/class-ppq-learndash.php:607
 #: includes/integrations/class-ppq-learnpress.php:142
-#: includes/integrations/class-ppq-lifterlms.php:113
+#: includes/integrations/class-ppq-lifterlms.php:115
 #: includes/integrations/class-ppq-tutorlms.php:149
 #: includes/integrations/class-ppq-tutorlms.php:528
 #: includes/utilities/class-ppq-privacy.php:130
@@ -385,7 +385,7 @@ msgstr ""
 #: includes/frontend/class-ppq-ajax-handler.php:385
 #: includes/frontend/class-ppq-ajax-handler.php:458
 #: includes/frontend/class-ppq-ajax-handler.php:748
-#: includes/integrations/class-ppq-learndash.php:1327
+#: includes/integrations/class-ppq-learndash.php:1334
 #: includes/integrations/class-ppq-learnpress.php:415
 #: includes/integrations/class-ppq-tutorlms.php:651
 msgid "Security check failed."
@@ -403,10 +403,10 @@ msgstr ""
 #: includes/admin/class-ppq-review-notice.php:304
 #: includes/admin/class-ppq-review-notice.php:323
 #: includes/database/class-ppq-migrator.php:1302
-#: includes/integrations/class-ppq-learndash.php:1332
+#: includes/integrations/class-ppq-learndash.php:1339
 #: includes/integrations/class-ppq-learnpress.php:420
-#: includes/integrations/class-ppq-lifterlms.php:1147
-#: includes/integrations/class-ppq-lifterlms.php:1200
+#: includes/integrations/class-ppq-lifterlms.php:1143
+#: includes/integrations/class-ppq-lifterlms.php:1196
 #: includes/integrations/class-ppq-tutorlms.php:656
 #: includes/integrations/class-ppq-tutorlms.php:1547
 msgid "Permission denied."
@@ -1275,7 +1275,7 @@ msgstr ""
 #: includes/frontend/class-ppq-results-renderer.php:122
 #: includes/frontend/class-ppq-results-renderer.php:1018
 #: includes/frontend/class-ppq-shortcodes.php:207
-#: includes/integrations/class-ppq-lifterlms.php:1162
+#: includes/integrations/class-ppq-lifterlms.php:1158
 #: includes/integrations/class-ppq-tutorlms.php:1561
 #: includes/models/class-ppq-attempt.php:328
 #: includes/models/class-ppq-attempt.php:554
@@ -3967,14 +3967,14 @@ msgid "Retake"
 msgstr ""
 
 #: includes/integrations/class-ppq-learndash.php:172
-#: includes/integrations/class-ppq-lifterlms.php:144
+#: includes/integrations/class-ppq-lifterlms.php:146
 #: includes/integrations/class-ppq-tutorlms.php:181
 msgid "Select Quiz:"
 msgstr ""
 
 #: includes/integrations/class-ppq-learndash.php:180
 #: includes/integrations/class-ppq-learnpress.php:154
-#: includes/integrations/class-ppq-lifterlms.php:152
+#: includes/integrations/class-ppq-lifterlms.php:154
 #: includes/integrations/class-ppq-tutorlms.php:189
 #: includes/integrations/class-ppq-tutorlms.php:530
 #: assets/js/learndash-editor.js:135
@@ -3986,8 +3986,8 @@ msgstr ""
 #: includes/integrations/class-ppq-learndash.php:257
 #: includes/integrations/class-ppq-learnpress.php:168
 #: includes/integrations/class-ppq-learnpress.php:304
-#: includes/integrations/class-ppq-lifterlms.php:165
-#: includes/integrations/class-ppq-lifterlms.php:215
+#: includes/integrations/class-ppq-lifterlms.php:167
+#: includes/integrations/class-ppq-lifterlms.php:217
 #: includes/integrations/class-ppq-tutorlms.php:202
 #: includes/integrations/class-ppq-tutorlms.php:257
 #: assets/js/learndash-editor.js:123
@@ -4016,7 +4016,7 @@ msgstr ""
 #: includes/integrations/class-ppq-learndash.php:256
 #: includes/integrations/class-ppq-learnpress.php:248
 #: includes/integrations/class-ppq-learnpress.php:284
-#: includes/integrations/class-ppq-lifterlms.php:214
+#: includes/integrations/class-ppq-lifterlms.php:216
 #: includes/integrations/class-ppq-tutorlms.php:256
 #: includes/integrations/class-ppq-tutorlms.php:584
 #: assets/js/learndash-editor.js:155
@@ -4072,27 +4072,27 @@ msgstr ""
 msgid "Require quiz pass to complete lesson"
 msgstr ""
 
-#: includes/integrations/class-ppq-lifterlms.php:174
+#: includes/integrations/class-ppq-lifterlms.php:176
 #: includes/integrations/class-ppq-tutorlms.php:216
 #: includes/integrations/class-ppq-tutorlms.php:532
 #: assets/js/tutorlms-editor.js:194
 msgid "Require passing score to complete lesson"
 msgstr ""
 
-#: includes/integrations/class-ppq-lifterlms.php:178
+#: includes/integrations/class-ppq-lifterlms.php:180
 #: includes/integrations/class-ppq-tutorlms.php:220
 #: includes/integrations/class-ppq-tutorlms.php:533
 #: assets/js/tutorlms-editor.js:200
 msgid "When enabled, students must pass this quiz to mark the lesson complete."
 msgstr ""
 
-#: includes/integrations/class-ppq-lifterlms.php:602
-#: includes/integrations/class-ppq-lifterlms.php:684
+#: includes/integrations/class-ppq-lifterlms.php:604
+#: includes/integrations/class-ppq-lifterlms.php:686
 #: includes/integrations/class-ppq-tutorlms.php:767
 msgid "Enroll in this course to access the quiz."
 msgstr ""
 
-#: includes/integrations/class-ppq-lifterlms.php:1136
+#: includes/integrations/class-ppq-lifterlms.php:1132
 #: includes/integrations/class-ppq-tutorlms.php:1528
 msgid "Invalid lesson."
 msgstr ""

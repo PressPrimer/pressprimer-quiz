@@ -87,6 +87,7 @@ class PressPrimer_Quiz_LearnDash {
 
 		// Frontend hooks
 		add_filter( 'the_content', [ $this, 'maybe_display_quiz' ], 20 );
+		add_filter( 'the_content', [ $this, 'maybe_display_legacy_course_quiz' ], 20 );
 		add_filter( 'learndash_template_after_include_html', [ $this, 'append_quiz_to_modern_tabs' ], 10, 3 );
 		add_filter( 'learndash_content_tabs', [ $this, 'maybe_add_course_quiz_tab' ], 10, 4 );
 		add_filter( 'learndash_mark_complete', [ $this, 'maybe_hide_mark_complete' ], 10, 2 );
@@ -803,6 +804,56 @@ class PressPrimer_Quiz_LearnDash {
 		unset( $tab );
 
 		return $tabs;
+	}
+
+	/**
+	 * Add the course quiz to course pages using LearnDash's Legacy theme.
+	 *
+	 * The Legacy course template shows the filtered post content and has no
+	 * content tabs, so learndash_content_tabs (maybe_add_course_quiz_tab())
+	 * never runs there.
+	 *
+	 * @since 3.1.6
+	 *
+	 * @param string $content Post content.
+	 * @return string Modified content.
+	 */
+	public function maybe_display_legacy_course_quiz( $content ) {
+		if ( ! is_singular( 'sfwd-courses' ) || ! $this->is_legacy_learndash_theme() ) {
+			return $content;
+		}
+
+		// Excerpt-building and <head>/footer passes aren't the page body.
+		if ( PressPrimer_Quiz_Helpers::is_non_body_content_pass() ) {
+			return $content;
+		}
+
+		if ( $this->quiz_rendered ) {
+			return $content;
+		}
+
+		$course_id = get_the_ID();
+		$quiz_id   = get_post_meta( $course_id, self::META_KEY_QUIZ_ID, true );
+
+		if ( ! $quiz_id ) {
+			return $content;
+		}
+
+		$this->quiz_rendered = true;
+
+		return $content . $this->get_course_quiz_content( $course_id, $quiz_id );
+	}
+
+	/**
+	 * Check whether LearnDash's Legacy theme is active
+	 *
+	 * @since 3.1.6
+	 *
+	 * @return bool True when the Legacy templates render LearnDash pages.
+	 */
+	private function is_legacy_learndash_theme() {
+		return class_exists( 'LearnDash_Theme_Register' )
+			&& 'legacy' === LearnDash_Theme_Register::get_active_theme_key();
 	}
 
 	/**

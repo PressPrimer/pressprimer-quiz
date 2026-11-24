@@ -190,6 +190,7 @@ class PressPrimer_Quiz_Migrator {
 		$templates     = $wpdb->prefix . 'ppq_quiz_templates';
 		$assignments   = $wpdb->prefix . 'ppq_assignments';
 		$quiz_items    = $wpdb->prefix . 'ppq_quiz_items';
+		$quiz_rules    = $wpdb->prefix . 'ppq_quiz_rules';
 
 		return array(
 			array(
@@ -295,11 +296,20 @@ class PressPrimer_Quiz_Migrator {
 			),
 			// 3.2.0 chain: data-only steps, appended in this order as they land.
 			// PRESSPRIMER_QUIZ_DB_VERSION moves to each step's version when it is
-			// added (the constant tracks the LAST chain step), so it stays 3.1.2
-			// until the first one exists. Planned: '3.2.0' rule-scope disclosure
-			// scan (PHASES Prompt 2.2); '3.2.0.1' publish existing draft questions
-			// (Prompt 2.5); '3.2.0.2' delete the unread activation and
-			// deactivation time options (Prompt 10.1).
+			// added (the constant tracks the LAST chain step). Still planned:
+			// '3.2.0.1' publish existing draft questions (PHASES Prompt 2.5);
+			// '3.2.0.2' delete the unread activation and deactivation time
+			// options (Prompt 10.1).
+			array(
+				'version'  => '3.2.0',
+				'callback' => array( __CLASS__, 'migrate_to_3_2_0' ),
+				// Data-only (no schema targets): queues the one-time scan for
+				// quizzes whose rules draw fewer questions under 3.2's owner
+				// scoping. Idempotent (it only queues when nothing is stored).
+				'targets'  => array(
+					$quiz_rules => array(),
+				),
+			),
 		);
 	}
 
@@ -1053,6 +1063,23 @@ class PressPrimer_Quiz_Migrator {
 			)
 		);
 		// phpcs:enable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+	}
+
+	/**
+	 * Migration step 3.2.0: queue the rule-scope disclosure scan.
+	 *
+	 * From 3.2, rules on a quiz whose owner lacks pressprimer_quiz_manage_all
+	 * draw only from questions the owner may use (feature 001 FR-004). The
+	 * scan that lists the quizzes whose draws narrowed can't run here:
+	 * migrations run at init priority 0, before addons register the shared-bank
+	 * filter, so it would count shared questions as lost. This step only
+	 * queues it; the rule-scope notice runs it on the first PressPrimer screen
+	 * a manage_all user opens. Data-only and idempotent.
+	 *
+	 * @since 3.2.0
+	 */
+	public static function migrate_to_3_2_0() {
+		PressPrimer_Quiz_Rule_Scope_Notice::queue_scan();
 	}
 
 	/**

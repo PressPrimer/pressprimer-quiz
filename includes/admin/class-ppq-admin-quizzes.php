@@ -695,6 +695,23 @@ class PressPrimer_Quiz_Admin_Quizzes {
 		// an add-on is active (admins-only upsells).
 		$quiz_data['isAdmin'] = current_user_can( 'manage_options' );
 
+		// Whose questions the quiz's rules draw from, for the Rules tab copy:
+		// 'all' when the owner has manage_all, 'own' when the owner is the
+		// current user, 'owner' when someone else (an admin) edits it. A new
+		// quiz belongs to the current user.
+		$rule_owner_id = get_current_user_id();
+		if ( $quiz_id > 0 && ! empty( $quiz ) ) {
+			$rule_owner_id = absint( $quiz->owner_id );
+		}
+
+		if ( $rule_owner_id && user_can( $rule_owner_id, 'pressprimer_quiz_manage_all' ) ) {
+			$quiz_data['ruleScope'] = 'all';
+		} elseif ( get_current_user_id() === $rule_owner_id ) {
+			$quiz_data['ruleScope'] = 'own';
+		} else {
+			$quiz_data['ruleScope'] = 'owner';
+		}
+
 		// Multiple-answer scoring copy (labels, descriptions, worked examples) for
 		// the builder's scoring cards. Sourced from the shared copy provider so the
 		// builder and the results renderer cannot drift (feature 005, TR-003).

@@ -477,7 +477,7 @@ const QuizEditor = ({ quizData = {} }) => {
 			label: generationMode === 'fixed' ? __('Questions', 'pressprimer-quiz') : __('Rules', 'pressprimer-quiz'),
 			children: generationMode === 'fixed'
 				? <QuestionsPanel quizId={currentQuizId} generationMode={generationMode} />
-				: <RulesPanel quizId={currentQuizId} generationMode={generationMode} />,
+				: <RulesPanel quizId={currentQuizId} generationMode={generationMode} ruleScope={quizData.ruleScope} />,
 		},
 		showBranchingTab && {
 			key: 'branching',

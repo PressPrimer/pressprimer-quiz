@@ -81,6 +81,14 @@ class PressPrimer_Quiz_Quiz_Rule extends PressPrimer_Quiz_Model {
 	public $question_count = 10;
 
 	/**
+	 * Owner of the rule's quiz, loaded on first use.
+	 *
+	 * @since 3.2.0
+	 * @var int|null
+	 */
+	private $quiz_owner_id = null;
+
+	/**
 	 * Get table name
 	 *
 	 * @since 1.0.0
@@ -381,11 +389,72 @@ class PressPrimer_Quiz_Quiz_Rule extends PressPrimer_Quiz_Model {
 	 * Finds all questions that match this rule's criteria.
 	 * Returns question IDs that can be randomly selected for quiz generation.
 	 *
+	 * When the quiz's owner lacks pressprimer_quiz_manage_all, only questions
+	 * the owner may use match, for every rule of the quiz. The owner is judged,
+	 * never the student taking the quiz.
+	 *
 	 * @since 1.0.0
+	 * @since 3.2.0 Limited to questions the quiz owner may use.
 	 *
 	 * @return array Array of question IDs.
 	 */
 	public function get_matching_questions() {
+		return $this->query_matching_questions( $this->get_owner_scope_clause() );
+	}
+
+	/**
+	 * Check whether owner scoping removes questions this rule matched before 3.2.
+	 *
+	 * Used once after the 3.2 update to list the quizzes whose draws narrowed.
+	 *
+	 * @since 3.2.0
+	 *
+	 * @return bool True when the rule matches fewer questions with the scoping.
+	 */
+	public function is_narrowed_by_owner_scope() {
+		$scope_clause = $this->get_owner_scope_clause();
+
+		if ( '' === $scope_clause ) {
+			return false;
+		}
+
+		return count( $this->query_matching_questions( $scope_clause ) ) < count( $this->query_matching_questions( '' ) );
+	}
+
+	/**
+	 * Build the condition limiting matches to questions the quiz owner may use.
+	 *
+	 * @since 3.2.0
+	 *
+	 * @return string Prepared SQL fragment, or '' when the owner may use every question.
+	 */
+	private function get_owner_scope_clause() {
+		global $wpdb;
+
+		if ( null === $this->quiz_owner_id ) {
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- One row by primary key, kept on the instance.
+			$owner_id = $wpdb->get_var(
+				$wpdb->prepare(
+					"SELECT owner_id FROM {$wpdb->prefix}ppq_quizzes WHERE id = %d", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Table name from $wpdb->prefix.
+					$this->quiz_id
+				)
+			);
+
+			$this->quiz_owner_id = absint( $owner_id );
+		}
+
+		return PressPrimer_Quiz_Question_Access_Service::usable_questions_clause( $this->quiz_owner_id );
+	}
+
+	/**
+	 * Find the questions matching this rule's criteria within a scope.
+	 *
+	 * @since 3.2.0
+	 *
+	 * @param string $scope_clause Prepared SQL fragment on the `q` alias, or '' for no scope.
+	 * @return int[] Question IDs.
+	 */
+	private function query_matching_questions( $scope_clause ) {
 		global $wpdb;
 
 		$questions_table      = $wpdb->prefix . 'ppq_questions';
@@ -444,6 +513,11 @@ class PressPrimer_Quiz_Quiz_Rule extends PressPrimer_Quiz_Model {
 		// Prepare query if we have values
 		if ( ! empty( $where_values ) ) {
 			$query = $wpdb->prepare( $query, $where_values ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
+		}
+
+		// The scope arrives prepared, so it joins after prepare().
+		if ( '' !== $scope_clause ) {
+			$query .= " AND {$scope_clause}";
 		}
 
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Dynamic rule-based question matching
@@ -516,6 +590,7 @@ class PressPrimer_Quiz_Quiz_Rule extends PressPrimer_Quiz_Model {
 	 * Useful for UI to show how many questions are available.
 	 *
 	 * @since 1.0.0
+	 * @since 3.2.0 Limited to questions the quiz owner may use.
 	 *
 	 * @return int Count of matching questions.
 	 */

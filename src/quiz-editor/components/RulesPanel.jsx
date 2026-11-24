@@ -35,13 +35,44 @@ import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
 const { Text, Title } = Typography;
 
 /**
+ * Copy for a rule with no bank, by whose questions the quiz draws from.
+ * Rules on a quiz whose owner isn't an admin draw only the owner's usable
+ * questions (v3.2).
+ *
+ * @param {string} ruleScope 'all', 'own' or 'owner'.
+ * @return {{label: string, tooltip: string}} Label and tooltip.
+ */
+const getAnyBankCopy = (ruleScope) => {
+	if (ruleScope === 'all') {
+		return {
+			label: __('All questions', 'pressprimer-quiz'),
+			tooltip: __('Select a specific question bank, or leave empty to draw from all questions', 'pressprimer-quiz'),
+		};
+	}
+
+	if (ruleScope === 'owner') {
+		return {
+			label: __('All questions the quiz owner can use', 'pressprimer-quiz'),
+			tooltip: __('Select a specific question bank, or leave empty to draw from all questions the quiz owner can use: their own, and those in banks they own or that are shared with them', 'pressprimer-quiz'),
+		};
+	}
+
+	return {
+		label: __('All questions I can use', 'pressprimer-quiz'),
+		tooltip: __('Select a specific question bank, or leave empty to draw from all questions you can use: your own, and those in banks you own or that are shared with you', 'pressprimer-quiz'),
+	};
+};
+
+/**
  * Rules Panel Component (Dynamic Quiz Mode)
  *
  * @param {Object} props Component props
  * @param {number} props.quizId Quiz ID
  * @param {string} props.generationMode Generation mode
+ * @param {string} props.ruleScope Whose questions rules draw from: 'all', 'own' or 'owner'
  */
-const RulesPanel = ({ quizId, generationMode }) => {
+const RulesPanel = ({ quizId, generationMode, ruleScope = 'own' }) => {
+	const anyBankCopy = getAnyBankCopy(ruleScope);
 	const [rules, setRules] = useState([]);
 	const [loading, setLoading] = useState(false);
 	const [banks, setBanks] = useState([]);
@@ -276,7 +307,7 @@ const RulesPanel = ({ quizId, generationMode }) => {
 	 * Render rule card
 	 */
 	const renderRuleCard = (rule, index) => {
-		const selectedBank = banks.find(b => Number(b.id) === rule.bank_id);
+		const selectedBank = banks.find(b => Number(b.id) === Number(rule.bank_id));
 		const selectedCategories = categories.filter(c => rule.category_ids.includes(Number(c.id)));
 		const selectedTags = tags.filter(t => rule.tag_ids.includes(Number(t.id)));
 
@@ -313,7 +344,7 @@ const RulesPanel = ({ quizId, generationMode }) => {
 							<div>
 								<Space>
 									<Text strong style={{ fontSize: 12 }}>{__('Source Bank', 'pressprimer-quiz')}</Text>
-									<Tooltip title={__('Select a specific question bank, or leave empty to search all banks', 'pressprimer-quiz')}>
+									<Tooltip title={anyBankCopy.tooltip}>
 										<QuestionCircleOutlined style={{ fontSize: 12, color: '#8c8c8c' }} />
 									</Tooltip>
 								</Space>
@@ -330,7 +361,8 @@ const RulesPanel = ({ quizId, generationMode }) => {
 									}))}
 								/>
 								<Text type="secondary" style={{ fontSize: 10, display: 'block', marginTop: 4 }}>
-									{selectedBank ? selectedBank.name : __('Search all banks', 'pressprimer-quiz')}
+									{selectedBank && selectedBank.name}
+									{!rule.bank_id && anyBankCopy.label}
 								</Text>
 							</div>
 

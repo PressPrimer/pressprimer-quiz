@@ -158,6 +158,12 @@ class PressPrimer_Quiz_Plugin {
 			PressPrimer_Quiz_Schema_Verifier::init();
 		}
 
+		// One-time v3.2 notice listing quizzes whose rules now draw fewer
+		// questions (rules on teacher-owned quizzes use the owner's questions).
+		if ( class_exists( 'PressPrimer_Quiz_Rule_Scope_Notice' ) ) {
+			PressPrimer_Quiz_Rule_Scope_Notice::init();
+		}
+
 		// Initialize onboarding
 		if ( class_exists( 'PressPrimer_Quiz_Onboarding' ) ) {
 			PressPrimer_Quiz_Onboarding::get_instance();

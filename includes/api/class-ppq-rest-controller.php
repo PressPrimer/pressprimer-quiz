@@ -748,6 +748,33 @@ class PressPrimer_Quiz_REST_Controller {
 	}
 
 	/**
+	 * Check that the current user may draw a rule's questions from a bank.
+	 *
+	 * The bank must be one the user may use: owned or shared with them, or any
+	 * bank for pressprimer_quiz_manage_all users. Missing and deleted banks are
+	 * refused. A null bank ("any bank") is allowed; matching limits it to the
+	 * quiz owner's usable questions when the quiz runs.
+	 *
+	 * @since 3.2.0
+	 *
+	 * @param int|null $bank_id Bank ID, or null for any bank.
+	 * @return true|WP_Error True when allowed, 403 bank_not_allowed otherwise.
+	 */
+	private function check_rule_bank( $bank_id ) {
+		if ( empty( $bank_id ) ) {
+			return true;
+		}
+
+		$usable_bank_ids = PressPrimer_Quiz_Question_Access_Service::get_usable_bank_ids( get_current_user_id() );
+
+		if ( in_array( absint( $bank_id ), $usable_bank_ids, true ) ) {
+			return true;
+		}
+
+		return new WP_Error( 'bank_not_allowed', __( 'You can\'t draw questions from this bank.', 'pressprimer-quiz' ), [ 'status' => 403 ] );
+	}
+
+	/**
 	 * Shape a bank for a REST response.
 	 *
 	 * @since 3.2.0
@@ -3161,10 +3188,17 @@ class PressPrimer_Quiz_REST_Controller {
 			return $quiz;
 		}
 
+		$bank_id = ! empty( $data['bank_id'] ) ? absint( $data['bank_id'] ) : null;
+
+		$bank_check = $this->check_rule_bank( $bank_id );
+		if ( is_wp_error( $bank_check ) ) {
+			return $bank_check;
+		}
+
 		$rule_id = PressPrimer_Quiz_Quiz_Rule::create(
 			[
 				'quiz_id'        => $quiz_id,
-				'bank_id'        => ! empty( $data['bank_id'] ) ? absint( $data['bank_id'] ) : null,
+				'bank_id'        => $bank_id,
 				'category_ids'   => $data['category_ids'] ?? [],
 				'tag_ids'        => $data['tag_ids'] ?? [],
 				'difficulties'   => $data['difficulties'] ?? [],
@@ -3192,6 +3226,10 @@ class PressPrimer_Quiz_REST_Controller {
 		$rule_id = absint( $request['rule_id'] );
 		$data    = $request->get_json_params();
 
+		if ( ! is_array( $data ) ) {
+			$data = [];
+		}
+
 		$quiz = $this->get_owned_quiz_or_error( $quiz_id );
 		if ( is_wp_error( $quiz ) ) {
 			return $quiz;
@@ -3203,9 +3241,19 @@ class PressPrimer_Quiz_REST_Controller {
 			return new WP_Error( 'not_found', __( 'Quiz rule not found.', 'pressprimer-quiz' ), [ 'status' => 404 ] );
 		}
 
-		// Update fields
-		if ( isset( $data['bank_id'] ) ) {
-			$rule->bank_id = ! empty( $data['bank_id'] ) ? absint( $data['bank_id'] ) : null;
+		// Update fields. A null bank_id clears the bank ("any bank"); only a
+		// changed bank is checked, so a rule saved before 3.2 still saves.
+		if ( array_key_exists( 'bank_id', $data ) ) {
+			$bank_id = ! empty( $data['bank_id'] ) ? absint( $data['bank_id'] ) : null;
+
+			if ( absint( $bank_id ) !== absint( $rule->bank_id ) ) {
+				$bank_check = $this->check_rule_bank( $bank_id );
+				if ( is_wp_error( $bank_check ) ) {
+					return $bank_check;
+				}
+			}
+
+			$rule->bank_id = $bank_id;
 		}
 		if ( isset( $data['category_ids'] ) ) {
 			$rule->category_ids_json = wp_json_encode( array_map( 'absint', $data['category_ids'] ) );

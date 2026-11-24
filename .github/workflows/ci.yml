@@ -74,9 +74,9 @@ jobs:
         run: |
           vendor/bin/phpcs \
             --standard=PHPCompatibilityWP \
-            --runtime-set testVersion 7.4- \
+            --runtime-set testVersion 7.4-8.5 \
             --extensions=php \
-            --ignore=vendor/,node_modules/,build/,src/ \
+            --ignore=vendor/,node_modules/,build/,src/,dist/ \
             .
 
   syntax-check:
@@ -84,7 +84,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        php-version: ['7.4', '8.0', '8.1', '8.2', '8.3', '8.4']
+        php-version: ['7.4', '8.0', '8.1', '8.2', '8.3', '8.4', '8.5']
     
     steps:
       - name: Checkout code

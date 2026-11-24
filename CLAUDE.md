@@ -73,9 +73,9 @@ PHP=$(ls -d ~/Library/Application\ Support/Local/lightning-services/php-8.*/bin/
    "$PHP" ./vendor/bin/phpcs --standard=WordPress-Extra --sniffs=WordPress.Security.EscapeOutput,WordPress.Security.ValidatedSanitizedInput,WordPress.Security.NonceVerification,WordPress.DB.PreparedSQL --report=full path/to/file.php
    ```
 
-4. **PHP Compatibility (7.4 - 8.4)** - On new PHP files:
+4. **PHP Compatibility (7.4 - 8.5)** - On new PHP files:
    ```bash
-   "$PHP" ./vendor/bin/phpcs --standard=PHPCompatibilityWP --runtime-set testVersion 7.4-8.4 --extensions=php path/to/file.php
+   "$PHP" ./vendor/bin/phpcs --standard=PHPCompatibilityWP --runtime-set testVersion 7.4-8.5 --extensions=php path/to/file.php
    ```
 
 5. **JavaScript Lint** - If JavaScript was modified:
@@ -1241,8 +1241,8 @@ PHP=$(ls -d ~/Library/Application\ Support/Local/lightning-services/php-8.*/bin/
 # Security-specific checks
 "$PHP" ./vendor/bin/phpcs --standard=WordPress-Extra --sniffs=WordPress.Security.EscapeOutput,WordPress.Security.ValidatedSanitizedInput,WordPress.Security.NonceVerification,WordPress.DB.PreparedSQL --report=full path/to/file.php
 
-# PHP Compatibility (7.4 - 8.4)
-"$PHP" ./vendor/bin/phpcs --standard=PHPCompatibilityWP --runtime-set testVersion 7.4-8.4 --extensions=php path/to/file.php
+# PHP Compatibility (7.4 - 8.5)
+"$PHP" ./vendor/bin/phpcs --standard=PHPCompatibilityWP --runtime-set testVersion 7.4-8.5 --extensions=php path/to/file.php
 ```
 
 ---

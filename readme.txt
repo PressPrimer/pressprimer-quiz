@@ -256,6 +256,10 @@ This plugin also offers optional AI-powered question generation using the Anthro
 
 == Changelog ==
 
+= 3.1.5 =
+* Fixed: On LearnDash lessons and topics with a quiz attached, the Mark Complete button now stays hidden until the student passes the quiz in LearnDash's modern design and in Focus Mode. Before, a button showed that did nothing when clicked.
+* Fixed: LifterLMS lessons that require a passing quiz score can no longer be marked complete without one.
+
 = 3.1.4 =
 * Fixed: Confidence ratings can no longer be lost when a student changes an answer or clicks Check Answer.
 * Fixed: The Question Review on the results page now shows each confidence rating as Low, Medium, or High, instead of "Confident" or "Not Confident."
@@ -455,6 +459,9 @@ This plugin also offers optional AI-powered question generation using the Anthro
 * Full internationalization support
 
 == Upgrade Notice ==
+
+= 3.1.5 =
+Fixes lesson completion for quizzes on LearnDash and LifterLMS lessons. Recommended for sites using either.
 
 = 3.1.4 =
 Tightens which questions teachers can add to their quizzes, and fixes confidence ratings and quiz navigation. Recommended for all sites.

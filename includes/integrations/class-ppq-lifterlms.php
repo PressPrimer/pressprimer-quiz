@@ -82,11 +82,13 @@ class PressPrimer_Quiz_LifterLMS {
 		// Uses the_content filter to append quiz after lesson content.
 		add_filter( 'the_content', [ $this, 'append_quiz_to_content' ], 20 );
 
-		// Check if lesson is complete (requires quiz pass).
-		add_filter( 'llms_is_complete', [ $this, 'check_ppq_quiz_complete' ], 10, 4 );
-
 		// Hide LifterLMS Mark Complete button when quiz pass is required.
 		add_filter( 'llms_show_mark_complete_button', [ $this, 'maybe_hide_complete_button' ], 10, 2 );
+
+		// Refuse the Mark Complete form until the quiz is passed. This is the
+		// gate LifterLMS checks before a student completes a lesson; Quiz's own
+		// completion on pass (handle_quiz_passed) doesn't go through it.
+		add_filter( 'llms_allow_lesson_completion', [ $this, 'maybe_prevent_lesson_completion' ], 10, 5 );
 
 		// Completion tracking.
 		add_action( 'pressprimer_quiz_quiz_passed', [ $this, 'handle_quiz_passed' ], 10, 2 );
@@ -712,36 +714,30 @@ class PressPrimer_Quiz_LifterLMS {
 	}
 
 	/**
-	 * Check if PPQ quiz completion should affect lesson completion
+	 * Refuse lesson completion while a required quiz isn't passed
 	 *
-	 * @since 1.0.0
+	 * @since 3.1.5
 	 *
-	 * @param bool   $is_complete Whether the item is complete.
-	 * @param int    $user_id     User ID.
-	 * @param int    $object_id   Object ID (lesson ID).
-	 * @param string $type        Type of completion check.
-	 * @return bool Modified completion status.
+	 * @param bool   $allow     Whether LifterLMS may complete the lesson.
+	 * @param int    $user_id   User ID.
+	 * @param int    $lesson_id Lesson ID.
+	 * @param string $trigger   Completion trigger.
+	 * @param array  $args      Trigger arguments.
+	 * @return bool False while the required quiz isn't passed.
 	 */
-	public function check_ppq_quiz_complete( $is_complete, $user_id, $object_id, $type ) {
-		if ( 'lesson' !== $type ) {
-			return $is_complete;
+	public function maybe_prevent_lesson_completion( $allow, $user_id, $lesson_id, $trigger = '', $args = [] ) {
+		if ( ! $allow ) {
+			return $allow;
 		}
 
-		$quiz_id      = get_post_meta( $object_id, self::META_KEY_QUIZ_ID, true );
-		$require_pass = get_post_meta( $object_id, self::META_KEY_REQUIRE_PASS, true );
+		$quiz_id      = get_post_meta( $lesson_id, self::META_KEY_QUIZ_ID, true );
+		$require_pass = get_post_meta( $lesson_id, self::META_KEY_REQUIRE_PASS, true );
 
-		// If no quiz attached or pass not required, use default.
 		if ( ! $quiz_id || '1' !== $require_pass ) {
-			return $is_complete;
+			return $allow;
 		}
 
-		// Check if user has passed the PPQ quiz.
-		if ( class_exists( 'PressPrimer_Quiz_Attempt' ) ) {
-			$passed = PressPrimer_Quiz_Attempt::user_has_passed( $quiz_id, $user_id );
-			return $passed ? $is_complete : false;
-		}
-
-		return $is_complete;
+		return $this->user_has_passed_quiz( (int) $quiz_id, (int) $user_id ) ? $allow : false;
 	}
 
 	/**

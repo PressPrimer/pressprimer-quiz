@@ -398,6 +398,8 @@ class PressPrimer_Quiz_Admin_Questions {
 						$tags
 					),
 					'banks'             => array_map( 'absint', $bank_ids ),
+					// Banks the user can't edit render read-only, by name.
+					'bank_memberships'  => PressPrimer_Quiz_Question_Access_Service::get_bank_memberships( $question->id, get_current_user_id() ),
 				];
 			}
 		}

@@ -85,6 +85,11 @@ class PressPrimer_Quiz_Plugin {
 			PressPrimer_Quiz_Template_Presets::register();
 		}
 
+		// Keep the question-access service's memoized bank sets current.
+		if ( class_exists( 'PressPrimer_Quiz_Question_Access_Service' ) ) {
+			PressPrimer_Quiz_Question_Access_Service::register();
+		}
+
 		// Initialize components
 		$this->init_admin();
 		$this->init_frontend();

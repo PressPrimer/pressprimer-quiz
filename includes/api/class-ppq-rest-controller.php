@@ -737,56 +737,37 @@ class PressPrimer_Quiz_REST_Controller {
 	}
 
 	/**
-	 * Find the questions the current user may not add to a quiz.
+	 * Build the error returned when a save names a bank the user doesn't own.
 	 *
-	 * Applies the question picker's rule (get_questions()): users with
-	 * pressprimer_quiz_manage_all may use any question; everyone else may
-	 * use the questions they wrote plus those in banks the
-	 * pressprimer_quiz_accessible_bank_ids filter grants them (Educator's
-	 * shared banks). Deleted and missing questions are never usable, so a
-	 * request can't leave empty rows in a quiz.
+	 * @since 3.2.0
 	 *
-	 * @since 3.1.4
-	 *
-	 * @param int[] $question_ids Question IDs to check.
-	 * @return int[] The IDs the user may not use; empty when all are usable.
+	 * @return WP_Error 403 bank_not_allowed.
 	 */
-	private function get_unusable_question_ids( $question_ids ) {
-		global $wpdb;
+	private function bank_not_allowed_error() {
+		return new WP_Error( 'bank_not_allowed', __( 'You can\'t add questions to one or more of these banks.', 'pressprimer-quiz' ), [ 'status' => 403 ] );
+	}
 
-		if ( empty( $question_ids ) ) {
-			return [];
-		}
-
-		$placeholders = implode( ',', array_fill( 0, count( $question_ids ), '%d' ) );
-		$where        = [ "q.id IN ({$placeholders})", 'q.deleted_at IS NULL' ];
-		$where_values = $question_ids;
-
-		if ( ! current_user_can( 'pressprimer_quiz_manage_all' ) ) {
-			$user_id = get_current_user_id();
-
-			/** This filter is documented in includes/api/class-ppq-rest-controller.php */
-			$accessible_bank_ids = apply_filters( 'pressprimer_quiz_accessible_bank_ids', [], $user_id );
-			$accessible_bank_ids = array_filter( array_map( 'absint', $accessible_bank_ids ) );
-
-			if ( ! empty( $accessible_bank_ids ) ) {
-				$bank_placeholders = implode( ',', array_fill( 0, count( $accessible_bank_ids ), '%d' ) );
-				$where[]           = "(q.author_id = %d OR q.id IN (SELECT question_id FROM {$wpdb->prefix}ppq_bank_questions WHERE bank_id IN ({$bank_placeholders})))";
-				$where_values[]    = $user_id;
-				$where_values      = array_merge( $where_values, $accessible_bank_ids );
-			} else {
-				$where[]        = 'q.author_id = %d';
-				$where_values[] = $user_id;
-			}
-		}
-
-		$where_clause = implode( ' AND ', $where );
-		$query        = "SELECT q.id FROM {$wpdb->prefix}ppq_questions q WHERE {$where_clause}";
-
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Permission check before a write; must not be cached.
-		$usable = array_map( 'absint', $wpdb->get_col( $wpdb->prepare( $query, $where_values ) ) ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
-
-		return array_values( array_diff( $question_ids, $usable ) );
+	/**
+	 * Shape a bank for a REST response.
+	 *
+	 * @since 3.2.0
+	 *
+	 * @param PressPrimer_Quiz_Bank $bank Bank.
+	 * @return array Bank data, with can_edit for the current user.
+	 */
+	private function prepare_bank_for_response( $bank ) {
+		return [
+			'id'             => $bank->id,
+			'uuid'           => $bank->uuid,
+			'name'           => $bank->name,
+			'description'    => $bank->description,
+			'owner_id'       => $bank->owner_id,
+			'visibility'     => $bank->visibility,
+			'question_count' => $bank->question_count,
+			'created_at'     => $bank->created_at,
+			'updated_at'     => $bank->updated_at,
+			'can_edit'       => PressPrimer_Quiz_Question_Access_Service::can_edit_bank( $bank, get_current_user_id() ),
+		];
 	}
 
 	/**
@@ -1056,36 +1037,11 @@ class PressPrimer_Quiz_REST_Controller {
 		$where        = [ 'q.deleted_at IS NULL' ];
 		$where_values = [];
 
-		// Filter by owner for users who can only manage their own content.
-		// For quiz building, teachers need to see questions from accessible banks too.
-		if ( ! current_user_can( 'pressprimer_quiz_manage_all' ) ) {
-			$user_id = get_current_user_id();
-
-			/**
-			 * Filter additional bank IDs a user can access questions from.
-			 *
-			 * Allows addons (like Educator) to grant access to questions from
-			 * shared banks based on group membership or other criteria.
-			 *
-			 * @since 2.0.0
-			 *
-			 * @param array $accessible_bank_ids Array of bank IDs user can access. Default empty.
-			 * @param int   $user_id             User ID being checked.
-			 */
-			$accessible_bank_ids = apply_filters( 'pressprimer_quiz_accessible_bank_ids', [], $user_id );
-			$accessible_bank_ids = array_filter( array_map( 'absint', $accessible_bank_ids ) );
-
-			if ( ! empty( $accessible_bank_ids ) ) {
-				// User can see their own questions OR questions from accessible banks.
-				$bank_placeholders = implode( ',', array_fill( 0, count( $accessible_bank_ids ), '%d' ) );
-				$where[]           = "(q.author_id = %d OR q.id IN (SELECT question_id FROM {$bank_questions_table} WHERE bank_id IN ({$bank_placeholders})))";
-				$where_values[]    = $user_id;
-				$where_values      = array_merge( $where_values, $accessible_bank_ids );
-			} else {
-				// Default: only show questions authored by user.
-				$where[]        = 'q.author_id = %d';
-				$where_values[] = $user_id;
-			}
+		// Only questions the user may use: their own, those in banks they own,
+		// and those in banks shared with them (all of them for manage_all).
+		$usable_clause = PressPrimer_Quiz_Question_Access_Service::usable_questions_clause( get_current_user_id() );
+		if ( '' !== $usable_clause ) {
+			$where[] = $usable_clause;
 		}
 
 		// Filter by status if provided
@@ -1140,8 +1096,15 @@ class PressPrimer_Quiz_REST_Controller {
 			LEFT JOIN {$revisions_table} r ON q.current_revision_id = r.id
 			WHERE {$where_clause}";
 
+		// The usable clause arrives prepared, so with no other filter there is
+		// nothing left to prepare (wpdb::prepare() rejects a query without
+		// placeholders).
+		if ( ! empty( $where_values ) ) {
+			$count_query = $wpdb->prepare( $count_query, $where_values ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
+		}
+
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- REST API pagination, not suitable for caching
-		$total = $wpdb->get_var( $wpdb->prepare( $count_query, $where_values ) ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
+		$total = $wpdb->get_var( $count_query ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- Prepared above, or built only from prepared parts.
 
 		// Get questions
 		$query = "SELECT DISTINCT q.*, r.stem
@@ -1241,6 +1204,8 @@ class PressPrimer_Quiz_REST_Controller {
 				$tags
 			),
 			'banks'             => array_map( 'absint', $bank_ids ),
+			// Banks the user can't edit render read-only, by name.
+			'bank_memberships'  => PressPrimer_Quiz_Question_Access_Service::get_bank_memberships( $question_id, get_current_user_id() ),
 		];
 
 		return new WP_REST_Response( $data, 200 );
@@ -1283,6 +1248,13 @@ class PressPrimer_Quiz_REST_Controller {
 				],
 				400
 			);
+		}
+
+		// Questions are saved only into banks the user owns; banks shared
+		// with them are read-only.
+		$bank_ids = array_map( 'absint', (array) ( $data['banks'] ?? [] ) );
+		if ( ! empty( PressPrimer_Quiz_Question_Access_Service::get_unowned_bank_ids( $bank_ids, get_current_user_id() ) ) ) {
+			return $this->bank_not_allowed_error();
 		}
 
 		global $wpdb;
@@ -1380,13 +1352,11 @@ class PressPrimer_Quiz_REST_Controller {
 				$question->set_tags( array_map( 'absint', $data['tags'] ) );
 			}
 
-			// Set banks
-			if ( ! empty( $data['banks'] ) ) {
-				foreach ( $data['banks'] as $bank_id ) {
-					$bank = PressPrimer_Quiz_Bank::get( absint( $bank_id ) );
-					if ( $bank ) {
-						$bank->add_question( $question->id );
-					}
+			// Set banks (ownership checked before the transaction).
+			foreach ( array_unique( $bank_ids ) as $bank_id ) {
+				$bank = PressPrimer_Quiz_Bank::get( $bank_id );
+				if ( $bank ) {
+					$bank->add_question( $question->id );
 				}
 			}
 
@@ -1419,7 +1389,9 @@ class PressPrimer_Quiz_REST_Controller {
 
 		$question = PressPrimer_Quiz_Question::get( $question_id );
 
-		if ( ! $question ) {
+		// A deleted question can't be edited (saving would re-create its bank
+		// rows); restoring it is a separate action.
+		if ( ! $question || $question->is_deleted() ) {
 			return new WP_Error( 'not_found', __( 'Question not found.', 'pressprimer-quiz' ), [ 'status' => 404 ] );
 		}
 
@@ -1457,6 +1429,33 @@ class PressPrimer_Quiz_REST_Controller {
 		}
 
 		global $wpdb;
+
+		// Bank membership changes. Only banks being added are checked, so an
+		// editor echoing back a membership someone else made still saves.
+		// Memberships in banks the user doesn't own are kept: those banks are
+		// managed by their owners.
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Bank membership lookup for comparison
+		$current_banks = array_map(
+			'absint',
+			$wpdb->get_col(
+				$wpdb->prepare(
+					"SELECT bank_id FROM {$wpdb->prefix}ppq_bank_questions WHERE question_id = %d", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Table name safely constructed from $wpdb->prefix
+					$question_id
+				)
+			)
+		);
+
+		$user_id   = get_current_user_id();
+		$new_banks = array_map( 'absint', (array) ( $data['banks'] ?? [] ) );
+		$to_add    = array_unique( array_diff( $new_banks, $current_banks ) );
+		$to_remove = array_diff( $current_banks, $new_banks );
+
+		if ( ! empty( PressPrimer_Quiz_Question_Access_Service::get_unowned_bank_ids( $to_add, $user_id ) ) ) {
+			return $this->bank_not_allowed_error();
+		}
+
+		$to_remove = array_diff( $to_remove, PressPrimer_Quiz_Question_Access_Service::get_unowned_bank_ids( $to_remove, $user_id ) );
+
 		$wpdb->query( 'START TRANSACTION' );
 
 		try {
@@ -1563,19 +1562,7 @@ class PressPrimer_Quiz_REST_Controller {
 			$question->set_categories( array_map( 'absint', $data['categories'] ?? [] ) );
 			$question->set_tags( array_map( 'absint', $data['tags'] ?? [] ) );
 
-			// Update banks (this requires more complex logic to handle adds/removes)
-			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Bank membership lookup for comparison
-			$current_banks = $wpdb->get_col(
-				$wpdb->prepare(
-					"SELECT bank_id FROM {$wpdb->prefix}ppq_bank_questions WHERE question_id = %d", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Table name safely constructed from $wpdb->prefix
-					$question_id
-				)
-			);
-
-			$new_banks = array_map( 'absint', $data['banks'] ?? [] );
-			$to_add    = array_diff( $new_banks, $current_banks );
-			$to_remove = array_diff( $current_banks, $new_banks );
-
+			// Update banks (worked out and checked before the transaction).
 			foreach ( $to_add as $bank_id ) {
 				$bank = PressPrimer_Quiz_Bank::get( $bank_id );
 				if ( $bank ) {
@@ -2002,9 +1989,11 @@ class PressPrimer_Quiz_REST_Controller {
 		} else {
 			$banks = PressPrimer_Quiz_Bank::get_for_user( $user_id );
 
-			// Allow addons to add additional accessible banks (e.g., shared banks).
-			$additional_bank_ids = apply_filters( 'pressprimer_quiz_accessible_bank_ids', array(), $user_id );
-			$additional_bank_ids = array_filter( array_map( 'absint', $additional_bank_ids ) );
+			// Add the banks addons share with the user (Educator's shared banks).
+			$additional_bank_ids = array_diff(
+				PressPrimer_Quiz_Question_Access_Service::get_usable_bank_ids( $user_id ),
+				PressPrimer_Quiz_Question_Access_Service::get_owned_bank_ids( $user_id )
+			);
 
 			if ( ! empty( $additional_bank_ids ) ) {
 				// Get IDs of banks we already have.
@@ -2035,22 +2024,7 @@ class PressPrimer_Quiz_REST_Controller {
 			}
 		);
 
-		$data = array_map(
-			function ( $bank ) {
-				return [
-					'id'             => $bank->id,
-					'uuid'           => $bank->uuid,
-					'name'           => $bank->name,
-					'description'    => $bank->description,
-					'owner_id'       => $bank->owner_id,
-					'visibility'     => $bank->visibility,
-					'question_count' => $bank->question_count,
-					'created_at'     => $bank->created_at,
-					'updated_at'     => $bank->updated_at,
-				];
-			},
-			$banks
-		);
+		$data = array_map( [ $this, 'prepare_bank_for_response' ], $banks );
 
 		return new WP_REST_Response( $data, 200 );
 	}
@@ -2077,17 +2051,7 @@ class PressPrimer_Quiz_REST_Controller {
 		}
 
 		return new WP_REST_Response(
-			[
-				'id'             => $bank->id,
-				'uuid'           => $bank->uuid,
-				'name'           => $bank->name,
-				'description'    => $bank->description,
-				'owner_id'       => $bank->owner_id,
-				'visibility'     => $bank->visibility,
-				'question_count' => $bank->question_count,
-				'created_at'     => $bank->created_at,
-				'updated_at'     => $bank->updated_at,
-			],
+			$this->prepare_bank_for_response( $bank ),
 			200
 		);
 	}
@@ -2135,17 +2099,7 @@ class PressPrimer_Quiz_REST_Controller {
 		}
 
 		return new WP_REST_Response(
-			[
-				'id'             => $bank->id,
-				'uuid'           => $bank->uuid,
-				'name'           => $bank->name,
-				'description'    => $bank->description,
-				'owner_id'       => $bank->owner_id,
-				'visibility'     => $bank->visibility,
-				'question_count' => $bank->question_count,
-				'created_at'     => $bank->created_at,
-				'updated_at'     => $bank->updated_at,
-			],
+			$this->prepare_bank_for_response( $bank ),
 			201
 		);
 	}
@@ -2198,17 +2152,7 @@ class PressPrimer_Quiz_REST_Controller {
 		$bank->refresh();
 
 		return new WP_REST_Response(
-			[
-				'id'             => $bank->id,
-				'uuid'           => $bank->uuid,
-				'name'           => $bank->name,
-				'description'    => $bank->description,
-				'owner_id'       => $bank->owner_id,
-				'visibility'     => $bank->visibility,
-				'question_count' => $bank->question_count,
-				'created_at'     => $bank->created_at,
-				'updated_at'     => $bank->updated_at,
-			],
+			$this->prepare_bank_for_response( $bank ),
 			200
 		);
 	}
@@ -3007,7 +2951,7 @@ class PressPrimer_Quiz_REST_Controller {
 		// offers nothing else, so this stops crafted requests from adding
 		// another teacher's questions (or deleted ones) to a quiz.
 		$question_ids = array_map( 'absint', (array) $question_ids );
-		if ( ! empty( $this->get_unusable_question_ids( array_values( array_unique( $question_ids ) ) ) ) ) {
+		if ( ! empty( PressPrimer_Quiz_Question_Access_Service::get_unusable_question_ids( $question_ids, get_current_user_id() ) ) ) {
 			return new WP_Error( 'question_not_allowed', __( 'You can\'t add one or more of these questions to this quiz.', 'pressprimer-quiz' ), [ 'status' => 403 ] );
 		}
 

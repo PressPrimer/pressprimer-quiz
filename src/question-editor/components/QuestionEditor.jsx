@@ -333,7 +333,7 @@ const QuestionEditor = ({ questionData = {} }) => {
 													</Form.Item>
 													<Divider style={{ margin: '4px 0' }} />
 													<Form.Item name="banks" noStyle shouldUpdate style={{ marginBottom: 0 }}>
-														<BankSelector />
+														<BankSelector memberships={questionData.bank_memberships || []} />
 													</Form.Item>
 													<Divider style={{ margin: '16px 0' }} />
 													<Space direction="vertical" style={{ width: '100%' }} size="small">
@@ -439,7 +439,7 @@ const QuestionEditor = ({ questionData = {} }) => {
 
 									{/* Question Banks */}
 									<Form.Item name="banks" noStyle shouldUpdate style={{ marginBottom: 0 }}>
-										<BankSelector />
+										<BankSelector memberships={questionData.bank_memberships || []} />
 									</Form.Item>
 
 									<Divider style={{ margin: '16px 0' }} />

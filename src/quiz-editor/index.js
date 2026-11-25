@@ -5,9 +5,10 @@
  * @since 1.0.0
  */
 
-import { render } from '@wordpress/element';
+import { createRoot } from '@wordpress/element';
 import { message } from 'antd';
 import QuizEditor from './components/QuizEditor';
+import { createAdminNav } from '../editors/adminNav';
 import './style.css';
 
 // Configure Ant Design message component
@@ -25,7 +26,17 @@ document.addEventListener('DOMContentLoaded', () => {
 		// Get quiz data from localized script
 		const quizData = window.pressprimerQuizQuizData || {};
 
-		// Render the editor
-		render(<QuizEditor quizData={quizData} />, root);
+		// wp-admin passes the localized data and the wp-admin navigation
+		// adapter; the editor reads no window globals itself.
+		const nav = createAdminNav(window.pressprimerQuizAdmin?.adminUrl || '');
+
+		createRoot(root).render(
+			<QuizEditor
+				key={`quiz-${quizData.id || 'new'}`}
+				data={quizData}
+				surface="admin"
+				nav={nav}
+			/>
+		);
 	}
 });

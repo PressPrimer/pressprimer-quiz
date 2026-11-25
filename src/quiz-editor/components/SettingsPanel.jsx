@@ -1229,9 +1229,12 @@ const SettingsPanel = ({ form, generationMode, setGenerationMode, quizData = {},
 					}
 					className="ppq-settings-toc-card"
 				>
+					{/* Scroll without writing #section to the address: on the
+					    dashboard the hash is the shell's route. */}
 					<Anchor
 						affix={false}
 						targetOffset={80}
+						onClick={(e) => e.preventDefault()}
 						items={TOC_SECTIONS.map((s) => ({
 							key: s.id,
 							href: `#${s.id}`,

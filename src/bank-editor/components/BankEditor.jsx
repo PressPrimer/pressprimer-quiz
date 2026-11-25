@@ -9,6 +9,7 @@ import { useState, useEffect } from '@wordpress/element';
 import { __ } from '@wordpress/i18n';
 import apiFetch from '@wordpress/api-fetch';
 import { debugError } from '../../utils/debug';
+import { EditorProvider, getSiteFlags } from '../../editors/EditorContext';
 import {
 	Layout,
 	Form,
@@ -33,10 +34,15 @@ const { TextArea } = Input;
 /**
  * Main Bank Editor Component
  *
- * @param {Object} props Component props
- * @param {Object} props.bankData Initial bank data
+ * @param {Object}   props          Component props
+ * @param {Object}   props.data     Editor data (editor-data service payload)
+ * @param {string}   props.surface  Where the editor runs: 'admin' or 'dashboard'
+ * @param {Object}   props.nav      Navigation adapter (list, edit, afterCreate, editUrl, back)
+ * @param {Object}   props.slots    Addon slots (reserved for the slot contract)
+ * @param {Function} props.onSaved  Called after a successful save, before navigating
  */
-const BankEditor = ({ bankData = {} }) => {
+const BankEditor = ({ data = {}, surface = 'admin', nav, slots = {}, onSaved }) => {
+	const bankData = data;
 	const [form] = Form.useForm();
 	const [loading, setLoading] = useState(false);
 	const [saving, setSaving] = useState(false);
@@ -81,9 +87,14 @@ const BankEditor = ({ bankData = {} }) => {
 					: __('Bank updated successfully!', 'pressprimer-quiz')
 			);
 
-			// If new, redirect to detail page where questions can be added
+			if (onSaved) {
+				onSaved({ bankId: response.id, isNew });
+			}
+
+			// If new, go where questions can be added (the bank's detail page
+			// in wp-admin).
 			if (isNew && response.id) {
-				window.location.href = `admin.php?page=pressprimer-quiz-banks&action=view&bank_id=${response.id}&message=bank_created`;
+				nav.afterCreate('bank', response.id);
 			} else {
 				setCurrentBankId(response.id);
 
@@ -110,7 +121,7 @@ const BankEditor = ({ bankData = {} }) => {
 	 * Handle cancel/back button
 	 */
 	const handleCancel = () => {
-		window.location.href = 'admin.php?page=pressprimer-quiz-banks';
+		nav.list('bank');
 	};
 
 	/**
@@ -133,9 +144,9 @@ const BankEditor = ({ bankData = {} }) => {
 
 			message.success(__('Bank deleted successfully!', 'pressprimer-quiz'));
 
-			// Redirect to banks list
+			// Back to the banks list
 			setTimeout(() => {
-				window.location.href = 'admin.php?page=pressprimer-quiz-banks';
+				nav.list('bank');
 			}, 500);
 		} catch (error) {
 			debugError('Failed to delete bank:', error);
@@ -147,6 +158,7 @@ const BankEditor = ({ bankData = {} }) => {
 	};
 
 	return (
+		<EditorProvider value={{ surface, nav, site: getSiteFlags(bankData), slots }}>
 		<Layout className="ppq-bank-editor">
 			<Content style={{ padding: '24px 0' }}>
 				<Spin spinning={loading} tip={__('Loading...', 'pressprimer-quiz')}>
@@ -303,6 +315,7 @@ const BankEditor = ({ bankData = {} }) => {
 				</Spin>
 			</Content>
 		</Layout>
+		</EditorProvider>
 	);
 };
 

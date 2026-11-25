@@ -33,16 +33,11 @@ import PremiumSettingsPanel from './PremiumSettingsPanel';
 import QuestionsPanel from './QuestionsPanel';
 import RulesPanel from './RulesPanel';
 import FeedbackPanel from './FeedbackPanel';
+import { EditorProvider, getSiteFlags } from '../../editors/EditorContext';
 
 const { Content } = Layout;
 const { Title, Paragraph } = Typography;
 
-/**
- * Main Quiz Editor Component
- *
- * @param {Object} props Component props
- * @param {Object} props.quizData Initial quiz data
- */
 /**
  * Multiple-answer scoring value for the form.
  *
@@ -60,7 +55,18 @@ const toFormMaScoring = (value, quizData) => {
 	return value && value !== siteDefault ? value : null;
 };
 
-const QuizEditor = ({ quizData = {} }) => {
+/**
+ * Main Quiz Editor Component
+ *
+ * @param {Object}   props          Component props
+ * @param {Object}   props.data     Editor data (editor-data service payload)
+ * @param {string}   props.surface  Where the editor runs: 'admin' or 'dashboard'
+ * @param {Object}   props.nav      Navigation adapter (list, edit, afterCreate, editUrl, back)
+ * @param {Object}   props.slots    Addon slots (reserved for the slot contract)
+ * @param {Function} props.onSaved  Called after a successful save, before navigating
+ */
+const QuizEditor = ({ data = {}, surface = 'admin', nav, slots = {}, onSaved }) => {
+	const quizData = data;
 	const [form] = Form.useForm();
 	const [loading, setLoading] = useState(false);
 	const [saving, setSaving] = useState(false);
@@ -253,9 +259,20 @@ const QuizEditor = ({ quizData = {} }) => {
 			// can render them inline.
 			setMaxAnswersWarnings(Array.isArray(response.warnings) ? response.warnings : []);
 
-			// Update URL to edit page if this was a new quiz
+			if (onSaved) {
+				onSaved({
+					quizId: response.id || quizId,
+					isNew: !quizId,
+					status: values.status,
+					generationMode: values.generation_mode || generationMode,
+					surface,
+				});
+			}
+
+			// After the first save the editor stays open on the new quiz: the
+			// host swaps the address in place and must not remount.
 			if (!quizId && response.id) {
-				window.history.replaceState({}, '', `${window.pressprimerQuizAdmin.adminUrl}admin.php?page=pressprimer-quiz-quizzes&action=edit&quiz=${response.id}`);
+				nav.edit('quiz', response.id, { replace: true });
 				setCurrentQuizId(response.id);
 			}
 
@@ -383,7 +400,7 @@ const QuizEditor = ({ quizData = {} }) => {
 	 */
 	const handleCancel = () => {
 		if (window.confirm(__('Are you sure you want to cancel? Any unsaved changes will be lost.', 'pressprimer-quiz'))) {
-			window.location.href = `${window.pressprimerQuizAdmin.adminUrl}admin.php?page=pressprimer-quiz-quizzes`;
+			nav.list('quiz');
 		}
 	};
 
@@ -417,15 +434,21 @@ const QuizEditor = ({ quizData = {} }) => {
 				data: quizPayload,
 			});
 
-			// Update current quiz ID if this was a new quiz
+			if (onSaved) {
+				onSaved({
+					quizId: response.id || currentQuizId,
+					isNew: !currentQuizId,
+					status: values.status,
+					generationMode: values.generation_mode || generationMode,
+					surface,
+				});
+			}
+
+			// Update current quiz ID if this was a new quiz (first save: the
+			// address is swapped in place, no remount).
 			if (!currentQuizId && response.id) {
 				setCurrentQuizId(response.id);
-				// Update URL without reload
-				window.history.replaceState(
-					{},
-					'',
-					`${window.pressprimerQuizAdmin.adminUrl}admin.php?page=pressprimer-quiz-quizzes&action=edit&quiz=${response.id}`
-				);
+				nav.edit('quiz', response.id, { replace: true });
 			}
 
 			// Capture inline save warnings (e.g., random distractor cap edge cases).
@@ -513,6 +536,7 @@ const QuizEditor = ({ quizData = {} }) => {
 	].filter(Boolean);
 
 	return (
+		<EditorProvider value={{ surface, nav, site: getSiteFlags(quizData), slots }}>
 		<div className="ppq-quiz-editor-container">
 			<Spin spinning={loading || saving} tip={saving ? __('Saving quiz...', 'pressprimer-quiz') : __('Loading quiz...', 'pressprimer-quiz')}>
 				<Form
@@ -640,6 +664,7 @@ const QuizEditor = ({ quizData = {} }) => {
 				</Form>
 			</Spin>
 		</div>
+		</EditorProvider>
 	);
 };
 

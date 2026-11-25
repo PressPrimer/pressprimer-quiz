@@ -35,6 +35,7 @@ import MetadataPanel from './MetadataPanel';
 import TaxonomySelector from './TaxonomySelector';
 import BankSelector from './BankSelector';
 import FeedbackFields from './FeedbackFields';
+import { EditorProvider, getSiteFlags } from '../../editors/EditorContext';
 
 const { Content, Sider } = Layout;
 const { Title, Paragraph } = Typography;
@@ -42,10 +43,15 @@ const { Title, Paragraph } = Typography;
 /**
  * Main Question Editor Component
  *
- * @param {Object} props Component props
- * @param {Object} props.questionData Initial question data
+ * @param {Object}   props          Component props
+ * @param {Object}   props.data     Editor data (editor-data service payload)
+ * @param {string}   props.surface  Where the editor runs: 'admin' or 'dashboard'
+ * @param {Object}   props.nav      Navigation adapter (list, edit, afterCreate, editUrl, back)
+ * @param {Object}   props.slots    Addon slots (reserved for the slot contract)
+ * @param {Function} props.onSaved  Called after a successful save, before navigating
  */
-const QuestionEditor = ({ questionData = {} }) => {
+const QuestionEditor = ({ data = {}, surface = 'admin', nav, slots = {}, onSaved }) => {
+	const questionData = data;
 	const [form] = Form.useForm();
 	const [loading, setLoading] = useState(false);
 	const [saving, setSaving] = useState(false);
@@ -60,8 +66,8 @@ const QuestionEditor = ({ questionData = {} }) => {
 
 	const isNew = !questionData.id;
 
-	// Get addon tabs from localized data
-	const addonTabs = window.pressprimerQuizAdmin?.addonTabs || [];
+	// Addon tabs come with the editor data.
+	const addonTabs = Array.isArray(questionData.addonTabs) ? questionData.addonTabs : [];
 
 	// Initialize form with question data
 	useEffect(() => {
@@ -139,9 +145,25 @@ const QuestionEditor = ({ questionData = {} }) => {
 
 			message.success(__('Question saved successfully!', 'pressprimer-quiz'));
 
-			// Redirect to questions list
+			const savedId = response.id || questionData.id;
+			if (onSaved) {
+				onSaved({
+					questionId: savedId,
+					isNew,
+					type: questionType,
+					status: values.status,
+					bankIds: values.banks || [],
+					surface,
+				});
+			}
+
+			// Back to the questions list.
 			setTimeout(() => {
-				window.location.href = `${window.pressprimerQuizAdmin.adminUrl}admin.php?page=pressprimer-quiz-questions&saved=1`;
+				if (isNew) {
+					nav.afterCreate('question', savedId);
+				} else {
+					nav.list('question', { saved: true });
+				}
 			}, 1000);
 
 		} catch (error) {
@@ -165,7 +187,7 @@ const QuestionEditor = ({ questionData = {} }) => {
 	 */
 	const handleCancel = () => {
 		if (window.confirm(__('Are you sure you want to cancel? Any unsaved changes will be lost.', 'pressprimer-quiz'))) {
-			window.location.href = `${window.pressprimerQuizAdmin.adminUrl}admin.php?page=pressprimer-quiz-questions`;
+			nav.list('question');
 		}
 	};
 
@@ -217,6 +239,7 @@ const QuestionEditor = ({ questionData = {} }) => {
 	};
 
 	return (
+		<EditorProvider value={{ surface, nav, site: getSiteFlags(questionData), slots }}>
 		<div className="ppq-question-editor-container">
 			<Spin spinning={loading} tip={__('Loading question...', 'pressprimer-quiz')}>
 				<Form
@@ -501,6 +524,7 @@ const QuestionEditor = ({ questionData = {} }) => {
 				</Form>
 			</Spin>
 		</div>
+		</EditorProvider>
 	);
 };
 

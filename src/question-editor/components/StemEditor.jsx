@@ -11,13 +11,14 @@ import { Card, Typography, Tooltip, Space, Progress } from 'antd';
 import { QuestionCircleOutlined } from '@ant-design/icons';
 import ImageUploadModal from './ImageUploadModal';
 import MathInsertModal from './MathInsertModal';
+import { useEditorContext } from '../../editors/EditorContext';
 
 const { Title, Text } = Typography;
 
-// Math notation authoring is shown only when the site setting is on.
-const mathEnabled = !!window.pressprimerQuizQuestionData?.mathEnabled;
 
 const StemEditor = ({ value, onChange }) => {
+	// Math notation authoring is shown only when the site setting is on.
+	const mathEnabled = useEditorContext().site.mathEnabled;
 	const [charCount, setCharCount] = useState(0);
 	const [imageModalOpen, setImageModalOpen] = useState(false);
 	const [mathModalOpen, setMathModalOpen] = useState(false);

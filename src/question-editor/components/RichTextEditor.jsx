@@ -10,15 +10,16 @@ import { __ } from '@wordpress/i18n';
 import { Typography, Space, Progress } from 'antd';
 import ImageUploadModal from './ImageUploadModal';
 import MathInsertModal from './MathInsertModal';
+import { useEditorContext } from '../../editors/EditorContext';
 
 const { Text } = Typography;
 
-// Math notation authoring is shown only when the site setting is on.
-const mathEnabled = !!window.pressprimerQuizQuestionData?.mathEnabled;
 
 let editorCounter = 0;
 
 const RichTextEditor = ({ value, onChange, placeholder, maxChars = 2000, rows = 3 }) => {
+	// Math notation authoring is shown only when the site setting is on.
+	const mathEnabled = useEditorContext().site.mathEnabled;
 	const [charCount, setCharCount] = useState(0);
 	const [imageModalOpen, setImageModalOpen] = useState(false);
 	const [mathModalOpen, setMathModalOpen] = useState(false);

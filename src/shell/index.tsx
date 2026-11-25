@@ -11,6 +11,7 @@
 
 import { render, lazy } from '@wordpress/element';
 import { registerScreen, registerHomeCard } from './registry';
+import { navigate, setNavigationGuard } from './router';
 import ShellApp from './ShellApp';
 import './style.css';
 import type { BootData, ShellApi } from './types';
@@ -32,7 +33,12 @@ const DEFAULT_BOOT: BootData = {
 };
 
 // Expose the registration API before any addon screen bundle executes.
-const api: ShellApi = { registerScreen, registerHomeCard };
+const api: ShellApi = {
+	registerScreen,
+	registerHomeCard,
+	navigate,
+	setNavigationGuard,
+};
 window.PPQ = window.PPQ || {};
 window.PPQ.shell = api;
 

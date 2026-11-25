@@ -37,6 +37,7 @@ class PressPrimer_Quiz_Shell {
 	 * Whitelisted shell icon keys. Unknown keys fall back to 'default'.
 	 *
 	 * @since 3.0.0
+	 * @since 3.2.0 Added quizzes, questions and banks.
 	 * @var string[]
 	 */
 	const ICON_KEYS = array(
@@ -51,6 +52,9 @@ class PressPrimer_Quiz_Shell {
 		'proctoring',
 		'students',
 		'settings',
+		'quizzes',
+		'questions',
+		'banks',
 		'default',
 	);
 
@@ -161,8 +165,13 @@ class PressPrimer_Quiz_Shell {
 		foreach ( array_unique( $handles ) as $handle ) {
 			if ( wp_script_is( $handle, 'registered' ) ) {
 				wp_enqueue_script( $handle );
-				wp_set_script_translations( $handle, 'pressprimer-quiz', PRESSPRIMER_QUIZ_PLUGIN_PATH . 'languages' );
 			}
+		}
+
+		// Only the shell's own script uses this plugin's text domain. Addon
+		// screen bundles keep the domain their plugin set when registering them.
+		if ( wp_script_is( self::HANDLE, 'registered' ) ) {
+			wp_set_script_translations( self::HANDLE, 'pressprimer-quiz', PRESSPRIMER_QUIZ_PLUGIN_PATH . 'languages' );
 		}
 
 		if ( wp_style_is( self::HANDLE, 'registered' ) ) {

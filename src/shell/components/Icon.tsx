@@ -19,11 +19,18 @@ const PATHS: Record< string, string > = {
 	planner: 'M7 2v2H5a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2h-2V2h-2v2H9V2H7zM5 9h14v10H5V9z',
 	proctoring: 'M12 5C5 5 1 12 1 12s4 7 11 7 11-7 11-7-4-7-11-7zm0 11a4 4 0 1 1 0-8 4 4 0 0 1 0 8zm0-6a2 2 0 1 0 0 4 2 2 0 0 0 0-4z',
 	students: 'M12 12a4 4 0 1 0-4-4 4 4 0 0 0 4 4zm0 2c-3.3 0-8 1.7-8 5v3h16v-3c0-3.3-4.7-5-8-5z',
+	quizzes: 'M6 2h8l6 6v12a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2zm7 1.5V9h5.5L13 3.5zM8 12v2h8v-2H8zm0 4v2h8v-2H8z',
+	questions: 'M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20zm0 2a8 8 0 1 1 0 16 8 8 0 0 1 0-16zm-1 12h2v2h-2v-2zm1-10a4 4 0 0 0-4 4h2a2 2 0 1 1 3 1.73c-.83.48-2 1.27-2 3.27h2c0-1.23.56-1.6 1.35-2.07A4 4 0 0 0 12 6z',
+	banks: 'M3 5a2 2 0 0 1 2-2h5l2 2h7a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5zm2 4v9h14V9H5z',
 	settings: 'M19.4 13a7.8 7.8 0 0 0 0-2l2-1.6-2-3.4-2.4 1a7.6 7.6 0 0 0-1.7-1l-.4-2.6h-3.8l-.4 2.6a7.6 7.6 0 0 0-1.7 1l-2.4-1-2 3.4L4.6 11a7.8 7.8 0 0 0 0 2l-2 1.6 2 3.4 2.4-1a7.6 7.6 0 0 0 1.7 1l.4 2.6h3.8l.4-2.6a7.6 7.6 0 0 0 1.7-1l2.4 1 2-3.4-2-1.6zM12 15.5a3.5 3.5 0 1 1 0-7 3.5 3.5 0 0 1 0 7z',
 	lock: 'M12 1a5 5 0 0 0-5 5v3H6a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-9a2 2 0 0 0-2-2h-1V6a5 5 0 0 0-5-5zm3 8H9V6a3 3 0 0 1 6 0v3z',
 	menu: 'M3 6h18v2H3V6zm0 5h18v2H3v-2zm0 5h18v2H3v-2z',
 	default: 'M4 4h16v16H4V4zm2 2v12h12V6H6z',
 };
+
+// Glyphs whose inner shapes are holes (bars, lines, a hollow front). They
+// fill even-odd; the others are drawn for the default nonzero rule.
+const EVEN_ODD: string[] = [ 'reports', 'quizzes', 'questions', 'banks' ];
 
 interface IconProps {
 	name: string;
@@ -37,7 +44,9 @@ interface IconProps {
  * @return {JSX.Element} The icon.
  */
 export default function Icon( { name, size = 20 }: IconProps ) {
-	const path = PATHS[ name ] || PATHS.default;
+	const key = PATHS[ name ] ? name : 'default';
+	const path = PATHS[ key ];
+	const evenOdd = EVEN_ODD.includes( key );
 
 	return (
 		<svg
@@ -48,7 +57,12 @@ export default function Icon( { name, size = 20 }: IconProps ) {
 			aria-hidden="true"
 			focusable="false"
 		>
-			<path fill="currentColor" d={ path } />
+			<path
+				fill="currentColor"
+				fillRule={ evenOdd ? 'evenodd' : undefined }
+				clipRule={ evenOdd ? 'evenodd' : undefined }
+				d={ path }
+			/>
 		</svg>
 	);
 }

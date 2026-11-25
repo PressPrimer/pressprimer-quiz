@@ -15,8 +15,29 @@
  */
 /* eslint-disable no-unused-vars */
 
-/** A `(string) => void` callback (navigation, selection). */
-export type NavigateFn = ( route: string ) => void;
+/** Options for navigate(). */
+export interface NavigateOptions {
+	/** Swap the current history entry instead of adding one (v3.2). */
+	replace?: boolean;
+	/** Skip the navigation guard, e.g. right after saving (v3.2). */
+	force?: boolean;
+}
+
+/** What a navigation guard is asked about (v3.2). */
+export interface NavigationAttempt {
+	/** Route the navigation goes to (without '#/'). */
+	to: string;
+	/** Route currently showing. */
+	from: string;
+	/** 'navigate' (navigate(), Sidebar), 'history' (back/forward, typed hash), 'unload' (reload, close). */
+	reason: 'navigate' | 'history' | 'unload';
+}
+
+/** A navigation guard: return false to stay on the current route (v3.2). */
+export type NavigationGuard = ( attempt: NavigationAttempt ) => boolean;
+
+/** Navigate to a route; returns false when the guard refused. */
+export type NavigateFn = ( route: string, options?: NavigateOptions ) => boolean | void;
 
 export interface ShellUser {
 	id: number;
@@ -120,10 +141,14 @@ export interface MyAttemptsParams {
 	practice?: string;
 }
 
-/** The public registration API exposed on window.PPQ.shell. */
+/** The public API exposed on window.PPQ.shell. */
 export interface ShellApi {
 	registerScreen: ( id: string, component: ScreenComponent ) => void;
 	registerHomeCard: ( id: string, component: HomeCardComponent ) => void;
+	/** Navigate to a route (v3.2). */
+	navigate: NavigateFn;
+	/** Set or clear the navigation guard (v3.2). */
+	setNavigationGuard: ( guard: NavigationGuard | null ) => void;
 }
 
 declare global {

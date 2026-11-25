@@ -35,6 +35,7 @@ import {
 	SearchOutlined,
 } from '@ant-design/icons';
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
+import { useEditorContext } from '../../editors/EditorContext';
 
 const { Text } = Typography;
 const { Search } = Input;
@@ -47,6 +48,7 @@ const { Search } = Input;
  * @param {string} props.generationMode Generation mode (fixed/dynamic)
  */
 const QuestionsPanel = ({ quizId, generationMode }) => {
+	const { nav } = useEditorContext();
 	const [items, setItems] = useState([]);
 	const [loading, setLoading] = useState(false);
 	const [modalVisible, setModalVisible] = useState(false);
@@ -451,8 +453,7 @@ const QuestionsPanel = ({ quizId, generationMode }) => {
 							type="text"
 							icon={<EditOutlined />}
 							onClick={() => {
-								const editUrl = `${window.pressprimerQuizAdmin.adminUrl}admin.php?page=pressprimer-quiz-questions&action=edit&question=${record.question_id}`;
-								window.open(editUrl, '_blank');
+								window.open(nav.editUrl('question', record.question_id), '_blank');
 							}}
 						/>
 					</Tooltip>

@@ -36,6 +36,7 @@ import {
 } from '@ant-design/icons';
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
 import { useEditorContext } from '../../editors/EditorContext';
+import { emitEditorEvent, toId } from '../../editors/events';
 
 const { Text } = Typography;
 const { Search } = Input;
@@ -88,6 +89,8 @@ const QuestionsPanel = ({ quizId, generationMode }) => {
 
 	/**
 	 * Load quiz items
+	 *
+	 * @return {Promise<Array|null>} The loaded items, or null when loading failed.
 	 */
 	const loadQuizItems = async () => {
 		try {
@@ -105,11 +108,23 @@ const QuestionsPanel = ({ quizId, generationMode }) => {
 				path: `/ppq/v1/quizzes/${quizId}/items`,
 			});
 			setItems(response || []);
+			return response || [];
 		} catch (error) {
 			// Failed to load - items will be empty
+			return null;
 		} finally {
 			setLoading(false);
 		}
+	};
+
+	/**
+	 * Announce a change to the quiz's questions (ppq-quiz-items-changed).
+	 *
+	 * @param {string} action 'added', 'removed' or 'reordered'.
+	 * @param {number} count  How many questions the quiz has now.
+	 */
+	const notifyItemsChanged = (action, count) => {
+		emitEditorEvent('ppq-quiz-items-changed', { quizId: toId(quizId), count, action });
 	};
 
 	/**
@@ -306,7 +321,11 @@ const QuestionsPanel = ({ quizId, generationMode }) => {
 
 			message.success(__('Questions added successfully', 'pressprimer-quiz'));
 			setModalVisible(false);
-			loadQuizItems();
+
+			// The count comes from the reloaded list (questions already in the
+			// quiz are skipped).
+			const loaded = await loadQuizItems();
+			notifyItemsChanged('added', loaded ? loaded.length : items.length + selectedQuestionIds.length);
 		} catch (error) {
 			debugError('Failed to add questions:', error);
 			message.error(__('Failed to add questions', 'pressprimer-quiz'));
@@ -324,7 +343,8 @@ const QuestionsPanel = ({ quizId, generationMode }) => {
 			});
 
 			message.success(__('Question removed', 'pressprimer-quiz'));
-			loadQuizItems();
+			const loaded = await loadQuizItems();
+			notifyItemsChanged('removed', loaded ? loaded.length : Math.max(0, items.length - 1));
 		} catch (error) {
 			message.error(__('Failed to remove question', 'pressprimer-quiz'));
 		}
@@ -381,6 +401,7 @@ const QuestionsPanel = ({ quizId, generationMode }) => {
 
 		try {
 			await reorderPromise;
+			notifyItemsChanged('reordered', reorderedItems.length);
 		} catch (error) {
 			message.error(__('Failed to save order', 'pressprimer-quiz'));
 			// Reload to reset
@@ -565,6 +586,7 @@ const QuestionsPanel = ({ quizId, generationMode }) => {
 					</div>
 					<Button
 						type="primary"
+						className="ppq-add-questions-button"
 						icon={<PlusOutlined />}
 						onClick={handleAddQuestions}
 					>

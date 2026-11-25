@@ -1619,6 +1619,7 @@ class PressPrimer_Quiz_REST_Controller {
 			// Update question with revision ID
 			$question->current_revision_id = $revision->id;
 			$question->save();
+			PressPrimer_Quiz_Question_Revision::fire_created( $question->id, $revision->id, 'rest' );
 
 			// Register image ownership for any `data-ppq-attachment-id`
 			// markers in the saved content. With the 2.3 decoupled upload
@@ -1658,6 +1659,21 @@ class PressPrimer_Quiz_REST_Controller {
 					$bank->add_question( $question->id );
 				}
 			}
+
+			/**
+			 * Fires after a question is saved via the REST API
+			 *
+			 * On create and update, after the question's content, taxonomies
+			 * and banks are written and before the transaction commits (like
+			 * pressprimer_quiz_rest_quiz_saved). Addons save their own
+			 * per-question fields from $data here.
+			 *
+			 * @since 3.2.0
+			 *
+			 * @param PressPrimer_Quiz_Question $question The saved question.
+			 * @param array                     $data     The request's JSON body.
+			 */
+			do_action( 'pressprimer_quiz_rest_question_saved', $question, $data );
 
 			$wpdb->query( 'COMMIT' );
 
@@ -1881,6 +1897,7 @@ class PressPrimer_Quiz_REST_Controller {
 					// Update question with new revision ID
 					$question->current_revision_id = $revision->id;
 					$question->save();
+					PressPrimer_Quiz_Question_Revision::fire_created( $question->id, $revision->id, 'rest' );
 
 					// Register image ownership for any `data-ppq-attachment-id`
 					// markers in the new revision (free 2.3 decoupled-upload
@@ -1925,6 +1942,9 @@ class PressPrimer_Quiz_REST_Controller {
 					$bank->remove_question( $question->id );
 				}
 			}
+
+			/** This action is documented in includes/api/class-ppq-rest-controller.php */
+			do_action( 'pressprimer_quiz_rest_question_saved', $question, $data );
 
 			$wpdb->query( 'COMMIT' );
 

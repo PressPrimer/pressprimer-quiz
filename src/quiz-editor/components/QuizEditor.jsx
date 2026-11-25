@@ -34,6 +34,7 @@ import QuestionsPanel from './QuestionsPanel';
 import RulesPanel from './RulesPanel';
 import FeedbackPanel from './FeedbackPanel';
 import { EditorProvider, getSiteFlags } from '../../editors/EditorContext';
+import { emitEditorEvent, emitSaved, toId } from '../../editors/events';
 
 const { Content } = Layout;
 const { Title, Paragraph } = Typography;
@@ -259,15 +260,13 @@ const QuizEditor = ({ data = {}, surface = 'admin', nav, slots = {}, onSaved }) 
 			// can render them inline.
 			setMaxAnswersWarnings(Array.isArray(response.warnings) ? response.warnings : []);
 
-			if (onSaved) {
-				onSaved({
-					quizId: response.id || quizId,
-					isNew: !quizId,
-					status: values.status,
-					generationMode: values.generation_mode || generationMode,
-					surface,
-				});
-			}
+			emitSaved('ppq-quiz-saved', {
+				quizId: toId(response.id || quizId),
+				isNew: !quizId,
+				status: values.status,
+				generationMode: values.generation_mode || generationMode,
+				surface,
+			}, onSaved);
 
 			// After the first save the editor stays open on the new quiz: the
 			// host swaps the address in place and must not remount.
@@ -368,10 +367,23 @@ const QuizEditor = ({ data = {}, surface = 'admin', nav, slots = {}, onSaved }) 
 		}
 	};
 
-	const applyTemplate = (settings = {}, reminders = []) => {
+	/**
+	 * Apply a template the author picked (Apply template).
+	 *
+	 * @param {Object} settings  Sanitized settings map from the template.
+	 * @param {Array}  reminders Reminders to show as warnings.
+	 * @param {Object} template  The template entry ({ id, source }).
+	 */
+	const applyTemplate = (settings = {}, reminders = [], template = {}) => {
 		applyTemplateToForm(settings);
 		reminders.forEach((reminder) => message.warning(reminder));
 		message.success(__('Template applied. Review the settings and save the quiz to keep them.', 'pressprimer-quiz'));
+
+		emitEditorEvent('ppq-quiz-template-applied', {
+			quizId: toId(currentQuizId),
+			templateId: template.id ?? null,
+			source: 'preset' === template.source ? 'preset' : 'saved',
+		});
 	};
 
 	// Pre-fill a brand-new quiz from the site default template once on mount
@@ -434,15 +446,13 @@ const QuizEditor = ({ data = {}, surface = 'admin', nav, slots = {}, onSaved }) 
 				data: quizPayload,
 			});
 
-			if (onSaved) {
-				onSaved({
-					quizId: response.id || currentQuizId,
-					isNew: !currentQuizId,
-					status: values.status,
-					generationMode: values.generation_mode || generationMode,
-					surface,
-				});
-			}
+			emitSaved('ppq-quiz-saved', {
+				quizId: toId(response.id || currentQuizId),
+				isNew: !currentQuizId,
+				status: values.status,
+				generationMode: values.generation_mode || generationMode,
+				surface,
+			}, onSaved);
 
 			// Update current quiz ID if this was a new quiz (first save: the
 			// address is swapped in place, no remount).

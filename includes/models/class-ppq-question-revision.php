@@ -148,15 +148,25 @@ class PressPrimer_Quiz_Question_Revision extends PressPrimer_Quiz_Model {
 	/**
 	 * Create new revision
 	 *
-	 * Creates a new revision for a question with auto-incremented version number.
+	 * Creates a new revision for a question with auto-incremented version number,
+	 * makes it the question's current revision, and fires
+	 * `pressprimer_quiz_question_revision_created`.
+	 *
+	 * The current revision is written straight to the database, so a question
+	 * object loaded before this call still holds the old current_revision_id.
+	 * Call refresh() on it before any save(): save() writes the old ID back and
+	 * undoes the new revision.
 	 *
 	 * @since 1.0.0
+	 * @since 3.2.0 Added $source; fires pressprimer_quiz_question_revision_created.
 	 *
-	 * @param int   $question_id Question ID.
-	 * @param array $data        Revision data (stem, answers, feedback, settings).
+	 * @param int    $question_id Question ID.
+	 * @param array  $data        Revision data (stem, answers, feedback, settings).
+	 * @param string $source      What wrote the revision: 'rest', 'import', 'ai',
+	 *                            'restore' or 'addon' (the default).
 	 * @return int|WP_Error Revision ID on success, WP_Error on failure.
 	 */
-	public static function create_for_question( $question_id, array $data ) {
+	public static function create_for_question( $question_id, array $data, $source = 'addon' ) {
 		$question_id = absint( $question_id );
 
 		if ( 0 === $question_id ) {
@@ -219,7 +229,43 @@ class PressPrimer_Quiz_Question_Revision extends PressPrimer_Quiz_Model {
 			[ '%d' ]
 		);
 
+		self::fire_created( $question_id, $revision_id, $source );
+
 		return $revision_id;
+	}
+
+	/**
+	 * Fire the revision-created action
+	 *
+	 * For create_for_question() and the REST question routes, which write
+	 * revisions themselves.
+	 *
+	 * @since 3.2.0
+	 *
+	 * @param int    $question_id Question ID.
+	 * @param int    $revision_id The new current revision's ID.
+	 * @param string $source      'rest', 'import', 'ai', 'restore' or 'addon'.
+	 */
+	public static function fire_created( $question_id, $revision_id, $source ) {
+		$source = sanitize_key( (string) $source );
+		if ( ! in_array( $source, [ 'rest', 'import', 'ai', 'restore', 'addon' ], true ) ) {
+			$source = 'addon';
+		}
+
+		/**
+		 * Fires after a revision becomes a question's current revision.
+		 *
+		 * Fired by create_for_question() and by the REST question create and
+		 * update routes. A question object loaded earlier needs refresh()
+		 * before save() (see create_for_question()).
+		 *
+		 * @since 3.2.0
+		 *
+		 * @param int    $question_id Question ID.
+		 * @param int    $revision_id The new current revision's ID.
+		 * @param string $source      'rest', 'import', 'ai', 'restore' or 'addon'.
+		 */
+		do_action( 'pressprimer_quiz_question_revision_created', absint( $question_id ), absint( $revision_id ), $source );
 	}
 
 	/**

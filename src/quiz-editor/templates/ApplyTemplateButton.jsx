@@ -109,7 +109,7 @@ function buildPreview(template, form, quizData) {
  * @param {Object}   props          Component props.
  * @param {Object}   props.form     Ant Design form instance.
  * @param {Object}   props.quizData Quiz editor boot data.
- * @param {Function} props.onApply  Called with (settings, reminders) on confirm.
+ * @param {Function} props.onApply  Called with (settings, reminders, template) on confirm.
  * @return {JSX.Element} The control.
  */
 const ApplyTemplateButton = ({ form, quizData = {}, onApply }) => {
@@ -194,7 +194,7 @@ const ApplyTemplateButton = ({ form, quizData = {}, onApply }) => {
 
 	const confirmApply = () => {
 		if (selected && typeof onApply === 'function') {
-			onApply(selected.settings || {}, reminders);
+			onApply(selected.settings || {}, reminders, selected);
 		}
 		setSelected(null);
 	};

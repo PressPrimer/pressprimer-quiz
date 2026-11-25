@@ -36,6 +36,7 @@ import TaxonomySelector from './TaxonomySelector';
 import BankSelector from './BankSelector';
 import FeedbackFields from './FeedbackFields';
 import { EditorProvider, getSiteFlags } from '../../editors/EditorContext';
+import { emitSaved, toId } from '../../editors/events';
 
 const { Content, Sider } = Layout;
 const { Title, Paragraph } = Typography;
@@ -146,16 +147,14 @@ const QuestionEditor = ({ data = {}, surface = 'admin', nav, slots = {}, onSaved
 			message.success(__('Question saved successfully!', 'pressprimer-quiz'));
 
 			const savedId = response.id || questionData.id;
-			if (onSaved) {
-				onSaved({
-					questionId: savedId,
-					isNew,
-					type: questionType,
-					status: values.status,
-					bankIds: values.banks || [],
-					surface,
-				});
-			}
+			emitSaved('ppq-question-saved', {
+				questionId: toId(savedId),
+				isNew,
+				type: questionType,
+				status: values.status,
+				bankIds: (values.banks || []).map(toId).filter(Boolean),
+				surface,
+			}, onSaved);
 
 			// Back to the questions list.
 			setTimeout(() => {

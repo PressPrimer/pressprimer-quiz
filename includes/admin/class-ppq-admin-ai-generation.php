@@ -789,7 +789,7 @@ class PressPrimer_Quiz_Admin_AI_Generation {
 			'feedback_incorrect' => $data['feedback_incorrect'],
 		];
 
-		$revision_id = PressPrimer_Quiz_Question_Revision::create_for_question( $question_id, $revision_data );
+		$revision_id = PressPrimer_Quiz_Question_Revision::create_for_question( $question_id, $revision_data, 'ai' );
 
 		if ( is_wp_error( $revision_id ) ) {
 			// Clean up question if revision fails

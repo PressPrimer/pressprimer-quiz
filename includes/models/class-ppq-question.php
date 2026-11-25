@@ -917,6 +917,28 @@ class PressPrimer_Quiz_Question extends PressPrimer_Quiz_Model {
 	}
 
 	/**
+	 * Refresh from database
+	 *
+	 * Reloads the record and clears the cached revision, categories and tags,
+	 * so a refresh after create_for_question() reads the new revision.
+	 *
+	 * @since 3.2.0
+	 *
+	 * @return bool|WP_Error True on success, WP_Error on failure.
+	 */
+	public function refresh() {
+		$result = parent::refresh();
+
+		if ( true === $result ) {
+			$this->_current_revision = null;
+			$this->_categories       = null;
+			$this->_tags             = null;
+		}
+
+		return $result;
+	}
+
+	/**
 	 * Get current revision
 	 *
 	 * Lazy loads and returns the current question revision.

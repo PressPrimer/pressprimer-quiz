@@ -10,6 +10,7 @@ import { __ } from '@wordpress/i18n';
 import apiFetch from '@wordpress/api-fetch';
 import { debugError } from '../../utils/debug';
 import { EditorProvider, getSiteFlags } from '../../editors/EditorContext';
+import { emitSaved, toId } from '../../editors/events';
 import {
 	Layout,
 	Form,
@@ -87,9 +88,11 @@ const BankEditor = ({ data = {}, surface = 'admin', nav, slots = {}, onSaved }) 
 					: __('Bank updated successfully!', 'pressprimer-quiz')
 			);
 
-			if (onSaved) {
-				onSaved({ bankId: response.id, isNew });
-			}
+			// Addon contract: fields slotted into the editor (e.g. School's
+			// Practice Access) persist their own state on this event so the
+			// whole form saves from the one Update Bank button. Fired on
+			// create too, before the editor leaves.
+			emitSaved('ppq-bank-saved', { bankId: toId(response.id), isNew }, onSaved);
 
 			// If new, go where questions can be added (the bank's detail page
 			// in wp-admin).
@@ -97,15 +100,6 @@ const BankEditor = ({ data = {}, surface = 'admin', nav, slots = {}, onSaved }) 
 				nav.afterCreate('bank', response.id);
 			} else {
 				setCurrentBankId(response.id);
-
-				// Addon contract: fields slotted into the editor (e.g. School's
-				// Practice Access) persist their own state on this event so the
-				// whole form saves from the one Update Bank button.
-				document.dispatchEvent(
-					new CustomEvent('ppq-bank-saved', {
-						detail: { bankId: response.id },
-					})
-				);
 			}
 		} catch (error) {
 			debugError('Failed to save bank:', error);

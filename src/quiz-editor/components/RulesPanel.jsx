@@ -37,29 +37,31 @@ const { Text, Title } = Typography;
 /**
  * Copy for a rule with no bank, by whose questions the quiz draws from.
  * Rules on a quiz whose owner isn't an admin draw only the owner's usable
- * questions (v3.2).
+ * questions, and every rule draws published questions only (v3.2).
  *
  * @param {string} ruleScope 'all', 'own' or 'owner'.
  * @return {{label: string, tooltip: string}} Label and tooltip.
  */
 const getAnyBankCopy = (ruleScope) => {
+	const publishedOnly = __('Rules draw published questions only, never drafts.', 'pressprimer-quiz');
+
 	if (ruleScope === 'all') {
 		return {
 			label: __('All questions', 'pressprimer-quiz'),
-			tooltip: __('Select a specific question bank, or leave empty to draw from all questions', 'pressprimer-quiz'),
+			tooltip: `${__('Select a specific question bank, or leave empty to draw from all questions.', 'pressprimer-quiz')} ${publishedOnly}`,
 		};
 	}
 
 	if (ruleScope === 'owner') {
 		return {
 			label: __('All questions the quiz owner can use', 'pressprimer-quiz'),
-			tooltip: __('Select a specific question bank, or leave empty to draw from all questions the quiz owner can use: their own, and those in banks they own or that are shared with them', 'pressprimer-quiz'),
+			tooltip: `${__('Select a specific question bank, or leave empty to draw from all questions the quiz owner can use: their own, and those in banks they own or that are shared with them.', 'pressprimer-quiz')} ${publishedOnly}`,
 		};
 	}
 
 	return {
 		label: __('All questions I can use', 'pressprimer-quiz'),
-		tooltip: __('Select a specific question bank, or leave empty to draw from all questions you can use: your own, and those in banks you own or that are shared with you', 'pressprimer-quiz'),
+		tooltip: `${__('Select a specific question bank, or leave empty to draw from all questions you can use: your own, and those in banks you own or that are shared with you.', 'pressprimer-quiz')} ${publishedOnly}`,
 	};
 };
 

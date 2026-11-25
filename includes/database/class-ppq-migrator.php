@@ -191,6 +191,7 @@ class PressPrimer_Quiz_Migrator {
 		$assignments   = $wpdb->prefix . 'ppq_assignments';
 		$quiz_items    = $wpdb->prefix . 'ppq_quiz_items';
 		$quiz_rules    = $wpdb->prefix . 'ppq_quiz_rules';
+		$questions     = $wpdb->prefix . 'ppq_questions';
 
 		return array(
 			array(
@@ -297,7 +298,6 @@ class PressPrimer_Quiz_Migrator {
 			// 3.2.0 chain: data-only steps, appended in this order as they land.
 			// PRESSPRIMER_QUIZ_DB_VERSION moves to each step's version when it is
 			// added (the constant tracks the LAST chain step). Still planned:
-			// '3.2.0.1' publish existing draft questions (PHASES Prompt 2.5);
 			// '3.2.0.2' delete the unread activation and deactivation time
 			// options (Prompt 10.1).
 			array(
@@ -308,6 +308,17 @@ class PressPrimer_Quiz_Migrator {
 				// scoping. Idempotent (it only queues when nothing is stored).
 				'targets'  => array(
 					$quiz_rules => array(),
+				),
+			),
+			array(
+				'version'  => '3.2.0.1',
+				'callback' => array( __CLASS__, 'migrate_to_3_2_0_1' ),
+				// Data-only (no schema targets): publishes the draft questions
+				// that existed before 3.2, when rules still drew drafts. Runs
+				// once per site (a marker option guards it), so drafts made in
+				// 3.2 are never published by a re-run.
+				'targets'  => array(
+					$questions => array(),
 				),
 			),
 		);
@@ -1080,6 +1091,90 @@ class PressPrimer_Quiz_Migrator {
 	 */
 	public static function migrate_to_3_2_0() {
 		PressPrimer_Quiz_Rule_Scope_Notice::queue_scan();
+	}
+
+	/**
+	 * Migration step 3.2.0.1: publish existing draft questions.
+	 *
+	 * From 3.2, dynamic rules draw published questions only (feature 006).
+	 * Before 3.2 they drew drafts too, and every existing draft came from
+	 * Duplicate (nothing else made one, and nothing could change it), so
+	 * publishing them keeps every quiz serving what it served before.
+	 *
+	 * The result is kept in a non-autoloaded option, which is also the
+	 * run-once marker: the question IDs published, how many of them are in a
+	 * bank (School grants practice per bank) and how many are items of a quiz
+	 * with spaced repetition on. School's planner and review queues use
+	 * published questions only, so those become eligible there.
+	 *
+	 * @since 3.2.0
+	 */
+	public static function migrate_to_3_2_0_1() {
+		global $wpdb;
+
+		if ( false !== get_option( 'pressprimer_quiz_drafts_published' ) ) {
+			return;
+		}
+
+		$questions      = $wpdb->prefix . 'ppq_questions';
+		$bank_questions = $wpdb->prefix . 'ppq_bank_questions';
+		$quiz_items     = $wpdb->prefix . 'ppq_quiz_items';
+		$quizzes        = $wpdb->prefix . 'ppq_quizzes';
+
+		// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Custom tables; one-time data step.
+		$question_ids = array_map(
+			'absint',
+			$wpdb->get_col(
+				$wpdb->prepare( 'SELECT id FROM %i WHERE status = %s ORDER BY id', $questions, 'draft' )
+			)
+		);
+
+		$in_banks = (int) $wpdb->get_var(
+			$wpdb->prepare(
+				'SELECT COUNT( DISTINCT q.id ) FROM %i q
+				INNER JOIN %i bq ON bq.question_id = q.id
+				WHERE q.status = %s AND q.deleted_at IS NULL',
+				$questions,
+				$bank_questions,
+				'draft'
+			)
+		);
+
+		$in_sr_quizzes = (int) $wpdb->get_var(
+			$wpdb->prepare(
+				'SELECT COUNT( DISTINCT q.id ) FROM %i q
+				INNER JOIN %i qi ON qi.question_id = q.id
+				INNER JOIN %i qz ON qz.id = qi.quiz_id
+				WHERE q.status = %s AND q.deleted_at IS NULL AND qz.enable_sr = 1',
+				$questions,
+				$quiz_items,
+				$quizzes,
+				'draft'
+			)
+		);
+
+		$published = $wpdb->query(
+			$wpdb->prepare( 'UPDATE %i SET status = %s WHERE status = %s', $questions, 'published', 'draft' )
+		);
+		// phpcs:enable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+
+		if ( false === $published ) {
+			// Leave no marker, so the next load tries again.
+			return;
+		}
+
+		add_option(
+			'pressprimer_quiz_drafts_published',
+			array(
+				'count'         => (int) $published,
+				'question_ids'  => $question_ids,
+				'in_banks'      => $in_banks,
+				'in_sr_quizzes' => $in_sr_quizzes,
+				'migrated_at'   => current_time( 'mysql' ),
+			),
+			'',
+			false
+		);
 	}
 
 	/**

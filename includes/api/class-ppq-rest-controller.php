@@ -933,6 +933,32 @@ class PressPrimer_Quiz_REST_Controller {
 	}
 
 	/**
+	 * Read the status a question save asks for.
+	 *
+	 * Authors choose Published or Draft. Archiving isn't a feature, so
+	 * `archived` and anything else is refused.
+	 *
+	 * @since 3.2.0
+	 *
+	 * @param array  $data    Decoded request body.
+	 * @param string $default Status to use when the body has none.
+	 * @return string|WP_Error 'published' or 'draft', or 400 invalid_status.
+	 */
+	private function get_requested_question_status( $data, $default ) {
+		if ( ! is_array( $data ) || ! isset( $data['status'] ) ) {
+			return $default;
+		}
+
+		$status = is_string( $data['status'] ) ? sanitize_key( $data['status'] ) : '';
+
+		if ( in_array( $status, [ 'published', 'draft' ], true ) ) {
+			return $status;
+		}
+
+		return new WP_Error( 'invalid_status', __( 'A question\'s status must be published or draft.', 'pressprimer-quiz' ), [ 'status' => 400 ] );
+	}
+
+	/**
 	 * Check that the current user may draw a rule's questions from a bank.
 	 *
 	 * The bank must be one the user may use: owned or shared with them, or any
@@ -1278,10 +1304,13 @@ class PressPrimer_Quiz_REST_Controller {
 			$where_values[] = get_current_user_id();
 		}
 
-		// Filter by status if provided
-		if ( ! empty( $status ) ) {
+		// Filter by status if provided. "All" means published and draft:
+		// archived questions aren't served, so they aren't offered.
+		if ( ! empty( $status ) && 'all' !== $status ) {
 			$where[]        = 'q.status = %s';
 			$where_values[] = $status;
+		} else {
+			$where[] = "q.status IN ('published', 'draft')";
 		}
 
 		if ( ! empty( $type ) ) {
@@ -1431,6 +1460,7 @@ class PressPrimer_Quiz_REST_Controller {
 			'difficulty'        => $question->difficulty_author,
 			'timeLimit'         => $question->expected_seconds,
 			'points'            => $question->max_points,
+			'status'            => $question->status,
 			'stem'              => $revision ? $revision->stem : '',
 			'answers'           => $revision ? $revision->get_answers() : [],
 			'feedbackCorrect'   => $revision ? $revision->feedback_correct : '',
@@ -1457,6 +1487,7 @@ class PressPrimer_Quiz_REST_Controller {
 	 * Create question
 	 *
 	 * @since 1.0.0
+	 * @since 3.2.0 Accepts status (published or draft; default published).
 	 *
 	 * @param WP_REST_Request $request Request object.
 	 * @return WP_REST_Response Response object.
@@ -1492,6 +1523,11 @@ class PressPrimer_Quiz_REST_Controller {
 			);
 		}
 
+		$status = $this->get_requested_question_status( $data, 'published' );
+		if ( is_wp_error( $status ) ) {
+			return $status;
+		}
+
 		// Questions are saved only into banks the user owns; banks shared
 		// with them are read-only.
 		$bank_ids = array_map( 'absint', (array) ( $data['banks'] ?? [] ) );
@@ -1512,7 +1548,7 @@ class PressPrimer_Quiz_REST_Controller {
 					'expected_seconds'  => absint( $data['timeLimit'] ?? 0 ),
 					'max_points'        => floatval( $data['points'] ?? 1 ),
 					'author_id'         => get_current_user_id(),
-					'status'            => 'published',
+					'status'            => $status,
 				]
 			);
 
@@ -1621,6 +1657,7 @@ class PressPrimer_Quiz_REST_Controller {
 	 * Update question
 	 *
 	 * @since 1.0.0
+	 * @since 3.2.0 Accepts status (published or draft); a body without one keeps the current status.
 	 *
 	 * @param WP_REST_Request $request Request object.
 	 * @return WP_REST_Response Response object.
@@ -1670,6 +1707,12 @@ class PressPrimer_Quiz_REST_Controller {
 			);
 		}
 
+		// A body without a status keeps the current one.
+		$status = $this->get_requested_question_status( $data, $question->status );
+		if ( is_wp_error( $status ) ) {
+			return $status;
+		}
+
 		global $wpdb;
 
 		// Bank membership changes. Only banks being added are checked, so an
@@ -1706,6 +1749,7 @@ class PressPrimer_Quiz_REST_Controller {
 			$question->difficulty_author = sanitize_key( $data['difficulty'] ?? '' );
 			$question->expected_seconds  = absint( $data['timeLimit'] ?? 0 );
 			$question->max_points        = floatval( $data['points'] ?? 1 );
+			$question->status            = $status;
 
 			$result = $question->save();
 

@@ -157,6 +157,35 @@ class PressPrimer_Quiz_Admin_Questions {
 			);
 		}
 
+		// Bulk status notices
+		if ( isset( $_GET['published'] ) ) {
+			$count = absint( wp_unslash( $_GET['published'] ) );
+			printf(
+				'<div class="notice notice-success is-dismissible"><p>%s</p></div>',
+				esc_html(
+					sprintf(
+						/* translators: %d: number of questions published */
+						_n( '%d question published.', '%d questions published.', $count, 'pressprimer-quiz' ),
+						$count
+					)
+				)
+			);
+		}
+
+		if ( isset( $_GET['drafted'] ) ) {
+			$count = absint( wp_unslash( $_GET['drafted'] ) );
+			printf(
+				'<div class="notice notice-success is-dismissible"><p>%s</p></div>',
+				esc_html(
+					sprintf(
+						/* translators: %d: number of questions moved to draft */
+						_n( '%d question moved to draft.', '%d questions moved to draft.', $count, 'pressprimer-quiz' ),
+						$count
+					)
+				)
+			);
+		}
+
 		// Deleted notice
 		if ( isset( $_GET['deleted'] ) ) {
 			$count   = absint( wp_unslash( $_GET['deleted'] ) );
@@ -383,6 +412,7 @@ class PressPrimer_Quiz_Admin_Questions {
 					'difficulty'        => $question->difficulty_author,
 					'timeLimit'         => $question->expected_seconds,
 					'points'            => $question->max_points,
+					'status'            => $question->status,
 					'stem'              => $revision ? $revision->stem : '',
 					'answers'           => $react_answers,
 					'feedbackCorrect'   => $revision ? $revision->feedback_correct : '',
@@ -481,6 +511,10 @@ class PressPrimer_Quiz_Admin_Questions {
 		// Handle bulk actions
 		if ( isset( $_GET['action'] ) && 'delete' === $_GET['action'] && isset( $_GET['questions'] ) ) {
 			$this->handle_bulk_delete();
+		}
+
+		if ( isset( $_GET['action'] ) && in_array( $_GET['action'], [ 'publish', 'draft' ], true ) && isset( $_GET['questions'] ) ) {
+			$this->handle_bulk_status( 'publish' === $_GET['action'] ? 'published' : 'draft' );
 		}
 		// phpcs:enable WordPress.Security.NonceVerification.Recommended
 	}
@@ -630,6 +664,50 @@ class PressPrimer_Quiz_Admin_Questions {
 	}
 
 	/**
+	 * Handle the bulk Publish and Move to draft actions.
+	 *
+	 * Changes only questions the user wrote, or any question for
+	 * pressprimer_quiz_manage_all, through the model save (which fires
+	 * pressprimer_quiz_question_updated).
+	 *
+	 * @since 3.2.0
+	 *
+	 * @param string $status 'published' or 'draft'.
+	 */
+	private function handle_bulk_status( $status ) {
+		check_admin_referer( 'bulk-questions' );
+
+		if ( ! current_user_can( 'pressprimer_quiz_manage_own' ) && ! current_user_can( 'pressprimer_quiz_manage_all' ) ) {
+			wp_die( esc_html__( 'You do not have permission to change questions.', 'pressprimer-quiz' ) );
+		}
+
+		// phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotValidated -- Validated above via check_admin_referer
+		$question_ids = isset( $_GET['questions'] ) ? array_map( 'absint', wp_unslash( $_GET['questions'] ) ) : [];
+		$changed      = 0;
+
+		foreach ( $question_ids as $question_id ) {
+			$question = PressPrimer_Quiz_Question::get( $question_id );
+
+			if ( ! $question || $question->is_deleted() || $status === $question->status ) {
+				continue;
+			}
+
+			if ( ! current_user_can( 'pressprimer_quiz_manage_all' ) && absint( $question->author_id ) !== get_current_user_id() ) {
+				continue;
+			}
+
+			$question->status = $status;
+
+			if ( true === $question->save() ) {
+				++$changed;
+			}
+		}
+
+		wp_safe_redirect( add_query_arg( 'published' === $status ? 'published' : 'drafted', $changed, admin_url( 'admin.php?page=pressprimer-quiz-questions' ) ) );
+		exit;
+	}
+
+	/**
 	 * Handle question duplicate
 	 *
 	 * @since 1.0.0
@@ -717,6 +795,7 @@ class PressPrimer_Quiz_Questions_List_Table extends WP_List_Table {
 			'cb'         => '<input type="checkbox" />',
 			'id'         => __( 'ID', 'pressprimer-quiz' ),
 			'question'   => __( 'Question', 'pressprimer-quiz' ),
+			'status'     => __( 'Status', 'pressprimer-quiz' ),
 			'type'       => __( 'Type', 'pressprimer-quiz' ),
 			'difficulty' => __( 'Difficulty', 'pressprimer-quiz' ),
 			'categories' => __( 'Categories', 'pressprimer-quiz' ),
@@ -806,7 +885,9 @@ class PressPrimer_Quiz_Questions_List_Table extends WP_List_Table {
 	 */
 	public function get_bulk_actions() {
 		return [
-			'delete' => __( 'Delete', 'pressprimer-quiz' ),
+			'publish' => __( 'Publish', 'pressprimer-quiz' ),
+			'draft'   => __( 'Move to draft', 'pressprimer-quiz' ),
+			'delete'  => __( 'Delete', 'pressprimer-quiz' ),
 		];
 	}
 
@@ -828,6 +909,13 @@ class PressPrimer_Quiz_Questions_List_Table extends WP_List_Table {
 		$where_values    = [];
 
 		// phpcs:disable WordPress.Security.NonceVerification.Recommended -- Read-only filters for list table display
+		// Filter by status
+		$get_status = isset( $_GET['status'] ) ? sanitize_key( wp_unslash( $_GET['status'] ) ) : '';
+		if ( in_array( $get_status, [ 'published', 'draft' ], true ) ) {
+			$where_clauses[] = 'status = %s';
+			$where_values[]  = $get_status;
+		}
+
 		// Filter by type
 		$get_type = isset( $_GET['type'] ) ? sanitize_key( wp_unslash( $_GET['type'] ) ) : '';
 		if ( '' !== $get_type ) {
@@ -975,6 +1063,7 @@ class PressPrimer_Quiz_Questions_List_Table extends WP_List_Table {
 
 		?>
 		<div class="alignleft actions">
+			<?php $this->render_status_filter(); ?>
 			<?php $this->render_type_filter(); ?>
 			<?php $this->render_difficulty_filter(); ?>
 			<?php $this->render_category_filter(); ?>
@@ -996,6 +1085,29 @@ class PressPrimer_Quiz_Questions_List_Table extends WP_List_Table {
 			?>
 			<?php submit_button( __( 'Filter', 'pressprimer-quiz' ), '', 'filter_action', false ); ?>
 		</div>
+		<?php
+	}
+
+	/**
+	 * Render status filter
+	 *
+	 * @since 3.2.0
+	 */
+	private function render_status_filter() {
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only filter state for selected()
+		$current_status = isset( $_GET['status'] ) ? sanitize_key( wp_unslash( $_GET['status'] ) ) : '';
+
+		?>
+		<label class="screen-reader-text" for="filter-by-question-status"><?php esc_html_e( 'Filter by status', 'pressprimer-quiz' ); ?></label>
+		<select name="status" id="filter-by-question-status">
+			<option value=""><?php esc_html_e( 'All Statuses', 'pressprimer-quiz' ); ?></option>
+			<option value="published" <?php selected( $current_status, 'published' ); ?>>
+				<?php esc_html_e( 'Published', 'pressprimer-quiz' ); ?>
+			</option>
+			<option value="draft" <?php selected( $current_status, 'draft' ); ?>>
+				<?php esc_html_e( 'Draft', 'pressprimer-quiz' ); ?>
+			</option>
+		</select>
 		<?php
 	}
 
@@ -1243,6 +1355,24 @@ class PressPrimer_Quiz_Questions_List_Table extends WP_List_Table {
 			esc_html( $truncated ),
 			$this->row_actions( $actions )
 		);
+	}
+
+	/**
+	 * Column: Status
+	 *
+	 * Tags drafts; published questions show nothing.
+	 *
+	 * @since 3.2.0
+	 *
+	 * @param PressPrimer_Quiz_Question $item Question object.
+	 * @return string Column content.
+	 */
+	public function column_status( $item ) {
+		if ( 'draft' === $item->status ) {
+			return '<span class="ppq-question-status-tag">' . esc_html__( 'Draft', 'pressprimer-quiz' ) . '</span>';
+		}
+
+		return '';
 	}
 
 	/**

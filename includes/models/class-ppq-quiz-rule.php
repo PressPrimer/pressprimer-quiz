@@ -389,12 +389,16 @@ class PressPrimer_Quiz_Quiz_Rule extends PressPrimer_Quiz_Model {
 	 * Finds all questions that match this rule's criteria.
 	 * Returns question IDs that can be randomly selected for quiz generation.
 	 *
+	 * Only published, non-deleted questions match: nobody reviews what a rule
+	 * draws, so drafts reach a quiz only when an author adds them by hand.
+	 *
 	 * When the quiz's owner lacks pressprimer_quiz_manage_all, only questions
 	 * the owner may use match, for every rule of the quiz. The owner is judged,
 	 * never the student taking the quiz.
 	 *
 	 * @since 1.0.0
-	 * @since 3.2.0 Limited to questions the quiz owner may use.
+	 * @since 3.2.0 Limited to questions the quiz owner may use, and to
+	 *              published questions (drafts no longer match).
 	 *
 	 * @return array Array of question IDs.
 	 */
@@ -461,9 +465,9 @@ class PressPrimer_Quiz_Quiz_Rule extends PressPrimer_Quiz_Model {
 		$tax_table            = $wpdb->prefix . 'ppq_question_tax';
 		$bank_questions_table = $wpdb->prefix . 'ppq_bank_questions';
 
-		// Start with base query - published and draft questions, non-deleted
+		// Start with base query - published, non-deleted questions only
 		$where_clauses = [
-			"q.status IN ('published', 'draft')",
+			"q.status = 'published'",
 			'q.deleted_at IS NULL',
 		];
 		$join_clauses  = [];

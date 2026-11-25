@@ -1267,11 +1267,11 @@ class PressPrimer_Quiz_Quiz extends PressPrimer_Quiz_Model {
 				$question_ids[] = $item->question_id;
 			}
 
-			// Serve only questions that meet the same servability criteria
-			// dynamic-mode rules enforce (non-deleted, published or draft).
-			// Quiz items can outlive their question — e.g. references left
-			// behind before the 3.1.2 delete cascade — and those must never
-			// reach learners.
+			// Serve only non-deleted questions that are published or draft.
+			// Drafts stay servable here, unlike in rules: the author picked
+			// each item by hand. Quiz items can outlive their question — e.g.
+			// references left behind before the 3.1.2 delete cascade — and
+			// those must never reach learners.
 			$question_ids = $this->filter_servable_question_ids( $question_ids );
 		} else {
 			// Dynamic quiz - generate from rules
@@ -1342,13 +1342,16 @@ class PressPrimer_Quiz_Quiz extends PressPrimer_Quiz_Model {
 	/**
 	 * Filter a question ID list down to servable questions.
 	 *
-	 * Applies the same servability criteria dynamic-mode rule matching has
-	 * always enforced — `deleted_at IS NULL AND status IN ('published',
-	 * 'draft')` — so fixed quizzes cannot serve soft-deleted or archived
-	 * questions through stale item references. Order and duplicates in the
-	 * input are preserved; only unservable IDs are dropped.
+	 * Keeps questions with `deleted_at IS NULL AND status IN ('published',
+	 * 'draft')`, so fixed quizzes cannot serve soft-deleted or archived
+	 * questions through stale item references. Hand-picked drafts stay
+	 * servable by design; dynamic rules draw published questions only (3.2).
+	 * Order and duplicates in the input are preserved; only unservable IDs
+	 * are dropped.
 	 *
 	 * @since 3.1.2
+	 * @since 3.2.0 No longer the same criteria as rule matching, which draws
+	 *              published questions only.
 	 *
 	 * @param array $question_ids Question IDs in item order.
 	 * @return array Servable question IDs, original order preserved.

@@ -58,8 +58,8 @@ const QuestionsPanel = ({ quizId, generationMode }) => {
 	const [filterDifficulty, setFilterDifficulty] = useState('');
 	const [filterCategory, setFilterCategory] = useState('');
 	const [filterBank, setFilterBank] = useState('');
-	// Defaults to published so drafts and archived questions never mix in
-	// silently; '' means all statuses.
+	// Defaults to published so drafts never mix in silently; '' means
+	// published and draft (archived questions aren't offered).
 	const [filterStatus, setFilterStatus] = useState('published');
 	const [pagination, setPagination] = useState({ current: 1, pageSize: 10, total: 0 });
 	const [loadingQuestions, setLoadingQuestions] = useState(false);

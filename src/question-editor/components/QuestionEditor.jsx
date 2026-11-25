@@ -56,6 +56,7 @@ const QuestionEditor = ({ questionData = {} }) => {
 		{ id: 'a2', text: '', isCorrect: false, feedback: '', order: 2 },
 	]);
 	const [activeTab, setActiveTab] = useState('editor');
+	const status = Form.useWatch('status', form);
 
 	const isNew = !questionData.id;
 
@@ -68,6 +69,7 @@ const QuestionEditor = ({ questionData = {} }) => {
 			form.setFieldsValue({
 				stem: questionData.stem || '',
 				type: questionData.type || 'mc',
+				status: questionData.status || 'published',
 				difficulty: questionData.difficulty || undefined,
 				timeLimit: questionData.timeLimit || 0,
 				points: questionData.points || 1,
@@ -151,6 +153,14 @@ const QuestionEditor = ({ questionData = {} }) => {
 	};
 
 	/**
+	 * Publish a draft: set the status and save the question.
+	 */
+	const handlePublish = () => {
+		form.setFieldsValue({ status: 'published' });
+		form.submit();
+	};
+
+	/**
 	 * Handle cancel
 	 */
 	const handleCancel = () => {
@@ -215,6 +225,7 @@ const QuestionEditor = ({ questionData = {} }) => {
 					onFinish={handleSubmit}
 					initialValues={{
 						type: 'mc',
+						status: 'published',
 						difficulty: undefined,
 						timeLimit: 0,
 						points: 1.0,
@@ -272,6 +283,24 @@ const QuestionEditor = ({ questionData = {} }) => {
 								showIcon
 								closable
 							/>
+
+							{!isNew && status === 'draft' && (
+								<Alert
+									type="info"
+									showIcon
+									message={__('This question is a draft. Dynamic quizzes won\'t draw it until you publish it.', 'pressprimer-quiz')}
+									action={
+										<Button
+											type="primary"
+											size="small"
+											onClick={handlePublish}
+											loading={saving}
+										>
+											{__('Publish', 'pressprimer-quiz')}
+										</Button>
+									}
+								/>
+							)}
 						</Space>
 					</div>
 

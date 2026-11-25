@@ -12,6 +12,7 @@ import {
 	TrophyOutlined,
 	ClockCircleOutlined,
 	FireOutlined,
+	EyeOutlined,
 } from '@ant-design/icons';
 
 const { Title, Text } = Typography;
@@ -51,12 +52,31 @@ const MetadataPanel = ({ form }) => {
 				<Title level={5} style={{ marginBottom: 8, marginTop: 0 }}>
 					<Space>
 						{__('Question Settings', 'pressprimer-quiz')}
-						<Tooltip title={__('Configure difficulty, expected time, and point value for this question', 'pressprimer-quiz')}>
+						<Tooltip title={__('Configure status, difficulty, expected time, and point value for this question', 'pressprimer-quiz')}>
 							<QuestionCircleOutlined style={{ fontSize: 14, color: '#8c8c8c' }} />
 						</Tooltip>
 					</Space>
 				</Title>
 			</div>
+
+			{/* Status */}
+			<Form.Item
+				name="status"
+				label={
+					<Space>
+						<EyeOutlined />
+						<span>{__('Status', 'pressprimer-quiz')}</span>
+					</Space>
+				}
+				extra={__('Draft questions aren\'t drawn by dynamic quiz rules. You can still add them to a quiz by hand.', 'pressprimer-quiz')}
+			>
+				<Select
+					options={[
+						{ value: 'published', label: __('Published', 'pressprimer-quiz') },
+						{ value: 'draft', label: __('Draft', 'pressprimer-quiz') },
+					]}
+				/>
+			</Form.Item>
 
 			{/* Difficulty */}
 			<Form.Item

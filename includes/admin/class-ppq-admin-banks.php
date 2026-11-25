@@ -310,6 +310,21 @@ class PressPrimer_Quiz_Admin_Banks {
 			'manage_own' => current_user_can( 'pressprimer_quiz_manage_own' ),
 		];
 
+		// Help under the Visibility field. Addons that change who can see a
+		// bank say so here.
+		$bank_data['visibilityHelp'] = __( 'Private: Only you can access this bank. Shared: Teachers in your groups can access this bank.', 'pressprimer-quiz' );
+
+		/**
+		 * Filters the data the bank editor starts with.
+		 *
+		 * @since 3.2.0
+		 *
+		 * @param array  $bank_data Bank fields (empty for a new bank), userCan, visibilityHelp.
+		 * @param int    $bank_id   Bank ID; 0 for a new bank.
+		 * @param string $context   Where the editor runs: 'admin'.
+		 */
+		$bank_data = apply_filters( 'pressprimer_quiz_bank_editor_data', $bank_data, $bank_id, 'admin' );
+
 		// Localize script with data
 		wp_localize_script(
 			'ppq-bank-editor',
@@ -1395,13 +1410,14 @@ class PressPrimer_Quiz_Admin_Banks {
 			wp_die( esc_html__( 'You do not have permission to edit this bank.', 'pressprimer-quiz' ) );
 		}
 
-		// Add questions to bank
-		foreach ( $question_ids as $question_id ) {
-			$bank->add_question( $question_id );
+		// Only questions the user may use can be added; the search offers
+		// nothing else, so this stops crafted requests.
+		if ( ! empty( PressPrimer_Quiz_Question_Access_Service::get_unusable_question_ids( $question_ids, get_current_user_id() ) ) ) {
+			wp_die( esc_html__( 'You can\'t add one or more of these questions to this bank.', 'pressprimer-quiz' ) );
 		}
 
-		// Update count
-		$bank->update_question_count();
+		// Add questions to bank (updates the count)
+		$bank->add_questions( $question_ids );
 
 		// Redirect with success message
 		wp_safe_redirect(

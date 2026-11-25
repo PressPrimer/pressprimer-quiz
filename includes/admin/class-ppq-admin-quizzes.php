@@ -213,9 +213,23 @@ class PressPrimer_Quiz_Admin_Quizzes {
 		}
 
 		if ( isset( $_GET['duplicated'] ) && '1' === $_GET['duplicated'] ) {
+			$skipped = isset( $_GET['skipped'] ) ? absint( wp_unslash( $_GET['skipped'] ) ) : 0;
 			?>
 			<div class="notice notice-success is-dismissible">
-				<p><?php esc_html_e( 'Quiz duplicated successfully.', 'pressprimer-quiz' ); ?></p>
+				<p>
+					<?php
+					esc_html_e( 'Quiz duplicated successfully.', 'pressprimer-quiz' );
+
+					if ( $skipped > 0 ) {
+						echo ' ';
+						printf(
+							/* translators: %d: number of questions left out of the copy */
+							esc_html( _n( '%d question you can\'t use was left out.', '%d questions you can\'t use were left out.', $skipped, 'pressprimer-quiz' ) ),
+							(int) $skipped
+						);
+					}
+					?>
+				</p>
 			</div>
 			<?php
 		}
@@ -1047,23 +1061,25 @@ class PressPrimer_Quiz_Admin_Quizzes {
 		}
 
 		// Duplicate quiz (uses Quiz model's duplicate method)
-		$new_quiz = $quiz->duplicate();
+		$new_quiz = $quiz->duplicate( get_current_user_id() );
 
 		if ( is_wp_error( $new_quiz ) ) {
 			wp_die( esc_html( $new_quiz->get_error_message() ) );
 		}
 
+		$args = [
+			'action'     => 'edit',
+			'quiz'       => $new_quiz->id,
+			'duplicated' => '1',
+		];
+
+		// Fixed items whose questions this user can't use were left out.
+		if ( $new_quiz->get_duplicate_skipped_items() > 0 ) {
+			$args['skipped'] = $new_quiz->get_duplicate_skipped_items();
+		}
+
 		// Redirect to edit the new quiz
-		wp_safe_redirect(
-			add_query_arg(
-				[
-					'action'     => 'edit',
-					'quiz'       => $new_quiz->id,
-					'duplicated' => '1',
-				],
-				admin_url( 'admin.php?page=pressprimer-quiz-quizzes' )
-			)
-		);
+		wp_safe_redirect( add_query_arg( $args, admin_url( 'admin.php?page=pressprimer-quiz-quizzes' ) ) );
 		exit;
 	}
 

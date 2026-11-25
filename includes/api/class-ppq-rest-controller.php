@@ -68,6 +68,21 @@ class PressPrimer_Quiz_REST_Controller {
 					'callback'            => [ $this, 'update_question' ],
 					'permission_callback' => [ $this, 'check_permission' ],
 				],
+				[
+					'methods'             => WP_REST_Server::DELETABLE,
+					'callback'            => [ $this, 'delete_question' ],
+					'permission_callback' => [ $this, 'check_permission' ],
+				],
+			]
+		);
+
+		register_rest_route(
+			'ppq/v1',
+			'/questions/(?P<id>\d+)/duplicate',
+			[
+				'methods'             => WP_REST_Server::CREATABLE,
+				'callback'            => [ $this, 'duplicate_question' ],
+				'permission_callback' => [ $this, 'check_permission' ],
 			]
 		);
 
@@ -161,6 +176,27 @@ class PressPrimer_Quiz_REST_Controller {
 			]
 		);
 
+		// Bank membership (v3.2).
+		register_rest_route(
+			'ppq/v1',
+			'/banks/(?P<id>\d+)/questions',
+			[
+				'methods'             => WP_REST_Server::CREATABLE,
+				'callback'            => [ $this, 'add_bank_questions' ],
+				'permission_callback' => [ $this, 'check_permission' ],
+			]
+		);
+
+		register_rest_route(
+			'ppq/v1',
+			'/banks/(?P<id>\d+)/questions/(?P<question_id>\d+)',
+			[
+				'methods'             => WP_REST_Server::DELETABLE,
+				'callback'            => [ $this, 'remove_bank_question' ],
+				'permission_callback' => [ $this, 'check_permission' ],
+			]
+		);
+
 		// Quizzes endpoints
 		register_rest_route(
 			'ppq/v1',
@@ -175,6 +211,43 @@ class PressPrimer_Quiz_REST_Controller {
 							'type'              => 'boolean',
 							'required'          => false,
 							'sanitize_callback' => 'rest_sanitize_boolean',
+						],
+						// Any of these returns the paginated list (v3.2).
+						'page'                   => [
+							'type'              => 'integer',
+							'minimum'           => 1,
+							'validate_callback' => 'rest_validate_request_arg',
+							'sanitize_callback' => 'absint',
+						],
+						'per_page'               => [
+							'type'              => 'integer',
+							'minimum'           => 1,
+							'maximum'           => 100,
+							'validate_callback' => 'rest_validate_request_arg',
+							'sanitize_callback' => 'absint',
+						],
+						'search'                 => [
+							'type'              => 'string',
+							'validate_callback' => 'rest_validate_request_arg',
+							'sanitize_callback' => 'sanitize_text_field',
+						],
+						'status'                 => [
+							'type'              => 'string',
+							'enum'              => [ 'all', 'draft', 'published', 'archived' ],
+							'validate_callback' => 'rest_validate_request_arg',
+							'sanitize_callback' => 'sanitize_key',
+						],
+						'orderby'                => [
+							'type'              => 'string',
+							'enum'              => [ 'title', 'updated_at' ],
+							'validate_callback' => 'rest_validate_request_arg',
+							'sanitize_callback' => 'sanitize_key',
+						],
+						'order'                  => [
+							'type'              => 'string',
+							'enum'              => [ 'asc', 'desc' ],
+							'validate_callback' => 'rest_validate_request_arg',
+							'sanitize_callback' => 'sanitize_key',
 						],
 					],
 				],
@@ -211,6 +284,21 @@ class PressPrimer_Quiz_REST_Controller {
 					'callback'            => [ $this, 'update_quiz' ],
 					'permission_callback' => [ $this, 'check_permission' ],
 				],
+				[
+					'methods'             => WP_REST_Server::DELETABLE,
+					'callback'            => [ $this, 'delete_quiz' ],
+					'permission_callback' => [ $this, 'check_permission' ],
+				],
+			]
+		);
+
+		register_rest_route(
+			'ppq/v1',
+			'/quizzes/(?P<id>\d+)/duplicate',
+			[
+				'methods'             => WP_REST_Server::CREATABLE,
+				'callback'            => [ $this, 'duplicate_quiz' ],
+				'permission_callback' => [ $this, 'check_permission' ],
 			]
 		);
 
@@ -737,6 +825,103 @@ class PressPrimer_Quiz_REST_Controller {
 	}
 
 	/**
+	 * Load a quiz the current user may delete or duplicate.
+	 *
+	 * As get_owned_quiz_or_error(), and School's review containers
+	 * (is_review_quiz) are not found: they hold students' attempts and are
+	 * managed by School.
+	 *
+	 * @since 3.2.0
+	 *
+	 * @param int $quiz_id Quiz ID.
+	 * @return PressPrimer_Quiz_Quiz|WP_Error Quiz on success, error otherwise.
+	 */
+	private function get_owned_authoring_quiz_or_error( $quiz_id ) {
+		$quiz = $this->get_owned_quiz_or_error( $quiz_id );
+
+		if ( ! is_wp_error( $quiz ) && ! empty( $quiz->is_review_quiz ) ) {
+			return new WP_Error( 'not_found', __( 'Quiz not found.', 'pressprimer-quiz' ), [ 'status' => 404 ] );
+		}
+
+		return $quiz;
+	}
+
+	/**
+	 * Load a question the current user may change.
+	 *
+	 * Deleted questions are not found. Users without
+	 * pressprimer_quiz_manage_all may change only questions they wrote.
+	 *
+	 * @since 3.2.0
+	 *
+	 * @param int $question_id Question ID.
+	 * @return PressPrimer_Quiz_Question|WP_Error Question on success, error otherwise.
+	 */
+	private function get_owned_question_or_error( $question_id ) {
+		$question = PressPrimer_Quiz_Question::get( absint( $question_id ) );
+
+		if ( ! $question || $question->is_deleted() ) {
+			return new WP_Error( 'not_found', __( 'Question not found.', 'pressprimer-quiz' ), [ 'status' => 404 ] );
+		}
+
+		if ( ! current_user_can( 'pressprimer_quiz_manage_all' ) && absint( $question->author_id ) !== get_current_user_id() ) {
+			return new WP_Error( 'forbidden', __( 'You do not have permission.', 'pressprimer-quiz' ), [ 'status' => 403 ] );
+		}
+
+		return $question;
+	}
+
+	/**
+	 * Load a bank whose questions the current user may change.
+	 *
+	 * @since 3.2.0
+	 *
+	 * @param int $bank_id Bank ID.
+	 * @return PressPrimer_Quiz_Bank|WP_Error Bank for its owner and manage_all users, error otherwise.
+	 */
+	private function get_editable_bank_or_error( $bank_id ) {
+		$bank = PressPrimer_Quiz_Bank::get( absint( $bank_id ) );
+
+		if ( ! $bank || ! empty( $bank->deleted_at ) ) {
+			return new WP_Error( 'not_found', __( 'Bank not found.', 'pressprimer-quiz' ), [ 'status' => 404 ] );
+		}
+
+		if ( ! PressPrimer_Quiz_Question_Access_Service::can_edit_bank( $bank, get_current_user_id() ) ) {
+			return new WP_Error( 'forbidden', __( 'You do not have permission to edit this bank.', 'pressprimer-quiz' ), [ 'status' => 403 ] );
+		}
+
+		return $bank;
+	}
+
+	/**
+	 * Announce a change to a quiz's fixed items.
+	 *
+	 * @since 3.2.0
+	 *
+	 * @param int   $quiz_id Quiz ID.
+	 * @param int[] $added   Question IDs added.
+	 * @param int[] $removed Question IDs removed.
+	 * @param int[] $order   The question IDs in their new order when the order
+	 *                       changed; empty otherwise.
+	 */
+	private function fire_quiz_items_changed( $quiz_id, array $added, array $removed, array $order = [] ) {
+		/**
+		 * Fires after questions are added to, removed from or reordered in a
+		 * fixed quiz.
+		 *
+		 * @since 3.2.0
+		 *
+		 * @param int   $quiz_id   Quiz ID.
+		 * @param int[] $added     Question IDs added.
+		 * @param int[] $removed   Question IDs removed.
+		 * @param int[] $reordered The quiz's question IDs in their new order when
+		 *                         the order changed; empty otherwise.
+		 * @param int   $user_id   User who made the change.
+		 */
+		do_action( 'pressprimer_quiz_quiz_items_changed', absint( $quiz_id ), array_values( $added ), array_values( $removed ), array_values( $order ), get_current_user_id() );
+	}
+
+	/**
 	 * Build the error returned when a save names a bank the user doesn't own.
 	 *
 	 * @since 3.2.0
@@ -794,7 +979,22 @@ class PressPrimer_Quiz_REST_Controller {
 			'created_at'     => $bank->created_at,
 			'updated_at'     => $bank->updated_at,
 			'can_edit'       => PressPrimer_Quiz_Question_Access_Service::can_edit_bank( $bank, get_current_user_id() ),
+			'owner_name'     => $this->get_user_display_name( $bank->owner_id ),
 		];
+	}
+
+	/**
+	 * Get a user's display name for a REST response.
+	 *
+	 * @since 3.2.0
+	 *
+	 * @param int $user_id User ID.
+	 * @return string Display name, or '' for a missing user.
+	 */
+	private function get_user_display_name( $user_id ) {
+		$user = get_userdata( absint( $user_id ) );
+
+		return $user ? $user->display_name : '';
 	}
 
 	/**
@@ -1044,8 +1244,9 @@ class PressPrimer_Quiz_REST_Controller {
 	public function get_questions( $request ) {
 		global $wpdb;
 
-		$per_page    = absint( $request->get_param( 'per_page' ) ?: 100 );
+		$per_page    = min( 100, absint( $request->get_param( 'per_page' ) ?: 100 ) );
 		$page        = absint( $request->get_param( 'page' ) ?: 1 );
+		$scope       = sanitize_key( $request->get_param( 'scope' ) ?: '' );
 		$offset      = ( $page - 1 ) * $per_page;
 		$search      = sanitize_text_field( $request->get_param( 'search' ) ?: '' );
 		$status      = sanitize_key( $request->get_param( 'status' ) ?: '' );
@@ -1069,6 +1270,12 @@ class PressPrimer_Quiz_REST_Controller {
 		$usable_clause = PressPrimer_Quiz_Question_Access_Service::usable_questions_clause( get_current_user_id() );
 		if ( '' !== $usable_clause ) {
 			$where[] = $usable_clause;
+		}
+
+		// scope=own: only questions the user wrote, admins included.
+		if ( 'own' === $scope ) {
+			$where[]        = 'q.author_id = %d';
+			$where_values[] = get_current_user_id();
 		}
 
 		// Filter by status if provided
@@ -1147,6 +1354,9 @@ class PressPrimer_Quiz_REST_Controller {
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- REST API pagination, not suitable for caching
 		$rows = $wpdb->get_results( $wpdb->prepare( $query, $where_values ) ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
 
+		$user_id    = get_current_user_id();
+		$manage_all = current_user_can( 'pressprimer_quiz_manage_all' );
+
 		$data = [];
 		foreach ( $rows as $row ) {
 			$full_stem  = wp_strip_all_tags( $row->stem );
@@ -1161,6 +1371,11 @@ class PressPrimer_Quiz_REST_Controller {
 				'stem'       => $short_stem,
 				'stem_full'  => $full_stem,
 				'created_at' => $row->created_at,
+				'author_id'  => absint( $row->author_id ),
+				// The user may edit, duplicate and delete it.
+				'can_edit'   => $manage_all || absint( $row->author_id ) === $user_id,
+				// Local time, as stored.
+				'updated_at' => $row->updated_at,
 			];
 		}
 
@@ -1612,6 +1827,83 @@ class PressPrimer_Quiz_REST_Controller {
 			$wpdb->query( 'ROLLBACK' );
 			return new WP_Error( 'update_failed', $e->getMessage(), [ 'status' => 500 ] );
 		}
+	}
+
+	/**
+	 * Delete question
+	 *
+	 * Soft-deletes the question and removes it from every quiz and bank, as
+	 * the wp-admin delete does. Returns the titles of the quizzes it was
+	 * removed from.
+	 *
+	 * @since 3.2.0
+	 *
+	 * @param WP_REST_Request $request Request object.
+	 * @return WP_REST_Response|WP_Error Response or error.
+	 */
+	public function delete_question( $request ) {
+		$question = $this->get_owned_question_or_error( $request['id'] );
+		if ( is_wp_error( $question ) ) {
+			return $question;
+		}
+
+		// Read before the delete cascade removes the quiz items.
+		$quiz_titles = PressPrimer_Quiz_Question::get_quiz_titles_using_question( $question->id );
+
+		$result = $question->delete();
+
+		if ( true !== $result ) {
+			return new WP_Error( 'delete_failed', is_wp_error( $result ) ? $result->get_error_message() : __( 'Failed to delete question.', 'pressprimer-quiz' ), [ 'status' => 500 ] );
+		}
+
+		if ( class_exists( 'PressPrimer_Quiz_Statistics_Service' ) ) {
+			PressPrimer_Quiz_Statistics_Service::clear_dashboard_cache();
+		}
+
+		return new WP_REST_Response(
+			[
+				'deleted'              => true,
+				'id'                   => absint( $question->id ),
+				'removed_from_quizzes' => $quiz_titles,
+			],
+			200
+		);
+	}
+
+	/**
+	 * Duplicate question
+	 *
+	 * The copy is a draft the current user authors, in the source's banks
+	 * the user owns (as the wp-admin duplicate).
+	 *
+	 * @since 3.2.0
+	 *
+	 * @param WP_REST_Request $request Request object.
+	 * @return WP_REST_Response|WP_Error 201 with the copy's id and status, or error.
+	 */
+	public function duplicate_question( $request ) {
+		$question = $this->get_owned_question_or_error( $request['id'] );
+		if ( is_wp_error( $question ) ) {
+			return $question;
+		}
+
+		$new_question = $question->duplicate( get_current_user_id() );
+
+		if ( is_wp_error( $new_question ) ) {
+			return new WP_Error( 'duplicate_failed', $new_question->get_error_message(), [ 'status' => 500 ] );
+		}
+
+		if ( class_exists( 'PressPrimer_Quiz_Statistics_Service' ) ) {
+			PressPrimer_Quiz_Statistics_Service::clear_dashboard_cache();
+		}
+
+		return new WP_REST_Response(
+			[
+				'id'     => absint( $new_question->id ),
+				'status' => $new_question->status,
+			],
+			201
+		);
 	}
 
 	/**
@@ -2228,19 +2520,110 @@ class PressPrimer_Quiz_REST_Controller {
 	}
 
 	/**
+	 * Add questions to a bank
+	 *
+	 * Body: { question_ids: [] }. For the bank's owner and manage_all users.
+	 * Every question must be one the user may use. Questions already in the
+	 * bank are skipped.
+	 *
+	 * @since 3.2.0
+	 *
+	 * @param WP_REST_Request $request Request object.
+	 * @return WP_REST_Response|WP_Error The bank's question_count and the IDs added, or error.
+	 */
+	public function add_bank_questions( $request ) {
+		$bank = $this->get_editable_bank_or_error( $request['id'] );
+		if ( is_wp_error( $bank ) ) {
+			return $bank;
+		}
+
+		$data         = $request->get_json_params();
+		$question_ids = array_values( array_unique( array_filter( array_map( 'absint', (array) ( $data['question_ids'] ?? [] ) ) ) ) );
+
+		if ( empty( $question_ids ) ) {
+			return new WP_Error( 'no_questions', __( 'No questions provided.', 'pressprimer-quiz' ), [ 'status' => 400 ] );
+		}
+
+		if ( ! empty( PressPrimer_Quiz_Question_Access_Service::get_unusable_question_ids( $question_ids, get_current_user_id() ) ) ) {
+			return new WP_Error( 'question_not_allowed', __( 'You can\'t add one or more of these questions to this bank.', 'pressprimer-quiz' ), [ 'status' => 403 ] );
+		}
+
+		$added = $bank->add_questions( $question_ids );
+
+		return new WP_REST_Response(
+			[
+				'question_count' => absint( $bank->question_count ),
+				'added'          => $added,
+			],
+			200
+		);
+	}
+
+	/**
+	 * Remove a question from a bank
+	 *
+	 * For the bank's owner and manage_all users. The question itself is kept.
+	 *
+	 * @since 3.2.0
+	 *
+	 * @param WP_REST_Request $request Request object.
+	 * @return WP_REST_Response|WP_Error The bank's question_count, or error.
+	 */
+	public function remove_bank_question( $request ) {
+		$bank = $this->get_editable_bank_or_error( $request['id'] );
+		if ( is_wp_error( $bank ) ) {
+			return $bank;
+		}
+
+		$question_id = absint( $request['question_id'] );
+
+		if ( ! $bank->has_question( $question_id ) ) {
+			return new WP_Error( 'not_found', __( 'This question isn\'t in this bank.', 'pressprimer-quiz' ), [ 'status' => 404 ] );
+		}
+
+		$result = $bank->remove_question( $question_id );
+
+		if ( is_wp_error( $result ) ) {
+			return new WP_Error( 'remove_failed', $result->get_error_message(), [ 'status' => 500 ] );
+		}
+
+		return new WP_REST_Response(
+			[
+				'question_count' => absint( $bank->question_count ),
+				'removed'        => [ $question_id ],
+			],
+			200
+		);
+	}
+
+	/**
 	 * Get quizzes
 	 *
-	 * Returns quizzes the current user can access. Administrators see all quizzes,
-	 * while teachers see only their own quizzes.
+	 * Returns quizzes the current user can access. Users with
+	 * pressprimer_quiz_manage_all see all quizzes, everyone else only their
+	 * own. School's review containers are left out unless
+	 * include_review_quizzes is set.
+	 *
+	 * With none of page, per_page, search, status, orderby and order, returns
+	 * the legacy list: id and title, by title, at most 100. With any of them,
+	 * returns a page of fuller rows with X-WP-Total and X-WP-TotalPages.
 	 *
 	 * @since 1.0.0
 	 * @since 2.0.0 Implemented with owner filtering.
+	 * @since 3.2.0 See-all follows pressprimer_quiz_manage_all; added the
+	 *              paginated form.
 	 *
 	 * @param WP_REST_Request $request Request object.
 	 * @return WP_REST_Response Response object.
 	 */
 	public function get_quizzes( $request ) {
 		$user_id = get_current_user_id();
+
+		foreach ( [ 'page', 'per_page', 'search', 'status', 'orderby', 'order' ] as $param ) {
+			if ( null !== $request->get_param( $param ) ) {
+				return $this->get_quizzes_page( $request );
+			}
+		}
 
 		// Build query args.
 		$args = array(
@@ -2252,7 +2635,7 @@ class PressPrimer_Quiz_REST_Controller {
 		$where = array();
 
 		// Non-admins only see their own quizzes.
-		if ( ! current_user_can( 'manage_options' ) ) {
+		if ( ! current_user_can( 'pressprimer_quiz_manage_all' ) ) {
 			$where['owner_id'] = $user_id;
 		}
 
@@ -2279,6 +2662,108 @@ class PressPrimer_Quiz_REST_Controller {
 		}
 
 		return new WP_REST_Response( $items, 200 );
+	}
+
+	/**
+	 * Get one page of the quiz list.
+	 *
+	 * Rows: id, title, status, generation_mode, question_count (fixed: its
+	 * items; dynamic: the sum of its rules' counts), owner_id, owner_name and
+	 * updated_at (local time, as stored). Defaults: page 1, 20 per page,
+	 * newest update first.
+	 *
+	 * @since 3.2.0
+	 *
+	 * @param WP_REST_Request $request Request object.
+	 * @return WP_REST_Response Rows, with X-WP-Total and X-WP-TotalPages.
+	 */
+	private function get_quizzes_page( $request ) {
+		global $wpdb;
+
+		$page     = max( 1, absint( $request->get_param( 'page' ) ) );
+		$per_page = absint( $request->get_param( 'per_page' ) );
+		$per_page = $per_page ? min( 100, $per_page ) : 20;
+		$search   = (string) $request->get_param( 'search' );
+		$status   = (string) $request->get_param( 'status' );
+		$orderby  = 'title' === $request->get_param( 'orderby' ) ? 'title' : 'updated_at';
+		$order    = $request->get_param( 'order' );
+		$is_asc   = null === $order ? 'title' === $orderby : 'asc' === $order;
+
+		$where        = [];
+		$where_values = [];
+
+		if ( ! current_user_can( 'pressprimer_quiz_manage_all' ) ) {
+			$where[]        = 'owner_id = %d';
+			$where_values[] = get_current_user_id();
+		}
+
+		// School's review containers stay out, as in the legacy list.
+		if ( ! rest_sanitize_boolean( $request->get_param( 'include_review_quizzes' ) ) ) {
+			$where[]        = 'is_review_quiz = %d';
+			$where_values[] = 0;
+		}
+
+		if ( '' !== $status && 'all' !== $status ) {
+			$where[]        = 'status = %s';
+			$where_values[] = $status;
+		}
+
+		if ( '' !== $search ) {
+			$where[]        = 'title LIKE %s';
+			$where_values[] = '%' . $wpdb->esc_like( $search ) . '%';
+		}
+
+		$quizzes_table = $wpdb->prefix . 'ppq_quizzes';
+		$items_table   = $wpdb->prefix . 'ppq_quiz_items';
+		$rules_table   = $wpdb->prefix . 'ppq_quiz_rules';
+		$where_sql     = empty( $where ) ? '' : 'WHERE ' . implode( ' AND ', $where );
+
+		$count_query = "SELECT COUNT(*) FROM {$quizzes_table} {$where_sql}";
+		if ( ! empty( $where_values ) ) {
+			$count_query = $wpdb->prepare( $count_query, $where_values ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- Clauses built with placeholders above.
+		}
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- REST API pagination, not suitable for caching
+		$total = absint( $wpdb->get_var( $count_query ) ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- Prepared above, or no values to prepare.
+
+		$select = "SELECT id, title, status, generation_mode, owner_id, updated_at,
+				CASE WHEN generation_mode = 'fixed'
+					THEN ( SELECT COUNT(*) FROM {$items_table} qi WHERE qi.quiz_id = {$quizzes_table}.id )
+					ELSE ( SELECT COALESCE( SUM( qr.question_count ), 0 ) FROM {$rules_table} qr WHERE qr.quiz_id = {$quizzes_table}.id )
+				END AS question_count
+			FROM {$quizzes_table} {$where_sql}";
+
+		$query_values = array_merge( $where_values, [ $orderby, $per_page, ( $page - 1 ) * $per_page ] );
+
+		// The direction is written out in each branch, never interpolated.
+		if ( $is_asc ) {
+			$query = "{$select} ORDER BY %i ASC, id ASC LIMIT %d OFFSET %d";
+		} else {
+			$query = "{$select} ORDER BY %i DESC, id DESC LIMIT %d OFFSET %d";
+		}
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- REST API pagination, not suitable for caching
+		$rows = $wpdb->get_results( $wpdb->prepare( $query, $query_values ) ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- Table names from $wpdb->prefix; clauses built with placeholders above.
+
+		$data = [];
+		foreach ( $rows as $row ) {
+			$data[] = [
+				'id'              => absint( $row->id ),
+				'title'           => $row->title,
+				'status'          => $row->status,
+				'generation_mode' => $row->generation_mode,
+				'question_count'  => absint( $row->question_count ),
+				'owner_id'        => absint( $row->owner_id ),
+				'owner_name'      => $this->get_user_display_name( $row->owner_id ),
+				'updated_at'      => $row->updated_at,
+			];
+		}
+
+		$response = new WP_REST_Response( $data, 200 );
+		$response->header( 'X-WP-Total', (string) $total );
+		$response->header( 'X-WP-TotalPages', (string) (int) ceil( $total / $per_page ) );
+
+		return $response;
 	}
 
 	/**
@@ -2908,6 +3393,94 @@ class PressPrimer_Quiz_REST_Controller {
 	}
 
 	/**
+	 * Get a quiz's fixed-item question IDs in order.
+	 *
+	 * @since 3.2.0
+	 *
+	 * @param int $quiz_id Quiz ID.
+	 * @return int[] Question IDs.
+	 */
+	private function get_item_question_order( $quiz_id ) {
+		return array_map( 'absint', wp_list_pluck( PressPrimer_Quiz_Quiz_Item::get_for_quiz( absint( $quiz_id ) ), 'question_id' ) );
+	}
+
+	/**
+	 * Delete quiz
+	 *
+	 * Deletes the quiz row, as the wp-admin delete does. School's review
+	 * containers are not found.
+	 *
+	 * @since 3.2.0
+	 *
+	 * @param WP_REST_Request $request Request object.
+	 * @return WP_REST_Response|WP_Error Response or error.
+	 */
+	public function delete_quiz( $request ) {
+		$quiz = $this->get_owned_authoring_quiz_or_error( $request['id'] );
+		if ( is_wp_error( $quiz ) ) {
+			return $quiz;
+		}
+
+		$quiz_id = absint( $quiz->id );
+		$result  = $quiz->delete();
+
+		if ( true !== $result ) {
+			return new WP_Error( 'delete_failed', is_wp_error( $result ) ? $result->get_error_message() : __( 'Failed to delete quiz.', 'pressprimer-quiz' ), [ 'status' => 500 ] );
+		}
+
+		if ( class_exists( 'PressPrimer_Quiz_Statistics_Service' ) ) {
+			PressPrimer_Quiz_Statistics_Service::clear_dashboard_cache();
+		}
+
+		return new WP_REST_Response(
+			[
+				'deleted' => true,
+				'id'      => $quiz_id,
+			],
+			200
+		);
+	}
+
+	/**
+	 * Duplicate quiz
+	 *
+	 * The copy is a draft the current user owns. Fixed items whose questions
+	 * the user may not use are left out and counted in skipped_items.
+	 * School's review containers are not found.
+	 *
+	 * @since 3.2.0
+	 *
+	 * @param WP_REST_Request $request Request object.
+	 * @return WP_REST_Response|WP_Error 201 with id, title, status and skipped_items, or error.
+	 */
+	public function duplicate_quiz( $request ) {
+		$quiz = $this->get_owned_authoring_quiz_or_error( $request['id'] );
+		if ( is_wp_error( $quiz ) ) {
+			return $quiz;
+		}
+
+		$new_quiz = $quiz->duplicate( get_current_user_id() );
+
+		if ( is_wp_error( $new_quiz ) ) {
+			return new WP_Error( 'duplicate_failed', $new_quiz->get_error_message(), [ 'status' => 500 ] );
+		}
+
+		if ( class_exists( 'PressPrimer_Quiz_Statistics_Service' ) ) {
+			PressPrimer_Quiz_Statistics_Service::clear_dashboard_cache();
+		}
+
+		return new WP_REST_Response(
+			[
+				'id'            => absint( $new_quiz->id ),
+				'title'         => $new_quiz->title,
+				'status'        => $new_quiz->status,
+				'skipped_items' => $new_quiz->get_duplicate_skipped_items(),
+			],
+			201
+		);
+	}
+
+	/**
 	 * Get quiz items
 	 *
 	 * @since 1.0.0
@@ -2987,9 +3560,10 @@ class PressPrimer_Quiz_REST_Controller {
 
 		try {
 			$next_order = PressPrimer_Quiz_Quiz_Item::get_next_order_index( $quiz_id );
+			$added      = [];
 
 			foreach ( $question_ids as $question_id ) {
-				PressPrimer_Quiz_Quiz_Item::create(
+				$item_id = PressPrimer_Quiz_Quiz_Item::create(
 					[
 						'quiz_id'     => $quiz_id,
 						'question_id' => absint( $question_id ),
@@ -2997,9 +3571,18 @@ class PressPrimer_Quiz_REST_Controller {
 						'weight'      => 1.0,
 					]
 				);
+
+				// Questions already in the quiz are skipped.
+				if ( ! is_wp_error( $item_id ) ) {
+					$added[] = absint( $question_id );
+				}
 			}
 
 			$wpdb->query( 'COMMIT' );
+
+			if ( ! empty( $added ) ) {
+				$this->fire_quiz_items_changed( $quiz_id, $added, [] );
+			}
 
 			return new WP_REST_Response( [ 'success' => true ], 200 );
 
@@ -3050,8 +3633,14 @@ class PressPrimer_Quiz_REST_Controller {
 
 		// Update order index if provided
 		if ( isset( $data['order_index'] ) ) {
+			$before            = $this->get_item_question_order( $quiz->id );
 			$item->order_index = absint( $data['order_index'] );
 			$item->save();
+			$after = $this->get_item_question_order( $quiz->id );
+
+			if ( $after !== $before ) {
+				$this->fire_quiz_items_changed( $quiz->id, [], [], $after );
+			}
 		}
 
 		return new WP_REST_Response( [ 'success' => true ], 200 );
@@ -3080,7 +3669,9 @@ class PressPrimer_Quiz_REST_Controller {
 			return new WP_Error( 'not_found', __( 'Quiz item not found.', 'pressprimer-quiz' ), [ 'status' => 404 ] );
 		}
 
-		$item->delete();
+		if ( true === $item->delete() ) {
+			$this->fire_quiz_items_changed( $quiz->id, [], [ absint( $item->question_id ) ] );
+		}
 
 		return new WP_REST_Response( [ 'success' => true ], 200 );
 	}
@@ -3123,10 +3714,16 @@ class PressPrimer_Quiz_REST_Controller {
 			$order_map[ absint( $item_id ) ] = $index;
 		}
 
+		$before = $this->get_item_question_order( $quiz->id );
 		$result = PressPrimer_Quiz_Quiz_Item::reorder( $order_map );
 
 		if ( is_wp_error( $result ) ) {
 			return new WP_Error( 'reorder_failed', $result->get_error_message(), [ 'status' => 500 ] );
+		}
+
+		$after = $this->get_item_question_order( $quiz->id );
+		if ( $after !== $before ) {
+			$this->fire_quiz_items_changed( $quiz->id, [], [], $after );
 		}
 
 		return new WP_REST_Response( [ 'success' => true ], 200 );

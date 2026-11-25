@@ -772,6 +772,7 @@ class PressPrimer_Quiz_Admin_AI_Generation {
 			'difficulty_author' => $data['difficulty'],
 			'status'            => 'published',
 			'author_id'         => get_current_user_id(),
+			'source'            => 'ai',
 		];
 
 		$question_id = PressPrimer_Quiz_Question::create( $question_data );

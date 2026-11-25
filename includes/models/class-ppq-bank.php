@@ -254,11 +254,66 @@ class PressPrimer_Quiz_Bank extends PressPrimer_Quiz_Model {
 	 * Add question to bank
 	 *
 	 * @since 1.0.0
+	 * @since 3.2.0 Added $user_id; fires pressprimer_quiz_bank_questions_changed.
 	 *
 	 * @param int $question_id Question ID to add.
+	 * @param int $user_id     User making the change; 0 for the current user.
 	 * @return bool|WP_Error True on success, WP_Error on failure.
 	 */
-	public function add_question( $question_id ) {
+	public function add_question( $question_id, $user_id = 0 ) {
+		$result = $this->insert_question( $question_id );
+
+		if ( is_wp_error( $result ) ) {
+			return $result;
+		}
+
+		// Update question count
+		$this->update_question_count();
+
+		$this->fire_questions_changed( [ absint( $question_id ) ], [], $user_id );
+
+		return true;
+	}
+
+	/**
+	 * Add several questions to the bank
+	 *
+	 * Questions already in the bank, missing questions and invalid IDs are
+	 * skipped. The count is updated and pressprimer_quiz_bank_questions_changed
+	 * fires once for the batch.
+	 *
+	 * @since 3.2.0
+	 *
+	 * @param int[] $question_ids Question IDs to add.
+	 * @param int   $user_id      User making the change; 0 for the current user.
+	 * @return int[] The IDs added.
+	 */
+	public function add_questions( array $question_ids, $user_id = 0 ) {
+		$added = [];
+
+		foreach ( array_unique( array_map( 'absint', $question_ids ) ) as $question_id ) {
+			if ( true === $this->insert_question( $question_id ) ) {
+				$added[] = $question_id;
+			}
+		}
+
+		if ( ! empty( $added ) ) {
+			$this->update_question_count();
+			$this->fire_questions_changed( $added, [], $user_id );
+		}
+
+		return $added;
+	}
+
+	/**
+	 * Insert one bank membership row
+	 *
+	 * @since 3.2.0
+	 *
+	 * @param int $question_id Question ID to add.
+	 * @return true|WP_Error True when the row was added, WP_Error otherwise.
+	 */
+	private function insert_question( $question_id ) {
 		if ( empty( $this->id ) ) {
 			return new WP_Error(
 				'ppq_no_id',
@@ -320,9 +375,6 @@ class PressPrimer_Quiz_Bank extends PressPrimer_Quiz_Model {
 			);
 		}
 
-		// Update question count
-		$this->update_question_count();
-
 		return true;
 	}
 
@@ -330,11 +382,14 @@ class PressPrimer_Quiz_Bank extends PressPrimer_Quiz_Model {
 	 * Remove question from bank
 	 *
 	 * @since 1.0.0
+	 * @since 3.2.0 Added $user_id; fires pressprimer_quiz_bank_questions_changed
+	 *              when a membership was removed.
 	 *
 	 * @param int $question_id Question ID to remove.
+	 * @param int $user_id     User making the change; 0 for the current user.
 	 * @return bool|WP_Error True on success, WP_Error on failure.
 	 */
-	public function remove_question( $question_id ) {
+	public function remove_question( $question_id, $user_id = 0 ) {
 		if ( empty( $this->id ) ) {
 			return new WP_Error(
 				'ppq_no_id',
@@ -375,7 +430,41 @@ class PressPrimer_Quiz_Bank extends PressPrimer_Quiz_Model {
 		// Update question count
 		$this->update_question_count();
 
+		if ( $result > 0 ) {
+			$this->fire_questions_changed( [], [ $question_id ], $user_id );
+		}
+
 		return true;
+	}
+
+	/**
+	 * Announce a change to the bank's questions
+	 *
+	 * @since 3.2.0
+	 *
+	 * @param int[] $added   Question IDs added.
+	 * @param int[] $removed Question IDs removed.
+	 * @param int   $user_id User making the change; 0 for the current user.
+	 */
+	private function fire_questions_changed( array $added, array $removed, $user_id ) {
+		$user_id = absint( $user_id );
+		if ( ! $user_id ) {
+			$user_id = get_current_user_id();
+		}
+
+		/**
+		 * Fires after questions are added to or removed from a bank.
+		 *
+		 * Fires once per change: a batch add reports every question it added.
+		 *
+		 * @since 3.2.0
+		 *
+		 * @param int   $bank_id Bank ID.
+		 * @param int[] $added   Question IDs added.
+		 * @param int[] $removed Question IDs removed.
+		 * @param int   $user_id User who made the change.
+		 */
+		do_action( 'pressprimer_quiz_bank_questions_changed', (int) $this->id, array_values( $added ), array_values( $removed ), $user_id );
 	}
 
 	/**

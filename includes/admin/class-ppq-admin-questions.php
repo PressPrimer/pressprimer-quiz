@@ -487,39 +487,6 @@ class PressPrimer_Quiz_Admin_Questions {
 
 
 	/**
-	 * Get the titles of quizzes whose item lists use a question.
-	 *
-	 * Read before `PressPrimer_Quiz_Question::delete()` runs — the delete
-	 * cascade removes the underlying quiz item rows.
-	 *
-	 * @since 3.1.2
-	 *
-	 * @param int $question_id Question ID.
-	 * @return string[] Quiz titles, alphabetical.
-	 */
-	private function get_quiz_titles_using_question( $question_id ) {
-		global $wpdb;
-
-		$items_table   = $wpdb->prefix . 'ppq_quiz_items';
-		$quizzes_table = $wpdb->prefix . 'ppq_quizzes';
-
-		// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Custom tables from $wpdb->prefix; pre-delete reference lookup.
-		$titles = $wpdb->get_col(
-			$wpdb->prepare(
-				"SELECT DISTINCT qz.title
-				FROM {$items_table} qi
-				INNER JOIN {$quizzes_table} qz ON qz.id = qi.quiz_id
-				WHERE qi.question_id = %d
-				ORDER BY qz.title ASC",
-				$question_id
-			)
-		);
-		// phpcs:enable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-
-		return array_map( 'strval', (array) $titles );
-	}
-
-	/**
 	 * Count a question's quiz item placements.
 	 *
 	 * Read before `PressPrimer_Quiz_Question::delete()` runs — the delete
@@ -578,7 +545,7 @@ class PressPrimer_Quiz_Admin_Questions {
 
 		// Capture the quizzes referencing this question BEFORE the delete
 		// cascade removes those rows — the success notice names them.
-		$quiz_titles = $this->get_quiz_titles_using_question( $question_id );
+		$quiz_titles = PressPrimer_Quiz_Question::get_quiz_titles_using_question( $question_id );
 
 		// Soft delete
 		$result = $question->delete();
@@ -666,6 +633,7 @@ class PressPrimer_Quiz_Admin_Questions {
 	 * Handle question duplicate
 	 *
 	 * @since 1.0.0
+	 * @since 3.2.0 Copies through PressPrimer_Quiz_Question::duplicate().
 	 */
 	private function handle_duplicate() {
 		if ( ! isset( $_GET['question'] ) ) {
@@ -691,188 +659,25 @@ class PressPrimer_Quiz_Admin_Questions {
 			wp_die( esc_html__( 'You do not have permission to duplicate this question.', 'pressprimer-quiz' ) );
 		}
 
-		// Get current revision
-		$revision = $question->get_current_revision();
+		$new_question = $question->duplicate( get_current_user_id() );
 
-		if ( ! $revision ) {
-			wp_die( esc_html__( 'Question revision not found.', 'pressprimer-quiz' ) );
+		if ( is_wp_error( $new_question ) ) {
+			wp_die( esc_html( $new_question->get_error_message() ) );
 		}
 
-		global $wpdb;
-		$wpdb->query( 'START TRANSACTION' );
-
-		try {
-			// Create new question using static create method
-			$new_question_id = PressPrimer_Quiz_Question::create(
+		// Redirect to edit the new question
+		wp_safe_redirect(
+			add_query_arg(
 				[
-					'uuid'              => wp_generate_uuid4(),
-					'type'              => $question->type,
-					'difficulty_author' => $question->difficulty_author,
-					'expected_seconds'  => $question->expected_seconds,
-					'max_points'        => $question->max_points,
-					'author_id'         => get_current_user_id(), // Current user becomes author of duplicate
-					'status'            => 'draft', // Start as draft
-				]
-			);
-
-			if ( is_wp_error( $new_question_id ) ) {
-				throw new Exception( $new_question_id->get_error_message() );
-			}
-
-			// Load the newly created question
-			$new_question = PressPrimer_Quiz_Question::get( $new_question_id );
-
-			if ( ! $new_question ) {
-				throw new Exception( __( 'Failed to load duplicated question.', 'pressprimer-quiz' ) );
-			}
-
-			// Create new revision with duplicated content
-			$answers = $revision->get_answers();
-
-			// Regenerate answer IDs
-			$new_answers = [];
-			foreach ( $answers as $answer ) {
-				$new_answer       = $answer;
-				$new_answer['id'] = 'a' . wp_rand( 1000, 9999 );
-				$new_answers[]    = $new_answer;
-			}
-
-			// Prepend "Copy of" to stem to indicate it's a duplicate
-			$duplicated_stem = $revision->stem;
-			if ( 0 !== strpos( wp_strip_all_tags( $duplicated_stem ), 'Copy of ' ) ) {
-				// If it's a simple text stem, prepend
-				if ( wp_strip_all_tags( $duplicated_stem ) === $duplicated_stem ) {
-					$duplicated_stem = 'Copy of ' . $duplicated_stem;
-				} else {
-					// If it has HTML, wrap in a paragraph at the start
-					$duplicated_stem = '<p><strong>Copy of:</strong></p>' . $duplicated_stem;
-				}
-			}
-
-			$new_revision                     = new PressPrimer_Quiz_Question_Revision();
-			$new_revision->question_id        = $new_question->id;
-			$new_revision->version            = 1;
-			$new_revision->stem               = $duplicated_stem;
-			$new_revision->answers_json       = wp_json_encode( $new_answers );
-			$new_revision->settings_json      = $revision->settings_json;
-			$new_revision->feedback_correct   = $revision->feedback_correct;
-			$new_revision->feedback_incorrect = $revision->feedback_incorrect;
-			$new_revision->content_hash       = PressPrimer_Quiz_Question_Revision::generate_hash( $new_revision->stem, $new_answers );
-			$new_revision->created_by         = get_current_user_id();
-
-			$result = $new_revision->save();
-
-			if ( is_wp_error( $result ) ) {
-				throw new Exception( $result->get_error_message() );
-			}
-
-			// Update question to point to this revision
-			$new_question->current_revision_id = $new_revision->id;
-			$result                            = $new_question->save();
-
-			if ( is_wp_error( $result ) ) {
-				throw new Exception( $result->get_error_message() );
-			}
-
-			// Register image ownership for the duplicate. Each <img> that the
-			// v2.3 upload modal inserted carries a data-ppq-attachment-id
-			// attribute, so the duplicate becomes a co-owner of the same
-			// attachments via an additional `_ppq_question_id` meta row.
-			// Deleting either the original or the duplicate now leaves the
-			// shared attachment intact for the surviving question.
-			$ownership_html = (string) $new_revision->stem;
-			foreach ( $new_answers as $new_answer ) {
-				if ( ! empty( $new_answer['text'] ) ) {
-					$ownership_html .= ' ' . $new_answer['text'];
-				}
-				if ( ! empty( $new_answer['feedback'] ) ) {
-					$ownership_html .= ' ' . $new_answer['feedback'];
-				}
-			}
-			if ( ! empty( $new_revision->feedback_correct ) ) {
-				$ownership_html .= ' ' . $new_revision->feedback_correct;
-			}
-			if ( ! empty( $new_revision->feedback_incorrect ) ) {
-				$ownership_html .= ' ' . $new_revision->feedback_incorrect;
-			}
-			PressPrimer_Quiz_Question::register_image_ownership( $new_question->id, $ownership_html );
-
-			// Duplicate categories
-			$categories = $question->get_categories();
-			if ( ! empty( $categories ) ) {
-				$category_ids = array_map(
-					function ( $cat ) {
-						return $cat->id;
-					},
-					$categories
-				);
-				$new_question->set_categories( $category_ids );
-			}
-
-			// Duplicate tags
-			$tags = $question->get_tags();
-			if ( ! empty( $tags ) ) {
-				$tag_ids = array_map(
-					function ( $tag ) {
-						return $tag->id;
-					},
-					$tags
-				);
-				$new_question->set_tags( $tag_ids );
-			}
-
-			// Duplicate bank memberships
-			$bank_memberships_table = $wpdb->prefix . 'ppq_bank_questions';
-			$memberships            = $wpdb->get_results(
-				// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Table name is safely constructed from $wpdb->prefix
-				$wpdb->prepare(
-					"SELECT bank_id FROM {$bank_memberships_table} WHERE question_id = %d",
-					$question_id
-				)
-			);
-
-			if ( ! empty( $memberships ) ) {
-				foreach ( $memberships as $membership ) {
-					$wpdb->insert(
-						$bank_memberships_table,
-						[
-							'bank_id'     => $membership->bank_id,
-							'question_id' => $new_question->id,
-							'added_at'    => current_time( 'mysql' ),
-						],
-						[ '%d', '%d', '%s' ]
-					);
-
-					// Update bank question count
-					if ( class_exists( 'PressPrimer_Quiz_Bank' ) ) {
-						$bank = PressPrimer_Quiz_Bank::get( $membership->bank_id );
-						if ( $bank ) {
-							$bank->update_question_count();
-						}
-					}
-				}
-			}
-
-			$wpdb->query( 'COMMIT' );
-
-			// Redirect to edit the new question
-			wp_safe_redirect(
-				add_query_arg(
-					[
-						'page'       => 'pressprimer-quiz-questions',
-						'action'     => 'edit',
-						'question'   => $new_question->id,
-						'duplicated' => '1',
-					],
-					admin_url( 'admin.php' )
-				)
-			);
-			exit;
-
-		} catch ( Exception $e ) {
-			$wpdb->query( 'ROLLBACK' );
-			wp_die( esc_html( $e->getMessage() ) );
-		}
+					'page'       => 'pressprimer-quiz-questions',
+					'action'     => 'edit',
+					'question'   => $new_question->id,
+					'duplicated' => '1',
+				],
+				admin_url( 'admin.php' )
+			)
+		);
+		exit;
 	}
 }
 

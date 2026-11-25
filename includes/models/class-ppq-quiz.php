@@ -406,6 +406,14 @@ class PressPrimer_Quiz_Quiz extends PressPrimer_Quiz_Model {
 	private $_rules = null;
 
 	/**
+	 * Fixed items a duplicate left out (set on the quiz duplicate() returns)
+	 *
+	 * @since 3.2.0
+	 * @var int
+	 */
+	private $_duplicate_skipped_items = 0;
+
+	/**
 	 * Hard-coded defaults for the quiz display options
 	 *
 	 * Authoritative key list. All values default to true (existing behavior:
@@ -1490,26 +1498,52 @@ class PressPrimer_Quiz_Quiz extends PressPrimer_Quiz_Model {
 	 * Duplicate quiz
 	 *
 	 * Creates a copy of this quiz with all settings, items, and rules.
-	 * New quiz is set to draft status and owned by current user.
+	 * New quiz is set to draft status and owned by the user making the copy.
 	 * Uses transaction to ensure all-or-nothing operation.
 	 *
-	 * @since 1.0.0
+	 * Fixed items whose questions the user may not use are left out (users
+	 * without pressprimer_quiz_manage_all); get_duplicate_skipped_items() on
+	 * the returned quiz says how many. Rules copy as they are: run-time
+	 * scoping limits them to the new owner's questions. A copy is never a
+	 * School review container.
 	 *
+	 * @since 1.0.0
+	 * @since 3.2.0 Added $user_id. Copies is_practice and exposure_control,
+	 *              skips unusable fixed items, and fires
+	 *              pressprimer_quiz_quiz_duplicated.
+	 *
+	 * @param int $user_id User making the copy; 0 for the current user.
 	 * @return PressPrimer_Quiz_Quiz|WP_Error New quiz instance or WP_Error on failure.
 	 */
-	public function duplicate() {
+	public function duplicate( $user_id = 0 ) {
 		global $wpdb;
+
+		$user_id = absint( $user_id );
+		if ( ! $user_id ) {
+			$user_id = get_current_user_id();
+		}
+
+		$items             = 'fixed' === $this->generation_mode ? $this->get_items() : [];
+		$skipped_questions = [];
+		$skipped_items     = 0;
+
+		if ( ! empty( $items ) && ! user_can( $user_id, 'pressprimer_quiz_manage_all' ) ) {
+			$skipped_questions = PressPrimer_Quiz_Question_Access_Service::get_unusable_question_ids( wp_list_pluck( $items, 'question_id' ), $user_id );
+		}
 
 		$wpdb->query( 'START TRANSACTION' );
 
 		try {
-			// Create new quiz with copied settings
+			// Create new quiz with copied settings: every column that describes
+			// the quiz except its identity, owner, status, timestamps and
+			// is_review_quiz. The site default template fills nothing on a copy.
 			$new_quiz_data = [
+				'skip_default_template'    => true,
 				'uuid'                     => wp_generate_uuid4(),
 				'title'                    => $this->title . ' ' . __( '(Copy)', 'pressprimer-quiz' ),
 				'description'              => $this->description,
 				'featured_image_id'        => $this->featured_image_id,
-				'owner_id'                 => get_current_user_id(),
+				'owner_id'                 => $user_id,
 				'status'                   => 'draft',
 				'mode'                     => $this->mode,
 				'time_limit_seconds'       => $this->time_limit_seconds,
@@ -1539,6 +1573,8 @@ class PressPrimer_Quiz_Quiz extends PressPrimer_Quiz_Model {
 				'pool_enabled'             => $this->pool_enabled,
 				'max_questions'            => $this->max_questions,
 				'enable_sr'                => $this->enable_sr,
+				'is_practice'              => $this->is_practice,
+				'exposure_control'         => $this->exposure_control,
 				'use_measured_difficulty'  => $this->use_measured_difficulty,
 			];
 
@@ -1556,10 +1592,12 @@ class PressPrimer_Quiz_Quiz extends PressPrimer_Quiz_Model {
 
 			// Duplicate items or rules based on generation mode
 			if ( 'fixed' === $this->generation_mode ) {
-				// Duplicate quiz items
-				$items = $this->get_items();
-
 				foreach ( $items as $item ) {
+					if ( in_array( absint( $item->question_id ), $skipped_questions, true ) ) {
+						++$skipped_items;
+						continue;
+					}
+
 					$item_data = [
 						'quiz_id'     => $new_quiz->id,
 						'question_id' => $item->question_id,
@@ -1598,8 +1636,6 @@ class PressPrimer_Quiz_Quiz extends PressPrimer_Quiz_Model {
 
 			$wpdb->query( 'COMMIT' );
 
-			return $new_quiz;
-
 		} catch ( Exception $e ) {
 			$wpdb->query( 'ROLLBACK' );
 
@@ -1608,6 +1644,38 @@ class PressPrimer_Quiz_Quiz extends PressPrimer_Quiz_Model {
 				$e->getMessage()
 			);
 		}
+
+		$new_quiz->_duplicate_skipped_items = $skipped_items;
+
+		/**
+		 * Fires after a quiz is duplicated, once the copy is committed.
+		 *
+		 * Addons copy their own per-quiz data here (pre/post links, tags,
+		 * proctoring and branching settings).
+		 *
+		 * @since 3.2.0
+		 *
+		 * @param int $new_quiz_id    The copy's ID.
+		 * @param int $source_quiz_id The duplicated quiz's ID.
+		 * @param int $user_id        User who made the copy (its owner).
+		 */
+		do_action( 'pressprimer_quiz_quiz_duplicated', (int) $new_quiz->id, (int) $this->id, $user_id );
+
+		return $new_quiz;
+	}
+
+	/**
+	 * Count the fixed items a duplicate left out.
+	 *
+	 * Set on the quiz duplicate() returns: items whose questions the user who
+	 * made the copy may not use.
+	 *
+	 * @since 3.2.0
+	 *
+	 * @return int Number of items left out; 0 for quizzes that aren't copies.
+	 */
+	public function get_duplicate_skipped_items() {
+		return $this->_duplicate_skipped_items;
 	}
 
 	/**

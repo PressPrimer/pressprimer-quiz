@@ -747,42 +747,14 @@ class PressPrimer_Quiz_Admin {
 			$params[]           = $tag_id;
 		}
 
-		// Filter by author if not admin.
-		if ( ! current_user_can( 'pressprimer_quiz_manage_all' ) ) {
-			$current_user_id = get_current_user_id();
-
-			/**
-			 * Filter the author IDs whose questions are visible in the bank editor search.
-			 *
-			 * Non-admin users normally only see their own questions. Addons (e.g., Educator)
-			 * can expand this list to include questions from shared banks.
-			 *
-			 * @since 2.1.0
-			 *
-			 * @param int[] $author_ids Array of user IDs whose questions should be visible.
-			 * @param int   $user_id    The current user ID.
-			 */
-			$author_ids = apply_filters(
-				'pressprimer_quiz_search_question_author_ids',
-				array( $current_user_id ),
-				$current_user_id
-			);
-
-			$author_ids = array_unique( array_filter( array_map( 'absint', $author_ids ) ) );
-
-			if ( count( $author_ids ) === 1 ) {
-				$where_conditions[] = 'q.author_id = %d';
-				$params[]           = reset( $author_ids );
-			} elseif ( ! empty( $author_ids ) ) {
-				$placeholders       = implode( ',', array_fill( 0, count( $author_ids ), '%d' ) );
-				$where_conditions[] = "q.author_id IN ({$placeholders})";
-				foreach ( $author_ids as $aid ) {
-					$params[] = $aid;
-				}
-			} else {
-				// No accessible authors — show nothing.
-				$where_conditions[] = '1 = 0';
-			}
+		// Only questions the user may use: their own, those in banks they own,
+		// and those in banks shared with them (all of them for manage_all).
+		// Replaces the pressprimer_quiz_search_question_author_ids filter
+		// (3.2.0), which listed every question by an allowed author, private
+		// and unbanked ones included.
+		$usable_clause = PressPrimer_Quiz_Question_Access_Service::usable_questions_clause( get_current_user_id() );
+		if ( '' !== $usable_clause ) {
+			$where_conditions[] = $usable_clause;
 		}
 
 		// Exclude questions already in this bank
@@ -903,34 +875,11 @@ class PressPrimer_Quiz_Admin {
 		$revisions_table      = $wpdb->prefix . 'ppq_question_revisions';
 		$bank_questions_table = $wpdb->prefix . 'ppq_bank_questions';
 
-		// Determine visible author IDs for non-admins.
-		$current_user_id = get_current_user_id();
-
-		if ( current_user_can( 'pressprimer_quiz_manage_all' ) ) {
-			$author_clause = '';
-			$author_params = array();
-		} else {
-			/** This filter is documented in includes/admin/class-ppq-admin.php::ajax_search_questions */
-			$author_ids = apply_filters(
-				'pressprimer_quiz_search_question_author_ids',
-				array( $current_user_id ),
-				$current_user_id
-			);
-
-			$author_ids = array_unique( array_filter( array_map( 'absint', $author_ids ) ) );
-
-			if ( count( $author_ids ) === 1 ) {
-				$author_clause = 'AND q.author_id = %d';
-				$author_params = array( reset( $author_ids ) );
-			} elseif ( ! empty( $author_ids ) ) {
-				$placeholders  = implode( ',', array_fill( 0, count( $author_ids ), '%d' ) );
-				$author_clause = "AND q.author_id IN ({$placeholders})";
-				$author_params = $author_ids;
-			} else {
-				$author_clause = 'AND 1 = 0';
-				$author_params = array();
-			}
-		}
+		// Only questions the user may use (see ajax_search_questions()). The
+		// clause arrives prepared.
+		$usable_clause = PressPrimer_Quiz_Question_Access_Service::usable_questions_clause( get_current_user_id() );
+		$author_clause = '' !== $usable_clause ? 'AND ' . $usable_clause : '';
+		$author_params = array();
 
 		// Build query for recent questions.
 		// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Table names safely constructed from $wpdb->prefix
@@ -964,9 +913,14 @@ class PressPrimer_Quiz_Admin {
 			$count_params[] = $bank_id;
 		}
 
+		// The usable clause arrives prepared, so without a bank there may be
+		// nothing left to prepare.
+		if ( ! empty( $count_params ) ) {
+			$count_sql = $wpdb->prepare( $count_sql, $count_params ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- Query is prepared with placeholders
+		}
+
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Dynamic search with pagination, not suitable for caching
-		// phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- Query is prepared with placeholders
-		$total_items = absint( $wpdb->get_var( $wpdb->prepare( $count_sql, $count_params ) ) );
+		$total_items = absint( $wpdb->get_var( $count_sql ) ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- Prepared above, or built only from prepared parts.
 
 		// Add pagination
 		$sql     .= ' LIMIT %d OFFSET %d';

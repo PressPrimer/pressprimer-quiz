@@ -238,7 +238,7 @@ const BankEditor = ({ bankData = {} }) => {
 								<Form.Item
 									name="visibility"
 									label={__('Visibility', 'pressprimer-quiz')}
-									extra={__('Private: Only you can access this bank. Shared: Teachers in your groups can access this bank.', 'pressprimer-quiz')}
+									extra={bankData.visibilityHelp || __('Private: Only you can access this bank. Shared: Teachers in your groups can access this bank.', 'pressprimer-quiz')}
 									initialValue="private"
 								>
 									<Select size="large">

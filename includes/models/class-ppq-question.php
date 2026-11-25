@@ -223,6 +223,12 @@ class PressPrimer_Quiz_Question extends PressPrimer_Quiz_Model {
 			$data['status'] = 'published';
 		}
 
+		// Where the question came from, for listeners such as audit logs. Not
+		// stored: the parent create keeps only fillable fields.
+		if ( empty( $data['source'] ) || ! in_array( $data['source'], [ 'editor', 'ai', 'import', 'duplicate' ], true ) ) {
+			$data['source'] = 'editor';
+		}
+
 		// Call parent create
 		$question_id = parent::create( $data );
 
@@ -232,6 +238,7 @@ class PressPrimer_Quiz_Question extends PressPrimer_Quiz_Model {
 			 * Fires after a question is created.
 			 *
 			 * @since 2.0.0
+			 * @since 3.2.0 $data carries 'source': 'editor', 'ai', 'import' or 'duplicate'.
 			 *
 			 * @param int   $question_id The question ID.
 			 * @param array $data        The question data.
@@ -478,6 +485,28 @@ class PressPrimer_Quiz_Question extends PressPrimer_Quiz_Model {
 			global $wpdb;
 
 			// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Custom tables; intentional cascade on delete.
+			// Read what the cascade removes, for the hook below.
+			$removed = [
+				'bank_ids' => array_map(
+					'absint',
+					$wpdb->get_col(
+						$wpdb->prepare(
+							"SELECT DISTINCT bank_id FROM {$wpdb->prefix}ppq_bank_questions WHERE question_id = %d", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Table name from $wpdb->prefix.
+							$this->id
+						)
+					)
+				),
+				'quiz_ids' => array_map(
+					'absint',
+					$wpdb->get_col(
+						$wpdb->prepare(
+							"SELECT DISTINCT quiz_id FROM {$wpdb->prefix}ppq_quiz_items WHERE question_id = %d", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Table name from $wpdb->prefix.
+							$this->id
+						)
+					)
+				),
+			];
+
 			$wpdb->delete(
 				$wpdb->prefix . 'ppq_quiz_items',
 				[ 'question_id' => $this->id ],
@@ -494,13 +523,227 @@ class PressPrimer_Quiz_Question extends PressPrimer_Quiz_Model {
 			 * Fires after a question is soft-deleted.
 			 *
 			 * @since 2.0.0
+			 * @since 3.2.0 Added $removed.
 			 *
 			 * @param PressPrimer_Quiz_Question $question The question instance.
+			 * @param array                     $removed  What the delete removed the question from:
+			 *                                            'bank_ids' and 'quiz_ids' (int[]).
 			 */
-			do_action( 'pressprimer_quiz_question_deleted', $this );
+			do_action( 'pressprimer_quiz_question_deleted', $this, $removed );
 		}
 
 		return $result;
+	}
+
+	/**
+	 * Duplicate question
+	 *
+	 * Copies the current revision (the stem marked "Copy of", new answer IDs),
+	 * the categories, tags and image co-ownership into a new draft question
+	 * the user authors. Bank memberships are copied only for banks the user
+	 * owns, since questions are saved only into owned banks. All or nothing:
+	 * a failed copy leaves no rows behind.
+	 *
+	 * @since 3.2.0 Moved here from the wp-admin duplicate handler.
+	 *
+	 * @param int $user_id User making the copy; 0 for the current user.
+	 * @return PressPrimer_Quiz_Question|WP_Error The new question, or an error.
+	 */
+	public function duplicate( $user_id = 0 ) {
+		global $wpdb;
+
+		$user_id = absint( $user_id );
+		if ( ! $user_id ) {
+			$user_id = get_current_user_id();
+		}
+
+		if ( empty( $this->id ) || $this->is_deleted() ) {
+			return new WP_Error( 'ppq_question_not_found', __( 'Question not found.', 'pressprimer-quiz' ) );
+		}
+
+		$revision = $this->get_current_revision();
+
+		if ( ! $revision ) {
+			return new WP_Error( 'ppq_revision_not_found', __( 'Question revision not found.', 'pressprimer-quiz' ) );
+		}
+
+		// The copy joins the source's banks that the user owns.
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Membership read before a write.
+		$bank_ids = $wpdb->get_col(
+			$wpdb->prepare(
+				"SELECT bank_id FROM {$wpdb->prefix}ppq_bank_questions WHERE question_id = %d", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Table name from $wpdb->prefix.
+				$this->id
+			)
+		);
+		$bank_ids = array_map( 'absint', $bank_ids );
+		$bank_ids = array_values( array_diff( $bank_ids, PressPrimer_Quiz_Question_Access_Service::get_unowned_bank_ids( $bank_ids, $user_id ) ) );
+
+		$wpdb->query( 'START TRANSACTION' );
+
+		try {
+			$new_question_id = self::create(
+				[
+					'uuid'              => wp_generate_uuid4(),
+					'type'              => $this->type,
+					'difficulty_author' => $this->difficulty_author,
+					'expected_seconds'  => $this->expected_seconds,
+					'max_points'        => $this->max_points,
+					'author_id'         => $user_id,
+					'status'            => 'draft',
+					'source'            => 'duplicate',
+				]
+			);
+
+			if ( is_wp_error( $new_question_id ) ) {
+				throw new Exception( $new_question_id->get_error_message() );
+			}
+
+			$new_question = self::get( $new_question_id );
+
+			if ( ! $new_question ) {
+				throw new Exception( __( 'Failed to load duplicated question.', 'pressprimer-quiz' ) );
+			}
+
+			// New answer IDs, unique within the question.
+			$new_answers = [];
+			$used_ids    = [];
+			foreach ( $revision->get_answers() as $answer ) {
+				do {
+					$answer_id = 'a' . wp_rand( 1000, 9999 );
+				} while ( isset( $used_ids[ $answer_id ] ) );
+
+				$used_ids[ $answer_id ] = true;
+				$answer['id']           = $answer_id;
+				$new_answers[]          = $answer;
+			}
+
+			// Prepend "Copy of" to the stem to mark the duplicate.
+			$duplicated_stem = $revision->stem;
+			if ( 0 !== strpos( wp_strip_all_tags( $duplicated_stem ), 'Copy of ' ) ) {
+				if ( wp_strip_all_tags( $duplicated_stem ) === $duplicated_stem ) {
+					$duplicated_stem = 'Copy of ' . $duplicated_stem;
+				} else {
+					// HTML stem: add a paragraph at the start.
+					$duplicated_stem = '<p><strong>Copy of:</strong></p>' . $duplicated_stem;
+				}
+			}
+
+			$new_revision                     = new PressPrimer_Quiz_Question_Revision();
+			$new_revision->question_id        = $new_question->id;
+			$new_revision->version            = 1;
+			$new_revision->stem               = $duplicated_stem;
+			$new_revision->answers_json       = wp_json_encode( $new_answers );
+			$new_revision->settings_json      = $revision->settings_json;
+			$new_revision->feedback_correct   = $revision->feedback_correct;
+			$new_revision->feedback_incorrect = $revision->feedback_incorrect;
+			$new_revision->content_hash       = PressPrimer_Quiz_Question_Revision::generate_hash( $new_revision->stem, $new_answers );
+			$new_revision->created_by         = $user_id;
+
+			$result = $new_revision->save();
+
+			if ( is_wp_error( $result ) ) {
+				throw new Exception( $result->get_error_message() );
+			}
+
+			$new_question->current_revision_id = $new_revision->id;
+			$result                            = $new_question->save();
+
+			if ( is_wp_error( $result ) ) {
+				throw new Exception( $result->get_error_message() );
+			}
+
+			// The copy co-owns the source's uploaded images (each <img> from
+			// the v2.3 upload modal carries data-ppq-attachment-id), so
+			// deleting either question leaves the shared file for the other.
+			$ownership_html = (string) $new_revision->stem;
+			foreach ( $new_answers as $new_answer ) {
+				if ( ! empty( $new_answer['text'] ) ) {
+					$ownership_html .= ' ' . $new_answer['text'];
+				}
+				if ( ! empty( $new_answer['feedback'] ) ) {
+					$ownership_html .= ' ' . $new_answer['feedback'];
+				}
+			}
+			if ( ! empty( $new_revision->feedback_correct ) ) {
+				$ownership_html .= ' ' . $new_revision->feedback_correct;
+			}
+			if ( ! empty( $new_revision->feedback_incorrect ) ) {
+				$ownership_html .= ' ' . $new_revision->feedback_incorrect;
+			}
+			self::register_image_ownership( $new_question->id, $ownership_html );
+
+			$category_ids = wp_list_pluck( $this->get_categories(), 'id' );
+			if ( ! empty( $category_ids ) ) {
+				$new_question->set_categories( $category_ids );
+			}
+
+			$tag_ids = wp_list_pluck( $this->get_tags(), 'id' );
+			if ( ! empty( $tag_ids ) ) {
+				$new_question->set_tags( $tag_ids );
+			}
+
+			foreach ( $bank_ids as $bank_id ) {
+				$bank = PressPrimer_Quiz_Bank::get( $bank_id );
+				if ( $bank ) {
+					$result = $bank->add_question( $new_question->id, $user_id );
+
+					if ( is_wp_error( $result ) ) {
+						throw new Exception( $result->get_error_message() );
+					}
+				}
+			}
+
+			$wpdb->query( 'COMMIT' );
+		} catch ( Exception $e ) {
+			$wpdb->query( 'ROLLBACK' );
+
+			return new WP_Error( 'ppq_duplicate_failed', $e->getMessage() );
+		}
+
+		/**
+		 * Fires after a question is duplicated, once the copy is committed.
+		 *
+		 * Addons copy their own per-question data here.
+		 *
+		 * @since 3.2.0
+		 *
+		 * @param int $new_question_id    The copy's ID.
+		 * @param int $source_question_id The duplicated question's ID.
+		 * @param int $user_id            User who made the copy (its author).
+		 */
+		do_action( 'pressprimer_quiz_question_duplicated', (int) $new_question->id, (int) $this->id, $user_id );
+
+		return $new_question;
+	}
+
+	/**
+	 * Get the titles of quizzes whose item lists use a question.
+	 *
+	 * Read before delete() runs: the delete cascade removes the quiz item
+	 * rows.
+	 *
+	 * @since 3.1.2
+	 * @since 3.2.0 Moved here from the wp-admin questions screen.
+	 *
+	 * @param int $question_id Question ID.
+	 * @return string[] Quiz titles, alphabetical.
+	 */
+	public static function get_quiz_titles_using_question( $question_id ) {
+		global $wpdb;
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Pre-delete reference lookup.
+		$titles = $wpdb->get_col(
+			$wpdb->prepare(
+				"SELECT DISTINCT qz.title
+				FROM {$wpdb->prefix}ppq_quiz_items qi
+				INNER JOIN {$wpdb->prefix}ppq_quizzes qz ON qz.id = qi.quiz_id
+				WHERE qi.question_id = %d
+				ORDER BY qz.title ASC", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Table names from $wpdb->prefix.
+				absint( $question_id )
+			)
+		);
+
+		return array_map( 'strval', (array) $titles );
 	}
 
 	/**

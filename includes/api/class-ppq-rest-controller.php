@@ -1658,6 +1658,8 @@ class PressPrimer_Quiz_REST_Controller {
 	 *
 	 * @since 1.0.0
 	 * @since 3.2.0 Accepts status (published or draft); a body without one keeps the current status.
+	 * @since 3.2.0 Fields missing from the request keep their stored values;
+	 *              missing content comes from the current revision.
 	 *
 	 * @param WP_REST_Request $request Request object.
 	 * @return WP_REST_Response Response object.
@@ -1665,6 +1667,10 @@ class PressPrimer_Quiz_REST_Controller {
 	public function update_question( $request ) {
 		$question_id = absint( $request['id'] );
 		$data        = $request->get_json_params();
+
+		if ( ! is_array( $data ) ) {
+			$data = [];
+		}
 
 		$question = PressPrimer_Quiz_Question::get( $question_id );
 
@@ -1679,32 +1685,46 @@ class PressPrimer_Quiz_REST_Controller {
 			return new WP_Error( 'forbidden', __( 'You do not have permission.', 'pressprimer-quiz' ), [ 'status' => 403 ] );
 		}
 
-		// Convert answer format from React (isCorrect) to database (is_correct) for validation
-		$answers_for_validation = array_map(
-			function ( $answer ) {
-				return [
-					'text'       => $answer['text'] ?? '',
-					'is_correct' => $answer['isCorrect'] ?? false,
-				];
-			},
-			$data['answers'] ?? []
-		);
+		// Only the fields in the request change. Content the request leaves
+		// out comes from the current revision, so a partial update is
+		// validated as the question will be saved.
+		$current_revision = $question->get_current_revision();
+		$sent             = static function ( $key ) use ( $data ) {
+			return array_key_exists( $key, $data );
+		};
+		$content_sent     = $sent( 'stem' ) || $sent( 'answers' ) || $sent( 'feedbackCorrect' ) || $sent( 'feedbackIncorrect' );
+		$type             = $sent( 'type' ) ? sanitize_key( (string) $data['type'] ) : (string) $question->type;
 
-		// Validate question content before updating
-		$content_validation = PressPrimer_Quiz_Question::validate_content(
-			$data['stem'] ?? '',
-			$answers_for_validation,
-			sanitize_key( $data['type'] ?? 'mc' )
-		);
+		if ( $sent( 'stem' ) || $sent( 'answers' ) || $sent( 'type' ) ) {
+			// Convert answer format from React (isCorrect) to database (is_correct) for validation
+			$answers_for_validation = $sent( 'answers' )
+				? array_map(
+					function ( $answer ) {
+						return [
+							'text'       => $answer['text'] ?? '',
+							'is_correct' => $answer['isCorrect'] ?? false,
+						];
+					},
+					(array) $data['answers']
+				)
+				: ( $current_revision ? $current_revision->get_answers() : [] );
 
-		if ( is_wp_error( $content_validation ) ) {
-			return new WP_REST_Response(
-				[
-					'success' => false,
-					'message' => $content_validation->get_error_message(),
-				],
-				400
+			// Validate question content before updating
+			$content_validation = PressPrimer_Quiz_Question::validate_content(
+				$sent( 'stem' ) ? ( $data['stem'] ?? '' ) : ( $current_revision ? $current_revision->stem : '' ),
+				$answers_for_validation,
+				'' !== $type ? $type : 'mc'
 			);
+
+			if ( is_wp_error( $content_validation ) ) {
+				return new WP_REST_Response(
+					[
+						'success' => false,
+						'message' => $content_validation->get_error_message(),
+					],
+					400
+				);
+			}
 		}
 
 		// A body without a status keeps the current one.
@@ -1730,8 +1750,9 @@ class PressPrimer_Quiz_REST_Controller {
 			)
 		);
 
+		// A request without banks leaves memberships as they are.
 		$user_id   = get_current_user_id();
-		$new_banks = array_map( 'absint', (array) ( $data['banks'] ?? [] ) );
+		$new_banks = $sent( 'banks' ) ? array_map( 'absint', (array) $data['banks'] ) : $current_banks;
 		$to_add    = array_unique( array_diff( $new_banks, $current_banks ) );
 		$to_remove = array_diff( $current_banks, $new_banks );
 
@@ -1745,11 +1766,19 @@ class PressPrimer_Quiz_REST_Controller {
 
 		try {
 			// Update question metadata
-			$question->type              = sanitize_key( $data['type'] ?? '' );
-			$question->difficulty_author = sanitize_key( $data['difficulty'] ?? '' );
-			$question->expected_seconds  = absint( $data['timeLimit'] ?? 0 );
-			$question->max_points        = floatval( $data['points'] ?? 1 );
-			$question->status            = $status;
+			if ( $sent( 'type' ) ) {
+				$question->type = $type;
+			}
+			if ( $sent( 'difficulty' ) ) {
+				$question->difficulty_author = sanitize_key( (string) $data['difficulty'] );
+			}
+			if ( $sent( 'timeLimit' ) ) {
+				$question->expected_seconds = absint( $data['timeLimit'] );
+			}
+			if ( $sent( 'points' ) ) {
+				$question->max_points = floatval( $data['points'] ?? 1 );
+			}
+			$question->status = $status;
 
 			$result = $question->save();
 
@@ -1757,96 +1786,109 @@ class PressPrimer_Quiz_REST_Controller {
 				throw new Exception( $result->get_error_message() );
 			}
 
-			// Convert answer format from React (isCorrect) to database (is_correct)
-			$answers = array_map(
-				function ( $answer ) {
-					return [
-						'id'         => $answer['id'] ?? '',
-						'text'       => $this->trim_trailing_empty_html( wp_kses_post( $answer['text'] ?? '' ) ),
-						'is_correct' => $answer['isCorrect'] ?? false,
-						'feedback'   => $this->trim_trailing_empty_html( wp_kses_post( $answer['feedback'] ?? '' ) ),
-						'order'      => $answer['order'] ?? 1,
-					];
-				},
-				$data['answers'] ?? []
-			);
-
-			// Check if content changed (create new revision if it did)
-			$current_revision       = $question->get_current_revision();
-			$new_hash               = PressPrimer_Quiz_Question_Revision::generate_hash( $data['stem'], $answers );
-			$new_feedback_correct   = wp_kses_post( $data['feedbackCorrect'] ?? '' );
-			$new_feedback_incorrect = wp_kses_post( $data['feedbackIncorrect'] ?? '' );
-
-			// Check if feedback changed (feedback is also part of revision content).
-			$feedback_changed = false;
-			if ( $current_revision ) {
-				$feedback_changed = ( (string) $current_revision->feedback_correct !== $new_feedback_correct )
-					|| ( (string) $current_revision->feedback_incorrect !== $new_feedback_incorrect );
-			}
-
-			// The content hash normalizes for DEDUPE semantics — it strips
-			// tags, lowercases, and reduces answers to text + correctness.
-			// That made three kinds of edits invisible to the gate, so no
-			// revision was written and the submitted content was silently
-			// DISCARDED while the save reported success: per-answer feedback
-			// edits (not hashed at all), formatting-only stem/answer edits
-			// (bolding, links, images, markup cleanup — strip_tags erases
-			// them), and case-only text edits (lowercased away).
-			// Compare the sanitized stored values directly; the hash stays
-			// untouched so its dedupe meaning elsewhere is unchanged.
-			$new_stem_kses       = wp_kses_post( $data['stem'] ?? '' );
-			$raw_content_changed = false;
-			if ( $current_revision ) {
-				$raw_content_changed = ( (string) $current_revision->stem !== $new_stem_kses )
-					|| ( (string) $current_revision->answers_json !== wp_json_encode( $answers ) );
-			}
-
-			if ( ! $current_revision || $current_revision->content_hash !== $new_hash || $feedback_changed || $raw_content_changed ) {
-				// Create new revision
-				$revision                     = new PressPrimer_Quiz_Question_Revision();
-				$revision->question_id        = $question->id;
-				$revision->version            = $current_revision ? $current_revision->version + 1 : 1;
-				$revision->stem               = $new_stem_kses;
-				$revision->answers_json       = wp_json_encode( $answers );
-				$revision->settings_json      = wp_json_encode( [] );
-				$revision->feedback_correct   = $new_feedback_correct;
-				$revision->feedback_incorrect = $new_feedback_incorrect;
-				$revision->content_hash       = $new_hash;
-				$revision->created_by         = get_current_user_id();
-
-				$result = $revision->save();
-
-				if ( is_wp_error( $result ) ) {
-					throw new Exception( $result->get_error_message() );
+			// Revision content changes only when content is in the request.
+			if ( $content_sent ) {
+				// Content the request leaves out comes from the current revision.
+				// Convert answer format from React (isCorrect) to database (is_correct)
+				if ( $sent( 'answers' ) || ! $current_revision ) {
+					$answers      = array_map(
+						function ( $answer ) {
+							return [
+								'id'         => $answer['id'] ?? '',
+								'text'       => $this->trim_trailing_empty_html( wp_kses_post( $answer['text'] ?? '' ) ),
+								'is_correct' => $answer['isCorrect'] ?? false,
+								'feedback'   => $this->trim_trailing_empty_html( wp_kses_post( $answer['feedback'] ?? '' ) ),
+								'order'      => $answer['order'] ?? 1,
+							];
+						},
+						(array) ( $data['answers'] ?? [] )
+					);
+					$answers_json = wp_json_encode( $answers );
+				} else {
+					$answers      = $current_revision->get_answers();
+					$answers_json = (string) $current_revision->answers_json;
 				}
 
-				// Update question with new revision ID
-				$question->current_revision_id = $revision->id;
-				$question->save();
+				$current_stem           = $current_revision ? (string) $current_revision->stem : '';
+				$new_hash               = PressPrimer_Quiz_Question_Revision::generate_hash( $sent( 'stem' ) ? ( $data['stem'] ?? '' ) : $current_stem, $answers );
+				$new_feedback_correct   = $sent( 'feedbackCorrect' ) ? wp_kses_post( $data['feedbackCorrect'] ?? '' ) : ( $current_revision ? (string) $current_revision->feedback_correct : '' );
+				$new_feedback_incorrect = $sent( 'feedbackIncorrect' ) ? wp_kses_post( $data['feedbackIncorrect'] ?? '' ) : ( $current_revision ? (string) $current_revision->feedback_incorrect : '' );
 
-				// Register image ownership for any `data-ppq-attachment-id`
-				// markers in the new revision (free 2.3 decoupled-upload
-				// flow). Same idempotent helper as create_question; only
-				// runs when a new revision was actually saved.
-				$ownership_html = implode(
-					"\n",
-					array_merge(
-						array( $revision->stem ),
-						array_map(
-							static function ( $answer ) {
-								return isset( $answer['text'] ) ? (string) $answer['text'] : '';
-							},
-							$answers
-						),
-						array( $revision->feedback_correct, $revision->feedback_incorrect )
-					)
-				);
-				PressPrimer_Quiz_Question::register_image_ownership( $question->id, $ownership_html );
+				// Check if feedback changed (feedback is also part of revision content).
+				$feedback_changed = false;
+				if ( $current_revision ) {
+					$feedback_changed = ( (string) $current_revision->feedback_correct !== $new_feedback_correct )
+						|| ( (string) $current_revision->feedback_incorrect !== $new_feedback_incorrect );
+				}
+
+				// The content hash normalizes for DEDUPE semantics — it strips
+				// tags, lowercases, and reduces answers to text + correctness.
+				// That made three kinds of edits invisible to the gate, so no
+				// revision was written and the submitted content was silently
+				// DISCARDED while the save reported success: per-answer feedback
+				// edits (not hashed at all), formatting-only stem/answer edits
+				// (bolding, links, images, markup cleanup — strip_tags erases
+				// them), and case-only text edits (lowercased away).
+				// Compare the sanitized stored values directly; the hash stays
+				// untouched so its dedupe meaning elsewhere is unchanged.
+				$new_stem_kses       = $sent( 'stem' ) ? wp_kses_post( $data['stem'] ?? '' ) : $current_stem;
+				$raw_content_changed = false;
+				if ( $current_revision ) {
+					$raw_content_changed = ( (string) $current_revision->stem !== $new_stem_kses )
+						|| ( (string) $current_revision->answers_json !== $answers_json );
+				}
+
+				if ( ! $current_revision || $current_revision->content_hash !== $new_hash || $feedback_changed || $raw_content_changed ) {
+					// Create new revision
+					$revision                     = new PressPrimer_Quiz_Question_Revision();
+					$revision->question_id        = $question->id;
+					$revision->version            = $current_revision ? $current_revision->version + 1 : 1;
+					$revision->stem               = $new_stem_kses;
+					$revision->answers_json       = $answers_json;
+					$revision->settings_json      = wp_json_encode( [] );
+					$revision->feedback_correct   = $new_feedback_correct;
+					$revision->feedback_incorrect = $new_feedback_incorrect;
+					$revision->content_hash       = $new_hash;
+					$revision->created_by         = get_current_user_id();
+
+					$result = $revision->save();
+
+					if ( is_wp_error( $result ) ) {
+						throw new Exception( $result->get_error_message() );
+					}
+
+					// Update question with new revision ID
+					$question->current_revision_id = $revision->id;
+					$question->save();
+
+					// Register image ownership for any `data-ppq-attachment-id`
+					// markers in the new revision (free 2.3 decoupled-upload
+					// flow). Same idempotent helper as create_question; only
+					// runs when a new revision was actually saved.
+					$ownership_html = implode(
+						"\n",
+						array_merge(
+							array( $revision->stem ),
+							array_map(
+								static function ( $answer ) {
+									return isset( $answer['text'] ) ? (string) $answer['text'] : '';
+								},
+								$answers
+							),
+							array( $revision->feedback_correct, $revision->feedback_incorrect )
+						)
+					);
+					PressPrimer_Quiz_Question::register_image_ownership( $question->id, $ownership_html );
+				}
 			}
 
 			// Update taxonomies
-			$question->set_categories( array_map( 'absint', $data['categories'] ?? [] ) );
-			$question->set_tags( array_map( 'absint', $data['tags'] ?? [] ) );
+			if ( $sent( 'categories' ) ) {
+				$question->set_categories( array_map( 'absint', (array) $data['categories'] ) );
+			}
+			if ( $sent( 'tags' ) ) {
+				$question->set_tags( array_map( 'absint', (array) $data['tags'] ) );
+			}
 
 			// Update banks (worked out and checked before the transaction).
 			foreach ( $to_add as $bank_id ) {
@@ -2471,6 +2513,7 @@ class PressPrimer_Quiz_REST_Controller {
 	 * Update bank
 	 *
 	 * @since 1.0.0
+	 * @since 3.2.0 A description sent as null clears it.
 	 *
 	 * @param WP_REST_Request $request Request object.
 	 * @return WP_REST_Response|WP_Error Response or error.
@@ -2478,6 +2521,10 @@ class PressPrimer_Quiz_REST_Controller {
 	public function update_bank( $request ) {
 		$bank_id = absint( $request['id'] );
 		$params  = $request->get_json_params();
+
+		if ( ! is_array( $params ) ) {
+			$params = [];
+		}
 
 		$bank = PressPrimer_Quiz_Bank::get( $bank_id );
 
@@ -2491,13 +2538,14 @@ class PressPrimer_Quiz_REST_Controller {
 			return new WP_Error( 'forbidden', __( 'You do not have permission to edit this bank.', 'pressprimer-quiz' ), [ 'status' => 403 ] );
 		}
 
-		// Update fields
+		// Only the fields in the request change; a description sent empty
+		// (or null) clears it.
 		if ( isset( $params['name'] ) ) {
 			$bank->name = sanitize_text_field( $params['name'] );
 		}
 
-		if ( isset( $params['description'] ) ) {
-			$bank->description = sanitize_textarea_field( $params['description'] );
+		if ( array_key_exists( 'description', $params ) ) {
+			$bank->description = sanitize_textarea_field( (string) $params['description'] );
 		}
 
 		if ( isset( $params['visibility'] ) && in_array( $params['visibility'], [ 'private', 'shared' ] ) ) {
@@ -3294,7 +3342,12 @@ class PressPrimer_Quiz_REST_Controller {
 	/**
 	 * Update quiz
 	 *
+	 * Only the fields present in the request change. The editor sends only
+	 * the fields it renders (an unopened tab, a hidden field), so a missing
+	 * key keeps its stored value; a key sent empty still resets it.
+	 *
 	 * @since 1.0.0
+	 * @since 3.2.0 Fields missing from the request keep their stored values.
 	 *
 	 * @param WP_REST_Request $request Request object.
 	 * @return WP_REST_Response|WP_Error Response object or error.
@@ -3302,6 +3355,10 @@ class PressPrimer_Quiz_REST_Controller {
 	public function update_quiz( $request ) {
 		$quiz_id = absint( $request['id'] );
 		$data    = $request->get_json_params();
+
+		if ( ! is_array( $data ) ) {
+			$data = [];
+		}
 
 		$quiz = PressPrimer_Quiz_Quiz::get( $quiz_id );
 
@@ -3337,46 +3394,95 @@ class PressPrimer_Quiz_REST_Controller {
 			return $max_answers_per_question;
 		}
 
+		$bool = static function ( $value ) {
+			return ! empty( $value );
+		};
+
+		$nullable_int = static function ( $value ) {
+			return ! empty( $value ) ? absint( $value ) : null;
+		};
+
+		// How each field is read when it's in the request.
+		$fields = [
+			'title'                    => static function ( $value ) {
+				return sanitize_text_field( (string) $value );
+			},
+			'description'              => static function ( $value ) {
+				return wp_kses_post( (string) $value );
+			},
+			'featured_image_id'        => 'absint',
+			'status'                   => static function ( $value ) {
+				return sanitize_key( $value ?? 'draft' );
+			},
+			'mode'                     => static function ( $value ) {
+				return sanitize_key( $value ?? 'tutorial' );
+			},
+			'time_limit_seconds'       => $nullable_int,
+			'pass_percent'             => static function ( $value ) {
+				return floatval( $value ?? 70 );
+			},
+			'allow_skip'               => $bool,
+			'allow_backward'           => $bool,
+			'allow_resume'             => $bool,
+			'max_attempts'             => $nullable_int,
+			'attempt_delay_minutes'    => 'absint',
+			'randomize_questions'      => $bool,
+			'randomize_answers'        => $bool,
+			'page_mode'                => static function ( $value ) {
+				return sanitize_key( $value ?? 'single' );
+			},
+			'questions_per_page'       => static function ( $value ) {
+				return absint( $value ?? 1 );
+			},
+			'show_answers'             => static function ( $value ) {
+				return sanitize_key( $value ?? 'after_submit' );
+			},
+			'enable_confidence'        => $bool,
+			'show_points'              => $bool,
+			'theme'                    => static function ( $value ) {
+				return sanitize_key( $value ?? 'default' );
+			},
+			'display_density'          => static function ( $value ) {
+				return sanitize_key( $value ?? 'default' );
+			},
+			'theme_settings_json'      => null,
+			'band_feedback_json'       => null,
+			'generation_mode'          => static function ( $value ) {
+				return sanitize_key( $value ?? 'fixed' );
+			},
+			'access_mode'              => static function ( $value ) {
+				return sanitize_key( $value ?? 'default' );
+			},
+			'login_message'            => static function ( $value ) {
+				return wp_kses_post( (string) $value );
+			},
+			'pool_enabled'             => $bool,
+			'max_questions'            => static function ( $value ) {
+				return ( '' !== $value && null !== $value ) ? absint( $value ) : null;
+			},
+			'enable_sr'                => $bool,
+			'use_measured_difficulty'  => $bool,
+			'is_review_quiz'           => $bool,
+			'is_practice'              => $bool,
+			'exposure_control'         => $bool,
+			'ma_scoring_mode'          => static function () use ( $ma_scoring_mode ) {
+				return $ma_scoring_mode;
+			},
+			'max_answers_per_question' => static function () use ( $max_answers_per_question ) {
+				return $max_answers_per_question;
+			},
+		];
+
 		global $wpdb;
 		$wpdb->query( 'START TRANSACTION' );
 
 		try {
-			// Update quiz fields
-			$quiz->title                    = sanitize_text_field( $data['title'] );
-			$quiz->description              = wp_kses_post( $data['description'] ?? '' );
-			$quiz->featured_image_id        = absint( $data['featured_image_id'] ?? 0 );
-			$quiz->status                   = sanitize_key( $data['status'] ?? 'draft' );
-			$quiz->mode                     = sanitize_key( $data['mode'] ?? 'tutorial' );
-			$quiz->time_limit_seconds       = ! empty( $data['time_limit_seconds'] ) ? absint( $data['time_limit_seconds'] ) : null;
-			$quiz->pass_percent             = floatval( $data['pass_percent'] ?? 70 );
-			$quiz->allow_skip               = ! empty( $data['allow_skip'] );
-			$quiz->allow_backward           = ! empty( $data['allow_backward'] );
-			$quiz->allow_resume             = ! empty( $data['allow_resume'] );
-			$quiz->max_attempts             = ! empty( $data['max_attempts'] ) ? absint( $data['max_attempts'] ) : null;
-			$quiz->attempt_delay_minutes    = absint( $data['attempt_delay_minutes'] ?? 0 );
-			$quiz->randomize_questions      = ! empty( $data['randomize_questions'] );
-			$quiz->randomize_answers        = ! empty( $data['randomize_answers'] );
-			$quiz->page_mode                = sanitize_key( $data['page_mode'] ?? 'single' );
-			$quiz->questions_per_page       = absint( $data['questions_per_page'] ?? 1 );
-			$quiz->show_answers             = sanitize_key( $data['show_answers'] ?? 'after_submit' );
-			$quiz->enable_confidence        = ! empty( $data['enable_confidence'] );
-			$quiz->show_points              = ! empty( $data['show_points'] );
-			$quiz->theme                    = sanitize_key( $data['theme'] ?? 'default' );
-			$quiz->display_density          = sanitize_key( $data['display_density'] ?? 'default' );
-			$quiz->theme_settings_json      = $data['theme_settings_json'] ?? null;
-			$quiz->band_feedback_json       = $data['band_feedback_json'] ?? null;
-			$quiz->generation_mode          = sanitize_key( $data['generation_mode'] ?? 'fixed' );
-			$quiz->access_mode              = sanitize_key( $data['access_mode'] ?? 'default' );
-			$quiz->login_message            = wp_kses_post( $data['login_message'] ?? '' );
-			$quiz->pool_enabled             = ! empty( $data['pool_enabled'] );
-			$quiz->max_questions            = isset( $data['max_questions'] ) && '' !== $data['max_questions'] && null !== $data['max_questions'] ? absint( $data['max_questions'] ) : null;
-			$quiz->enable_sr                = ! empty( $data['enable_sr'] );
-			$quiz->use_measured_difficulty  = ! empty( $data['use_measured_difficulty'] );
-			$quiz->is_review_quiz           = ! empty( $data['is_review_quiz'] );
-			$quiz->is_practice              = ! empty( $data['is_practice'] );
-			$quiz->exposure_control         = ! empty( $data['exposure_control'] );
-			$quiz->ma_scoring_mode          = $ma_scoring_mode;
-			$quiz->max_answers_per_question = $max_answers_per_question;
+			// Only the fields in the request change (null reader = stored as sent).
+			foreach ( $fields as $key => $read ) {
+				if ( array_key_exists( $key, $data ) ) {
+					$quiz->$key = null === $read ? $data[ $key ] : $read( $data[ $key ] );
+				}
+			}
 
 			// Apply display_settings via the model setter using the
 			// pre-validated payload from sanitize_display_settings() above.

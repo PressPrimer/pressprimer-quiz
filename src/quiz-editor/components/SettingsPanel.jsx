@@ -133,8 +133,12 @@ const SettingsPanel = ({ form, generationMode, setGenerationMode, quizData = {},
 	const passPercent = Form.useWatch('pass_percent', form);
 
 	// Watch scoring mode so the selected card highlights as the user clicks.
+	// The field is null while the quiz uses the site default; choosing the
+	// Site Default card sets it back to null (QuizEditor).
 	const maScoringMode = Form.useWatch('ma_scoring_mode', form);
 	const siteDefaultMaScoring = quizData.default_ma_scoring || 'right_minus_wrong';
+	const effectiveMaScoring = maScoringMode || siteDefaultMaScoring;
+	const toMaScoringValue = (value) => (value === siteDefaultMaScoring ? null : value);
 
 	// Scoring-mode copy (labels, descriptions, examples) localized from PHP's
 	// shared copy provider — see PressPrimer_Quiz_Scoring_Copy::get_modes_for_js().
@@ -545,11 +549,16 @@ const SettingsPanel = ({ form, generationMode, setGenerationMode, quizData = {},
 					{__('Examples below assume a question worth 1 point where 3 of the answer options are marked correct.', 'pressprimer-quiz')}
 				</Text>
 
-				<Form.Item name="ma_scoring_mode" style={{ marginBottom: 0 }}>
+				<Form.Item
+					name="ma_scoring_mode"
+					style={{ marginBottom: 0 }}
+					getValueProps={(value) => ({ value: value || siteDefaultMaScoring })}
+					normalize={toMaScoringValue}
+				>
 					<Radio.Group style={{ width: '100%' }}>
 						<Space direction="vertical" style={{ width: '100%' }} size="small">
 							{maScoringOptions.map((option) => {
-								const isSelected = maScoringMode === option.value;
+								const isSelected = effectiveMaScoring === option.value;
 								const isSiteDefault = option.value === siteDefaultMaScoring;
 								return (
 									<Card
@@ -561,7 +570,7 @@ const SettingsPanel = ({ form, generationMode, setGenerationMode, quizData = {},
 											backgroundColor: isSelected ? '#e6f7ff' : '#fff',
 											cursor: 'pointer',
 										}}
-										onClick={() => form.setFieldsValue({ ma_scoring_mode: option.value })}
+										onClick={() => form.setFieldsValue({ ma_scoring_mode: toMaScoringValue(option.value) })}
 									>
 										<Row gutter={12} align="top" wrap={false} style={{ width: '100%' }}>
 											<Col flex="none" style={{ paddingTop: 2 }}>

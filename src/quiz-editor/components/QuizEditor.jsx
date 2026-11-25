@@ -43,6 +43,23 @@ const { Title, Paragraph } = Typography;
  * @param {Object} props Component props
  * @param {Object} props.quizData Initial quiz data
  */
+/**
+ * Multiple-answer scoring value for the form.
+ *
+ * The form holds null while the quiz uses the site default, so a save never
+ * pins the quiz to today's default. The default itself can't be picked as a
+ * fixed mode (choosing it means "use the site default"), so a stored value
+ * equal to it is read as null too.
+ *
+ * @param {string|null} value    Stored or template value.
+ * @param {Object}      quizData Editor boot data (default_ma_scoring).
+ * @return {string|null} A mode other than the site default, or null.
+ */
+const toFormMaScoring = (value, quizData) => {
+	const siteDefault = quizData.default_ma_scoring || 'right_minus_wrong';
+	return value && value !== siteDefault ? value : null;
+};
+
 const QuizEditor = ({ quizData = {} }) => {
 	const [form] = Form.useForm();
 	const [loading, setLoading] = useState(false);
@@ -100,7 +117,7 @@ const QuizEditor = ({ quizData = {} }) => {
 				generation_mode: quizData.generation_mode || 'fixed',
 				access_mode: quizData.access_mode || 'default',
 				login_message: quizData.login_message || '',
-				ma_scoring_mode: quizData.ma_scoring_mode || quizData.default_ma_scoring || 'right_minus_wrong',
+				ma_scoring_mode: toFormMaScoring(quizData.ma_scoring_mode, quizData),
 				display_settings: quizData.display_settings && typeof quizData.display_settings === 'object' && ! Array.isArray(quizData.display_settings)
 					? { ...quizData.display_settings }
 					: {},
@@ -315,6 +332,10 @@ const QuizEditor = ({ quizData = {} }) => {
 				patch[key] = !! Number(value);
 				return;
 			}
+			if (key === 'ma_scoring_mode') {
+				patch[key] = toFormMaScoring(value, quizData);
+				return;
+			}
 			patch[key] = value;
 		});
 
@@ -522,7 +543,7 @@ const QuizEditor = ({ quizData = {} }) => {
 						attempt_delay_minutes: 0,
 						access_mode: 'default',
 						login_message: '',
-						ma_scoring_mode: quizData.ma_scoring_mode || quizData.default_ma_scoring || 'right_minus_wrong',
+						ma_scoring_mode: toFormMaScoring(quizData.ma_scoring_mode, quizData),
 						display_settings: quizData.display_settings && typeof quizData.display_settings === 'object' && ! Array.isArray(quizData.display_settings)
 							? { ...quizData.display_settings }
 							: {},

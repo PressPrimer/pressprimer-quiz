@@ -283,47 +283,9 @@ class PressPrimer_Quiz_Admin_Banks {
 			PRESSPRIMER_QUIZ_VERSION
 		);
 
-		// Prepare bank data for JavaScript
-		$bank_data = [];
-
-		if ( $bank_id > 0 ) {
-			$bank = PressPrimer_Quiz_Bank::get( $bank_id );
-
-			if ( $bank ) {
-				$bank_data = [
-					'id'             => $bank->id,
-					'uuid'           => $bank->uuid,
-					'name'           => $bank->name,
-					'description'    => $bank->description,
-					'owner_id'       => $bank->owner_id,
-					'visibility'     => $bank->visibility,
-					'question_count' => $bank->question_count,
-					'created_at'     => $bank->created_at,
-					'updated_at'     => $bank->updated_at,
-				];
-			}
-		}
-
-		// Add user capabilities
-		$bank_data['userCan'] = [
-			'manage_all' => current_user_can( 'pressprimer_quiz_manage_all' ),
-			'manage_own' => current_user_can( 'pressprimer_quiz_manage_own' ),
-		];
-
-		// Help under the Visibility field. Addons that change who can see a
-		// bank say so here.
-		$bank_data['visibilityHelp'] = __( 'Private: Only you can access this bank. Shared: Teachers in your groups can access this bank.', 'pressprimer-quiz' );
-
-		/**
-		 * Filters the data the bank editor starts with.
-		 *
-		 * @since 3.2.0
-		 *
-		 * @param array  $bank_data Bank fields (empty for a new bank), userCan, visibilityHelp.
-		 * @param int    $bank_id   Bank ID; 0 for a new bank.
-		 * @param string $context   Where the editor runs: 'admin'.
-		 */
-		$bank_data = apply_filters( 'pressprimer_quiz_bank_editor_data', $bank_data, $bank_id, 'admin' );
+		// Built by the editor data service, which GET /ppq/v1/editor-data/bank
+		// also uses.
+		$bank_data = PressPrimer_Quiz_Editor_Data_Service::bank( $bank_id, 'admin' );
 
 		// Localize script with data
 		wp_localize_script(

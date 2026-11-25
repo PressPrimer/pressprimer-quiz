@@ -86,6 +86,27 @@ class PressPrimer_Quiz_REST_Controller {
 			]
 		);
 
+		// Editor startup data for the portable editors (v3.2). The same data
+		// wp-admin localizes on the editor pages; id 0 is a new entity.
+		register_rest_route(
+			'ppq/v1',
+			'/editor-data/(?P<type>quiz|question|bank)/(?P<id>\d+)',
+			[
+				'methods'             => WP_REST_Server::READABLE,
+				'callback'            => [ $this, 'get_editor_data' ],
+				'permission_callback' => [ $this, 'check_permission' ],
+				'args'                => [
+					'surface' => [
+						'description'       => __( 'Where the editor runs: dashboard or admin.', 'pressprimer-quiz' ),
+						'type'              => 'string',
+						'enum'              => PressPrimer_Quiz_Editor_Data_Service::CONTEXTS,
+						'default'           => 'dashboard',
+						'validate_callback' => 'rest_validate_request_arg',
+					],
+				],
+			]
+		);
+
 		// Question image upload endpoint (v2.3 image support feature).
 		register_rest_route(
 			'ppq/v1',
@@ -1954,6 +1975,48 @@ class PressPrimer_Quiz_REST_Controller {
 			],
 			200
 		);
+	}
+
+	/**
+	 * Get the data an editor starts with.
+	 *
+	 * Applies the editor pages' checks: the user owns the quiz, question or
+	 * bank (or has pressprimer_quiz_manage_all). A deleted question or bank,
+	 * and School's review containers, are 404.
+	 *
+	 * @since 3.2.0
+	 *
+	 * @param WP_REST_Request $request Request object.
+	 * @return WP_REST_Response|WP_Error Editor data or error.
+	 */
+	public function get_editor_data( $request ) {
+		$type    = $request['type'];
+		$id      = absint( $request['id'] );
+		$surface = $request->get_param( 'surface' );
+
+		if ( $id > 0 ) {
+			if ( 'quiz' === $type ) {
+				$entity = $this->get_owned_authoring_quiz_or_error( $id );
+			} elseif ( 'question' === $type ) {
+				$entity = $this->get_owned_question_or_error( $id );
+			} else {
+				$entity = $this->get_editable_bank_or_error( $id );
+			}
+
+			if ( is_wp_error( $entity ) ) {
+				return $entity;
+			}
+		}
+
+		if ( 'quiz' === $type ) {
+			$data = PressPrimer_Quiz_Editor_Data_Service::quiz( $id, $surface );
+		} elseif ( 'question' === $type ) {
+			$data = PressPrimer_Quiz_Editor_Data_Service::question( $id, $surface );
+		} else {
+			$data = PressPrimer_Quiz_Editor_Data_Service::bank( $id, $surface );
+		}
+
+		return new WP_REST_Response( $data, 200 );
 	}
 
 	/**

@@ -368,75 +368,9 @@ class PressPrimer_Quiz_Admin_Questions {
 			pressprimer_quiz_enqueue_math_assets();
 		}
 
-		// Prepare question data for React
-		$question_data = [];
-
-		if ( $question_id > 0 ) {
-			$question = PressPrimer_Quiz_Question::get( $question_id );
-			if ( $question ) {
-				$revision   = $question->get_current_revision();
-				$categories = $question->get_categories();
-				$tags       = $question->get_tags();
-
-				// Get bank memberships
-				global $wpdb;
-				// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Question bank membership lookup
-				$bank_ids = $wpdb->get_col(
-					$wpdb->prepare(
-						"SELECT bank_id FROM {$wpdb->prefix}ppq_bank_questions WHERE question_id = %d", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Table name safely constructed from $wpdb->prefix
-						$question_id
-					)
-				);
-
-				$answers = $revision ? $revision->get_answers() : [];
-
-				// Convert answer format for React
-				$answer_index  = 0;
-				$react_answers = array_map(
-					function ( $answer ) use ( &$answer_index ) {
-						$answer_index++;
-						return [
-							'id'        => $answer['id'] ?? 'answer_' . $answer_index,
-							'text'      => $answer['text'] ?? '',
-							'isCorrect' => $answer['is_correct'] ?? false,
-							'feedback'  => $answer['feedback'] ?? '',
-							'order'     => $answer['order'] ?? $answer_index,
-						];
-					},
-					$answers
-				);
-
-				$question_data = [
-					'id'                => $question->id,
-					'type'              => $question->type,
-					'difficulty'        => $question->difficulty_author,
-					'timeLimit'         => $question->expected_seconds,
-					'points'            => $question->max_points,
-					'status'            => $question->status,
-					'stem'              => $revision ? $revision->stem : '',
-					'answers'           => $react_answers,
-					'feedbackCorrect'   => $revision ? $revision->feedback_correct : '',
-					'feedbackIncorrect' => $revision ? $revision->feedback_incorrect : '',
-					'categories'        => array_map(
-						function ( $cat ) {
-							return $cat->id; },
-						$categories
-					),
-					'tags'              => array_map(
-						function ( $tag ) {
-							return $tag->id; },
-						$tags
-					),
-					'banks'             => array_map( 'absint', $bank_ids ),
-					// Banks the user can't edit render read-only, by name.
-					'bank_memberships'  => PressPrimer_Quiz_Question_Access_Service::get_bank_memberships( $question->id, get_current_user_id() ),
-				];
-			}
-		}
-
-		// Expose whether math notation is enabled so the editor can show the
-		// Insert Math control and live preview.
-		$question_data['mathEnabled'] = pressprimer_quiz_math_enabled();
+		// Built by the editor data service, which GET /ppq/v1/editor-data/question
+		// also uses. It includes the addon tabs (addonTabs).
+		$question_data = PressPrimer_Quiz_Editor_Data_Service::question( $question_id, 'admin' );
 
 		// Localize script with data
 		wp_localize_script(
@@ -445,21 +379,8 @@ class PressPrimer_Quiz_Admin_Questions {
 			$question_data
 		);
 
-		// Get question object for filter (only for existing questions).
+		// Question object for the enqueue action (only for existing questions).
 		$question = $question_id > 0 ? PressPrimer_Quiz_Question::get( $question_id ) : null;
-
-		/**
-		 * Filters the addon tabs shown in the question editor.
-		 *
-		 * Allows addons to add their own tabs to the question editor.
-		 * Each tab should be an array with 'key' and 'label' keys.
-		 *
-		 * @since 2.0.0
-		 *
-		 * @param array                        $tabs     Array of addon tabs.
-		 * @param PressPrimer_Quiz_Question|null $question Question object, or null for new questions.
-		 */
-		$addon_tabs = apply_filters( 'pressprimer_quiz_question_editor_tabs', array(), $question );
 
 		// Also pass admin URL and addon tabs
 		wp_localize_script(
@@ -468,7 +389,7 @@ class PressPrimer_Quiz_Admin_Questions {
 			[
 				'adminUrl'  => admin_url(),
 				'nonce'     => wp_create_nonce( 'wp_rest' ),
-				'addonTabs' => $addon_tabs,
+				'addonTabs' => $question_data['addonTabs'],
 			]
 		);
 

@@ -2,14 +2,14 @@
 # This file is distributed under the GPL v2 or later.
 msgid ""
 msgstr ""
-"Project-Id-Version: PressPrimer Quiz 3.1.4\n"
+"Project-Id-Version: PressPrimer Quiz 3.2.0-dev\n"
 "Report-Msgid-Bugs-To: https://wordpress.org/support/plugin/pressprimer-quiz\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"POT-Creation-Date: 2026-11-23T17:43:46+00:00\n"
+"POT-Creation-Date: 2026-11-25T14:46:36+00:00\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "X-Generator: WP-CLI 2.12.0\n"
 "X-Domain: pressprimer-quiz\n"
@@ -18,6 +18,7 @@ msgstr ""
 #: pressprimer-quiz.php
 #: includes/admin/class-ppq-admin.php:94
 #: includes/admin/class-ppq-admin.php:355
+#: includes/admin/class-ppq-rule-scope-notice.php:175
 #: includes/blocks/class-ppq-blocks.php:63
 #: includes/integrations/class-ppq-learndash.php:139
 #: includes/integrations/class-ppq-learndash.php:607
@@ -228,52 +229,52 @@ msgid "Question Types"
 msgstr ""
 
 #: includes/admin/class-ppq-admin-ai-generation.php:269
-#: includes/admin/class-ppq-admin-banks.php:877
-#: includes/admin/class-ppq-admin-banks.php:995
-#: includes/admin/class-ppq-admin-banks.php:1088
-#: includes/admin/class-ppq-admin-questions.php:1208
-#: includes/admin/class-ppq-admin-questions.php:1451
-#: includes/admin/class-ppq-admin-quizzes.php:496
-#: includes/admin/class-ppq-admin-quizzes.php:500
-#: includes/admin/class-ppq-admin.php:824
-#: includes/admin/class-ppq-admin.php:985
+#: includes/admin/class-ppq-admin-banks.php:892
+#: includes/admin/class-ppq-admin-banks.php:1010
+#: includes/admin/class-ppq-admin-banks.php:1103
+#: includes/admin/class-ppq-admin-questions.php:1015
+#: includes/admin/class-ppq-admin-questions.php:1258
+#: includes/admin/class-ppq-admin-quizzes.php:491
+#: includes/admin/class-ppq-admin-quizzes.php:495
+#: includes/admin/class-ppq-admin.php:796
+#: includes/admin/class-ppq-admin.php:939
 #: src/question-editor/components/QuestionTypeSelector.jsx:22
 #: src/quiz-editor/components/QuestionsPanel.jsx:694
 msgid "Multiple Choice"
 msgstr ""
 
 #: includes/admin/class-ppq-admin-ai-generation.php:273
-#: includes/admin/class-ppq-admin-banks.php:878
-#: includes/admin/class-ppq-admin-banks.php:998
-#: includes/admin/class-ppq-admin-banks.php:1089
-#: includes/admin/class-ppq-admin-questions.php:1211
-#: includes/admin/class-ppq-admin-questions.php:1452
-#: includes/admin/class-ppq-admin-quizzes.php:497
-#: includes/admin/class-ppq-admin-quizzes.php:501
-#: includes/admin/class-ppq-admin.php:825
-#: includes/admin/class-ppq-admin.php:986
+#: includes/admin/class-ppq-admin-banks.php:893
+#: includes/admin/class-ppq-admin-banks.php:1013
+#: includes/admin/class-ppq-admin-banks.php:1104
+#: includes/admin/class-ppq-admin-questions.php:1018
+#: includes/admin/class-ppq-admin-questions.php:1259
+#: includes/admin/class-ppq-admin-quizzes.php:492
+#: includes/admin/class-ppq-admin-quizzes.php:496
+#: includes/admin/class-ppq-admin.php:797
+#: includes/admin/class-ppq-admin.php:940
 #: src/question-editor/components/QuestionTypeSelector.jsx:28
 #: src/quiz-editor/components/QuestionsPanel.jsx:695
 msgid "Multiple Answer"
 msgstr ""
 
 #: includes/admin/class-ppq-admin-ai-generation.php:277
-#: includes/admin/class-ppq-admin-banks.php:879
-#: includes/admin/class-ppq-admin-banks.php:1001
-#: includes/admin/class-ppq-admin-banks.php:1090
-#: includes/admin/class-ppq-admin-questions.php:1214
-#: includes/admin/class-ppq-admin-questions.php:1453
-#: includes/admin/class-ppq-admin-quizzes.php:498
-#: includes/admin/class-ppq-admin-quizzes.php:502
-#: includes/admin/class-ppq-admin.php:826
-#: includes/admin/class-ppq-admin.php:987
+#: includes/admin/class-ppq-admin-banks.php:894
+#: includes/admin/class-ppq-admin-banks.php:1016
+#: includes/admin/class-ppq-admin-banks.php:1105
+#: includes/admin/class-ppq-admin-questions.php:1021
+#: includes/admin/class-ppq-admin-questions.php:1260
+#: includes/admin/class-ppq-admin-quizzes.php:493
+#: includes/admin/class-ppq-admin-quizzes.php:497
+#: includes/admin/class-ppq-admin.php:798
+#: includes/admin/class-ppq-admin.php:941
 #: src/question-editor/components/QuestionTypeSelector.jsx:34
 #: src/quiz-editor/components/QuestionsPanel.jsx:696
 msgid "True/False"
 msgstr ""
 
 #: includes/admin/class-ppq-admin-ai-generation.php:284
-#: src/quiz-editor/components/RulesPanel.jsx:398
+#: src/quiz-editor/components/RulesPanel.jsx:430
 msgid "Difficulty Levels"
 msgstr ""
 
@@ -292,16 +293,16 @@ msgid "Hard"
 msgstr ""
 
 #: includes/admin/class-ppq-admin-ai-generation.php:300
-#: includes/admin/class-ppq-admin-banks.php:890
-#: includes/admin/class-ppq-admin-banks.php:1017
-#: includes/admin/class-ppq-admin-banks.php:1099
-#: includes/admin/class-ppq-admin-questions.php:1242
-#: includes/admin/class-ppq-admin-questions.php:1476
-#: includes/admin/class-ppq-admin.php:835
-#: includes/admin/class-ppq-admin.php:996
+#: includes/admin/class-ppq-admin-banks.php:905
+#: includes/admin/class-ppq-admin-banks.php:1032
+#: includes/admin/class-ppq-admin-banks.php:1114
+#: includes/admin/class-ppq-admin-questions.php:1049
+#: includes/admin/class-ppq-admin-questions.php:1283
+#: includes/admin/class-ppq-admin.php:807
+#: includes/admin/class-ppq-admin.php:950
 #: src/question-editor/components/MetadataPanel.jsx:38
 #: src/quiz-editor/components/QuestionsPanel.jsx:714
-#: src/quiz-editor/components/RulesPanel.jsx:61
+#: src/quiz-editor/components/RulesPanel.jsx:92
 msgid "Expert"
 msgstr ""
 
@@ -359,16 +360,12 @@ msgstr ""
 #: includes/admin/class-ppq-admin-ai-generation.php:508
 #: includes/admin/class-ppq-admin-ai-generation.php:556
 #: includes/admin/class-ppq-admin-ai-generation.php:674
-#: includes/admin/class-ppq-admin-banks.php:1226
-#: includes/admin/class-ppq-admin-banks.php:1307
-#: includes/admin/class-ppq-admin-banks.php:1368
-#: includes/admin/class-ppq-admin-banks.php:1429
+#: includes/admin/class-ppq-admin-banks.php:1241
+#: includes/admin/class-ppq-admin-banks.php:1322
+#: includes/admin/class-ppq-admin-banks.php:1383
+#: includes/admin/class-ppq-admin-banks.php:1445
 #: includes/admin/class-ppq-admin-categories.php:442
 #: includes/admin/class-ppq-admin-categories.php:515
-#: includes/admin/class-ppq-admin-quizzes.php:743
-#: includes/admin/class-ppq-admin-quizzes.php:1143
-#: includes/admin/class-ppq-admin-quizzes.php:1197
-#: includes/admin/class-ppq-admin-quizzes.php:1259
 #: includes/admin/class-ppq-admin-settings.php:2214
 #: includes/admin/class-ppq-admin-settings.php:2270
 #: includes/admin/class-ppq-admin-settings.php:2305
@@ -377,14 +374,14 @@ msgstr ""
 #: includes/admin/class-ppq-admin-settings.php:2423
 #: includes/admin/class-ppq-admin-settings.php:2471
 #: includes/admin/class-ppq-admin.php:684
-#: includes/admin/class-ppq-admin.php:887
-#: includes/admin/class-ppq-admin.php:1047
+#: includes/admin/class-ppq-admin.php:859
+#: includes/admin/class-ppq-admin.php:1001
 #: includes/admin/class-ppq-banks-list-table.php:257
 #: includes/admin/class-ppq-categories-list-table.php:190
-#: includes/frontend/class-ppq-ajax-handler.php:255
-#: includes/frontend/class-ppq-ajax-handler.php:385
-#: includes/frontend/class-ppq-ajax-handler.php:458
-#: includes/frontend/class-ppq-ajax-handler.php:748
+#: includes/frontend/class-ppq-ajax-handler.php:254
+#: includes/frontend/class-ppq-ajax-handler.php:384
+#: includes/frontend/class-ppq-ajax-handler.php:457
+#: includes/frontend/class-ppq-ajax-handler.php:747
 #: includes/integrations/class-ppq-learndash.php:1327
 #: includes/integrations/class-ppq-learnpress.php:415
 #: includes/integrations/class-ppq-tutorlms.php:651
@@ -402,7 +399,7 @@ msgstr ""
 #: includes/admin/class-ppq-review-notice.php:282
 #: includes/admin/class-ppq-review-notice.php:304
 #: includes/admin/class-ppq-review-notice.php:323
-#: includes/database/class-ppq-migrator.php:1302
+#: includes/database/class-ppq-migrator.php:1336
 #: includes/integrations/class-ppq-learndash.php:1332
 #: includes/integrations/class-ppq-learnpress.php:420
 #: includes/integrations/class-ppq-lifterlms.php:1147
@@ -430,8 +427,8 @@ msgid "Invalid question data format."
 msgstr ""
 
 #: includes/admin/class-ppq-admin-ai-generation.php:587
-#: includes/admin/class-ppq-admin-banks.php:652
-#: includes/admin/class-ppq-admin-banks.php:1318
+#: includes/admin/class-ppq-admin-banks.php:667
+#: includes/admin/class-ppq-admin-banks.php:1333
 msgid "Invalid bank ID."
 msgstr ""
 
@@ -441,16 +438,17 @@ msgstr ""
 
 #: includes/admin/class-ppq-admin-ai-generation.php:597
 #: includes/admin/class-ppq-admin-banks.php:227
-#: includes/admin/class-ppq-admin-banks.php:665
-#: includes/admin/class-ppq-admin-banks.php:1251
-#: includes/admin/class-ppq-admin-banks.php:1327
-#: includes/admin/class-ppq-admin-banks.php:1390
-#: includes/admin/class-ppq-admin-banks.php:1450
-#: includes/admin/class-ppq-admin.php:1068
-#: includes/api/class-ppq-rest-controller.php:2071
-#: includes/api/class-ppq-rest-controller.php:2168
-#: includes/api/class-ppq-rest-controller.php:2229
-#: includes/models/class-ppq-quiz-rule.php:159
+#: includes/admin/class-ppq-admin-banks.php:680
+#: includes/admin/class-ppq-admin-banks.php:1266
+#: includes/admin/class-ppq-admin-banks.php:1342
+#: includes/admin/class-ppq-admin-banks.php:1405
+#: includes/admin/class-ppq-admin-banks.php:1466
+#: includes/admin/class-ppq-admin.php:1022
+#: includes/api/class-ppq-rest-controller.php:886
+#: includes/api/class-ppq-rest-controller.php:2364
+#: includes/api/class-ppq-rest-controller.php:2441
+#: includes/api/class-ppq-rest-controller.php:2492
+#: includes/models/class-ppq-quiz-rule.php:167
 msgid "Bank not found."
 msgstr ""
 
@@ -500,7 +498,7 @@ msgstr ""
 #: includes/admin/class-ppq-admin-banks.php:142
 #: includes/admin/class-ppq-admin-categories.php:74
 #: includes/admin/class-ppq-admin-questions.php:214
-#: includes/admin/class-ppq-admin-quizzes.php:267
+#: includes/admin/class-ppq-admin-quizzes.php:262
 #: includes/admin/class-ppq-admin-settings.php:1622
 #: includes/admin/class-ppq-admin.php:559
 #: includes/admin/class-ppq-admin.php:650
@@ -509,7 +507,7 @@ msgstr ""
 
 #: includes/admin/class-ppq-admin-banks.php:143
 #: includes/admin/class-ppq-admin-banks.php:237
-#: includes/admin/class-ppq-admin-banks.php:675
+#: includes/admin/class-ppq-admin-banks.php:690
 #: includes/admin/class-ppq-admin-categories.php:75
 #: includes/admin/class-ppq-admin-questions.php:215
 #: includes/admin/class-ppq-admin-settings.php:1623
@@ -523,14 +521,14 @@ msgstr ""
 #: includes/admin/class-ppq-admin.php:141
 #: src/dashboard/components/StatsCards.jsx:53
 #: src/onboarding/tourSteps.js:102
-#: src/question-editor/components/BankSelector.jsx:105
+#: src/question-editor/components/BankSelector.jsx:131
 #: src/settings-panel/components/StatusTab.jsx:571
 msgid "Question Banks"
 msgstr ""
 
 #: includes/admin/class-ppq-admin-banks.php:185
 #: includes/admin/class-ppq-admin-questions.php:248
-#: includes/admin/class-ppq-admin-quizzes.php:301
+#: includes/admin/class-ppq-admin-quizzes.php:296
 msgid "Add New"
 msgstr ""
 
@@ -539,8 +537,8 @@ msgid "Search Banks"
 msgstr ""
 
 #: includes/admin/class-ppq-admin-banks.php:228
-#: includes/admin/class-ppq-admin-banks.php:653
-#: includes/admin/class-ppq-admin-banks.php:666
+#: includes/admin/class-ppq-admin-banks.php:668
+#: includes/admin/class-ppq-admin-banks.php:681
 #: includes/admin/class-ppq-admin-categories.php:232
 #: src/dashboard/components/Dashboard.jsx:121
 #: src/reports/components/QuizPerformanceReport.jsx:216
@@ -550,52 +548,58 @@ msgid "Error"
 msgstr ""
 
 #: includes/admin/class-ppq-admin-banks.php:236
-#: includes/admin/class-ppq-admin-banks.php:1255
-#: includes/admin/class-ppq-admin-banks.php:1395
-#: includes/admin/class-ppq-admin-banks.php:1455
-#: includes/admin/class-ppq-admin.php:1073
-#: includes/api/class-ppq-rest-controller.php:2174
+#: includes/admin/class-ppq-admin-banks.php:1270
+#: includes/admin/class-ppq-admin-banks.php:1410
+#: includes/admin/class-ppq-admin-banks.php:1471
+#: includes/admin/class-ppq-admin.php:1027
+#: includes/api/class-ppq-rest-controller.php:890
+#: includes/api/class-ppq-rest-controller.php:2447
 msgid "You do not have permission to edit this bank."
 msgstr ""
 
-#: includes/admin/class-ppq-admin-banks.php:342
+#: includes/admin/class-ppq-admin-banks.php:315
+#: src/bank-editor/components/BankEditor.jsx:241
+msgid "Private: Only you can access this bank. Shared: Teachers in your groups can access this bank."
+msgstr ""
+
+#: includes/admin/class-ppq-admin-banks.php:357
 msgid "items"
 msgstr ""
 
-#: includes/admin/class-ppq-admin-banks.php:343
-#: includes/admin/class-ppq-admin-banks.php:1190
+#: includes/admin/class-ppq-admin-banks.php:358
+#: includes/admin/class-ppq-admin-banks.php:1205
 #: src/reports/components/QuizPerformanceReport.jsx:266
 #: src/reports/components/RecentAttemptsReport.jsx:384
 msgid "of"
 msgstr ""
 
-#: includes/admin/class-ppq-admin-banks.php:344
-#: includes/admin/class-ppq-admin-banks.php:1175
+#: includes/admin/class-ppq-admin-banks.php:359
+#: includes/admin/class-ppq-admin-banks.php:1190
 msgid "First page"
 msgstr ""
 
-#: includes/admin/class-ppq-admin-banks.php:345
-#: includes/admin/class-ppq-admin-banks.php:1179
+#: includes/admin/class-ppq-admin-banks.php:360
+#: includes/admin/class-ppq-admin-banks.php:1194
 msgid "Previous page"
 msgstr ""
 
-#: includes/admin/class-ppq-admin-banks.php:346
-#: includes/admin/class-ppq-admin-banks.php:1197
+#: includes/admin/class-ppq-admin-banks.php:361
+#: includes/admin/class-ppq-admin-banks.php:1212
 msgid "Next page"
 msgstr ""
 
-#: includes/admin/class-ppq-admin-banks.php:347
-#: includes/admin/class-ppq-admin-banks.php:1201
+#: includes/admin/class-ppq-admin-banks.php:362
+#: includes/admin/class-ppq-admin-banks.php:1216
 msgid "Last page"
 msgstr ""
 
-#: includes/admin/class-ppq-admin-banks.php:348
+#: includes/admin/class-ppq-admin-banks.php:363
 msgid "Select"
 msgstr ""
 
-#: includes/admin/class-ppq-admin-banks.php:349
-#: includes/admin/class-ppq-admin-banks.php:1071
-#: includes/admin/class-ppq-admin-questions.php:912
+#: includes/admin/class-ppq-admin-banks.php:364
+#: includes/admin/class-ppq-admin-banks.php:1086
+#: includes/admin/class-ppq-admin-questions.php:719
 #: src/quiz-editor/components/QuestionsPanel.jsx:422
 #: src/quiz-editor/components/QuestionsPanel.jsx:480
 #: src/reports/components/AttemptDetailModal.jsx:149
@@ -604,9 +608,9 @@ msgstr ""
 msgid "Question"
 msgstr ""
 
-#: includes/admin/class-ppq-admin-banks.php:350
-#: includes/admin/class-ppq-admin-banks.php:1072
-#: includes/admin/class-ppq-admin-questions.php:913
+#: includes/admin/class-ppq-admin-banks.php:365
+#: includes/admin/class-ppq-admin-banks.php:1087
+#: includes/admin/class-ppq-admin-questions.php:720
 #: includes/frontend/class-ppq-quiz-renderer.php:416
 #: src/quiz-editor/components/QuestionsPanel.jsx:428
 #: src/quiz-editor/components/QuestionsPanel.jsx:493
@@ -614,78 +618,78 @@ msgstr ""
 msgid "Type"
 msgstr ""
 
-#: includes/admin/class-ppq-admin-banks.php:351
-#: includes/admin/class-ppq-admin-banks.php:1073
-#: includes/admin/class-ppq-admin-questions.php:914
+#: includes/admin/class-ppq-admin-banks.php:366
+#: includes/admin/class-ppq-admin-banks.php:1088
+#: includes/admin/class-ppq-admin-questions.php:721
 #: src/question-editor/components/MetadataPanel.jsx:67
 #: src/quiz-editor/components/QuestionsPanel.jsx:702
 msgid "Difficulty"
 msgstr ""
 
-#: includes/admin/class-ppq-admin-banks.php:352
-#: includes/admin/class-ppq-admin-banks.php:1074
+#: includes/admin/class-ppq-admin-banks.php:367
+#: includes/admin/class-ppq-admin-banks.php:1089
 #: includes/admin/class-ppq-admin-categories.php:104
 #: includes/admin/class-ppq-admin-categories.php:238
 #: src/quiz-editor/components/QuestionsPanel.jsx:720
 msgid "Category"
 msgstr ""
 
-#: includes/admin/class-ppq-admin-banks.php:353
+#: includes/admin/class-ppq-admin-banks.php:368
 msgid "No questions found matching your search."
 msgstr ""
 
-#: includes/admin/class-ppq-admin-banks.php:354
+#: includes/admin/class-ppq-admin-banks.php:369
 msgid "No questions found. Create some questions first!"
 msgstr ""
 
-#: includes/admin/class-ppq-admin-banks.php:355
+#: includes/admin/class-ppq-admin-banks.php:370
 msgid "Error searching questions. Please try again."
 msgstr ""
 
-#: includes/admin/class-ppq-admin-banks.php:356
+#: includes/admin/class-ppq-admin-banks.php:371
 msgid "Error loading questions. Please refresh the page."
 msgstr ""
 
-#: includes/admin/class-ppq-admin-banks.php:357
+#: includes/admin/class-ppq-admin-banks.php:372
 msgid "Adding..."
 msgstr ""
 
-#: includes/admin/class-ppq-admin-banks.php:358
+#: includes/admin/class-ppq-admin-banks.php:373
 msgid "Removing..."
 msgstr ""
 
-#: includes/admin/class-ppq-admin-banks.php:359
-#: includes/admin/class-ppq-admin-banks.php:1137
+#: includes/admin/class-ppq-admin-banks.php:374
+#: includes/admin/class-ppq-admin-banks.php:1152
 #: includes/admin/class-ppq-admin.php:294
 msgid "Remove from Bank"
 msgstr ""
 
-#: includes/admin/class-ppq-admin-banks.php:360
-#: includes/admin/class-ppq-admin-banks.php:1066
+#: includes/admin/class-ppq-admin-banks.php:375
+#: includes/admin/class-ppq-admin-banks.php:1081
 msgid "No questions in this bank yet."
 msgstr ""
 
-#: includes/admin/class-ppq-admin-banks.php:361
+#: includes/admin/class-ppq-admin-banks.php:376
 msgid "Error removing question."
 msgstr ""
 
-#: includes/admin/class-ppq-admin-banks.php:362
+#: includes/admin/class-ppq-admin-banks.php:377
 msgid "Error removing question. Please try again."
 msgstr ""
 
-#: includes/admin/class-ppq-admin-banks.php:674
+#: includes/admin/class-ppq-admin-banks.php:689
 msgid "You do not have permission to view this bank."
 msgstr ""
 
-#: includes/admin/class-ppq-admin-banks.php:755
+#: includes/admin/class-ppq-admin-banks.php:770
 msgid "Edit Bank"
 msgstr ""
 
-#: includes/admin/class-ppq-admin-banks.php:778
+#: includes/admin/class-ppq-admin-banks.php:793
 msgid "Bank Information"
 msgstr ""
 
-#: includes/admin/class-ppq-admin-banks.php:783
+#: includes/admin/class-ppq-admin-banks.php:798
 #: includes/admin/class-ppq-admin-categories.php:181
 #: includes/admin/class-ppq-admin-categories.php:321
 #: includes/admin/class-ppq-banks-list-table.php:55
@@ -696,165 +700,165 @@ msgstr ""
 msgid "Description"
 msgstr ""
 
-#: includes/admin/class-ppq-admin-banks.php:791
+#: includes/admin/class-ppq-admin-banks.php:806
 msgid "No description provided for this bank."
 msgstr ""
 
-#: includes/admin/class-ppq-admin-banks.php:800
+#: includes/admin/class-ppq-admin-banks.php:815
 #: src/dashboard/components/StatsCards.jsx:46
 msgid "Total Questions"
 msgstr ""
 
-#: includes/admin/class-ppq-admin-banks.php:812
+#: includes/admin/class-ppq-admin-banks.php:827
 msgid "Generate with AI"
 msgstr ""
 
-#: includes/admin/class-ppq-admin-banks.php:816
-#: includes/admin/class-ppq-admin-banks.php:833
+#: includes/admin/class-ppq-admin-banks.php:831
+#: includes/admin/class-ppq-admin-banks.php:848
 msgid "Add Existing Questions"
 msgstr ""
 
-#: includes/admin/class-ppq-admin-banks.php:843
+#: includes/admin/class-ppq-admin-banks.php:858
 msgid "Most Recent Questions You Created"
 msgstr ""
 
-#: includes/admin/class-ppq-admin-banks.php:846
+#: includes/admin/class-ppq-admin-banks.php:861
 msgid "Quick access to your recently created questions. Select the ones you want to add to this bank."
 msgstr ""
 
-#: includes/admin/class-ppq-admin-banks.php:852
+#: includes/admin/class-ppq-admin-banks.php:867
 msgid "Loading recent questions..."
 msgstr ""
 
-#: includes/admin/class-ppq-admin-banks.php:862
-#: includes/admin/class-ppq-admin-banks.php:973
+#: includes/admin/class-ppq-admin-banks.php:877
+#: includes/admin/class-ppq-admin-banks.php:988
 msgid "Add Selected Questions"
 msgstr ""
 
-#: includes/admin/class-ppq-admin-banks.php:870
+#: includes/admin/class-ppq-admin-banks.php:885
 msgid "Search for Questions"
 msgstr ""
 
-#: includes/admin/class-ppq-admin-banks.php:874
+#: includes/admin/class-ppq-admin-banks.php:889
 msgid "Type:"
 msgstr ""
 
-#: includes/admin/class-ppq-admin-banks.php:876
-#: includes/admin/class-ppq-admin-banks.php:993
-#: includes/admin/class-ppq-admin-questions.php:1206
+#: includes/admin/class-ppq-admin-banks.php:891
+#: includes/admin/class-ppq-admin-banks.php:1008
+#: includes/admin/class-ppq-admin-questions.php:1013
 msgid "All Types"
 msgstr ""
 
-#: includes/admin/class-ppq-admin-banks.php:884
+#: includes/admin/class-ppq-admin-banks.php:899
 msgid "Difficulty:"
 msgstr ""
 
-#: includes/admin/class-ppq-admin-banks.php:886
-#: includes/admin/class-ppq-admin-banks.php:1006
-#: includes/admin/class-ppq-admin-questions.php:1231
+#: includes/admin/class-ppq-admin-banks.php:901
+#: includes/admin/class-ppq-admin-banks.php:1021
+#: includes/admin/class-ppq-admin-questions.php:1038
 msgid "All Difficulties"
 msgstr ""
 
-#: includes/admin/class-ppq-admin-banks.php:887
-#: includes/admin/class-ppq-admin-banks.php:1008
-#: includes/admin/class-ppq-admin-banks.php:1096
-#: includes/admin/class-ppq-admin-questions.php:1233
-#: includes/admin/class-ppq-admin-questions.php:1473
-#: includes/admin/class-ppq-admin.php:832
-#: includes/admin/class-ppq-admin.php:993
+#: includes/admin/class-ppq-admin-banks.php:902
+#: includes/admin/class-ppq-admin-banks.php:1023
+#: includes/admin/class-ppq-admin-banks.php:1111
+#: includes/admin/class-ppq-admin-questions.php:1040
+#: includes/admin/class-ppq-admin-questions.php:1280
+#: includes/admin/class-ppq-admin.php:804
+#: includes/admin/class-ppq-admin.php:947
 #: src/question-editor/components/MetadataPanel.jsx:23
 #: src/quiz-editor/components/QuestionsPanel.jsx:711
-#: src/quiz-editor/components/RulesPanel.jsx:58
+#: src/quiz-editor/components/RulesPanel.jsx:89
 msgid "Beginner"
 msgstr ""
 
-#: includes/admin/class-ppq-admin-banks.php:888
-#: includes/admin/class-ppq-admin-banks.php:1011
-#: includes/admin/class-ppq-admin-banks.php:1097
-#: includes/admin/class-ppq-admin-questions.php:1236
-#: includes/admin/class-ppq-admin-questions.php:1474
-#: includes/admin/class-ppq-admin.php:833
-#: includes/admin/class-ppq-admin.php:994
+#: includes/admin/class-ppq-admin-banks.php:903
+#: includes/admin/class-ppq-admin-banks.php:1026
+#: includes/admin/class-ppq-admin-banks.php:1112
+#: includes/admin/class-ppq-admin-questions.php:1043
+#: includes/admin/class-ppq-admin-questions.php:1281
+#: includes/admin/class-ppq-admin.php:805
+#: includes/admin/class-ppq-admin.php:948
 #: src/question-editor/components/MetadataPanel.jsx:28
 #: src/quiz-editor/components/QuestionsPanel.jsx:712
-#: src/quiz-editor/components/RulesPanel.jsx:59
+#: src/quiz-editor/components/RulesPanel.jsx:90
 msgid "Intermediate"
 msgstr ""
 
-#: includes/admin/class-ppq-admin-banks.php:889
-#: includes/admin/class-ppq-admin-banks.php:1014
-#: includes/admin/class-ppq-admin-banks.php:1098
-#: includes/admin/class-ppq-admin-questions.php:1239
-#: includes/admin/class-ppq-admin-questions.php:1475
+#: includes/admin/class-ppq-admin-banks.php:904
+#: includes/admin/class-ppq-admin-banks.php:1029
+#: includes/admin/class-ppq-admin-banks.php:1113
+#: includes/admin/class-ppq-admin-questions.php:1046
+#: includes/admin/class-ppq-admin-questions.php:1282
 #: includes/admin/class-ppq-admin-settings.php:1840
-#: includes/admin/class-ppq-admin.php:834
-#: includes/admin/class-ppq-admin.php:995
+#: includes/admin/class-ppq-admin.php:806
+#: includes/admin/class-ppq-admin.php:949
 #: src/question-editor/components/MetadataPanel.jsx:33
 #: src/quiz-editor/components/QuestionsPanel.jsx:713
-#: src/quiz-editor/components/RulesPanel.jsx:60
+#: src/quiz-editor/components/RulesPanel.jsx:91
 #: src/settings-panel/components/SettingsPage.jsx:120
 msgid "Advanced"
 msgstr ""
 
-#: includes/admin/class-ppq-admin-banks.php:895
+#: includes/admin/class-ppq-admin-banks.php:910
 msgid "Category:"
 msgstr ""
 
-#: includes/admin/class-ppq-admin-banks.php:897
-#: includes/admin/class-ppq-admin-banks.php:1030
-#: includes/admin/class-ppq-admin-questions.php:1264
+#: includes/admin/class-ppq-admin-banks.php:912
+#: includes/admin/class-ppq-admin-banks.php:1045
+#: includes/admin/class-ppq-admin-questions.php:1071
 msgid "All Categories"
 msgstr ""
 
-#: includes/admin/class-ppq-admin-banks.php:917
+#: includes/admin/class-ppq-admin-banks.php:932
 msgid "Tag:"
 msgstr ""
 
-#: includes/admin/class-ppq-admin-banks.php:919
+#: includes/admin/class-ppq-admin-banks.php:934
 msgid "All Tags"
 msgstr ""
 
-#: includes/admin/class-ppq-admin-banks.php:940
+#: includes/admin/class-ppq-admin-banks.php:955
 msgid "Search:"
 msgstr ""
 
-#: includes/admin/class-ppq-admin-banks.php:945
+#: includes/admin/class-ppq-admin-banks.php:960
 msgid "Search question text..."
 msgstr ""
 
-#: includes/admin/class-ppq-admin-banks.php:952
+#: includes/admin/class-ppq-admin-banks.php:967
 #: includes/admin/class-ppq-admin-questions.php:257
 msgid "Search Questions"
 msgstr ""
 
-#: includes/admin/class-ppq-admin-banks.php:955
+#: includes/admin/class-ppq-admin-banks.php:970
 msgid "Reset Filters"
 msgstr ""
 
-#: includes/admin/class-ppq-admin-banks.php:963
+#: includes/admin/class-ppq-admin-banks.php:978
 msgid "Search Results"
 msgstr ""
 
-#: includes/admin/class-ppq-admin-banks.php:984
+#: includes/admin/class-ppq-admin-banks.php:999
 msgid "Questions in Bank"
 msgstr ""
 
-#: includes/admin/class-ppq-admin-banks.php:1040
-#: includes/admin/class-ppq-admin-questions.php:1190
-#: includes/admin/class-ppq-admin-quizzes.php:1819
+#: includes/admin/class-ppq-admin-banks.php:1055
+#: includes/admin/class-ppq-admin-questions.php:997
+#: includes/admin/class-ppq-admin-quizzes.php:1514
 #: includes/frontend/class-ppq-shortcodes.php:597
 msgid "Filter"
 msgstr ""
 
-#: includes/admin/class-ppq-admin-banks.php:1042
+#: includes/admin/class-ppq-admin-banks.php:1057
 msgid "Clear Filters"
 msgstr ""
 
-#: includes/admin/class-ppq-admin-banks.php:1066
+#: includes/admin/class-ppq-admin-banks.php:1081
 msgid "No questions match your filters."
 msgstr ""
 
-#: includes/admin/class-ppq-admin-banks.php:1076
+#: includes/admin/class-ppq-admin-banks.php:1091
 #: includes/frontend/class-ppq-shortcodes.php:639
 #: includes/frontend/class-ppq-shortcodes.php:745
 #: src/quiz-editor/components/QuestionsPanel.jsx:444
@@ -863,17 +867,17 @@ msgstr ""
 msgid "Actions"
 msgstr ""
 
-#: includes/admin/class-ppq-admin-banks.php:1111
+#: includes/admin/class-ppq-admin-banks.php:1126
 #: includes/admin/class-ppq-admin-categories.php:160
 #: includes/admin/class-ppq-admin-categories.php:301
-#: includes/admin/class-ppq-admin.php:860
-#: includes/admin/class-ppq-admin.php:1022
+#: includes/admin/class-ppq-admin.php:832
+#: includes/admin/class-ppq-admin.php:976
 msgid "None"
 msgstr ""
 
-#: includes/admin/class-ppq-admin-banks.php:1120
-#: includes/admin/class-ppq-admin-questions.php:1403
-#: includes/admin/class-ppq-admin-quizzes.php:1571
+#: includes/admin/class-ppq-admin-banks.php:1135
+#: includes/admin/class-ppq-admin-questions.php:1210
+#: includes/admin/class-ppq-admin-quizzes.php:1266
 #: includes/admin/class-ppq-banks-list-table.php:380
 #: includes/admin/class-ppq-categories-list-table.php:285
 #: src/settings-panel/components/TemplatesTab.jsx:211
@@ -881,68 +885,74 @@ msgid "Edit"
 msgstr ""
 
 #. translators: %s: Number of items
-#: includes/admin/class-ppq-admin-banks.php:1153
+#: includes/admin/class-ppq-admin-banks.php:1168
 #, php-format
 msgid "%s item"
 msgid_plural "%s items"
 msgstr[0] ""
 msgstr[1] ""
 
-#: includes/admin/class-ppq-admin-banks.php:1231
-#: includes/admin/class-ppq-admin-banks.php:1312
-#: includes/admin/class-ppq-admin-banks.php:1373
-#: includes/admin/class-ppq-admin-banks.php:1434
+#: includes/admin/class-ppq-admin-banks.php:1246
+#: includes/admin/class-ppq-admin-banks.php:1327
+#: includes/admin/class-ppq-admin-banks.php:1388
+#: includes/admin/class-ppq-admin-banks.php:1450
 #: includes/admin/class-ppq-admin-categories.php:447
 #: includes/admin/class-ppq-admin-categories.php:520
+#: includes/admin/class-ppq-rule-scope-notice.php:222
 msgid "You do not have permission to perform this action."
 msgstr ""
 
-#: includes/admin/class-ppq-admin-banks.php:1240
-#: includes/api/class-ppq-rest-controller.php:2108
+#: includes/admin/class-ppq-admin-banks.php:1255
+#: includes/api/class-ppq-rest-controller.php:2391
 #: includes/models/class-ppq-bank.php:223
 msgid "Bank name is required."
 msgstr ""
 
-#: includes/admin/class-ppq-admin-banks.php:1302
+#: includes/admin/class-ppq-admin-banks.php:1317
 #: includes/admin/class-ppq-admin-categories.php:510
-#: includes/admin/class-ppq-admin-questions.php:555
-#: includes/admin/class-ppq-admin-questions.php:670
-#: includes/admin/class-ppq-admin-quizzes.php:893
-#: includes/admin/class-ppq-admin-quizzes.php:1010
+#: includes/admin/class-ppq-admin-questions.php:524
+#: includes/admin/class-ppq-admin-questions.php:640
+#: includes/admin/class-ppq-admin-quizzes.php:754
+#: includes/admin/class-ppq-admin-quizzes.php:871
 msgid "Invalid request."
 msgstr ""
 
-#: includes/admin/class-ppq-admin-banks.php:1332
-#: includes/api/class-ppq-rest-controller.php:2235
+#: includes/admin/class-ppq-admin-banks.php:1347
+#: includes/api/class-ppq-rest-controller.php:2498
 msgid "You do not have permission to delete this bank."
 msgstr ""
 
-#: includes/admin/class-ppq-admin-banks.php:1381
+#: includes/admin/class-ppq-admin-banks.php:1396
 msgid "Invalid bank or question IDs."
 msgstr ""
 
-#: includes/admin/class-ppq-admin-banks.php:1441
-#: includes/admin/class-ppq-admin.php:1059
+#: includes/admin/class-ppq-admin-banks.php:1416
+#: includes/api/class-ppq-rest-controller.php:2548
+msgid "You can't add one or more of these questions to this bank."
+msgstr ""
+
+#: includes/admin/class-ppq-admin-banks.php:1457
+#: includes/admin/class-ppq-admin.php:1013
 msgid "Invalid bank or question ID."
 msgstr ""
 
-#: includes/admin/class-ppq-admin-banks.php:1501
+#: includes/admin/class-ppq-admin-banks.php:1517
 msgid "Bank saved successfully."
 msgstr ""
 
-#: includes/admin/class-ppq-admin-banks.php:1504
+#: includes/admin/class-ppq-admin-banks.php:1520
 msgid "Bank created successfully! You can now add questions to it."
 msgstr ""
 
-#: includes/admin/class-ppq-admin-banks.php:1507
+#: includes/admin/class-ppq-admin-banks.php:1523
 msgid "Bank deleted successfully."
 msgstr ""
 
-#: includes/admin/class-ppq-admin-banks.php:1510
+#: includes/admin/class-ppq-admin-banks.php:1526
 msgid "Questions added to bank successfully."
 msgstr ""
 
-#: includes/admin/class-ppq-admin-banks.php:1513
+#: includes/admin/class-ppq-admin-banks.php:1529
 msgid "Question removed from bank successfully."
 msgstr ""
 
@@ -953,11 +963,11 @@ msgstr ""
 
 #: includes/admin/class-ppq-admin-categories.php:105
 #: includes/admin/class-ppq-admin-categories.php:239
-#: includes/admin/class-ppq-admin-questions.php:915
+#: includes/admin/class-ppq-admin-questions.php:722
 #: includes/admin/class-ppq-admin.php:150
 #: includes/admin/class-ppq-admin.php:151
 #: src/question-editor/components/TaxonomySelector.jsx:29
-#: src/quiz-editor/components/RulesPanel.jsx:340
+#: src/quiz-editor/components/RulesPanel.jsx:372
 msgid "Categories"
 msgstr ""
 
@@ -966,7 +976,7 @@ msgstr ""
 #: includes/admin/class-ppq-admin.php:160
 #: includes/admin/class-ppq-admin.php:161
 #: src/question-editor/components/TaxonomySelector.jsx:30
-#: src/quiz-editor/components/RulesPanel.jsx:367
+#: src/quiz-editor/components/RulesPanel.jsx:399
 #: src/settings-panel/components/IntegrationsTab.jsx:505
 msgid "Tags"
 msgstr ""
@@ -1028,8 +1038,8 @@ msgstr ""
 
 #: includes/admin/class-ppq-admin-categories.php:337
 #: includes/admin/class-ppq-admin-questions.php:246
-#: includes/admin/class-ppq-admin-quizzes.php:469
-#: includes/admin/class-ppq-admin-quizzes.php:1338
+#: includes/admin/class-ppq-admin-quizzes.php:464
+#: includes/admin/class-ppq-admin-quizzes.php:1033
 #: includes/admin/class-ppq-admin.php:130
 #: includes/admin/class-ppq-admin.php:131
 #: includes/admin/class-ppq-banks-list-table.php:56
@@ -1108,13 +1118,15 @@ msgstr[0] ""
 msgstr[1] ""
 
 #: includes/admin/class-ppq-admin-questions.php:280
-#: includes/admin/class-ppq-admin-questions.php:569
-#: includes/admin/class-ppq-admin-questions.php:684
-#: includes/api/class-ppq-rest-controller.php:1201
-#: includes/api/class-ppq-rest-controller.php:1423
-#: includes/api/class-ppq-rest-controller.php:1630
-#: includes/frontend/class-ppq-ajax-handler.php:812
-#: includes/models/class-ppq-bank.php:282
+#: includes/admin/class-ppq-admin-questions.php:538
+#: includes/admin/class-ppq-admin-questions.php:654
+#: includes/api/class-ppq-rest-controller.php:864
+#: includes/api/class-ppq-rest-controller.php:1406
+#: includes/api/class-ppq-rest-controller.php:1637
+#: includes/api/class-ppq-rest-controller.php:1936
+#: includes/frontend/class-ppq-ajax-handler.php:811
+#: includes/models/class-ppq-bank.php:337
+#: includes/models/class-ppq-question.php:561
 #: includes/models/class-ppq-quiz-item.php:128
 msgid "Question not found."
 msgstr ""
@@ -1123,49 +1135,41 @@ msgstr ""
 msgid "You do not have permission to edit this question."
 msgstr ""
 
-#: includes/admin/class-ppq-admin-questions.php:562
-#: includes/admin/class-ppq-admin-questions.php:614
+#: includes/admin/class-ppq-admin-questions.php:531
+#: includes/admin/class-ppq-admin-questions.php:583
 msgid "You do not have permission to delete questions."
 msgstr ""
 
-#: includes/admin/class-ppq-admin-questions.php:574
+#: includes/admin/class-ppq-admin-questions.php:543
 msgid "You do not have permission to delete this question."
 msgstr ""
 
-#: includes/admin/class-ppq-admin-questions.php:677
+#: includes/admin/class-ppq-admin-questions.php:647
 msgid "You do not have permission to duplicate questions."
 msgstr ""
 
-#: includes/admin/class-ppq-admin-questions.php:689
+#: includes/admin/class-ppq-admin-questions.php:659
 msgid "You do not have permission to duplicate this question."
 msgstr ""
 
-#: includes/admin/class-ppq-admin-questions.php:696
-msgid "Question revision not found."
-msgstr ""
-
-#: includes/admin/class-ppq-admin-questions.php:724
-msgid "Failed to load duplicated question."
-msgstr ""
-
-#: includes/admin/class-ppq-admin-questions.php:911
-#: includes/admin/class-ppq-admin-quizzes.php:1336
+#: includes/admin/class-ppq-admin-questions.php:718
+#: includes/admin/class-ppq-admin-quizzes.php:1031
 msgid "ID"
 msgstr ""
 
-#: includes/admin/class-ppq-admin-questions.php:916
+#: includes/admin/class-ppq-admin-questions.php:723
 msgid "Banks"
 msgstr ""
 
-#: includes/admin/class-ppq-admin-questions.php:917
-#: includes/admin/class-ppq-admin-quizzes.php:1341
+#: includes/admin/class-ppq-admin-questions.php:724
+#: includes/admin/class-ppq-admin-quizzes.php:1036
 #: includes/admin/class-ppq-banks-list-table.php:57
 #: src/settings-panel/components/TemplatesTab.jsx:190
 msgid "Author"
 msgstr ""
 
-#: includes/admin/class-ppq-admin-questions.php:918
-#: includes/admin/class-ppq-admin-quizzes.php:1342
+#: includes/admin/class-ppq-admin-questions.php:725
+#: includes/admin/class-ppq-admin-quizzes.php:1037
 #: includes/admin/class-ppq-banks-list-table.php:58
 #: includes/frontend/class-ppq-shortcodes.php:583
 #: includes/frontend/class-ppq-shortcodes.php:636
@@ -1175,10 +1179,10 @@ msgstr ""
 msgid "Date"
 msgstr ""
 
-#: includes/admin/class-ppq-admin-questions.php:1002
-#: includes/admin/class-ppq-admin-questions.php:1430
-#: includes/admin/class-ppq-admin-quizzes.php:1393
-#: includes/admin/class-ppq-admin-quizzes.php:1609
+#: includes/admin/class-ppq-admin-questions.php:809
+#: includes/admin/class-ppq-admin-questions.php:1237
+#: includes/admin/class-ppq-admin-quizzes.php:1088
+#: includes/admin/class-ppq-admin-quizzes.php:1304
 #: includes/admin/class-ppq-admin.php:297
 #: includes/admin/class-ppq-banks-list-table.php:112
 #: includes/admin/class-ppq-banks-list-table.php:381
@@ -1189,52 +1193,56 @@ msgstr ""
 msgid "Delete"
 msgstr ""
 
-#: includes/admin/class-ppq-admin-questions.php:1291
+#: includes/admin/class-ppq-admin-questions.php:1098
 msgid "All Banks"
 msgstr ""
 
-#: includes/admin/class-ppq-admin-questions.php:1323
-#: includes/admin/class-ppq-admin-questions.php:1330
-#: includes/admin/class-ppq-admin-quizzes.php:1905
+#: includes/admin/class-ppq-admin-questions.php:1130
+#: includes/admin/class-ppq-admin-questions.php:1137
+#: includes/admin/class-ppq-admin-quizzes.php:1600
 msgid "All Authors"
 msgstr ""
 
-#: includes/admin/class-ppq-admin-questions.php:1375
+#: includes/admin/class-ppq-admin-questions.php:1182
 msgid "(No content)"
 msgstr ""
 
-#: includes/admin/class-ppq-admin-questions.php:1417
-#: includes/admin/class-ppq-admin-quizzes.php:1590
+#: includes/admin/class-ppq-admin-questions.php:1224
+#: includes/admin/class-ppq-admin-quizzes.php:1285
 msgid "Duplicate"
 msgstr ""
 
-#: includes/admin/class-ppq-admin-questions.php:1600
+#: includes/admin/class-ppq-admin-questions.php:1407
 #: includes/frontend/class-ppq-results-renderer.php:1025
 msgid "No questions found."
 msgstr ""
 
-#: includes/admin/class-ppq-admin-quizzes.php:91
+#: includes/admin/class-ppq-admin-quizzes.php:86
 msgid "Quizzes per page"
 msgstr ""
 
-#: includes/admin/class-ppq-admin-quizzes.php:193
-msgid "Quiz saved successfully."
-msgstr ""
-
 #. translators: %d: number of quizzes deleted
-#: includes/admin/class-ppq-admin-quizzes.php:206
+#: includes/admin/class-ppq-admin-quizzes.php:187
 #, php-format
 msgid "%d quiz deleted."
 msgid_plural "%d quizzes deleted."
 msgstr[0] ""
 msgstr[1] ""
 
-#: includes/admin/class-ppq-admin-quizzes.php:218
+#: includes/admin/class-ppq-admin-quizzes.php:202
 msgid "Quiz duplicated successfully."
 msgstr ""
 
+#. translators: %d: number of questions left out of the copy
+#: includes/admin/class-ppq-admin-quizzes.php:208
+#, php-format
+msgid "%d question you can't use was left out."
+msgid_plural "%d questions you can't use were left out."
+msgstr[0] ""
+msgstr[1] ""
+
 #. translators: %d: number of quizzes published
-#: includes/admin/class-ppq-admin-quizzes.php:231
+#: includes/admin/class-ppq-admin-quizzes.php:226
 #, php-format
 msgid "%d quiz published."
 msgid_plural "%d quizzes published."
@@ -1242,35 +1250,33 @@ msgstr[0] ""
 msgstr[1] ""
 
 #. translators: %d: number of quizzes moved to draft
-#: includes/admin/class-ppq-admin-quizzes.php:248
+#: includes/admin/class-ppq-admin-quizzes.php:243
 #, php-format
 msgid "%d quiz moved to draft."
 msgid_plural "%d quizzes moved to draft."
 msgstr[0] ""
 msgstr[1] ""
 
-#: includes/admin/class-ppq-admin-quizzes.php:299
+#: includes/admin/class-ppq-admin-quizzes.php:294
 #: includes/admin/class-ppq-admin.php:120
 #: includes/admin/class-ppq-admin.php:121
 #: src/settings-panel/components/StatusTab.jsx:563
 msgid "Quizzes"
 msgstr ""
 
-#: includes/admin/class-ppq-admin-quizzes.php:308
+#: includes/admin/class-ppq-admin-quizzes.php:303
 msgid "Search Quizzes"
 msgstr ""
 
-#: includes/admin/class-ppq-admin-quizzes.php:331
-#: includes/admin/class-ppq-admin-quizzes.php:365
-#: includes/admin/class-ppq-admin-quizzes.php:795
-#: includes/admin/class-ppq-admin-quizzes.php:907
-#: includes/admin/class-ppq-admin-quizzes.php:1024
-#: includes/admin/class-ppq-admin-quizzes.php:1216
-#: includes/admin/class-ppq-admin-quizzes.php:1282
-#: includes/api/class-ppq-rest-controller.php:730
-#: includes/api/class-ppq-rest-controller.php:2604
-#: includes/api/class-ppq-rest-controller.php:2809
-#: includes/frontend/class-ppq-ajax-handler.php:119
+#: includes/admin/class-ppq-admin-quizzes.php:326
+#: includes/admin/class-ppq-admin-quizzes.php:360
+#: includes/admin/class-ppq-admin-quizzes.php:768
+#: includes/admin/class-ppq-admin-quizzes.php:885
+#: includes/api/class-ppq-rest-controller.php:818
+#: includes/api/class-ppq-rest-controller.php:843
+#: includes/api/class-ppq-rest-controller.php:3060
+#: includes/api/class-ppq-rest-controller.php:3265
+#: includes/frontend/class-ppq-ajax-handler.php:118
 #: includes/frontend/class-ppq-quiz-renderer.php:791
 #: includes/frontend/class-ppq-results-renderer.php:122
 #: includes/frontend/class-ppq-results-renderer.php:1018
@@ -1280,48 +1286,45 @@ msgstr ""
 #: includes/models/class-ppq-attempt.php:328
 #: includes/models/class-ppq-attempt.php:554
 #: includes/models/class-ppq-quiz-item.php:120
-#: includes/models/class-ppq-quiz-rule.php:139
+#: includes/models/class-ppq-quiz-rule.php:147
 msgid "Quiz not found."
 msgstr ""
 
-#: includes/admin/class-ppq-admin-quizzes.php:336
-#: includes/admin/class-ppq-admin-quizzes.php:800
-#: includes/admin/class-ppq-admin-quizzes.php:1220
-#: includes/admin/class-ppq-admin-quizzes.php:1286
+#: includes/admin/class-ppq-admin-quizzes.php:331
 msgid "You do not have permission to edit this quiz."
 msgstr ""
 
-#: includes/admin/class-ppq-admin-quizzes.php:359
-#: includes/frontend/class-ppq-ajax-handler.php:108
-#: includes/frontend/class-ppq-ajax-handler.php:1016
+#: includes/admin/class-ppq-admin-quizzes.php:354
+#: includes/frontend/class-ppq-ajax-handler.php:107
+#: includes/frontend/class-ppq-ajax-handler.php:1015
 msgid "Invalid quiz ID."
 msgstr ""
 
-#: includes/admin/class-ppq-admin-quizzes.php:370
+#: includes/admin/class-ppq-admin-quizzes.php:365
 msgid "You do not have permission to preview this quiz."
 msgstr ""
 
-#: includes/admin/class-ppq-admin-quizzes.php:377
+#: includes/admin/class-ppq-admin-quizzes.php:372
 #: includes/models/class-ppq-attempt.php:400
 #: includes/models/class-ppq-attempt.php:687
 msgid "This quiz has no questions configured."
 msgstr ""
 
-#: includes/admin/class-ppq-admin-quizzes.php:460
+#: includes/admin/class-ppq-admin-quizzes.php:455
 msgid "PREVIEW MODE"
 msgstr ""
 
-#: includes/admin/class-ppq-admin-quizzes.php:461
+#: includes/admin/class-ppq-admin-quizzes.php:456
 msgid "This is a preview - no data will be saved."
 msgstr ""
 
-#: includes/admin/class-ppq-admin-quizzes.php:463
-#: includes/admin/class-ppq-admin-quizzes.php:560
+#: includes/admin/class-ppq-admin-quizzes.php:458
+#: includes/admin/class-ppq-admin-quizzes.php:555
 msgid "Exit Preview"
 msgstr ""
 
 #. translators: 1: current question number, 2: total questions
-#: includes/admin/class-ppq-admin-quizzes.php:481
+#: includes/admin/class-ppq-admin-quizzes.php:476
 #: includes/frontend/class-ppq-quiz-renderer.php:1125
 #: includes/frontend/class-ppq-results-renderer.php:1108
 #, php-format
@@ -1330,103 +1333,63 @@ msgstr ""
 
 #. translators: %s: point value
 #. translators: %s: points value
-#: includes/admin/class-ppq-admin-quizzes.php:514
+#: includes/admin/class-ppq-admin-quizzes.php:509
 #: includes/frontend/class-ppq-quiz-renderer.php:1140
 #, php-format
 msgid "%s points"
 msgstr ""
 
-#: includes/admin/class-ppq-admin-quizzes.php:531
+#: includes/admin/class-ppq-admin-quizzes.php:526
 msgid "(Correct)"
 msgstr ""
 
-#: includes/admin/class-ppq-admin-quizzes.php:541
+#: includes/admin/class-ppq-admin-quizzes.php:536
 msgid "Correct Feedback:"
 msgstr ""
 
-#: includes/admin/class-ppq-admin-quizzes.php:547
+#: includes/admin/class-ppq-admin-quizzes.php:542
 msgid "Incorrect Feedback:"
 msgstr ""
 
-#: includes/admin/class-ppq-admin-quizzes.php:563
+#: includes/admin/class-ppq-admin-quizzes.php:558
 #: src/quiz-editor/components/QuizEditor.jsx:539
 msgid "Edit Quiz"
 msgstr ""
 
-#: includes/admin/class-ppq-admin-quizzes.php:748
-msgid "You do not have permission to save quizzes."
-msgstr ""
-
-#: includes/admin/class-ppq-admin-quizzes.php:900
-#: includes/admin/class-ppq-admin-quizzes.php:968
+#: includes/admin/class-ppq-admin-quizzes.php:761
+#: includes/admin/class-ppq-admin-quizzes.php:829
 msgid "You do not have permission to delete quizzes."
 msgstr ""
 
-#: includes/admin/class-ppq-admin-quizzes.php:912
+#: includes/admin/class-ppq-admin-quizzes.php:773
 msgid "You do not have permission to delete this quiz."
 msgstr ""
 
-#: includes/admin/class-ppq-admin-quizzes.php:1017
+#: includes/admin/class-ppq-admin-quizzes.php:878
 msgid "You do not have permission to duplicate quizzes."
 msgstr ""
 
-#: includes/admin/class-ppq-admin-quizzes.php:1029
+#: includes/admin/class-ppq-admin-quizzes.php:890
 msgid "You do not have permission to duplicate this quiz."
 msgstr ""
 
-#: includes/admin/class-ppq-admin-quizzes.php:1062
+#: includes/admin/class-ppq-admin-quizzes.php:925
 msgid "You do not have permission to publish quizzes."
 msgstr ""
 
-#: includes/admin/class-ppq-admin-quizzes.php:1103
+#: includes/admin/class-ppq-admin-quizzes.php:966
 msgid "You do not have permission to change quiz status."
 msgstr ""
 
-#: includes/admin/class-ppq-admin-quizzes.php:1148
-msgid "You do not have permission to view questions."
-msgstr ""
-
-#: includes/admin/class-ppq-admin-quizzes.php:1202
-#: includes/admin/class-ppq-admin-quizzes.php:1264
-msgid "You do not have permission to edit quizzes."
-msgstr ""
-
-#: includes/admin/class-ppq-admin-quizzes.php:1210
-msgid "Invalid data provided."
-msgstr ""
-
-#. translators: %d: number of questions added
-#: includes/admin/class-ppq-admin-quizzes.php:1244
-#, php-format
-msgid "%d question added."
-msgid_plural "%d questions added."
-msgstr[0] ""
-msgstr[1] ""
-
-#: includes/admin/class-ppq-admin-quizzes.php:1270
-msgid "Invalid item ID."
-msgstr ""
-
-#: includes/admin/class-ppq-admin-quizzes.php:1276
-#: includes/api/class-ppq-rest-controller.php:3077
-#: includes/api/class-ppq-rest-controller.php:3109
-#: includes/api/class-ppq-rest-controller.php:3144
-msgid "Quiz item not found."
-msgstr ""
-
-#: includes/admin/class-ppq-admin-quizzes.php:1298
-msgid "Question removed from quiz."
-msgstr ""
-
-#: includes/admin/class-ppq-admin-quizzes.php:1337
+#: includes/admin/class-ppq-admin-quizzes.php:1032
 msgid "Title"
 msgstr ""
 
-#: includes/admin/class-ppq-admin-quizzes.php:1339
+#: includes/admin/class-ppq-admin-quizzes.php:1034
 msgid "Mode"
 msgstr ""
 
-#: includes/admin/class-ppq-admin-quizzes.php:1340
+#: includes/admin/class-ppq-admin-quizzes.php:1035
 #: includes/frontend/class-ppq-shortcodes.php:720
 #: src/dashboard/components/RecentActivity.jsx:132
 #: src/quiz-editor/components/QuestionsPanel.jsx:500
@@ -1440,93 +1403,94 @@ msgstr ""
 msgid "Status"
 msgstr ""
 
-#: includes/admin/class-ppq-admin-quizzes.php:1391
+#: includes/admin/class-ppq-admin-quizzes.php:1086
 msgid "Publish"
 msgstr ""
 
-#: includes/admin/class-ppq-admin-quizzes.php:1392
+#: includes/admin/class-ppq-admin-quizzes.php:1087
 msgid "Move to Draft"
 msgstr ""
 
-#: includes/admin/class-ppq-admin-quizzes.php:1625
+#: includes/admin/class-ppq-admin-quizzes.php:1320
 #: src/question-editor/components/MathInsertModal.jsx:184
 #: src/settings-panel/components/DataToolsTab.jsx:418
 #: src/settings-panel/components/DataToolsTab.jsx:426
 msgid "Preview"
 msgstr ""
 
-#: includes/admin/class-ppq-admin-quizzes.php:1646
+#: includes/admin/class-ppq-admin-quizzes.php:1341
 msgid "Reset Attempts"
 msgstr ""
 
-#: includes/admin/class-ppq-admin-quizzes.php:1651
+#: includes/admin/class-ppq-admin-quizzes.php:1346
+#: includes/admin/class-ppq-rule-scope-notice.php:190
 msgid "(no title)"
 msgstr ""
 
-#: includes/admin/class-ppq-admin-quizzes.php:1674
-#: includes/admin/class-ppq-admin-quizzes.php:1689
+#: includes/admin/class-ppq-admin-quizzes.php:1369
+#: includes/admin/class-ppq-admin-quizzes.php:1384
 msgid "question"
 msgid_plural "questions"
 msgstr[0] ""
 msgstr[1] ""
 
-#: includes/admin/class-ppq-admin-quizzes.php:1704
-#: includes/admin/class-ppq-admin-quizzes.php:1864
+#: includes/admin/class-ppq-admin-quizzes.php:1399
+#: includes/admin/class-ppq-admin-quizzes.php:1559
 msgid "Tutorial"
 msgstr ""
 
-#: includes/admin/class-ppq-admin-quizzes.php:1705
-#: includes/admin/class-ppq-admin-quizzes.php:1865
+#: includes/admin/class-ppq-admin-quizzes.php:1400
+#: includes/admin/class-ppq-admin-quizzes.php:1560
 msgid "Test"
 msgstr ""
 
-#: includes/admin/class-ppq-admin-quizzes.php:1721
-#: includes/admin/class-ppq-admin-quizzes.php:1836
+#: includes/admin/class-ppq-admin-quizzes.php:1416
+#: includes/admin/class-ppq-admin-quizzes.php:1531
 #: src/quiz-editor/components/QuestionsPanel.jsx:511
 #: src/quiz-editor/components/QuestionsPanel.jsx:760
 #: src/quiz-editor/components/SettingsPanel.jsx:293
 msgid "Draft"
 msgstr ""
 
-#: includes/admin/class-ppq-admin-quizzes.php:1722
-#: includes/admin/class-ppq-admin-quizzes.php:1837
+#: includes/admin/class-ppq-admin-quizzes.php:1417
+#: includes/admin/class-ppq-admin-quizzes.php:1532
 #: src/quiz-editor/components/QuestionsPanel.jsx:759
 #: src/quiz-editor/components/SettingsPanel.jsx:294
 msgid "Published"
 msgstr ""
 
-#: includes/admin/class-ppq-admin-quizzes.php:1723
-#: includes/admin/class-ppq-admin-quizzes.php:1838
+#: includes/admin/class-ppq-admin-quizzes.php:1418
+#: includes/admin/class-ppq-admin-quizzes.php:1533
 #: src/quiz-editor/components/QuestionsPanel.jsx:512
 #: src/quiz-editor/components/SettingsPanel.jsx:295
 msgid "Archived"
 msgstr ""
 
 #. translators: %s: human-readable time difference
-#: includes/admin/class-ppq-admin-quizzes.php:1786
+#: includes/admin/class-ppq-admin-quizzes.php:1481
 #: includes/utilities/class-ppq-helpers.php:407
 #, php-format
 msgid "%s ago"
 msgstr ""
 
-#: includes/admin/class-ppq-admin-quizzes.php:1835
+#: includes/admin/class-ppq-admin-quizzes.php:1530
 #: includes/frontend/class-ppq-shortcodes.php:563
 msgid "All Statuses"
 msgstr ""
 
-#: includes/admin/class-ppq-admin-quizzes.php:1842
+#: includes/admin/class-ppq-admin-quizzes.php:1537
 msgid "Filter by status"
 msgstr ""
 
-#: includes/admin/class-ppq-admin-quizzes.php:1863
+#: includes/admin/class-ppq-admin-quizzes.php:1558
 msgid "All Modes"
 msgstr ""
 
-#: includes/admin/class-ppq-admin-quizzes.php:1869
+#: includes/admin/class-ppq-admin-quizzes.php:1564
 msgid "Filter by mode"
 msgstr ""
 
-#: includes/admin/class-ppq-admin-quizzes.php:1903
+#: includes/admin/class-ppq-admin-quizzes.php:1598
 msgid "Filter by author"
 msgstr ""
 
@@ -1904,7 +1868,7 @@ msgstr ""
 
 #: includes/admin/class-ppq-admin-settings.php:1043
 #: includes/admin/class-ppq-admin-settings.php:2254
-#: includes/api/class-ppq-rest-controller.php:3955
+#: includes/api/class-ppq-rest-controller.php:4544
 msgid "Model preference saved."
 msgstr ""
 
@@ -1982,7 +1946,7 @@ msgid "OpenAI API key saved successfully."
 msgstr ""
 
 #: includes/admin/class-ppq-admin-settings.php:1793
-#: includes/api/class-ppq-rest-controller.php:3389
+#: includes/api/class-ppq-rest-controller.php:3978
 #: includes/frontend/class-ppq-quiz-renderer.php:668
 msgid "Add me to the newsletter. I understand that I can unsubscribe at any time."
 msgstr ""
@@ -2028,7 +1992,7 @@ msgid "Theme Font"
 msgstr ""
 
 #: includes/admin/class-ppq-admin-settings.php:2247
-#: includes/api/class-ppq-rest-controller.php:3803
+#: includes/api/class-ppq-rest-controller.php:4392
 msgid "API key saved and validated successfully."
 msgstr ""
 
@@ -2038,8 +2002,8 @@ msgstr ""
 
 #: includes/admin/class-ppq-admin-settings.php:2282
 #: includes/admin/class-ppq-admin-settings.php:2347
-#: includes/api/class-ppq-rest-controller.php:3852
-#: includes/api/class-ppq-rest-controller.php:3894
+#: includes/api/class-ppq-rest-controller.php:4441
+#: includes/api/class-ppq-rest-controller.php:4483
 msgid "No API key configured."
 msgstr ""
 
@@ -2049,7 +2013,7 @@ msgid "API key is valid and working correctly."
 msgstr ""
 
 #: includes/admin/class-ppq-admin-settings.php:2322
-#: includes/api/class-ppq-rest-controller.php:3829
+#: includes/api/class-ppq-rest-controller.php:4418
 msgid "API key removed successfully."
 msgstr ""
 
@@ -2089,7 +2053,7 @@ msgstr ""
 
 #: includes/admin/class-ppq-admin.php:110
 #: includes/admin/class-ppq-admin.php:111
-#: includes/api/class-ppq-rest-controller.php:4344
+#: includes/api/class-ppq-rest-controller.php:4933
 #: src/onboarding/tourSteps.js:76
 #: src/settings-panel/components/GeneralTab.jsx:98
 #: src/settings-panel/components/GeneralTab.jsx:344
@@ -2132,7 +2096,7 @@ msgstr ""
 #: assets/js/tutorlms-editor.js:122
 #: src/question-editor/components/AnswerRow.jsx:107
 #: src/quiz-editor/components/FeedbackPanel.jsx:273
-#: src/quiz-editor/components/RulesPanel.jsx:305
+#: src/quiz-editor/components/RulesPanel.jsx:336
 #: src/settings-panel/components/EmailTab.jsx:335
 msgid "Remove"
 msgstr ""
@@ -2176,17 +2140,18 @@ msgid "Welcome to %s! Here's an overview of recent quiz activity."
 msgstr ""
 
 #: includes/admin/class-ppq-admin.php:689
-#: includes/admin/class-ppq-admin.php:892
-#: includes/admin/class-ppq-admin.php:1052
-#: includes/api/class-ppq-rest-controller.php:734
-#: includes/api/class-ppq-rest-controller.php:1206
-#: includes/api/class-ppq-rest-controller.php:1428
-#: includes/api/class-ppq-rest-controller.php:2609
-#: includes/api/class-ppq-rest-controller.php:2814
+#: includes/admin/class-ppq-admin.php:864
+#: includes/admin/class-ppq-admin.php:1006
+#: includes/api/class-ppq-rest-controller.php:822
+#: includes/api/class-ppq-rest-controller.php:868
+#: includes/api/class-ppq-rest-controller.php:1411
+#: includes/api/class-ppq-rest-controller.php:1642
+#: includes/api/class-ppq-rest-controller.php:3065
+#: includes/api/class-ppq-rest-controller.php:3270
 msgid "You do not have permission."
 msgstr ""
 
-#: includes/admin/class-ppq-admin.php:1084
+#: includes/admin/class-ppq-admin.php:1038
 msgid "Question removed from bank."
 msgstr ""
 
@@ -2376,6 +2341,26 @@ msgstr ""
 
 #: includes/admin/class-ppq-review-notice.php:175
 msgid "Remind me later"
+msgstr ""
+
+#: includes/admin/class-ppq-rule-scope-notice.php:183
+msgid "These quizzes now draw only from their owners' own and shared questions."
+msgstr ""
+
+#: includes/admin/class-ppq-rule-scope-notice.php:185
+msgid "Before this update, their rules could also draw questions their owners can't use, such as other teachers' private questions. Check that each quiz still has enough questions to draw."
+msgstr ""
+
+#. translators: %d: number of quizzes not listed by name
+#: includes/admin/class-ppq-rule-scope-notice.php:201
+#, php-format
+msgid "And %d more quiz."
+msgid_plural "And %d more quizzes."
+msgstr[0] ""
+msgstr[1] ""
+
+#: includes/admin/class-ppq-rule-scope-notice.php:208
+msgid "Dismiss"
 msgstr ""
 
 #: includes/admin/class-ppq-upgrade-page.php:65
@@ -2839,199 +2824,226 @@ msgstr ""
 msgid "Compare plans and pick the tier that fits your program. 14-day money-back guarantee."
 msgstr ""
 
-#: includes/api/class-ppq-rest-controller.php:851
-#: includes/api/class-ppq-rest-controller.php:888
-#: includes/api/class-ppq-rest-controller.php:966
+#: includes/api/class-ppq-rest-controller.php:932
+msgid "You can't add questions to one or more of these banks."
+msgstr ""
+
+#: includes/api/class-ppq-rest-controller.php:959
+msgid "You can't draw questions from this bank."
+msgstr ""
+
+#: includes/api/class-ppq-rest-controller.php:1059
+#: includes/api/class-ppq-rest-controller.php:1096
+#: includes/api/class-ppq-rest-controller.php:1174
 msgid "Reset tools are not available."
 msgstr ""
 
-#: includes/api/class-ppq-rest-controller.php:915
+#: includes/api/class-ppq-rest-controller.php:1123
 msgid "The confirmation text did not match. Nothing was deleted."
 msgstr ""
 
 #. translators: 1: display name, 2: user login.
-#: includes/api/class-ppq-rest-controller.php:1017
+#: includes/api/class-ppq-rest-controller.php:1225
 #, php-format
 msgid "%1$s (%2$s)"
 msgstr ""
 
-#: includes/api/class-ppq-rest-controller.php:1313
+#: includes/api/class-ppq-rest-controller.php:1527
 msgid "Failed to load created question."
 msgstr ""
 
-#: includes/api/class-ppq-rest-controller.php:1640
+#: includes/api/class-ppq-rest-controller.php:1856
+msgid "Failed to delete question."
+msgstr ""
+
+#: includes/api/class-ppq-rest-controller.php:1946
 msgid "You do not have permission to upload images to this question."
 msgstr ""
 
-#: includes/api/class-ppq-rest-controller.php:1650
-#: includes/api/class-ppq-rest-controller.php:1807
+#: includes/api/class-ppq-rest-controller.php:1956
+#: includes/api/class-ppq-rest-controller.php:2113
 #: includes/services/class-ppq-file-processor.php:144
 msgid "No file was uploaded."
 msgstr ""
 
-#: includes/api/class-ppq-rest-controller.php:1661
-#: includes/api/class-ppq-rest-controller.php:1818
+#: includes/api/class-ppq-rest-controller.php:1967
+#: includes/api/class-ppq-rest-controller.php:2124
 msgid "Upload failed."
 msgstr ""
 
 #. translators: %s: maximum file size in MB
-#: includes/api/class-ppq-rest-controller.php:1682
-#: includes/api/class-ppq-rest-controller.php:1839
+#: includes/api/class-ppq-rest-controller.php:1988
+#: includes/api/class-ppq-rest-controller.php:2145
 #, php-format
 msgid "File too large. Maximum allowed: %s MB."
 msgstr ""
 
-#: includes/api/class-ppq-rest-controller.php:1718
-#: includes/api/class-ppq-rest-controller.php:1869
+#: includes/api/class-ppq-rest-controller.php:2024
+#: includes/api/class-ppq-rest-controller.php:2175
 #: src/question-editor/components/ImageUploadModal.jsx:55
 msgid "Unsupported file type. Allowed: JPG, PNG, GIF, WebP."
 msgstr ""
 
-#: includes/api/class-ppq-rest-controller.php:2076
+#: includes/api/class-ppq-rest-controller.php:2369
 msgid "You do not have permission to access this bank."
 msgstr ""
 
-#: includes/api/class-ppq-rest-controller.php:2129
+#: includes/api/class-ppq-rest-controller.php:2412
 msgid "Failed to create bank."
 msgstr ""
 
-#: includes/api/class-ppq-rest-controller.php:2395
+#: includes/api/class-ppq-rest-controller.php:2544
+#: includes/api/class-ppq-rest-controller.php:3547
+msgid "No questions provided."
+msgstr ""
+
+#: includes/api/class-ppq-rest-controller.php:2581
+msgid "This question isn't in this bank."
+msgstr ""
+
+#: includes/api/class-ppq-rest-controller.php:2851
 msgid "max_answers_per_question must be an integer between 2 and 8, or null."
 msgstr ""
 
-#: includes/api/class-ppq-rest-controller.php:2404
+#: includes/api/class-ppq-rest-controller.php:2860
 msgid "max_answers_per_question must be between 2 and 8."
 msgstr ""
 
-#: includes/api/class-ppq-rest-controller.php:2469
+#: includes/api/class-ppq-rest-controller.php:2925
 msgid "(untitled)"
 msgstr ""
 
 #. translators: 1: question stem preview, 2: number of correct answers, 3: configured cap
-#: includes/api/class-ppq-rest-controller.php:2473
+#: includes/api/class-ppq-rest-controller.php:2929
 #, php-format
 msgid "Question \"%1$s\" has %2$d correct answers, more than your cap of %3$d. All correct answers will be shown for that question."
 msgstr ""
 
 #. translators: %d: configured cap
-#: includes/api/class-ppq-rest-controller.php:2484
+#: includes/api/class-ppq-rest-controller.php:2940
 #, php-format
 msgid "No questions in this quiz have more than %d answers. This setting will not affect anything until you add a question with more options."
 msgstr ""
 
-#: includes/api/class-ppq-rest-controller.php:2517
+#: includes/api/class-ppq-rest-controller.php:2973
 msgid "display_settings must be an object."
 msgstr ""
 
 #. translators: %s: invalid display option key
-#: includes/api/class-ppq-rest-controller.php:2549
+#: includes/api/class-ppq-rest-controller.php:3005
 #, php-format
 msgid "Unknown display option key: %s"
 msgstr ""
 
-#: includes/api/class-ppq-rest-controller.php:2586
+#: includes/api/class-ppq-rest-controller.php:3042
 msgid "Invalid scoring mode. Allowed values: right_minus_wrong, proportional, partial_no_wrong, all_or_nothing."
 msgstr ""
 
 #. translators: %d: pool size
-#: includes/api/class-ppq-rest-controller.php:2761
-#: includes/api/class-ppq-rest-controller.php:2902
+#: includes/api/class-ppq-rest-controller.php:3217
+#: includes/api/class-ppq-rest-controller.php:3358
 #, php-format
 msgid "Maximum questions cannot exceed pool size (%d)."
 msgstr ""
 
-#: includes/api/class-ppq-rest-controller.php:3003
-msgid "No questions provided."
+#: includes/api/class-ppq-rest-controller.php:3428
+msgid "Failed to delete quiz."
 msgstr ""
 
-#: includes/api/class-ppq-rest-controller.php:3011
+#: includes/api/class-ppq-rest-controller.php:3555
 msgid "You can't add one or more of these questions to this quiz."
 msgstr ""
 
-#: includes/api/class-ppq-rest-controller.php:3136
+#: includes/api/class-ppq-rest-controller.php:3631
+#: includes/api/class-ppq-rest-controller.php:3669
+#: includes/api/class-ppq-rest-controller.php:3706
+msgid "Quiz item not found."
+msgstr ""
+
+#: includes/api/class-ppq-rest-controller.php:3698
 msgid "No items provided."
 msgstr ""
 
-#: includes/api/class-ppq-rest-controller.php:3259
-#: includes/api/class-ppq-rest-controller.php:3304
-#: includes/api/class-ppq-rest-controller.php:3342
+#: includes/api/class-ppq-rest-controller.php:3838
+#: includes/api/class-ppq-rest-controller.php:3893
+#: includes/api/class-ppq-rest-controller.php:3931
 msgid "Quiz rule not found."
 msgstr ""
 
-#: includes/api/class-ppq-rest-controller.php:3331
+#: includes/api/class-ppq-rest-controller.php:3920
 msgid "No rules provided."
 msgstr ""
 
-#: includes/api/class-ppq-rest-controller.php:3755
+#: includes/api/class-ppq-rest-controller.php:4344
 msgid "Settings saved successfully."
 msgstr ""
 
-#: includes/api/class-ppq-rest-controller.php:3778
+#: includes/api/class-ppq-rest-controller.php:4367
 msgid "Please provide an API key."
 msgstr ""
 
-#: includes/api/class-ppq-rest-controller.php:3783
-#: includes/api/class-ppq-rest-controller.php:3974
+#: includes/api/class-ppq-rest-controller.php:4372
+#: includes/api/class-ppq-rest-controller.php:4563
 msgid "Unknown AI provider."
 msgstr ""
 
-#: includes/api/class-ppq-rest-controller.php:3867
+#: includes/api/class-ppq-rest-controller.php:4456
 msgid "API key is valid."
 msgstr ""
 
-#: includes/api/class-ppq-rest-controller.php:4165
-#: includes/frontend/class-ppq-ajax-handler.php:277
-#: includes/frontend/class-ppq-ajax-handler.php:407
-#: includes/frontend/class-ppq-ajax-handler.php:480
-#: includes/frontend/class-ppq-ajax-handler.php:686
-#: includes/frontend/class-ppq-ajax-handler.php:771
+#: includes/api/class-ppq-rest-controller.php:4754
+#: includes/frontend/class-ppq-ajax-handler.php:276
+#: includes/frontend/class-ppq-ajax-handler.php:406
+#: includes/frontend/class-ppq-ajax-handler.php:479
+#: includes/frontend/class-ppq-ajax-handler.php:685
+#: includes/frontend/class-ppq-ajax-handler.php:770
 #: includes/frontend/class-ppq-shortcodes.php:263
 #: includes/services/class-ppq-scoring-service.php:334
 msgid "Attempt not found."
 msgstr ""
 
-#: includes/api/class-ppq-rest-controller.php:4246
+#: includes/api/class-ppq-rest-controller.php:4835
 #: includes/models/class-ppq-attempt.php:545
 msgid "Please provide a valid email address."
 msgstr ""
 
-#: includes/api/class-ppq-rest-controller.php:4256
+#: includes/api/class-ppq-rest-controller.php:4845
 msgid "Test email sent successfully."
 msgstr ""
 
-#: includes/api/class-ppq-rest-controller.php:4261
+#: includes/api/class-ppq-rest-controller.php:4850
 msgid "Failed to send test email. Please check your email configuration."
 msgstr ""
 
-#: includes/api/class-ppq-rest-controller.php:4278
-#: includes/api/class-ppq-rest-controller.php:4305
+#: includes/api/class-ppq-rest-controller.php:4867
+#: includes/api/class-ppq-rest-controller.php:4894
 msgid "Schema verifier is unavailable."
 msgstr ""
 
-#: includes/api/class-ppq-rest-controller.php:4334
+#: includes/api/class-ppq-rest-controller.php:4923
 msgid "You do not have permission to create pages."
 msgstr ""
 
-#: includes/api/class-ppq-rest-controller.php:4399
+#: includes/api/class-ppq-rest-controller.php:4988
 msgid "The user_id parameter is not allowed on this endpoint."
 msgstr ""
 
-#: includes/api/class-ppq-rest-controller.php:4421
+#: includes/api/class-ppq-rest-controller.php:5010
 msgid "Invalid status filter."
 msgstr ""
 
-#: includes/api/class-ppq-rest-controller.php:4436
+#: includes/api/class-ppq-rest-controller.php:5025
 msgid "Invalid orderby value."
 msgstr ""
 
-#: includes/api/class-ppq-rest-controller.php:4728
-#: includes/api/class-ppq-rest-controller.php:4786
+#: includes/api/class-ppq-rest-controller.php:5317
+#: includes/api/class-ppq-rest-controller.php:5375
 #: includes/models/class-ppq-quiz-template.php:235
 msgid "Template name is required."
 msgstr ""
 
-#: includes/api/class-ppq-rest-controller.php:4778
-#: includes/api/class-ppq-rest-controller.php:4833
+#: includes/api/class-ppq-rest-controller.php:5367
+#: includes/api/class-ppq-rest-controller.php:5422
 msgid "Template not found."
 msgstr ""
 
@@ -3063,112 +3075,112 @@ msgstr ""
 msgid "Open schema status"
 msgstr ""
 
-#: includes/frontend/class-ppq-ajax-handler.php:97
-#: includes/frontend/class-ppq-ajax-handler.php:654
-#: includes/frontend/class-ppq-ajax-handler.php:1001
+#: includes/frontend/class-ppq-ajax-handler.php:96
+#: includes/frontend/class-ppq-ajax-handler.php:653
+#: includes/frontend/class-ppq-ajax-handler.php:1000
 msgid "Security check failed. Please refresh the page and try again."
 msgstr ""
 
-#: includes/frontend/class-ppq-ajax-handler.php:128
+#: includes/frontend/class-ppq-ajax-handler.php:127
 #: includes/frontend/class-ppq-shortcodes.php:214
 #: includes/models/class-ppq-attempt.php:336
 #: includes/models/class-ppq-attempt.php:562
 msgid "This quiz is not available."
 msgstr ""
 
-#: includes/frontend/class-ppq-ajax-handler.php:231
+#: includes/frontend/class-ppq-ajax-handler.php:230
 msgid "Quiz started successfully."
 msgstr ""
 
-#: includes/frontend/class-ppq-ajax-handler.php:266
-#: includes/frontend/class-ppq-ajax-handler.php:396
-#: includes/frontend/class-ppq-ajax-handler.php:469
-#: includes/frontend/class-ppq-ajax-handler.php:667
+#: includes/frontend/class-ppq-ajax-handler.php:265
+#: includes/frontend/class-ppq-ajax-handler.php:395
+#: includes/frontend/class-ppq-ajax-handler.php:468
+#: includes/frontend/class-ppq-ajax-handler.php:666
 msgid "Invalid attempt ID."
 msgstr ""
 
-#: includes/frontend/class-ppq-ajax-handler.php:286
-#: includes/frontend/class-ppq-ajax-handler.php:416
-#: includes/frontend/class-ppq-ajax-handler.php:489
-#: includes/frontend/class-ppq-ajax-handler.php:780
+#: includes/frontend/class-ppq-ajax-handler.php:285
+#: includes/frontend/class-ppq-ajax-handler.php:415
+#: includes/frontend/class-ppq-ajax-handler.php:488
+#: includes/frontend/class-ppq-ajax-handler.php:779
 msgid "You do not have permission to access this attempt."
 msgstr ""
 
-#: includes/frontend/class-ppq-ajax-handler.php:295
-#: includes/frontend/class-ppq-ajax-handler.php:425
-#: includes/frontend/class-ppq-ajax-handler.php:789
+#: includes/frontend/class-ppq-ajax-handler.php:294
+#: includes/frontend/class-ppq-ajax-handler.php:424
+#: includes/frontend/class-ppq-ajax-handler.php:788
 msgid "This attempt is not in progress."
 msgstr ""
 
-#: includes/frontend/class-ppq-ajax-handler.php:304
+#: includes/frontend/class-ppq-ajax-handler.php:303
 msgid "This attempt has timed out."
 msgstr ""
 
-#: includes/frontend/class-ppq-ajax-handler.php:325
+#: includes/frontend/class-ppq-ajax-handler.php:324
 msgid "No answers provided."
 msgstr ""
 
 #. translators: %d: number of answers saved
-#: includes/frontend/class-ppq-ajax-handler.php:364
+#: includes/frontend/class-ppq-ajax-handler.php:363
 #, php-format
 msgid "%d answer saved."
 msgid_plural "%d answers saved."
 msgstr[0] ""
 msgstr[1] ""
 
-#: includes/frontend/class-ppq-ajax-handler.php:498
+#: includes/frontend/class-ppq-ajax-handler.php:497
 #: includes/models/class-ppq-attempt.php:943
 #: includes/models/class-ppq-attempt.php:1032
 #: includes/models/class-ppq-attempt.php:1119
 msgid "This attempt has already been submitted."
 msgstr ""
 
-#: includes/frontend/class-ppq-ajax-handler.php:584
+#: includes/frontend/class-ppq-ajax-handler.php:583
 msgid "Quiz submitted successfully."
 msgstr ""
 
-#: includes/frontend/class-ppq-ajax-handler.php:675
+#: includes/frontend/class-ppq-ajax-handler.php:674
 msgid "Invalid email address."
 msgstr ""
 
-#: includes/frontend/class-ppq-ajax-handler.php:695
+#: includes/frontend/class-ppq-ajax-handler.php:694
 msgid "You do not have permission to email these results."
 msgstr ""
 
-#: includes/frontend/class-ppq-ajax-handler.php:704
+#: includes/frontend/class-ppq-ajax-handler.php:703
 msgid "Results are not available for this attempt."
 msgstr ""
 
-#: includes/frontend/class-ppq-ajax-handler.php:713
+#: includes/frontend/class-ppq-ajax-handler.php:712
 msgid "Email service is not available."
 msgstr ""
 
-#: includes/frontend/class-ppq-ajax-handler.php:723
+#: includes/frontend/class-ppq-ajax-handler.php:722
 #: includes/frontend/class-ppq-shortcodes.php:379
 msgid "Results emailed successfully!"
 msgstr ""
 
-#: includes/frontend/class-ppq-ajax-handler.php:729
+#: includes/frontend/class-ppq-ajax-handler.php:728
 msgid "Failed to send email. Please try again later."
 msgstr ""
 
-#: includes/frontend/class-ppq-ajax-handler.php:760
+#: includes/frontend/class-ppq-ajax-handler.php:759
 msgid "Invalid parameters."
 msgstr ""
 
-#: includes/frontend/class-ppq-ajax-handler.php:801
+#: includes/frontend/class-ppq-ajax-handler.php:800
 msgid "Answer checking is only available in tutorial mode."
 msgstr ""
 
-#: includes/frontend/class-ppq-ajax-handler.php:821
+#: includes/frontend/class-ppq-ajax-handler.php:820
 msgid "This answer has already been checked."
 msgstr ""
 
-#: includes/frontend/class-ppq-ajax-handler.php:877
+#: includes/frontend/class-ppq-ajax-handler.php:876
 msgid "Question data not found."
 msgstr ""
 
-#: includes/frontend/class-ppq-ajax-handler.php:1026
+#: includes/frontend/class-ppq-ajax-handler.php:1025
 msgid "Not logged in."
 msgstr ""
 
@@ -4341,33 +4353,33 @@ msgstr ""
 msgid "Invalid visibility. Must be private or shared."
 msgstr ""
 
-#: includes/models/class-ppq-bank.php:265
+#: includes/models/class-ppq-bank.php:320
 msgid "Cannot add question without bank ID."
 msgstr ""
 
-#: includes/models/class-ppq-bank.php:274
-#: includes/models/class-ppq-bank.php:350
+#: includes/models/class-ppq-bank.php:329
+#: includes/models/class-ppq-bank.php:405
 #: includes/models/class-ppq-question-revision.php:165
 msgid "Invalid question ID."
 msgstr ""
 
-#: includes/models/class-ppq-bank.php:301
+#: includes/models/class-ppq-bank.php:356
 msgid "Question is already in this bank."
 msgstr ""
 
-#: includes/models/class-ppq-bank.php:318
+#: includes/models/class-ppq-bank.php:373
 msgid "Failed to add question to bank."
 msgstr ""
 
-#: includes/models/class-ppq-bank.php:341
+#: includes/models/class-ppq-bank.php:396
 msgid "Cannot remove question without bank ID."
 msgstr ""
 
-#: includes/models/class-ppq-bank.php:370
+#: includes/models/class-ppq-bank.php:425
 msgid "Failed to remove question from bank."
 msgstr ""
 
-#: includes/models/class-ppq-bank.php:771
+#: includes/models/class-ppq-bank.php:860
 msgid "Cannot delete bank without ID."
 msgstr ""
 
@@ -4493,72 +4505,80 @@ msgstr ""
 msgid "Revisions cannot be deleted. They are permanent for historical accuracy."
 msgstr ""
 
-#: includes/models/class-ppq-question.php:286
+#: includes/models/class-ppq-question.php:293
 msgid "Invalid question type. Must be mc, ma, or tf."
 msgstr ""
 
-#: includes/models/class-ppq-question.php:294
+#: includes/models/class-ppq-question.php:301
 msgid "Invalid difficulty. Must be beginner, intermediate, advanced, or expert."
 msgstr ""
 
-#: includes/models/class-ppq-question.php:302
+#: includes/models/class-ppq-question.php:309
 msgid "Invalid status. Must be draft, published, or archived."
 msgstr ""
 
-#: includes/models/class-ppq-question.php:312
+#: includes/models/class-ppq-question.php:319
 msgid "Expected time must be between 1 and 3600 seconds."
 msgstr ""
 
-#: includes/models/class-ppq-question.php:323
+#: includes/models/class-ppq-question.php:330
 msgid "Max points must be between 0.01 and 1000.00."
 msgstr ""
 
-#: includes/models/class-ppq-question.php:348
+#: includes/models/class-ppq-question.php:355
 msgid "Question text is required and must contain at least 2 characters."
 msgstr ""
 
-#: includes/models/class-ppq-question.php:357
+#: includes/models/class-ppq-question.php:364
 msgid "Answer options are required for this question type."
 msgstr ""
 
-#: includes/models/class-ppq-question.php:386
+#: includes/models/class-ppq-question.php:393
 msgid "At least 2 answer options with text are required."
 msgstr ""
 
-#: includes/models/class-ppq-question.php:393
+#: includes/models/class-ppq-question.php:400
 msgid "At least one answer must be marked as correct."
 msgstr ""
 
-#: includes/models/class-ppq-question.php:403
+#: includes/models/class-ppq-question.php:410
 msgid "Both True and False answer options are required."
 msgstr ""
 
-#: includes/models/class-ppq-question.php:427
+#: includes/models/class-ppq-question.php:434
 msgid "Both True and False answer options must have text (at least 2 characters each)."
 msgstr ""
 
-#: includes/models/class-ppq-question.php:434
+#: includes/models/class-ppq-question.php:441
 msgid "True/False questions must have exactly one correct answer."
 msgstr ""
 
-#: includes/models/class-ppq-question.php:462
+#: includes/models/class-ppq-question.php:469
 msgid "Cannot delete question without ID."
 msgstr ""
 
-#: includes/models/class-ppq-question.php:651
+#: includes/models/class-ppq-question.php:567
+msgid "Question revision not found."
+msgstr ""
+
+#: includes/models/class-ppq-question.php:604
+msgid "Failed to load duplicated question."
+msgstr ""
+
+#: includes/models/class-ppq-question.php:894
 msgid "Cannot restore question without ID."
 msgstr ""
 
-#: includes/models/class-ppq-question.php:758
+#: includes/models/class-ppq-question.php:1001
 msgid "Cannot set categories without question ID."
 msgstr ""
 
-#: includes/models/class-ppq-question.php:822
+#: includes/models/class-ppq-question.php:1065
 msgid "Cannot set tags without question ID."
 msgstr ""
 
 #: includes/models/class-ppq-quiz-item.php:101
-#: includes/models/class-ppq-quiz-rule.php:128
+#: includes/models/class-ppq-quiz-rule.php:136
 msgid "Quiz ID is required."
 msgstr ""
 
@@ -4575,7 +4595,7 @@ msgid "Weight must be between 0 and 100."
 msgstr ""
 
 #: includes/models/class-ppq-quiz-item.php:266
-#: includes/models/class-ppq-quiz-rule.php:282
+#: includes/models/class-ppq-quiz-rule.php:290
 msgid "Order map cannot be empty."
 msgstr ""
 
@@ -4597,12 +4617,12 @@ msgstr ""
 msgid "Item is already last."
 msgstr ""
 
-#: includes/models/class-ppq-quiz-rule.php:170
+#: includes/models/class-ppq-quiz-rule.php:178
 msgid "Question count must be between 1 and 500."
 msgstr ""
 
 #. translators: %d: rule ID
-#: includes/models/class-ppq-quiz-rule.php:309
+#: includes/models/class-ppq-quiz-rule.php:317
 #, php-format
 msgid "Failed to update order for rule %d."
 msgstr ""
@@ -4617,39 +4637,39 @@ msgstr ""
 msgid "Template settings exceed the maximum size of %dKB."
 msgstr ""
 
-#: includes/models/class-ppq-quiz.php:787
+#: includes/models/class-ppq-quiz.php:795
 msgid "Quiz title is required."
 msgstr ""
 
-#: includes/models/class-ppq-quiz.php:797
+#: includes/models/class-ppq-quiz.php:805
 msgid "Quiz title must be 200 characters or less."
 msgstr ""
 
-#: includes/models/class-ppq-quiz.php:826
+#: includes/models/class-ppq-quiz.php:834
 msgid "Passing percentage must be between 0 and 100."
 msgstr ""
 
-#: includes/models/class-ppq-quiz.php:838
+#: includes/models/class-ppq-quiz.php:846
 msgid "Time limit must be between 60 and 86400 seconds (1 minute to 24 hours)."
 msgstr ""
 
-#: includes/models/class-ppq-quiz.php:850
+#: includes/models/class-ppq-quiz.php:858
 msgid "Maximum attempts must be between 1 and 100."
 msgstr ""
 
-#: includes/models/class-ppq-quiz.php:862
+#: includes/models/class-ppq-quiz.php:870
 msgid "Attempt delay must be between 0 and 10080 minutes (1 week)."
 msgstr ""
 
-#: includes/models/class-ppq-quiz.php:1509
+#: includes/models/class-ppq-quiz.php:1543
 msgid "(Copy)"
 msgstr ""
 
-#: includes/models/class-ppq-quiz.php:1554
+#: includes/models/class-ppq-quiz.php:1590
 msgid "Failed to load duplicated quiz."
 msgstr ""
 
-#: includes/models/class-ppq-quiz.php:1686
+#: includes/models/class-ppq-quiz.php:1754
 #: src/settings-panel/components/GeneralTab.jsx:216
 msgid "Please log in to take this quiz."
 msgstr ""
@@ -5030,7 +5050,7 @@ msgid "This is a test email with sample data"
 msgstr ""
 
 #: includes/services/class-ppq-file-processor.php:101
-#: includes/services/class-ppq-file-processor.php:1198
+#: includes/services/class-ppq-file-processor.php:1200
 msgid "Unsupported file type."
 msgstr ""
 
@@ -5049,7 +5069,7 @@ msgstr ""
 
 #. translators: %s: maximum file size
 #: includes/services/class-ppq-file-processor.php:167
-#: includes/services/class-ppq-file-processor.php:1171
+#: includes/services/class-ppq-file-processor.php:1173
 #, php-format
 msgid "File size exceeds the maximum limit of %s."
 msgstr ""
@@ -5058,74 +5078,74 @@ msgstr ""
 msgid "File contains a potentially dangerous extension."
 msgstr ""
 
-#: includes/services/class-ppq-file-processor.php:224
+#: includes/services/class-ppq-file-processor.php:225
 msgid "Unable to verify file content."
 msgstr ""
 
-#: includes/services/class-ppq-file-processor.php:232
+#: includes/services/class-ppq-file-processor.php:233
 msgid "File content does not match an allowed document type."
 msgstr ""
 
-#: includes/services/class-ppq-file-processor.php:266
+#: includes/services/class-ppq-file-processor.php:268
 msgid "Unable to determine file type."
 msgstr ""
 
 #. translators: %s: file types
-#: includes/services/class-ppq-file-processor.php:276
-#: includes/services/class-ppq-file-processor.php:1254
+#: includes/services/class-ppq-file-processor.php:278
+#: includes/services/class-ppq-file-processor.php:1257
 #, php-format
 msgid "Invalid file type. Allowed types: %s"
 msgstr ""
 
-#: includes/services/class-ppq-file-processor.php:320
+#: includes/services/class-ppq-file-processor.php:322
 msgid "Unable to extract readable text from this PDF. This often happens with published books or documents that use embedded fonts. Please use the \"Paste Text\" tab to copy and paste the content directly from your PDF viewer."
 msgstr ""
 
-#: includes/services/class-ppq-file-processor.php:456
+#: includes/services/class-ppq-file-processor.php:458
 msgid "pdftotext command not available."
 msgstr ""
 
-#: includes/services/class-ppq-file-processor.php:481
+#: includes/services/class-ppq-file-processor.php:483
 msgid "pdftotext command failed."
 msgstr ""
 
-#: includes/services/class-ppq-file-processor.php:489
+#: includes/services/class-ppq-file-processor.php:491
 msgid "pdftotext did not produce output."
 msgstr ""
 
-#: includes/services/class-ppq-file-processor.php:521
+#: includes/services/class-ppq-file-processor.php:523
 msgid "Unable to read PDF file."
 msgstr ""
 
-#: includes/services/class-ppq-file-processor.php:555
+#: includes/services/class-ppq-file-processor.php:557
 msgid "No text could be extracted from the PDF."
 msgstr ""
 
-#: includes/services/class-ppq-file-processor.php:825
+#: includes/services/class-ppq-file-processor.php:827
 msgid "Unable to extract text from the Word document. The file may be corrupted or in an unsupported format. Please try a different file or copy and paste the text directly."
 msgstr ""
 
-#: includes/services/class-ppq-file-processor.php:915
+#: includes/services/class-ppq-file-processor.php:917
 msgid "ZIP support is not available on this server."
 msgstr ""
 
-#: includes/services/class-ppq-file-processor.php:924
+#: includes/services/class-ppq-file-processor.php:926
 msgid "Unable to open the Word document."
 msgstr ""
 
-#: includes/services/class-ppq-file-processor.php:935
+#: includes/services/class-ppq-file-processor.php:937
 msgid "Unable to read document content."
 msgstr ""
 
-#: includes/services/class-ppq-file-processor.php:1093
+#: includes/services/class-ppq-file-processor.php:1095
 msgid "PDF Document"
 msgstr ""
 
-#: includes/services/class-ppq-file-processor.php:1098
+#: includes/services/class-ppq-file-processor.php:1100
 msgid "Word Document"
 msgstr ""
 
-#: includes/services/class-ppq-file-processor.php:1160
+#: includes/services/class-ppq-file-processor.php:1162
 msgid "File not found."
 msgstr ""
 
@@ -5636,10 +5656,6 @@ msgstr ""
 msgid "Visibility"
 msgstr ""
 
-#: src/bank-editor/components/BankEditor.jsx:241
-msgid "Private: Only you can access this bank. Shared: Teachers in your groups can access this bank."
-msgstr ""
-
 #: src/bank-editor/components/BankEditor.jsx:246
 msgid "Private - Only Me"
 msgstr ""
@@ -5927,15 +5943,23 @@ msgstr ""
 msgid "Add Answer Option"
 msgstr ""
 
-#: src/question-editor/components/BankSelector.jsx:106
+#: src/question-editor/components/BankSelector.jsx:132
 msgid "Add this question to one or more question banks for easy reuse in quizzes."
 msgstr ""
 
-#: src/question-editor/components/BankSelector.jsx:116
+#: src/question-editor/components/BankSelector.jsx:142
 msgid "Select banks..."
 msgstr ""
 
-#: src/question-editor/components/BankSelector.jsx:147
+#: src/question-editor/components/BankSelector.jsx:175
+msgid "Also in:"
+msgstr ""
+
+#: src/question-editor/components/BankSelector.jsx:180
+msgid "This bank is managed by its owner, so you can't remove the question from it here."
+msgstr ""
+
+#: src/question-editor/components/BankSelector.jsx:191
 msgid "Reuse in multiple quizzes"
 msgstr ""
 
@@ -6827,119 +6851,135 @@ msgstr ""
 msgid "Use Fixed mode to select specific questions (same for everyone), or Dynamic mode with rules to randomly select from question banks (different for each student)."
 msgstr ""
 
-#: src/quiz-editor/components/RulesPanel.jsx:97
+#: src/quiz-editor/components/RulesPanel.jsx:48
+msgid "All questions"
+msgstr ""
+
+#: src/quiz-editor/components/RulesPanel.jsx:49
+msgid "Select a specific question bank, or leave empty to draw from all questions"
+msgstr ""
+
+#: src/quiz-editor/components/RulesPanel.jsx:55
+msgid "All questions the quiz owner can use"
+msgstr ""
+
+#: src/quiz-editor/components/RulesPanel.jsx:56
+msgid "Select a specific question bank, or leave empty to draw from all questions the quiz owner can use: their own, and those in banks they own or that are shared with them"
+msgstr ""
+
+#: src/quiz-editor/components/RulesPanel.jsx:61
+msgid "All questions I can use"
+msgstr ""
+
+#: src/quiz-editor/components/RulesPanel.jsx:62
+msgid "Select a specific question bank, or leave empty to draw from all questions you can use: your own, and those in banks you own or that are shared with you"
+msgstr ""
+
+#: src/quiz-editor/components/RulesPanel.jsx:128
 msgid "Failed to load quiz rules"
 msgstr ""
 
-#: src/quiz-editor/components/RulesPanel.jsx:122
+#: src/quiz-editor/components/RulesPanel.jsx:153
 msgid "Failed to load filter options"
 msgstr ""
 
-#: src/quiz-editor/components/RulesPanel.jsx:173
+#: src/quiz-editor/components/RulesPanel.jsx:204
 msgid "Rule deleted"
 msgstr ""
 
-#: src/quiz-editor/components/RulesPanel.jsx:175
+#: src/quiz-editor/components/RulesPanel.jsx:206
 msgid "Failed to delete rule"
 msgstr ""
 
-#: src/quiz-editor/components/RulesPanel.jsx:225
+#: src/quiz-editor/components/RulesPanel.jsx:256
 msgid "Failed to save rule"
 msgstr ""
 
-#: src/quiz-editor/components/RulesPanel.jsx:264
+#: src/quiz-editor/components/RulesPanel.jsx:295
 msgid "Failed to save rule order"
 msgstr ""
 
-#: src/quiz-editor/components/RulesPanel.jsx:291
+#: src/quiz-editor/components/RulesPanel.jsx:322
 msgid "Rule"
 msgstr ""
 
-#: src/quiz-editor/components/RulesPanel.jsx:293
+#: src/quiz-editor/components/RulesPanel.jsx:324
 msgid "questions match"
 msgstr ""
 
-#: src/quiz-editor/components/RulesPanel.jsx:315
+#: src/quiz-editor/components/RulesPanel.jsx:346
 msgid "Source Bank"
 msgstr ""
 
-#: src/quiz-editor/components/RulesPanel.jsx:316
-msgid "Select a specific question bank, or leave empty to search all banks"
-msgstr ""
-
-#: src/quiz-editor/components/RulesPanel.jsx:323
+#: src/quiz-editor/components/RulesPanel.jsx:354
 msgid "Any bank"
 msgstr ""
 
-#: src/quiz-editor/components/RulesPanel.jsx:333
-msgid "Search all banks"
-msgstr ""
-
-#: src/quiz-editor/components/RulesPanel.jsx:341
+#: src/quiz-editor/components/RulesPanel.jsx:373
 msgid "Filter by categories - leave empty for all"
 msgstr ""
 
-#: src/quiz-editor/components/RulesPanel.jsx:349
+#: src/quiz-editor/components/RulesPanel.jsx:381
 msgid "Any category"
 msgstr ""
 
-#: src/quiz-editor/components/RulesPanel.jsx:368
+#: src/quiz-editor/components/RulesPanel.jsx:400
 msgid "Filter by tags - leave empty for all"
 msgstr ""
 
-#: src/quiz-editor/components/RulesPanel.jsx:376
+#: src/quiz-editor/components/RulesPanel.jsx:408
 msgid "Any tag"
 msgstr ""
 
-#: src/quiz-editor/components/RulesPanel.jsx:399
+#: src/quiz-editor/components/RulesPanel.jsx:431
 msgid "Check difficulty levels to include - leave empty for all"
 msgstr ""
 
-#: src/quiz-editor/components/RulesPanel.jsx:420
+#: src/quiz-editor/components/RulesPanel.jsx:452
 msgid "All difficulty levels"
 msgstr ""
 
-#: src/quiz-editor/components/RulesPanel.jsx:428
+#: src/quiz-editor/components/RulesPanel.jsx:460
 msgid "Question Count"
 msgstr ""
 
-#: src/quiz-editor/components/RulesPanel.jsx:429
+#: src/quiz-editor/components/RulesPanel.jsx:461
 msgid "How many questions to randomly select from matching questions"
 msgstr ""
 
-#: src/quiz-editor/components/RulesPanel.jsx:442
+#: src/quiz-editor/components/RulesPanel.jsx:474
 msgid "Random questions will be selected from matching pool"
 msgstr ""
 
-#: src/quiz-editor/components/RulesPanel.jsx:456
+#: src/quiz-editor/components/RulesPanel.jsx:488
 msgid "Fixed mode selected. Switch to Settings tab to change generation mode."
 msgstr ""
 
-#: src/quiz-editor/components/RulesPanel.jsx:466
+#: src/quiz-editor/components/RulesPanel.jsx:498
 msgid "Please save the quiz first before adding rules."
 msgstr ""
 
-#: src/quiz-editor/components/RulesPanel.jsx:478
+#: src/quiz-editor/components/RulesPanel.jsx:510
 msgid "Rules:"
 msgstr ""
 
-#: src/quiz-editor/components/RulesPanel.jsx:479
+#: src/quiz-editor/components/RulesPanel.jsx:511
 msgid "Total Questions:"
 msgstr ""
 
-#: src/quiz-editor/components/RulesPanel.jsx:486
+#: src/quiz-editor/components/RulesPanel.jsx:518
 msgid "Add Rule"
 msgstr ""
 
-#: src/quiz-editor/components/RulesPanel.jsx:494
+#: src/quiz-editor/components/RulesPanel.jsx:526
 msgid "About Dynamic Quizzes"
 msgstr ""
 
-#: src/quiz-editor/components/RulesPanel.jsx:496
+#: src/quiz-editor/components/RulesPanel.jsx:528
 msgid "Dynamic quizzes use rules to randomly select questions for each student attempt. This ensures every student gets a different set of questions while maintaining consistent difficulty and coverage."
 msgstr ""
 
-#: src/quiz-editor/components/RulesPanel.jsx:499
+#: src/quiz-editor/components/RulesPanel.jsx:531
 msgid "Click \"Add Rule\" to create your first rule. Each rule specifies filters (bank, categories, tags, difficulty) and how many questions to select."
 msgstr ""
 

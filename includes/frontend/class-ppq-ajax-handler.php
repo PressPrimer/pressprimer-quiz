@@ -32,7 +32,6 @@ if ( ! defined( 'ABSPATH' ) ) {
  * Admin operations use separate nonces per sensitive action:
  * - 'pressprimer_quiz_admin_nonce'   : General admin operations
  * - 'pressprimer_quiz_ai_generation' : AI question generation
- * - 'pressprimer_quiz_save_quiz'     : Quiz creation/editing
  * - 'pressprimer_quiz_save_bank'     : Bank creation/editing
  * - etc.
  *

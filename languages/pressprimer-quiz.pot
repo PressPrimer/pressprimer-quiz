@@ -9,7 +9,7 @@ msgstr ""
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"POT-Creation-Date: 2026-11-26T17:04:39+00:00\n"
+"POT-Creation-Date: 2026-11-26T17:41:08+00:00\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "X-Generator: WP-CLI 2.12.0\n"
 "X-Domain: pressprimer-quiz\n"
@@ -278,7 +278,7 @@ msgstr ""
 #: includes/admin/class-ppq-admin-categories.php:321
 #: includes/admin/class-ppq-banks-list-table.php:55
 #: includes/admin/class-ppq-categories-list-table.php:67
-#: src/bank-editor/components/BankEditor.jsx:285
+#: src/bank-editor/components/BankEditor.jsx:288
 #: src/quiz-editor/components/SettingsPanel.jsx:277
 #: src/settings-panel/components/TemplatesTab.jsx:165
 msgid "Description"
@@ -552,13 +552,13 @@ msgstr[1] ""
 #: includes/admin/class-ppq-admin-banks.php:1406
 #: includes/admin/class-ppq-admin-categories.php:442
 #: includes/admin/class-ppq-admin-categories.php:515
-#: includes/admin/class-ppq-admin-settings.php:2208
-#: includes/admin/class-ppq-admin-settings.php:2264
-#: includes/admin/class-ppq-admin-settings.php:2299
-#: includes/admin/class-ppq-admin-settings.php:2329
-#: includes/admin/class-ppq-admin-settings.php:2364
-#: includes/admin/class-ppq-admin-settings.php:2417
-#: includes/admin/class-ppq-admin-settings.php:2465
+#: includes/admin/class-ppq-admin-settings.php:2215
+#: includes/admin/class-ppq-admin-settings.php:2271
+#: includes/admin/class-ppq-admin-settings.php:2306
+#: includes/admin/class-ppq-admin-settings.php:2336
+#: includes/admin/class-ppq-admin-settings.php:2371
+#: includes/admin/class-ppq-admin-settings.php:2424
+#: includes/admin/class-ppq-admin-settings.php:2472
 #: includes/admin/class-ppq-admin.php:686
 #: includes/admin/class-ppq-admin.php:861
 #: includes/admin/class-ppq-admin.php:1003
@@ -673,7 +673,7 @@ msgstr ""
 #: includes/admin/class-ppq-admin-categories.php:261
 #: includes/admin/class-ppq-banks-list-table.php:54
 #: includes/admin/class-ppq-categories-list-table.php:66
-#: src/bank-editor/components/BankEditor.jsx:263
+#: src/bank-editor/components/BankEditor.jsx:266
 #: src/reports/components/AttemptDetailModal.jsx:305
 #: src/settings-panel/components/TemplatesTab.jsx:158
 msgid "Name"
@@ -727,7 +727,7 @@ msgstr ""
 #: includes/admin/class-ppq-banks-list-table.php:376
 #: includes/admin/class-ppq-categories-list-table.php:69
 #: includes/frontend/class-ppq-quiz-renderer.php:426
-#: src/bank-editor/components/BankEditor.jsx:401
+#: src/bank-editor/components/BankEditor.jsx:419
 #: src/bank-editor/components/BankQuestionsPanel.jsx:336
 #: src/bank-editor/components/BankQuestionsPanel.jsx:349
 #: src/onboarding/tourSteps.js:89
@@ -751,8 +751,8 @@ msgstr ""
 #: includes/admin/class-ppq-admin.php:293
 #: src/ai-generation/components/EditGeneratedQuestionModal.jsx:121
 #: src/ai-generation/components/GeneratedQuestions.jsx:64
-#: src/bank-editor/components/BankEditor.jsx:231
-#: src/bank-editor/components/BankEditor.jsx:381
+#: src/bank-editor/components/BankEditor.jsx:234
+#: src/bank-editor/components/BankEditor.jsx:399
 #: src/bank-editor/components/BankQuestionsPanel.jsx:225
 #: src/editors/QuestionPickerModal.jsx:329
 #: src/question-editor/components/QuestionEditor.jsx:440
@@ -1240,12 +1240,12 @@ msgid "General Settings"
 msgstr ""
 
 #: includes/admin/class-ppq-admin-settings.php:84
-#: src/settings-panel/components/GeneralTab.jsx:131
+#: src/settings-panel/components/GeneralTab.jsx:132
 msgid "Quiz Defaults"
 msgstr ""
 
 #: includes/admin/class-ppq-admin-settings.php:92
-#: src/settings-panel/components/EmailTab.jsx:304
+#: src/settings-panel/components/EmailTab.jsx:305
 msgid "Email Settings"
 msgstr ""
 
@@ -1262,27 +1262,27 @@ msgid "Advanced Settings"
 msgstr ""
 
 #: includes/admin/class-ppq-admin-settings.php:148
-#: src/settings-panel/components/GeneralTab.jsx:139
+#: src/settings-panel/components/GeneralTab.jsx:140
 msgid "Default Passing Score"
 msgstr ""
 
 #: includes/admin/class-ppq-admin-settings.php:157
-#: src/settings-panel/components/GeneralTab.jsx:155
+#: src/settings-panel/components/GeneralTab.jsx:156
 msgid "Default Quiz Mode"
 msgstr ""
 
 #: includes/admin/class-ppq-admin-settings.php:173
-#: src/settings-panel/components/EmailTab.jsx:351
+#: src/settings-panel/components/EmailTab.jsx:352
 msgid "From Name"
 msgstr ""
 
 #: includes/admin/class-ppq-admin-settings.php:182
-#: src/settings-panel/components/EmailTab.jsx:365
+#: src/settings-panel/components/EmailTab.jsx:366
 msgid "From Email Address"
 msgstr ""
 
 #: includes/admin/class-ppq-admin-settings.php:191
-#: src/settings-panel/components/EmailTab.jsx:380
+#: src/settings-panel/components/EmailTab.jsx:381
 msgid "Auto-send Results"
 msgstr ""
 
@@ -1328,12 +1328,12 @@ msgid "General plugin settings."
 msgstr ""
 
 #: includes/admin/class-ppq-admin-settings.php:315
-#: src/settings-panel/components/GeneralTab.jsx:134
+#: src/settings-panel/components/GeneralTab.jsx:135
 msgid "Default values used when creating new quizzes."
 msgstr ""
 
 #: includes/admin/class-ppq-admin-settings.php:324
-#: src/settings-panel/components/EmailTab.jsx:307
+#: src/settings-panel/components/EmailTab.jsx:308
 msgid "Configure email notifications sent by the plugin."
 msgstr ""
 
@@ -1350,37 +1350,37 @@ msgid "Advanced settings. Use caution when modifying these options."
 msgstr ""
 
 #: includes/admin/class-ppq-admin-settings.php:375
-#: src/settings-panel/components/GeneralTab.jsx:140
+#: src/settings-panel/components/GeneralTab.jsx:141
 msgid "Percentage score required to pass quizzes (0-100)."
 msgstr ""
 
 #: includes/admin/class-ppq-admin-settings.php:394
-#: src/settings-panel/components/GeneralTab.jsx:165
+#: src/settings-panel/components/GeneralTab.jsx:166
 msgid "Tutorial Mode (immediate feedback)"
 msgstr ""
 
 #: includes/admin/class-ppq-admin-settings.php:397
-#: src/settings-panel/components/GeneralTab.jsx:169
+#: src/settings-panel/components/GeneralTab.jsx:170
 msgid "Test Mode (feedback at end)"
 msgstr ""
 
 #: includes/admin/class-ppq-admin-settings.php:401
-#: src/settings-panel/components/GeneralTab.jsx:156
+#: src/settings-panel/components/GeneralTab.jsx:157
 msgid "Default mode for new quizzes."
 msgstr ""
 
 #: includes/admin/class-ppq-admin-settings.php:423
-#: src/settings-panel/components/EmailTab.jsx:352
+#: src/settings-panel/components/EmailTab.jsx:353
 msgid "Name shown in the \"From\" field of emails sent by the plugin."
 msgstr ""
 
 #: includes/admin/class-ppq-admin-settings.php:445
-#: src/settings-panel/components/EmailTab.jsx:366
+#: src/settings-panel/components/EmailTab.jsx:367
 msgid "Email address shown in the \"From\" field of emails sent by the plugin."
 msgstr ""
 
 #: includes/admin/class-ppq-admin-settings.php:467
-#: src/settings-panel/components/EmailTab.jsx:387
+#: src/settings-panel/components/EmailTab.jsx:388
 msgid "Automatically email results to students when they complete a quiz"
 msgstr ""
 
@@ -1391,7 +1391,7 @@ msgstr ""
 #: includes/admin/class-ppq-admin-settings.php:482
 #: includes/services/class-ppq-email-service.php:67
 #: includes/services/class-ppq-email-service.php:930
-#: src/settings-panel/components/EmailTab.jsx:100
+#: src/settings-panel/components/EmailTab.jsx:101
 msgid "Your results for {quiz_title}"
 msgstr ""
 
@@ -1407,21 +1407,21 @@ msgstr ""
 #: includes/admin/class-ppq-admin-settings.php:495
 #: includes/admin/class-ppq-admin-settings.php:536
 #: includes/admin/class-ppq-admin-settings.php:1367
-#: src/settings-panel/components/EmailTab.jsx:490
-#: src/settings-panel/components/EmailTab.jsx:606
+#: src/settings-panel/components/EmailTab.jsx:491
+#: src/settings-panel/components/EmailTab.jsx:614
 msgid "Quiz name"
 msgstr ""
 
 #: includes/admin/class-ppq-admin-settings.php:496
 #: includes/admin/class-ppq-admin-settings.php:537
-#: src/settings-panel/components/EmailTab.jsx:494
+#: src/settings-panel/components/EmailTab.jsx:495
 msgid "Score percentage"
 msgstr ""
 
 #: includes/admin/class-ppq-admin-settings.php:497
 #: includes/admin/class-ppq-admin-settings.php:538
 #: includes/admin/class-ppq-admin-settings.php:1369
-#: src/settings-panel/components/EmailTab.jsx:498
+#: src/settings-panel/components/EmailTab.jsx:499
 msgid "\"Passed\" or \"Failed\""
 msgstr ""
 
@@ -1446,7 +1446,7 @@ msgid "Email body for results emails. Available tokens:"
 msgstr ""
 
 #: includes/admin/class-ppq-admin-settings.php:539
-#: src/settings-panel/components/EmailTab.jsx:502
+#: src/settings-panel/components/EmailTab.jsx:503
 msgid "Completion date"
 msgstr ""
 
@@ -1454,12 +1454,12 @@ msgstr ""
 #: includes/integrations/uncanny-automator/triggers/class-ppq-quiz-completed.php:173
 #: includes/integrations/uncanny-automator/triggers/class-ppq-quiz-failed.php:173
 #: includes/integrations/uncanny-automator/triggers/class-ppq-quiz-passed.php:173
-#: src/settings-panel/components/EmailTab.jsx:506
+#: src/settings-panel/components/EmailTab.jsx:507
 msgid "Points earned"
 msgstr ""
 
 #: includes/admin/class-ppq-admin-settings.php:541
-#: src/settings-panel/components/EmailTab.jsx:510
+#: src/settings-panel/components/EmailTab.jsx:511
 msgid "Maximum points"
 msgstr ""
 
@@ -1593,8 +1593,8 @@ msgid "Your API key is encrypted using AES-256-CBC before storage and is only ac
 msgstr ""
 
 #: includes/admin/class-ppq-admin-settings.php:1037
-#: includes/admin/class-ppq-admin-settings.php:2224
-#: includes/admin/class-ppq-admin-settings.php:2433
+#: includes/admin/class-ppq-admin-settings.php:2231
+#: includes/admin/class-ppq-admin-settings.php:2440
 msgid "Invalid API key format. Keys should start with \"sk-\"."
 msgstr ""
 
@@ -1616,7 +1616,7 @@ msgid "Are you sure you want to remove your API key? You will not be able to use
 msgstr ""
 
 #: includes/admin/class-ppq-admin-settings.php:1043
-#: includes/admin/class-ppq-admin-settings.php:2248
+#: includes/admin/class-ppq-admin-settings.php:2255
 #: includes/api/class-ppq-rest-controller.php:4765
 msgid "Model preference saved."
 msgstr ""
@@ -1728,23 +1728,23 @@ msgid "Integrations"
 msgstr ""
 
 #. translators: %d: page ID.
-#: includes/admin/class-ppq-admin-settings.php:1995
+#: includes/admin/class-ppq-admin-settings.php:2002
 #, php-format
 msgid "(no title) #%d"
 msgstr ""
 
-#: includes/admin/class-ppq-admin-settings.php:2113
-#: includes/admin/class-ppq-admin-settings.php:2128
-#: includes/admin/class-ppq-admin-settings.php:2137
-#: includes/admin/class-ppq-admin-settings.php:2148
-#: includes/admin/class-ppq-admin-settings.php:2159
+#: includes/admin/class-ppq-admin-settings.php:2120
+#: includes/admin/class-ppq-admin-settings.php:2135
+#: includes/admin/class-ppq-admin-settings.php:2144
+#: includes/admin/class-ppq-admin-settings.php:2155
+#: includes/admin/class-ppq-admin-settings.php:2166
 msgid "Theme Font"
 msgstr ""
 
-#: includes/admin/class-ppq-admin-settings.php:2213
-#: includes/admin/class-ppq-admin-settings.php:2269
-#: includes/admin/class-ppq-admin-settings.php:2304
-#: includes/admin/class-ppq-admin-settings.php:2334
+#: includes/admin/class-ppq-admin-settings.php:2220
+#: includes/admin/class-ppq-admin-settings.php:2276
+#: includes/admin/class-ppq-admin-settings.php:2311
+#: includes/admin/class-ppq-admin-settings.php:2341
 #: includes/admin/class-ppq-review-notice.php:260
 #: includes/admin/class-ppq-review-notice.php:282
 #: includes/admin/class-ppq-review-notice.php:304
@@ -1759,63 +1759,63 @@ msgstr ""
 msgid "Permission denied."
 msgstr ""
 
-#: includes/admin/class-ppq-admin-settings.php:2241
+#: includes/admin/class-ppq-admin-settings.php:2248
 #: includes/api/class-ppq-rest-controller.php:4613
 msgid "API key saved and validated successfully."
 msgstr ""
 
-#: includes/admin/class-ppq-admin-settings.php:2251
+#: includes/admin/class-ppq-admin-settings.php:2258
 msgid "No data provided."
 msgstr ""
 
-#: includes/admin/class-ppq-admin-settings.php:2276
-#: includes/admin/class-ppq-admin-settings.php:2341
+#: includes/admin/class-ppq-admin-settings.php:2283
+#: includes/admin/class-ppq-admin-settings.php:2348
 #: includes/api/class-ppq-rest-controller.php:4662
 #: includes/api/class-ppq-rest-controller.php:4704
 msgid "No API key configured."
 msgstr ""
 
-#: includes/admin/class-ppq-admin-settings.php:2286
+#: includes/admin/class-ppq-admin-settings.php:2293
 #: src/settings-panel/components/AiProviderSettings.jsx:142
 msgid "API key is valid and working correctly."
 msgstr ""
 
-#: includes/admin/class-ppq-admin-settings.php:2316
+#: includes/admin/class-ppq-admin-settings.php:2323
 #: includes/api/class-ppq-rest-controller.php:4639
 msgid "API key removed successfully."
 msgstr ""
 
-#: includes/admin/class-ppq-admin-settings.php:2369
-#: includes/admin/class-ppq-admin-settings.php:2422
-#: includes/admin/class-ppq-admin-settings.php:2470
+#: includes/admin/class-ppq-admin-settings.php:2376
+#: includes/admin/class-ppq-admin-settings.php:2429
+#: includes/admin/class-ppq-admin-settings.php:2477
 msgid "Permission denied. Administrator access required."
 msgstr ""
 
-#: includes/admin/class-ppq-admin-settings.php:2374
+#: includes/admin/class-ppq-admin-settings.php:2381
 msgid "Migrator class not available."
 msgstr ""
 
-#: includes/admin/class-ppq-admin-settings.php:2382
+#: includes/admin/class-ppq-admin-settings.php:2389
 msgid "Some tables could not be repaired. Please check your database permissions."
 msgstr ""
 
 #. translators: %d: number of tables repaired
-#: includes/admin/class-ppq-admin-settings.php:2393
+#: includes/admin/class-ppq-admin-settings.php:2400
 #, php-format
 msgid "%d table was successfully created."
 msgid_plural "%d tables were successfully created."
 msgstr[0] ""
 msgstr[1] ""
 
-#: includes/admin/class-ppq-admin-settings.php:2426
+#: includes/admin/class-ppq-admin-settings.php:2433
 msgid "No API key provided."
 msgstr ""
 
-#: includes/admin/class-ppq-admin-settings.php:2452
+#: includes/admin/class-ppq-admin-settings.php:2459
 msgid "Site-wide API key saved and validated successfully."
 msgstr ""
 
-#: includes/admin/class-ppq-admin-settings.php:2475
+#: includes/admin/class-ppq-admin-settings.php:2482
 msgid "Site-wide API key removed successfully."
 msgstr ""
 
@@ -1823,8 +1823,8 @@ msgstr ""
 #: includes/admin/class-ppq-admin.php:105
 #: includes/api/class-ppq-rest-controller.php:5192
 #: src/onboarding/tourSteps.js:76
-#: src/settings-panel/components/GeneralTab.jsx:98
-#: src/settings-panel/components/GeneralTab.jsx:344
+#: src/settings-panel/components/GeneralTab.jsx:99
+#: src/settings-panel/components/GeneralTab.jsx:340
 msgid "Dashboard"
 msgstr ""
 
@@ -1867,7 +1867,7 @@ msgstr ""
 #: src/question-editor/components/AnswerRow.jsx:115
 #: src/quiz-editor/components/FeedbackPanel.jsx:273
 #: src/quiz-editor/components/RulesPanel.jsx:338
-#: src/settings-panel/components/EmailTab.jsx:335
+#: src/settings-panel/components/EmailTab.jsx:336
 msgid "Remove"
 msgstr ""
 
@@ -2628,6 +2628,12 @@ msgstr ""
 
 #: includes/admin/class-ppq-premium-catalog.php:534
 msgid "Email students when questions are due for review."
+msgstr ""
+
+#. translators: %s: tier name (Educator, School, or Enterprise)
+#: includes/admin/class-ppq-premium-catalog.php:810
+#, php-format
+msgid "Upgrade to %s"
 msgstr ""
 
 #: includes/admin/class-ppq-review-notice.php:152
@@ -3593,7 +3599,7 @@ msgid "You are offline. Answers will be saved when connection is restored."
 msgstr ""
 
 #: includes/frontend/class-ppq-quiz-renderer.php:1423
-#: src/bank-editor/components/BankEditor.jsx:218
+#: src/bank-editor/components/BankEditor.jsx:221
 #: src/dashboard/components/Dashboard.jsx:129
 #: src/quiz-editor/components/PremiumSettingsPanel.jsx:336
 #: src/reports/components/Reports.jsx:209
@@ -4709,7 +4715,7 @@ msgid "Failed to load duplicated quiz."
 msgstr ""
 
 #: includes/models/class-ppq-quiz.php:1757
-#: src/settings-panel/components/GeneralTab.jsx:216
+#: src/settings-panel/components/GeneralTab.jsx:217
 msgid "Please log in to take this quiz."
 msgstr ""
 
@@ -4963,9 +4969,13 @@ msgstr ""
 msgid "You've used all %1$d AI items for this month. Your limit resets on %2$s."
 msgstr ""
 
-#: includes/services/class-ppq-editor-data-service.php:322
-#: src/bank-editor/components/BankEditor.jsx:313
+#: includes/services/class-ppq-editor-data-service.php:324
+#: src/bank-editor/components/BankEditor.jsx:316
 msgid "Private: Only you can access this bank. Shared: Teachers in your groups can access this bank."
+msgstr ""
+
+#: includes/services/class-ppq-editor-data-service.php:325
+msgid "Private: Only you can access this bank. Sharing with teachers in your groups needs PressPrimer Quiz Educator."
 msgstr ""
 
 #: includes/services/class-ppq-email-service.php:122
@@ -5047,7 +5057,7 @@ msgid ""
 msgstr ""
 
 #: includes/services/class-ppq-email-service.php:867
-#: src/settings-panel/components/EmailTab.jsx:139
+#: src/settings-panel/components/EmailTab.jsx:140
 msgid "Welcome to {site_name}"
 msgstr ""
 
@@ -5067,7 +5077,7 @@ msgid "Sample Group"
 msgstr ""
 
 #: includes/services/class-ppq-email-service.php:888
-#: src/settings-panel/components/EmailTab.jsx:116
+#: src/settings-panel/components/EmailTab.jsx:117
 msgid "Reminder: {quiz_title} is {due_timing}"
 msgstr ""
 
@@ -5085,7 +5095,7 @@ msgid "Take Quiz Now"
 msgstr ""
 
 #: includes/services/class-ppq-email-service.php:909
-#: src/settings-panel/components/EmailTab.jsx:128
+#: src/settings-panel/components/EmailTab.jsx:129
 msgid "You have questions due for review"
 msgstr ""
 
@@ -5422,25 +5432,25 @@ msgstr ""
 
 #: includes/utilities/class-ppq-scoring-copy.php:65
 #: src/quiz-editor/templates/templateFields.js:52
-#: src/settings-panel/components/GeneralTab.jsx:321
+#: src/settings-panel/components/GeneralTab.jsx:317
 msgid "Right Minus Wrong"
 msgstr ""
 
 #: includes/utilities/class-ppq-scoring-copy.php:67
 #: src/quiz-editor/templates/templateFields.js:53
-#: src/settings-panel/components/GeneralTab.jsx:325
+#: src/settings-panel/components/GeneralTab.jsx:321
 msgid "Partial Credit"
 msgstr ""
 
 #: includes/utilities/class-ppq-scoring-copy.php:69
 #: src/quiz-editor/templates/templateFields.js:54
-#: src/settings-panel/components/GeneralTab.jsx:329
+#: src/settings-panel/components/GeneralTab.jsx:325
 msgid "Partial Credit, No Wrong Answers"
 msgstr ""
 
 #: includes/utilities/class-ppq-scoring-copy.php:71
 #: src/quiz-editor/templates/templateFields.js:55
-#: src/settings-panel/components/GeneralTab.jsx:333
+#: src/settings-panel/components/GeneralTab.jsx:329
 msgid "All or Nothing"
 msgstr ""
 
@@ -5449,7 +5459,7 @@ msgid "Each wrong selection cancels one correct selection. Score never goes belo
 msgstr ""
 
 #: includes/utilities/class-ppq-scoring-copy.php:90
-#: src/settings-panel/components/GeneralTab.jsx:36
+#: src/settings-panel/components/GeneralTab.jsx:37
 msgid "Each correct selection earns proportional credit. Wrong selections are ignored."
 msgstr ""
 
@@ -6065,98 +6075,98 @@ msgstr ""
 msgid "The server didn’t respond in time or returned an error. Try again with less content or fewer questions."
 msgstr ""
 
-#: src/bank-editor/components/BankEditor.jsx:128
+#: src/bank-editor/components/BankEditor.jsx:131
 msgid "Bank created successfully!"
 msgstr ""
 
-#: src/bank-editor/components/BankEditor.jsx:129
+#: src/bank-editor/components/BankEditor.jsx:132
 msgid "Bank updated successfully!"
 msgstr ""
 
-#: src/bank-editor/components/BankEditor.jsx:154
+#: src/bank-editor/components/BankEditor.jsx:157
 msgid "Failed to save bank. Please try again."
 msgstr ""
 
-#: src/bank-editor/components/BankEditor.jsx:174
+#: src/bank-editor/components/BankEditor.jsx:177
 msgid "Are you sure you want to delete this bank? This action cannot be undone."
 msgstr ""
 
-#: src/bank-editor/components/BankEditor.jsx:186
+#: src/bank-editor/components/BankEditor.jsx:189
 msgid "Bank deleted successfully!"
 msgstr ""
 
-#: src/bank-editor/components/BankEditor.jsx:196
+#: src/bank-editor/components/BankEditor.jsx:199
 msgid "Failed to delete bank. Please try again."
 msgstr ""
 
-#: src/bank-editor/components/BankEditor.jsx:209
+#: src/bank-editor/components/BankEditor.jsx:212
 msgid "Add Question Bank"
 msgstr ""
 
-#: src/bank-editor/components/BankEditor.jsx:211
+#: src/bank-editor/components/BankEditor.jsx:214
 msgid "Edit Question Bank"
 msgstr ""
 
-#: src/bank-editor/components/BankEditor.jsx:211
+#: src/bank-editor/components/BankEditor.jsx:214
 msgid "Question Bank"
 msgstr ""
 
-#: src/bank-editor/components/BankEditor.jsx:240
-#: src/bank-editor/components/BankEditor.jsx:390
+#: src/bank-editor/components/BankEditor.jsx:243
+#: src/bank-editor/components/BankEditor.jsx:408
 #: src/dashboard/components/QuickActions.jsx:45
 msgid "Create Bank"
 msgstr ""
 
-#: src/bank-editor/components/BankEditor.jsx:241
-#: src/bank-editor/components/BankEditor.jsx:391
+#: src/bank-editor/components/BankEditor.jsx:244
+#: src/bank-editor/components/BankEditor.jsx:409
 msgid "Update Bank"
 msgstr ""
 
-#: src/bank-editor/components/BankEditor.jsx:246
+#: src/bank-editor/components/BankEditor.jsx:249
 msgid "Back to banks"
 msgstr ""
 
-#: src/bank-editor/components/BankEditor.jsx:267
+#: src/bank-editor/components/BankEditor.jsx:270
 msgid "Please enter a bank name"
 msgstr ""
 
-#: src/bank-editor/components/BankEditor.jsx:271
+#: src/bank-editor/components/BankEditor.jsx:274
 msgid "Name cannot exceed 200 characters"
 msgstr ""
 
-#: src/bank-editor/components/BankEditor.jsx:276
+#: src/bank-editor/components/BankEditor.jsx:279
 msgid "Enter a descriptive name for this question bank"
 msgstr ""
 
-#: src/bank-editor/components/BankEditor.jsx:290
+#: src/bank-editor/components/BankEditor.jsx:293
 msgid "Optional description of the bank's purpose or contents"
 msgstr ""
 
-#: src/bank-editor/components/BankEditor.jsx:296
+#: src/bank-editor/components/BankEditor.jsx:299
 msgid "Description cannot exceed 2,000 characters"
 msgstr ""
 
-#: src/bank-editor/components/BankEditor.jsx:302
+#: src/bank-editor/components/BankEditor.jsx:305
 msgid "Enter description (optional)"
 msgstr ""
 
-#: src/bank-editor/components/BankEditor.jsx:312
+#: src/bank-editor/components/BankEditor.jsx:315
 msgid "Visibility"
 msgstr ""
 
-#: src/bank-editor/components/BankEditor.jsx:318
+#: src/bank-editor/components/BankEditor.jsx:321
 msgid "Private - Only Me"
 msgstr ""
 
-#: src/bank-editor/components/BankEditor.jsx:321
+#: src/bank-editor/components/BankEditor.jsx:324
 msgid "Shared - My Groups"
 msgstr ""
 
-#: src/bank-editor/components/BankEditor.jsx:373
+#: src/bank-editor/components/BankEditor.jsx:391
 msgid "Delete Bank"
 msgstr ""
 
-#: src/bank-editor/components/BankEditor.jsx:402
+#: src/bank-editor/components/BankEditor.jsx:420
 msgid "Create the bank first, then add questions to it."
 msgstr ""
 
@@ -7590,7 +7600,7 @@ msgstr ""
 
 #: src/quiz-editor/components/SettingsPanel.jsx:49
 #: src/quiz-editor/components/SettingsPanel.jsx:549
-#: src/settings-panel/components/GeneralTab.jsx:303
+#: src/settings-panel/components/GeneralTab.jsx:299
 msgid "Scoring"
 msgstr ""
 
@@ -9266,456 +9276,452 @@ msgstr ""
 msgid "No reset operations yet."
 msgstr ""
 
-#: src/settings-panel/components/EmailTab.jsx:61
+#: src/settings-panel/components/EmailTab.jsx:62
 msgid "Copied!"
 msgstr ""
 
-#: src/settings-panel/components/EmailTab.jsx:63
+#: src/settings-panel/components/EmailTab.jsx:64
 msgid "Failed to copy"
 msgstr ""
 
-#: src/settings-panel/components/EmailTab.jsx:73
+#: src/settings-panel/components/EmailTab.jsx:74
 msgid "Click to copy"
 msgstr ""
 
-#: src/settings-panel/components/EmailTab.jsx:160
+#: src/settings-panel/components/EmailTab.jsx:161
 msgid "Select Email Logo"
 msgstr ""
 
-#: src/settings-panel/components/EmailTab.jsx:161
+#: src/settings-panel/components/EmailTab.jsx:162
 msgid "Use this image"
 msgstr ""
 
-#: src/settings-panel/components/EmailTab.jsx:188
-#: src/settings-panel/components/EmailTab.jsx:217
-#: src/settings-panel/components/EmailTab.jsx:246
-#: src/settings-panel/components/EmailTab.jsx:275
+#: src/settings-panel/components/EmailTab.jsx:189
+#: src/settings-panel/components/EmailTab.jsx:218
+#: src/settings-panel/components/EmailTab.jsx:247
+#: src/settings-panel/components/EmailTab.jsx:276
 msgid "Please enter a valid email address"
 msgstr ""
 
-#: src/settings-panel/components/EmailTab.jsx:201
+#: src/settings-panel/components/EmailTab.jsx:202
 msgid "Test results email sent successfully!"
 msgstr ""
 
-#: src/settings-panel/components/EmailTab.jsx:203
-#: src/settings-panel/components/EmailTab.jsx:206
-#: src/settings-panel/components/EmailTab.jsx:232
-#: src/settings-panel/components/EmailTab.jsx:235
-#: src/settings-panel/components/EmailTab.jsx:261
-#: src/settings-panel/components/EmailTab.jsx:264
-#: src/settings-panel/components/EmailTab.jsx:290
-#: src/settings-panel/components/EmailTab.jsx:293
+#: src/settings-panel/components/EmailTab.jsx:204
+#: src/settings-panel/components/EmailTab.jsx:207
+#: src/settings-panel/components/EmailTab.jsx:233
+#: src/settings-panel/components/EmailTab.jsx:236
+#: src/settings-panel/components/EmailTab.jsx:262
+#: src/settings-panel/components/EmailTab.jsx:265
+#: src/settings-panel/components/EmailTab.jsx:291
+#: src/settings-panel/components/EmailTab.jsx:294
 msgid "Failed to send test email"
 msgstr ""
 
-#: src/settings-panel/components/EmailTab.jsx:230
+#: src/settings-panel/components/EmailTab.jsx:231
 msgid "Test reminder email sent successfully!"
 msgstr ""
 
-#: src/settings-panel/components/EmailTab.jsx:259
+#: src/settings-panel/components/EmailTab.jsx:260
 msgid "Test review reminder email sent successfully!"
 msgstr ""
 
-#: src/settings-panel/components/EmailTab.jsx:288
+#: src/settings-panel/components/EmailTab.jsx:289
 msgid "Test welcome email sent successfully!"
 msgstr ""
 
-#: src/settings-panel/components/EmailTab.jsx:312
+#: src/settings-panel/components/EmailTab.jsx:313
 msgid "Email Logo"
 msgstr ""
 
-#: src/settings-panel/components/EmailTab.jsx:313
+#: src/settings-panel/components/EmailTab.jsx:314
 msgid "Logo displayed at the top of emails. Max width 400px, max height 150px."
 msgstr ""
 
-#: src/settings-panel/components/EmailTab.jsx:326
+#: src/settings-panel/components/EmailTab.jsx:327
 msgid "Email logo"
 msgstr ""
 
-#: src/settings-panel/components/EmailTab.jsx:343
+#: src/settings-panel/components/EmailTab.jsx:344
 msgid "Select Logo"
 msgstr ""
 
-#: src/settings-panel/components/EmailTab.jsx:396
+#: src/settings-panel/components/EmailTab.jsx:397
 msgid "Email Footer"
 msgstr ""
 
-#: src/settings-panel/components/EmailTab.jsx:399
+#: src/settings-panel/components/EmailTab.jsx:400
 msgid "Customize the footer shown at the bottom of every email the plugin sends. Leave empty to use the default footer."
 msgstr ""
 
-#: src/settings-panel/components/EmailTab.jsx:404
+#: src/settings-panel/components/EmailTab.jsx:405
 msgid "Footer Text"
 msgstr ""
 
-#: src/settings-panel/components/EmailTab.jsx:410
+#: src/settings-panel/components/EmailTab.jsx:411
 msgid "This email was sent from {site_name}"
 msgstr ""
 
-#: src/settings-panel/components/EmailTab.jsx:418
-#: src/settings-panel/components/EmailTab.jsx:475
-#: src/settings-panel/components/EmailTab.jsx:591
-#: src/settings-panel/components/EmailTab.jsx:696
-#: src/settings-panel/components/EmailTab.jsx:814
+#: src/settings-panel/components/EmailTab.jsx:419
+#: src/settings-panel/components/EmailTab.jsx:476
+#: src/settings-panel/components/EmailTab.jsx:599
+#: src/settings-panel/components/EmailTab.jsx:704
+#: src/settings-panel/components/EmailTab.jsx:828
 msgid "Available Tokens:"
 msgstr ""
 
-#: src/settings-panel/components/EmailTab.jsx:420
-#: src/settings-panel/components/EmailTab.jsx:477
-#: src/settings-panel/components/EmailTab.jsx:593
-#: src/settings-panel/components/EmailTab.jsx:698
-#: src/settings-panel/components/EmailTab.jsx:816
+#: src/settings-panel/components/EmailTab.jsx:421
+#: src/settings-panel/components/EmailTab.jsx:478
+#: src/settings-panel/components/EmailTab.jsx:601
+#: src/settings-panel/components/EmailTab.jsx:706
+#: src/settings-panel/components/EmailTab.jsx:830
 msgid "(click to copy)"
 msgstr ""
 
-#: src/settings-panel/components/EmailTab.jsx:425
+#: src/settings-panel/components/EmailTab.jsx:426
 msgid "Site name"
 msgstr ""
 
-#: src/settings-panel/components/EmailTab.jsx:429
+#: src/settings-panel/components/EmailTab.jsx:430
 msgid "Site address"
 msgstr ""
 
-#: src/settings-panel/components/EmailTab.jsx:433
+#: src/settings-panel/components/EmailTab.jsx:434
 msgid "Current year"
 msgstr ""
 
-#: src/settings-panel/components/EmailTab.jsx:442
+#: src/settings-panel/components/EmailTab.jsx:443
 msgid "Results Email Template"
 msgstr ""
 
-#: src/settings-panel/components/EmailTab.jsx:445
+#: src/settings-panel/components/EmailTab.jsx:446
 msgid "Customize the email sent to students with their quiz results."
 msgstr ""
 
-#: src/settings-panel/components/EmailTab.jsx:450
-#: src/settings-panel/components/EmailTab.jsx:566
-#: src/settings-panel/components/EmailTab.jsx:671
-#: src/settings-panel/components/EmailTab.jsx:789
+#: src/settings-panel/components/EmailTab.jsx:451
+#: src/settings-panel/components/EmailTab.jsx:574
+#: src/settings-panel/components/EmailTab.jsx:679
+#: src/settings-panel/components/EmailTab.jsx:803
 msgid "Subject Line"
 msgstr ""
 
-#: src/settings-panel/components/EmailTab.jsx:462
-#: src/settings-panel/components/EmailTab.jsx:578
-#: src/settings-panel/components/EmailTab.jsx:683
-#: src/settings-panel/components/EmailTab.jsx:801
+#: src/settings-panel/components/EmailTab.jsx:463
+#: src/settings-panel/components/EmailTab.jsx:586
+#: src/settings-panel/components/EmailTab.jsx:691
+#: src/settings-panel/components/EmailTab.jsx:815
 msgid "Email Body"
 msgstr ""
 
-#: src/settings-panel/components/EmailTab.jsx:482
+#: src/settings-panel/components/EmailTab.jsx:483
 msgid "Visual score box with percentage, correct/total, and pass/fail status"
 msgstr ""
 
-#: src/settings-panel/components/EmailTab.jsx:486
-#: src/settings-panel/components/EmailTab.jsx:598
-#: src/settings-panel/components/EmailTab.jsx:821
+#: src/settings-panel/components/EmailTab.jsx:487
+#: src/settings-panel/components/EmailTab.jsx:606
+#: src/settings-panel/components/EmailTab.jsx:835
 msgid "Student's first name"
 msgstr ""
 
-#: src/settings-panel/components/EmailTab.jsx:514
+#: src/settings-panel/components/EmailTab.jsx:515
 msgid "Button that links to full results"
 msgstr ""
 
-#: src/settings-panel/components/EmailTab.jsx:518
+#: src/settings-panel/components/EmailTab.jsx:519
 msgid "Per-question recap of the student's answers; honors the quiz's review display settings"
 msgstr ""
 
-#: src/settings-panel/components/EmailTab.jsx:526
-#: src/settings-panel/components/EmailTab.jsx:630
-#: src/settings-panel/components/EmailTab.jsx:735
-#: src/settings-panel/components/EmailTab.jsx:845
+#: src/settings-panel/components/EmailTab.jsx:527
+#: src/settings-panel/components/EmailTab.jsx:638
+#: src/settings-panel/components/EmailTab.jsx:743
+#: src/settings-panel/components/EmailTab.jsx:859
 msgid "Send Test Email"
 msgstr ""
 
-#: src/settings-panel/components/EmailTab.jsx:533
-#: src/settings-panel/components/EmailTab.jsx:637
-#: src/settings-panel/components/EmailTab.jsx:742
-#: src/settings-panel/components/EmailTab.jsx:852
+#: src/settings-panel/components/EmailTab.jsx:534
+#: src/settings-panel/components/EmailTab.jsx:645
+#: src/settings-panel/components/EmailTab.jsx:750
+#: src/settings-panel/components/EmailTab.jsx:866
 msgid "Enter email address"
 msgstr ""
 
-#: src/settings-panel/components/EmailTab.jsx:542
-#: src/settings-panel/components/EmailTab.jsx:646
-#: src/settings-panel/components/EmailTab.jsx:751
-#: src/settings-panel/components/EmailTab.jsx:861
+#: src/settings-panel/components/EmailTab.jsx:543
+#: src/settings-panel/components/EmailTab.jsx:654
+#: src/settings-panel/components/EmailTab.jsx:759
+#: src/settings-panel/components/EmailTab.jsx:875
 msgid "Send Test"
 msgstr ""
 
-#: src/settings-panel/components/EmailTab.jsx:547
+#: src/settings-panel/components/EmailTab.jsx:548
 msgid "Send a sample results email using the template above."
 msgstr ""
 
-#: src/settings-panel/components/EmailTab.jsx:558
+#: src/settings-panel/components/EmailTab.jsx:566
 msgid "Assignment Reminder Email Template"
 msgstr ""
 
-#: src/settings-panel/components/EmailTab.jsx:561
+#: src/settings-panel/components/EmailTab.jsx:569
 msgid "Customize the reminder email sent to students before assignment due dates."
 msgstr ""
 
-#: src/settings-panel/components/EmailTab.jsx:602
-#: src/settings-panel/components/EmailTab.jsx:825
+#: src/settings-panel/components/EmailTab.jsx:610
+#: src/settings-panel/components/EmailTab.jsx:839
 msgid "Student's display name"
 msgstr ""
 
-#: src/settings-panel/components/EmailTab.jsx:610
+#: src/settings-panel/components/EmailTab.jsx:618
 msgid "Due date and time"
 msgstr ""
 
-#: src/settings-panel/components/EmailTab.jsx:614
+#: src/settings-panel/components/EmailTab.jsx:622
 msgid "Timing phrase (e.g. \"due in 3 days\", \"due tomorrow\")"
 msgstr ""
 
-#: src/settings-panel/components/EmailTab.jsx:618
+#: src/settings-panel/components/EmailTab.jsx:626
 msgid "Button linking to the quiz"
 msgstr ""
 
-#: src/settings-panel/components/EmailTab.jsx:622
-#: src/settings-panel/components/EmailTab.jsx:719
-#: src/settings-panel/components/EmailTab.jsx:837
+#: src/settings-panel/components/EmailTab.jsx:630
+#: src/settings-panel/components/EmailTab.jsx:727
+#: src/settings-panel/components/EmailTab.jsx:851
 msgid "Your site name"
 msgstr ""
 
-#: src/settings-panel/components/EmailTab.jsx:651
+#: src/settings-panel/components/EmailTab.jsx:659
 msgid "Send a sample reminder email using the template above."
 msgstr ""
 
-#: src/settings-panel/components/EmailTab.jsx:663
+#: src/settings-panel/components/EmailTab.jsx:671
 msgid "Student Welcome Email Template"
 msgstr ""
 
-#: src/settings-panel/components/EmailTab.jsx:666
+#: src/settings-panel/components/EmailTab.jsx:674
 msgid "Customize the welcome email sent to students when they are added to a group."
 msgstr ""
 
-#: src/settings-panel/components/EmailTab.jsx:703
+#: src/settings-panel/components/EmailTab.jsx:711
 msgid "Student's first name or display name"
 msgstr ""
 
-#: src/settings-panel/components/EmailTab.jsx:707
+#: src/settings-panel/components/EmailTab.jsx:715
 msgid "Student's email address"
 msgstr ""
 
-#: src/settings-panel/components/EmailTab.jsx:711
+#: src/settings-panel/components/EmailTab.jsx:719
 msgid "Name of the teacher adding the student"
 msgstr ""
 
-#: src/settings-panel/components/EmailTab.jsx:715
+#: src/settings-panel/components/EmailTab.jsx:723
 msgid "Name of the group"
 msgstr ""
 
-#: src/settings-panel/components/EmailTab.jsx:723
+#: src/settings-panel/components/EmailTab.jsx:731
 msgid "Password reset link (required for new users)"
 msgstr ""
 
-#: src/settings-panel/components/EmailTab.jsx:727
+#: src/settings-panel/components/EmailTab.jsx:735
 msgid "Login page URL"
 msgstr ""
 
-#: src/settings-panel/components/EmailTab.jsx:756
+#: src/settings-panel/components/EmailTab.jsx:764
 msgid "Send a sample welcome email using the template above."
 msgstr ""
 
-#: src/settings-panel/components/EmailTab.jsx:767
+#: src/settings-panel/components/EmailTab.jsx:781
 msgid "Review Reminder Email Template"
 msgstr ""
 
-#: src/settings-panel/components/EmailTab.jsx:770
+#: src/settings-panel/components/EmailTab.jsx:784
 msgid "Customize the daily reminder email sent to students when they have questions due for spaced repetition review."
 msgstr ""
 
-#: src/settings-panel/components/EmailTab.jsx:775
+#: src/settings-panel/components/EmailTab.jsx:789
 msgid "Enable Review Reminders"
 msgstr ""
 
-#: src/settings-panel/components/EmailTab.jsx:782
+#: src/settings-panel/components/EmailTab.jsx:796
 msgid "Send a daily email to students who have questions due for review"
 msgstr ""
 
-#: src/settings-panel/components/EmailTab.jsx:829
+#: src/settings-panel/components/EmailTab.jsx:843
 msgid "Number of questions due for review"
 msgstr ""
 
-#: src/settings-panel/components/EmailTab.jsx:833
+#: src/settings-panel/components/EmailTab.jsx:847
 msgid "Button linking to the review page"
 msgstr ""
 
-#: src/settings-panel/components/EmailTab.jsx:866
+#: src/settings-panel/components/EmailTab.jsx:880
 msgid "Send a sample review reminder email using the template above."
 msgstr ""
 
-#: src/settings-panel/components/GeneralTab.jsx:35
+#: src/settings-panel/components/GeneralTab.jsx:36
 msgid "Each wrong selection cancels out one correct selection. Score never goes below zero."
 msgstr ""
 
-#: src/settings-panel/components/GeneralTab.jsx:37
+#: src/settings-panel/components/GeneralTab.jsx:38
 msgid "Each correct selection earns proportional credit, but any wrong selection results in zero."
 msgstr ""
 
-#: src/settings-panel/components/GeneralTab.jsx:38
+#: src/settings-panel/components/GeneralTab.jsx:39
 msgid "Full credit only when every correct answer is selected and no wrong answers are selected."
 msgstr ""
 
-#: src/settings-panel/components/GeneralTab.jsx:76
+#: src/settings-panel/components/GeneralTab.jsx:77
 msgid "— None —"
 msgstr ""
 
 #. translators: %d: page ID.
-#: src/settings-panel/components/GeneralTab.jsx:83
+#: src/settings-panel/components/GeneralTab.jsx:84
 #, js-format
 msgid "Page #%d (unpublished or deleted)"
 msgstr ""
 
-#: src/settings-panel/components/GeneralTab.jsx:106
+#: src/settings-panel/components/GeneralTab.jsx:107
 msgid "Dashboard page created and selected."
 msgstr ""
 
-#: src/settings-panel/components/GeneralTab.jsx:117
-#: src/settings-panel/components/GeneralTab.jsx:120
+#: src/settings-panel/components/GeneralTab.jsx:118
+#: src/settings-panel/components/GeneralTab.jsx:121
 msgid "Could not create the dashboard page."
 msgstr ""
 
-#: src/settings-panel/components/GeneralTab.jsx:180
+#: src/settings-panel/components/GeneralTab.jsx:181
 msgid "Guest Access"
 msgstr ""
 
-#: src/settings-panel/components/GeneralTab.jsx:183
+#: src/settings-panel/components/GeneralTab.jsx:184
 msgid "Control how guests (non-logged-in users) can access quizzes."
 msgstr ""
 
-#: src/settings-panel/components/GeneralTab.jsx:188
+#: src/settings-panel/components/GeneralTab.jsx:189
 msgid "Default Access Mode"
 msgstr ""
 
-#: src/settings-panel/components/GeneralTab.jsx:189
+#: src/settings-panel/components/GeneralTab.jsx:190
 msgid "Default access mode for new quizzes. Can be overridden per quiz."
 msgstr ""
 
-#: src/settings-panel/components/GeneralTab.jsx:197
+#: src/settings-panel/components/GeneralTab.jsx:198
 msgid "Allow guests (email optional)"
 msgstr ""
 
-#: src/settings-panel/components/GeneralTab.jsx:200
+#: src/settings-panel/components/GeneralTab.jsx:201
 msgid "Allow guests (email required)"
 msgstr ""
 
-#: src/settings-panel/components/GeneralTab.jsx:203
+#: src/settings-panel/components/GeneralTab.jsx:204
 msgid "Require login"
 msgstr ""
 
-#: src/settings-panel/components/GeneralTab.jsx:212
+#: src/settings-panel/components/GeneralTab.jsx:213
 msgid "Login Message"
 msgstr ""
 
-#: src/settings-panel/components/GeneralTab.jsx:213
+#: src/settings-panel/components/GeneralTab.jsx:214
 msgid "Message shown to guests when login is required."
 msgstr ""
 
-#: src/settings-panel/components/GeneralTab.jsx:228
+#: src/settings-panel/components/GeneralTab.jsx:229
 msgid "Guest Email Consent"
 msgstr ""
 
-#: src/settings-panel/components/GeneralTab.jsx:231
+#: src/settings-panel/components/GeneralTab.jsx:232
 msgid "Optionally show a marketing consent checkbox on the guest email form. It is unchecked by default and never blocks starting a quiz."
 msgstr ""
 
-#: src/settings-panel/components/GeneralTab.jsx:236
+#: src/settings-panel/components/GeneralTab.jsx:237
 msgid "Show a marketing consent checkbox"
 msgstr ""
 
-#: src/settings-panel/components/GeneralTab.jsx:237
+#: src/settings-panel/components/GeneralTab.jsx:238
 msgid "Adds an unchecked, optional consent checkbox to the guest email form."
 msgstr ""
 
-#: src/settings-panel/components/GeneralTab.jsx:250
+#: src/settings-panel/components/GeneralTab.jsx:251
 msgid "Consent label"
 msgstr ""
 
-#: src/settings-panel/components/GeneralTab.jsx:251
+#: src/settings-panel/components/GeneralTab.jsx:252
 msgid "Describe the marketing use, not quiz function. A link to your Privacy Policy is added automatically when one is set."
 msgstr ""
 
-#: src/settings-panel/components/GeneralTab.jsx:267
+#: src/settings-panel/components/GeneralTab.jsx:268
 msgid "No privacy policy page is set"
 msgstr ""
 
-#: src/settings-panel/components/GeneralTab.jsx:269
+#: src/settings-panel/components/GeneralTab.jsx:270
 msgid "<a>Set a Privacy Policy page under Settings → Privacy</a> so a link can be shown next to the consent checkbox."
 msgstr ""
 
-#: src/settings-panel/components/GeneralTab.jsx:285
-msgid "Email marketing management"
+#: src/settings-panel/components/GeneralTab.jsx:288
+msgid "View contacts"
 msgstr ""
 
-#: src/settings-panel/components/GeneralTab.jsx:287
-msgid "This plugin records consent only. Viewing, filtering, and exporting your consented contacts requires the <a>PressPrimer Quiz Educator add-on</a>."
-msgstr ""
-
-#: src/settings-panel/components/GeneralTab.jsx:306
+#: src/settings-panel/components/GeneralTab.jsx:302
 msgid "How multiple-answer questions are scored across the site. Individual quizzes can override this default."
 msgstr ""
 
-#: src/settings-panel/components/GeneralTab.jsx:311
+#: src/settings-panel/components/GeneralTab.jsx:307
 msgid "Default Multiple-Answer Scoring"
 msgstr ""
 
-#: src/settings-panel/components/GeneralTab.jsx:347
+#: src/settings-panel/components/GeneralTab.jsx:343
 msgid "Choose the page that hosts the front-end dashboard. The plugin links here from emails, results pages, and (with add-ons) instructor tools. The dashboard block can be placed on any page; this setting just records which one to link to."
 msgstr ""
 
-#: src/settings-panel/components/GeneralTab.jsx:352
+#: src/settings-panel/components/GeneralTab.jsx:348
 msgid "Dashboard Page"
 msgstr ""
 
-#: src/settings-panel/components/GeneralTab.jsx:353
+#: src/settings-panel/components/GeneralTab.jsx:349
 msgid "Select an existing page, or create one automatically."
 msgstr ""
 
-#: src/settings-panel/components/GeneralTab.jsx:367
+#: src/settings-panel/components/GeneralTab.jsx:363
 msgid "Create page for me"
 msgstr ""
 
-#: src/settings-panel/components/GeneralTab.jsx:377
+#: src/settings-panel/components/GeneralTab.jsx:373
 msgid "View page"
 msgstr ""
 
-#: src/settings-panel/components/GeneralTab.jsx:381
+#: src/settings-panel/components/GeneralTab.jsx:377
 msgid "Edit page"
 msgstr ""
 
-#: src/settings-panel/components/GeneralTab.jsx:389
+#: src/settings-panel/components/GeneralTab.jsx:385
 msgid "Tip: if your site uses page caching, exclude the dashboard page from the cache so it always loads fresh. Most caching plugins skip logged-in users automatically."
 msgstr ""
 
-#: src/settings-panel/components/GeneralTab.jsx:397
+#: src/settings-panel/components/GeneralTab.jsx:393
 msgid "This page is your static front page"
 msgstr ""
 
-#: src/settings-panel/components/GeneralTab.jsx:398
+#: src/settings-panel/components/GeneralTab.jsx:394
 msgid "WordPress does not reliably render app-style pages as the static front page. Choose a different page for the dashboard."
 msgstr ""
 
-#: src/settings-panel/components/GeneralTab.jsx:407
+#: src/settings-panel/components/GeneralTab.jsx:403
 msgid "The selected dashboard page is missing or unpublished"
 msgstr ""
 
-#: src/settings-panel/components/GeneralTab.jsx:408
+#: src/settings-panel/components/GeneralTab.jsx:404
 msgid "Links to the dashboard are hidden until you select a published page."
 msgstr ""
 
-#: src/settings-panel/components/GeneralTab.jsx:416
+#: src/settings-panel/components/GeneralTab.jsx:412
 msgid "Math Notation"
 msgstr ""
 
-#: src/settings-panel/components/GeneralTab.jsx:419
+#: src/settings-panel/components/GeneralTab.jsx:415
 msgid "Render mathematical notation (LaTeX) in questions, answers, and feedback. Off by default; turning it on also adds an Insert Math control to the question editor."
 msgstr ""
 
-#: src/settings-panel/components/GeneralTab.jsx:424
+#: src/settings-panel/components/GeneralTab.jsx:420
 msgid "Enable math notation (LaTeX)"
 msgstr ""
 
-#: src/settings-panel/components/GeneralTab.jsx:425
+#: src/settings-panel/components/GeneralTab.jsx:421
 msgid "Write inline math as \\( x^2 \\) or a centered block as \\[ ... \\]. The math library loads only on quizzes that contain notation."
 msgstr ""
 
@@ -10217,6 +10223,10 @@ msgstr ""
 
 #: src/shared/components/ExportCsvButton.jsx:73
 msgid "Export CSV"
+msgstr ""
+
+#: src/shared/components/UpsellPrompt.jsx:57
+msgid "(opens in a new tab)"
 msgstr ""
 
 #: src/utils/ConsentBadge.jsx:34

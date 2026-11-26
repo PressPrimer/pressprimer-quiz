@@ -774,6 +774,48 @@ final class PressPrimer_Quiz_Premium_Catalog {
 	}
 
 	/**
+	 * The upsell touchpoints a wp-admin surface shows the current user.
+	 *
+	 * The rules (feature 012): administrators only, while upsells are on
+	 * (user_sees_upsells()), and only touchpoints whose tier isn't active.
+	 * Callers on the front-end dashboard send an empty map instead (the
+	 * editor data does), and the page renders each one as a sibling of the
+	 * addon's mount point, never inside it.
+	 *
+	 * @since 3.2.0
+	 *
+	 * @param string $surface 'bank-editor' or 'settings'.
+	 * @return array Location => key, copy, linkText ("Upgrade to {tier}") and
+	 *               url (the tier's page, tagged touchpoint / {id}).
+	 */
+	public static function touchpoints_for_surface( $surface ) {
+		if ( ! self::user_sees_upsells() ) {
+			return array();
+		}
+
+		$tiers       = self::get_tiers();
+		$touchpoints = array();
+
+		foreach ( self::get_touchpoints() as $id => $touchpoint ) {
+			if ( $surface !== $touchpoint['surface'] || self::tier_active( $touchpoint['tier'] ) ) {
+				continue;
+			}
+
+			$tier = $tiers[ $touchpoint['tier'] ];
+
+			$touchpoints[ $touchpoint['location'] ] = array(
+				'key'      => $id,
+				'copy'     => $touchpoint['copy'],
+				/* translators: %s: tier name (Educator, School, or Enterprise) */
+				'linkText' => sprintf( __( 'Upgrade to %s', 'pressprimer-quiz' ), $tier['name'] ),
+				'url'      => self::utm_url( $tier['url'], 'touchpoint', $id ),
+			);
+		}
+
+		return $touchpoints;
+	}
+
+	/**
 	 * The quiz editor Premium tab's locked options for the current user.
 	 *
 	 * The options of every tier that isn't active, in catalog order, for

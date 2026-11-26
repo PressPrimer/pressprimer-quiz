@@ -1937,6 +1937,13 @@ Good luck with your studies!',
 			],
 		];
 
+		// Upsell touchpoints (feature 012), and the link that replaces the
+		// guest-consent one once Educator is active.
+		$data['touchpoints'] = PressPrimer_Quiz_Premium_Catalog::touchpoints_for_surface( 'settings' );
+		$data['contactsUrl'] = PressPrimer_Quiz_Premium_Catalog::tier_active( 'educator' ) && current_user_can( 'pressprimer_quiz_educator_manage_own_groups' )
+			? admin_url( 'admin.php?page=pressprimer-quiz-educator-contacts' )
+			: '';
+
 		/**
 		 * Filter the settings data passed to the React settings panel.
 		 *

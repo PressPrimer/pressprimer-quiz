@@ -18,6 +18,7 @@ import {
 	Space,
 } from 'antd';
 import { SendOutlined, PictureOutlined, DeleteOutlined } from '@ant-design/icons';
+import UpsellPrompt from '../../shared/components/UpsellPrompt';
 
 const { Title, Paragraph, Text } = Typography;
 const { TextArea } = Input;
@@ -551,6 +552,13 @@ The {site_name} Team`;
 				</div>
 			</div>
 
+			{/* Touchpoint (feature 012): where Educator's reminder section
+			    appears once Educator is active. */}
+			<UpsellPrompt
+				touchpoint={settingsData.touchpoints?.['email-assignment-reminders']}
+				style={{ marginBottom: 32 }}
+			/>
+
 			{/* Assignment Reminder Email Template Section - Educator Addon */}
 			{settingsData.educatorActive && (
 				<div className="ppq-settings-section">
@@ -760,6 +768,12 @@ The {site_name} Team`;
 					</div>
 				</div>
 			)}
+			{/* Touchpoint (feature 012): where School's review reminder
+			    section appears once School is active. */}
+			<UpsellPrompt
+				touchpoint={settingsData.touchpoints?.['email-review-reminders']}
+				style={{ marginBottom: 32 }}
+			/>
 			{/* Spaced Repetition Review Reminder Email Template Section - School Addon */}
 			{settingsData.schoolActive && (
 				<div className="ppq-settings-section">

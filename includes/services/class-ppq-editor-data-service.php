@@ -318,10 +318,16 @@ class PressPrimer_Quiz_Editor_Data_Service {
 		$bank_data['canEdit'] = empty( $bank ) || PressPrimer_Quiz_Question_Access_Service::can_edit_bank( $bank, get_current_user_id() );
 
 		// Help under the Visibility field. Addons that change who can see a
-		// bank say so here.
-		$bank_data['visibilityHelp'] = __( 'Private: Only you can access this bank. Shared: Teachers in your groups can access this bank.', 'pressprimer-quiz' );
+		// bank say so here. Sharing needs Educator's groups, so without it
+		// the help says so (feature 012 FR-004).
+		$bank_data['visibilityHelp'] = PressPrimer_Quiz_Premium_Catalog::tier_active( 'educator' )
+			? __( 'Private: Only you can access this bank. Shared: Teachers in your groups can access this bank.', 'pressprimer-quiz' )
+			: __( 'Private: Only you can access this bank. Sharing with teachers in your groups needs PressPrimer Quiz Educator.', 'pressprimer-quiz' );
 
 		$bank_data = array_merge( $bank_data, self::get_site_data() );
+
+		// Upsell touchpoints (feature 012; emptied on the dashboard below).
+		$bank_data['touchpoints'] = PressPrimer_Quiz_Premium_Catalog::touchpoints_for_surface( 'bank-editor' );
 
 		/**
 		 * Filters the data the bank editor starts with.

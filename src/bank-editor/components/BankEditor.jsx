@@ -20,6 +20,7 @@ import {
 } from '../../editors/slots';
 import { useDirtyTracker } from '../../editors/dirty';
 import BankQuestionsPanel from './BankQuestionsPanel';
+import UpsellPrompt from '../../shared/components/UpsellPrompt';
 import {
 	Layout,
 	Form,
@@ -66,6 +67,8 @@ const BankEditor = ({ data = {}, surface = 'admin', nav, slots = {}, onSaved, on
 	// A bank shared with the author opens read-only on the dashboard (its
 	// owner and managers may change it). Missing means editable, as before.
 	const canEdit = undefined === bankData.canEdit || !!bankData.canEdit;
+	// Upsell touchpoints by location (wp-admin admins only; empty otherwise).
+	const touchpoints = bankData.touchpoints || {};
 
 	// Unsaved changes, for the host's navigation guard.
 	const dirty = useDirtyTracker(onDirtyChange);
@@ -322,6 +325,21 @@ const BankEditor = ({ data = {}, surface = 'admin', nav, slots = {}, onSaved, on
 										</Select.Option>
 									</Select>
 								</Form.Item>
+
+								{/* Touchpoints (feature 012): siblings of the
+								    slot below, never inside it. Sharing sits
+								    under Visibility; practice access where
+								    School's field mounts, existing banks only. */}
+								<UpsellPrompt
+									touchpoint={touchpoints['bank-visibility']}
+									style={{ marginTop: -8, marginBottom: 24 }}
+								/>
+								{!isNew && (
+									<UpsellPrompt
+										touchpoint={touchpoints['bank-practice-access']}
+										style={{ marginBottom: 24 }}
+									/>
+								)}
 
 								{/* Addon fields slot: addons render extra bank
 								    fields here (React portal target — must stay

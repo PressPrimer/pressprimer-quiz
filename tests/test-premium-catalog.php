@@ -336,6 +336,61 @@ class Test_Premium_Catalog extends TestCase {
 	}
 
 	/**
+	 * Touchpoints: per surface and location, for admins while upsells are on,
+	 * only while their tier is inactive, each linking to its tier's page.
+	 */
+	public function test_touchpoints_for_surface() {
+		$GLOBALS['pressprimer_quiz_test_caps'] = array( 'manage_options' );
+		$tiers                                 = PressPrimer_Quiz_Premium_Catalog::get_tiers();
+		$expected                              = array(
+			'none'              => array(
+				'bank-editor' => array( 'bank-visibility', 'bank-practice-access' ),
+				'settings'    => array( 'guest-consent', 'email-assignment-reminders', 'email-review-reminders' ),
+			),
+			'educator'          => array(
+				'bank-editor' => array( 'bank-practice-access' ),
+				'settings'    => array( 'email-review-reminders' ),
+			),
+			'educator + school' => array(
+				'bank-editor' => array(),
+				'settings'    => array(),
+			),
+		);
+		$states = array(
+			'none'              => array(),
+			'educator'          => array( 'educator' ),
+			'educator + school' => array( 'educator', 'school' ),
+		);
+
+		foreach ( $states as $label => $active ) {
+			$GLOBALS['pressprimer_quiz_test_tiers'] = $active;
+
+			foreach ( array( 'bank-editor', 'settings' ) as $surface ) {
+				$touchpoints = PressPrimer_Quiz_Premium_Catalog::touchpoints_for_surface( $surface );
+				$this->assertSame( $expected[ $label ][ $surface ], array_keys( $touchpoints ), "$label / $surface" );
+
+				foreach ( $touchpoints as $touchpoint ) {
+					$definition = PressPrimer_Quiz_Premium_Catalog::get_touchpoints()[ $touchpoint['key'] ];
+					$tier       = $tiers[ $definition['tier'] ];
+
+					$this->assertSame( $definition['copy'], $touchpoint['copy'] );
+					$this->assertSame( 'Upgrade to ' . $tier['name'], $touchpoint['linkText'] );
+					$this->assertSame( PressPrimer_Quiz_Premium_Catalog::utm_url( $tier['url'], 'touchpoint', $touchpoint['key'] ), $touchpoint['url'] );
+				}
+			}
+		}
+
+		// Nobody but an admin, and nobody while upsells are off.
+		$GLOBALS['pressprimer_quiz_test_tiers'] = array();
+		$GLOBALS['pressprimer_quiz_test_caps']  = array( 'pressprimer_quiz_manage_settings' );
+		$this->assertSame( array(), PressPrimer_Quiz_Premium_Catalog::touchpoints_for_surface( 'settings' ) );
+
+		$GLOBALS['pressprimer_quiz_test_caps']        = array( 'manage_options' );
+		$GLOBALS['pressprimer_quiz_test_prompts_off'] = true;
+		$this->assertSame( array(), PressPrimer_Quiz_Premium_Catalog::touchpoints_for_surface( 'bank-editor' ) );
+	}
+
+	/**
 	 * Premium tab: the options of every tier that isn't active, for admins
 	 * while upsells are on, each with its tier and a tagged link.
 	 */

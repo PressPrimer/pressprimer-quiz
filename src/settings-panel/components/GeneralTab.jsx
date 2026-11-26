@@ -22,6 +22,7 @@ import {
 	message,
 } from 'antd';
 import { PlusOutlined } from '@ant-design/icons';
+import UpsellPrompt from '../../shared/components/UpsellPrompt';
 
 const { Title, Paragraph } = Typography;
 const { TextArea } = Input;
@@ -274,26 +275,21 @@ const GeneralTab = ({ settings, updateSetting, settingsData = {} }) => {
 							)}
 							/>
 						)}
-					</>
-				)}
 
-				{! settingsData.educatorActive && (
-					<Alert
-						type="info"
-						showIcon
-						style={{ maxWidth: 500, marginTop: 16 }}
-						message={__('Email marketing management', 'pressprimer-quiz')}
-						description={createInterpolateElement(
-							__(
-								'This plugin records consent only. Viewing, filtering, and exporting your consented contacts requires the <a>PressPrimer Quiz Educator add-on</a>.',
-								'pressprimer-quiz'
-							),
-							{
-								// eslint-disable-next-line jsx-a11y/anchor-has-content
-								a: <a href="https://pressprimer.com/pressprimer-quiz-educator/" target="_blank" rel="noopener noreferrer" />,
-							}
+						{/* Touchpoint (feature 012): where Educator's Contacts
+						    link appears once Educator is active. */}
+						<UpsellPrompt
+							touchpoint={settingsData.touchpoints?.['guest-consent']}
+							style={{ maxWidth: 500, marginTop: 16 }}
+						/>
+						{settingsData.contactsUrl && (
+							<p style={{ marginTop: 16, marginBottom: 0 }}>
+								<a href={settingsData.contactsUrl}>
+									{__('View contacts', 'pressprimer-quiz')}
+								</a>
+							</p>
 						)}
-					/>
+					</>
 				)}
 			</div>
 

@@ -1201,3 +1201,58 @@ a.ant-btn-default:visited {
 		padding: 8px 0;
 	}
 }
+
+/* =============================================================
+   Upsell touchpoints (3.2, feature 012): UpsellPrompt.jsx. The
+   suite's touchpoint treatment (Certificate, Assignment): a quiet
+   info tint, 13px text, contextual and never blocking. Here, not
+   in a style.css import: touchpoints are wp-admin only, and a
+   style.css shared by several entries builds into one entry only.
+   ============================================================= */
+
+.ppq-upsell-prompt {
+	display: flex;
+	align-items: flex-start;
+	gap: 8px;
+	padding: 10px 12px;
+	background: #e6f7ff;
+	border: 1px solid #91d5ff;
+	border-radius: 6px;
+	font-size: 13px;
+	line-height: 1.5;
+}
+
+.ppq-upsell-prompt--compact {
+	padding: 5px 10px;
+	border-radius: 4px;
+	font-size: 12px;
+}
+
+.ppq-upsell-prompt__icon {
+	color: #8c8c8c;
+	font-size: 13px;
+	flex-shrink: 0;
+	margin-top: 0.25em;
+}
+
+.ppq-upsell-prompt__body {
+	flex: 1;
+	min-width: 0;
+}
+
+.ppq-upsell-prompt .ppq-upsell-prompt__copy {
+	color: #50575e;
+	font-size: inherit;
+}
+
+.ppq-upsell-prompt__link {
+	font-weight: 500;
+	white-space: nowrap;
+	text-decoration: none;
+}
+
+.ppq-upsell-prompt__link:focus {
+	box-shadow: 0 0 0 2px #2271b1;
+	border-radius: 2px;
+	outline: none;
+}

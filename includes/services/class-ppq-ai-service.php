@@ -67,6 +67,7 @@ class PressPrimer_Quiz_AI_Service {
 	 * Transient name for the site-wide AI request counter.
 	 *
 	 * @since 3.0.0
+	 * @since 3.2.0 A prefix: each clock hour has its own counter (get_rate_limit_key()).
 	 * @var string
 	 */
 	const RATE_LIMIT_TRANSIENT = 'pressprimer_quiz_ai_requests';
@@ -555,7 +556,7 @@ class PressPrimer_Quiz_AI_Service {
 		// Site-wide budget (feature 004): one shared pool across all users, since
 		// the API key is now site-level rather than per-user. The $user_id
 		// parameter is retained for backward-compatible call sites.
-		$count = (int) get_transient( self::RATE_LIMIT_TRANSIENT );
+		$count = (int) get_transient( self::get_rate_limit_key() );
 
 		if ( $count >= self::RATE_LIMIT_PER_HOUR ) {
 			return new WP_Error(
@@ -579,9 +580,44 @@ class PressPrimer_Quiz_AI_Service {
 	 * @param int $user_id User ID (retained for signature compatibility).
 	 */
 	private static function increment_rate_limit( $user_id ) {
-		$count = (int) get_transient( self::RATE_LIMIT_TRANSIENT );
+		$key   = self::get_rate_limit_key();
+		$count = (int) get_transient( $key );
 
-		set_transient( self::RATE_LIMIT_TRANSIENT, $count + 1, HOUR_IN_SECONDS );
+		// Kept for two hours, so it outlives its own hour.
+		set_transient( $key, $count + 1, 2 * HOUR_IN_SECONDS );
+	}
+
+	/**
+	 * The hourly cap's counter for the current clock hour (UTC).
+	 *
+	 * Each hour has its own counter, so the cap resets on the hour instead of
+	 * an hour after the last request.
+	 *
+	 * @since 3.2.0
+	 *
+	 * @return string Transient key.
+	 */
+	public static function get_rate_limit_key() {
+		return self::RATE_LIMIT_TRANSIENT . '_' . gmdate( 'YmdH' );
+	}
+
+	/**
+	 * The site's AI requests this clock hour, for Settings' meter.
+	 *
+	 * @since 3.2.0
+	 *
+	 * @return array requests_this_hour, requests_remaining, rate_limit, usage_percent.
+	 */
+	public static function get_hourly_usage() {
+		$requests = (int) get_transient( self::get_rate_limit_key() );
+		$limit    = self::RATE_LIMIT_PER_HOUR;
+
+		return [
+			'requests_this_hour' => $requests,
+			'requests_remaining' => max( 0, $limit - $requests ),
+			'rate_limit'         => $limit,
+			'usage_percent'      => min( 100, ( $requests / $limit ) * 100 ),
+		];
 	}
 
 	/**
@@ -1150,11 +1186,16 @@ class PressPrimer_Quiz_AI_Service {
 	 *
 	 * @since 3.0.0
 	 *
+	 * @since 3.2.0 Honours 'feature' and 'usage_units': with 'feature', the
+	 *              units are reserved against the user's monthly limit before
+	 *              the call and recorded after it (released on failure).
+	 *
 	 * @param string $system_prompt System prompt ('' to send only a user turn).
 	 * @param string $user_prompt   User prompt.
 	 * @param array  $args          Optional: 'user_id', 'model', 'max_tokens',
-	 *                              'temperature', 'timeout'.
-	 * @return string|WP_Error Assistant text, or WP_Error on failure.
+	 *                              'temperature', 'timeout', 'feature' (e.g.
+	 *                              'feedback'), 'usage_units' (default 1).
+	 * @return string|WP_Error Assistant text, or WP_Error on failure (ppq_ai_limit_reached at the limit).
 	 */
 	public function generate_text( $system_prompt, $user_prompt, $args = [] ) {
 		$provider = $this->resolve_provider();
@@ -1202,10 +1243,34 @@ class PressPrimer_Quiz_AI_Service {
 			'timeout'     => isset( $args['timeout'] ) ? (int) $args['timeout'] : self::API_TIMEOUT,
 		];
 
+		// The monthly limit counts only callers that say what the units are
+		// for, so callers from before 3.2 (Educator 3.1's distractors) aren't
+		// metered.
+		$reservation = null;
+		if ( ! empty( $args['feature'] ) ) {
+			$reservation = PressPrimer_Quiz_AI_Usage_Service::reserve(
+				! empty( $args['user_id'] ) ? (int) $args['user_id'] : get_current_user_id(),
+				isset( $args['usage_units'] ) ? max( 1, absint( $args['usage_units'] ) ) : 1,
+				(string) $args['feature']
+			);
+
+			if ( is_wp_error( $reservation ) ) {
+				return $reservation;
+			}
+		}
+
 		$result = $this->dispatch_to_provider( $provider, $messages, $options );
 
 		if ( ! is_wp_error( $result ) && ! empty( $args['user_id'] ) ) {
 			self::increment_rate_limit( $args['user_id'] );
+		}
+
+		if ( $reservation ) {
+			if ( is_wp_error( $result ) ) {
+				PressPrimer_Quiz_AI_Usage_Service::release( $reservation );
+			} else {
+				PressPrimer_Quiz_AI_Usage_Service::settle( $reservation, $reservation['units'], PressPrimer_Quiz_AI_Usage_Service::count_tokens( $this->get_last_token_usage() ) );
+			}
 		}
 
 		return $result;

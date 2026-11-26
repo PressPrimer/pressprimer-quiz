@@ -1239,26 +1239,20 @@ Good luck with your studies!',
 	}
 
 	/**
-	 * Get user usage data
+	 * Get the AI usage data for the Settings meter
 	 *
 	 * @since 1.0.0
+	 * @since 3.2.0 The site-wide count for the current clock hour.
 	 *
-	 * @param int $user_id User ID.
-	 * @return array|false Usage data or false if no data.
+	 * @param int $user_id User ID (unused: the cap is site-wide).
+	 * @return array Usage data.
 	 */
 	private function get_user_usage_data( $user_id ) {
-		$key           = 'pressprimer_quiz_ai_requests_' . $user_id;
-		$requests      = (int) get_transient( $key );
-		$rate_limit    = PressPrimer_Quiz_AI_Service::RATE_LIMIT_PER_HOUR;
-		$remaining     = max( 0, $rate_limit - $requests );
-		$usage_percent = ( $requests / $rate_limit ) * 100;
+		unset( $user_id );
 
-		return [
-			'requests_this_hour' => $requests,
-			'requests_remaining' => $remaining,
-			'rate_limit'         => $rate_limit,
-			'usage_percent'      => min( 100, $usage_percent ),
-		];
+		// The site-wide hourly counter the cap itself reads (3.2: before, this
+		// read a per-user key nothing wrote, so it always showed 0).
+		return PressPrimer_Quiz_AI_Service::get_hourly_usage();
 	}
 
 	/**

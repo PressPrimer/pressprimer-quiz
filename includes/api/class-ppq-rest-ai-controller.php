@@ -152,6 +152,16 @@ class PressPrimer_Quiz_REST_AI_Controller {
 
 		register_rest_route(
 			'ppq/v1',
+			'/ai/usage',
+			[
+				'methods'             => WP_REST_Server::READABLE,
+				'callback'            => [ $this, 'get_usage_report' ],
+				'permission_callback' => [ $this, 'check_settings_permission' ],
+			]
+		);
+
+		register_rest_route(
+			'ppq/v1',
 			'/banks/(?P<id>\d+)/ai-questions',
 			[
 				'methods'             => WP_REST_Server::CREATABLE,
@@ -170,6 +180,17 @@ class PressPrimer_Quiz_REST_AI_Controller {
 	 */
 	public function check_permission() {
 		return current_user_can( 'pressprimer_quiz_manage_own' ) || current_user_can( 'pressprimer_quiz_manage_all' );
+	}
+
+	/**
+	 * Settings managers: pressprimer_quiz_manage_settings.
+	 *
+	 * @since 3.2.0
+	 *
+	 * @return bool Whether the user may see everyone's usage.
+	 */
+	public function check_settings_permission() {
+		return current_user_can( 'pressprimer_quiz_manage_settings' );
 	}
 
 	/**
@@ -220,6 +241,8 @@ class PressPrimer_Quiz_REST_AI_Controller {
 			'max_content_length'  => PressPrimer_Quiz_AI_Service::MAX_CONTENT_LENGTH,
 			'max_questions'       => self::MAX_QUESTIONS,
 			'can_manage_settings' => current_user_can( 'pressprimer_quiz_manage_settings' ),
+			// The user's own monthly usage and limit (limit null: none).
+			'usage'               => PressPrimer_Quiz_AI_Usage_Service::get_usage( get_current_user_id() ),
 		];
 
 		// The masked key is for the people who manage it.
@@ -336,6 +359,14 @@ class PressPrimer_Quiz_REST_AI_Controller {
 			'user_id'           => $user_id,
 		];
 
+		// Reserve the questions asked for against the monthly limit before
+		// the call (429 ppq_ai_limit_reached at the limit), so two open tabs
+		// can't overrun it.
+		$reservation = PressPrimer_Quiz_AI_Usage_Service::reserve( $user_id, $params['count'], 'questions' );
+		if ( is_wp_error( $reservation ) ) {
+			return $reservation;
+		}
+
 		// A long generation still settles if the browser goes away.
 		ignore_user_abort( true );
 
@@ -348,6 +379,15 @@ class PressPrimer_Quiz_REST_AI_Controller {
 
 		$result = $ai_service->generate_from_content( $content, 'text', $params );
 
+		// Charged for the valid questions returned; nothing when the call
+		// failed or none were usable.
+		$valid = is_wp_error( $result ) ? 0 : count( (array) $result['questions'] );
+		if ( $valid > 0 ) {
+			PressPrimer_Quiz_AI_Usage_Service::settle( $reservation, $valid, PressPrimer_Quiz_AI_Usage_Service::count_tokens( $result['token_usage'] ?? [] ) );
+		} else {
+			PressPrimer_Quiz_AI_Usage_Service::release( $reservation );
+		}
+
 		if ( is_wp_error( $result ) ) {
 			return $this->to_rest_error( $result );
 		}
@@ -356,6 +396,7 @@ class PressPrimer_Quiz_REST_AI_Controller {
 			'questions'    => $result['questions'],
 			'content_info' => $result['content_info'],
 			'token_usage'  => isset( $result['token_usage'] ) ? $result['token_usage'] : [],
+			'usage'        => PressPrimer_Quiz_AI_Usage_Service::get_usage( $user_id ),
 		];
 
 		// Partial success: some generated questions didn't pass validation.
@@ -364,6 +405,26 @@ class PressPrimer_Quiz_REST_AI_Controller {
 		}
 
 		return new WP_REST_Response( $response, 200 );
+	}
+
+	/**
+	 * Everyone's AI usage this month, for Settings.
+	 *
+	 * @since 3.2.0
+	 *
+	 * @return WP_REST_Response { period, resets_at, enabled, limit, users[] }.
+	 */
+	public function get_usage_report() {
+		return new WP_REST_Response(
+			[
+				'period'    => PressPrimer_Quiz_AI_Usage_Service::get_period(),
+				'resets_at' => PressPrimer_Quiz_AI_Usage_Service::get_resets_at(),
+				'enabled'   => PressPrimer_Quiz_AI_Usage_Service::is_enabled(),
+				'limit'     => PressPrimer_Quiz_AI_Usage_Service::get_site_limit(),
+				'users'     => PressPrimer_Quiz_AI_Usage_Service::get_report(),
+			],
+			200
+		);
 	}
 
 	/**

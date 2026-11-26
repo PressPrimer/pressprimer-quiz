@@ -4463,6 +4463,15 @@ class PressPrimer_Quiz_REST_Controller {
 			}
 		}
 
+		// Per-teacher monthly AI limit (3.2).
+		if ( isset( $data['ai_user_limit_enabled'] ) ) {
+			$sanitized['ai_user_limit_enabled'] = rest_sanitize_boolean( $data['ai_user_limit_enabled'] );
+		}
+
+		if ( isset( $data['ai_user_limit'] ) ) {
+			$sanitized['ai_user_limit'] = PressPrimer_Quiz_AI_Usage_Service::clamp_limit( $data['ai_user_limit'] );
+		}
+
 		/**
 		 * Filter the sanitized settings before saving.
 		 *

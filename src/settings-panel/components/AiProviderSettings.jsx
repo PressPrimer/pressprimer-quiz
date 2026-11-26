@@ -26,6 +26,9 @@ import {
 	Typography,
 	Space,
 	Alert,
+	Switch,
+	InputNumber,
+	Table,
 	message,
 } from 'antd';
 import {
@@ -370,15 +373,120 @@ const UsageStats = ( { usageData } ) => {
 };
 
 /**
- * AI provider settings section (controlled).
+ * The per-teacher monthly limit (saved with the page's Save Settings) and
+ * each user's use this month.
  *
- * @param {Object}   props           Component props.
- * @param {Object}   props.ai        AI state: { activeProvider, providers }.
- * @param {Function} props.onChange  Called with the next AI state.
- * @param {Object}   props.usageData Site-wide usage/rate-limit data.
+ * @param {Object}   props               Component props.
+ * @param {Object}   props.settings      Shared settings state.
+ * @param {Function} props.updateSetting Setter for one shared setting.
  * @return {JSX.Element} The section.
  */
-const AiProviderSettings = ( { ai = {}, onChange, usageData = {} } ) => {
+const UserLimitSettings = ( { settings = {}, updateSetting } ) => {
+	const enabled = !! settings.ai_user_limit_enabled;
+	const limit = settings.ai_user_limit ?? 200;
+	const [ report, setReport ] = useState( null );
+	const [ failed, setFailed ] = useState( false );
+
+	useEffect( () => {
+		let active = true;
+		apiFetch( { path: '/ppq/v1/ai/usage' } )
+			.then( ( result ) => {
+				if ( active ) {
+					setReport( result );
+				}
+			} )
+			.catch( () => {
+				if ( active ) {
+					setFailed( true );
+				}
+			} );
+		return () => {
+			active = false;
+		};
+	}, [] );
+
+	const columns = [
+		{
+			title: __( 'User', 'pressprimer-quiz' ),
+			dataIndex: 'name',
+			key: 'name',
+		},
+		{
+			title: __( 'Used this month', 'pressprimer-quiz' ),
+			dataIndex: 'units',
+			key: 'units',
+			width: 180,
+			render: ( units, row ) => (
+				null === row.limit
+					? units
+					: sprintf(
+						/* translators: 1: items used, 2: monthly limit. */
+						__( '%1$d of %2$d', 'pressprimer-quiz' ),
+						units,
+						row.limit
+					)
+			),
+		},
+	];
+
+	return (
+		<div style={ { marginTop: 24, marginBottom: 24 } }>
+			<Text strong style={ { display: 'block', marginBottom: 8 } }>
+				{ __( 'Monthly Limit per Teacher', 'pressprimer-quiz' ) }
+			</Text>
+			<Space align="center" wrap style={ { marginBottom: 8 } }>
+				<Switch
+					checked={ enabled }
+					onChange={ ( checked ) => updateSetting( 'ai_user_limit_enabled', checked ) }
+					aria-label={ __( 'Limit each teacher\'s AI use', 'pressprimer-quiz' ) }
+				/>
+				<Text>{ __( 'Limit each teacher\'s AI use', 'pressprimer-quiz' ) }</Text>
+				{ enabled && (
+					<InputNumber
+						min={ 1 }
+						max={ 10000 }
+						value={ limit }
+						onChange={ ( value ) => updateSetting( 'ai_user_limit', value || 1 ) }
+						addonAfter={ __( 'items per month', 'pressprimer-quiz' ) }
+						style={ { width: 240 } }
+					/>
+				) }
+			</Space>
+			<Paragraph type="secondary" style={ { marginBottom: 16 } }>
+				{ __( 'Limits how many questions and feedback items each teacher can generate per month on this site\'s AI key. Administrators aren\'t limited.', 'pressprimer-quiz' ) }
+			</Paragraph>
+
+			{ failed && (
+				<Alert type="error" showIcon message={ __( 'This month\'s usage couldn\'t be loaded.', 'pressprimer-quiz' ) } />
+			) }
+			{ ! failed && (
+				<Table
+					size="small"
+					rowKey="user_id"
+					loading={ null === report }
+					columns={ columns }
+					dataSource={ report ? report.users : [] }
+					pagination={ { pageSize: 10, hideOnSinglePage: true } }
+					locale={ { emptyText: __( 'No one has used AI generation this month.', 'pressprimer-quiz' ) } }
+					style={ { maxWidth: 520 } }
+				/>
+			) }
+		</div>
+	);
+};
+
+/**
+ * AI provider settings section (controlled).
+ *
+ * @param {Object}   props               Component props.
+ * @param {Object}   props.ai            AI state: { activeProvider, providers }.
+ * @param {Function} props.onChange      Called with the next AI state.
+ * @param {Object}   props.usageData     Site-wide usage/rate-limit data.
+ * @param {Object}   props.settings      Shared settings state (the limit settings).
+ * @param {Function} props.updateSetting Setter for one shared setting.
+ * @return {JSX.Element} The section.
+ */
+const AiProviderSettings = ( { ai = {}, onChange, usageData = {}, settings = {}, updateSetting = () => {} } ) => {
 	const providers = ai.providers || {};
 	const ids = Object.keys( providers );
 	const active = ai.activeProvider || ids[ 0 ] || 'openai';
@@ -492,6 +600,8 @@ const AiProviderSettings = ( { ai = {}, onChange, usageData = {} } ) => {
 				) }
 
 				{ activeStatus.configured && <UsageStats usageData={ usageData } /> }
+
+				<UserLimitSettings settings={ settings } updateSetting={ updateSetting } />
 
 				<Alert
 					type="info"

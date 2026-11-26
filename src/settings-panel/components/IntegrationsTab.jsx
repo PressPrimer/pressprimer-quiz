@@ -80,10 +80,11 @@ const IntegrationsTab = ({ settings, updateSetting, settingsData, aiState, setAi
 	);
 	const [loadingTutorlms, setLoadingTutorlms] = useState(lmsStatus.tutorlms?.active || false);
 
+	// The site-wide hourly cap (100 requests; the server sends the real count).
 	const usageData = settingsData.usageData || {
 		requests_this_hour: 0,
-		requests_remaining: 20,
-		rate_limit: 20,
+		requests_remaining: 100,
+		rate_limit: 100,
 		usage_percent: 0,
 	};
 
@@ -342,7 +343,7 @@ const IntegrationsTab = ({ settings, updateSetting, settingsData, aiState, setAi
 	return (
 		<div>
 			{/* AI Provider Section (site-level keys, provider selector). */}
-			<AiProviderSettings ai={ aiState } onChange={ setAiState } usageData={ usageData } />
+			<AiProviderSettings ai={ aiState } onChange={ setAiState } usageData={ usageData } settings={ settings } updateSetting={ updateSetting } />
 
 			{/* LMS Integrations Section */}
 			<div className="ppq-settings-section">

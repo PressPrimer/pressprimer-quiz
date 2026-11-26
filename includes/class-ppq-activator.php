@@ -158,6 +158,30 @@ class PressPrimer_Quiz_Activator {
 	}
 
 	/**
+	 * The settings a fresh install starts with.
+	 *
+	 * Sites upgrading keep their settings; a setting added later and missing
+	 * from them reads as its upgrade default (e.g. the AI limit stays off).
+	 *
+	 * @since 3.2.0
+	 *
+	 * @return array Default settings.
+	 */
+	public static function get_default_settings() {
+		return [
+			'default_passing_score'    => 70,
+			'default_quiz_mode'        => 'tutorial',
+			'email_from_name'          => get_bloginfo( 'name' ),
+			'email_from_address'       => get_bloginfo( 'admin_email' ),
+			'remove_data_on_uninstall' => false, // Keep data by default for safety
+			// Per-teacher monthly AI limit (3.2): on for new sites; off for
+			// sites upgrading, where teachers already generate freely.
+			'ai_user_limit_enabled'    => true,
+			'ai_user_limit'            => PressPrimer_Quiz_AI_Usage_Service::DEFAULT_LIMIT,
+		];
+	}
+
+	/**
 	 * Set default options
 	 *
 	 * Creates default plugin settings if they don't exist.
@@ -165,14 +189,7 @@ class PressPrimer_Quiz_Activator {
 	 * @since 1.0.0
 	 */
 	private static function set_default_options() {
-		// Default settings
-		$default_settings = [
-			'default_passing_score'    => 70,
-			'default_quiz_mode'        => 'tutorial',
-			'email_from_name'          => get_bloginfo( 'name' ),
-			'email_from_address'       => get_bloginfo( 'admin_email' ),
-			'remove_data_on_uninstall' => false, // Keep data by default for safety
-		];
+		$default_settings = self::get_default_settings();
 
 		$existing_settings = get_option( 'pressprimer_quiz_settings' );
 

@@ -223,7 +223,10 @@ const SettingsPanel = ({ form, generationMode, setGenerationMode, quizData = {},
 					type="warning"
 					showIcon
 					message={__('Some settings are locked by branching rules', 'pressprimer-quiz')}
-					description={__('This quiz has active branching rules that require paginated mode, no question randomization, and no backward navigation. Remove the branching rules to unlock these settings.', 'pressprimer-quiz')}
+					description={quizData.branchingActive
+						? __('This quiz has active branching rules that require paginated mode, no question randomization, and no backward navigation. Remove the branching rules to unlock these settings.', 'pressprimer-quiz')
+						// Someone who can't manage branching can't remove the rules.
+						: __('An administrator added branching rules to this quiz, so these settings are fixed.', 'pressprimer-quiz')}
 				/>
 			)}
 			{/* Basic Information */}

@@ -11,11 +11,51 @@ import { Card, Button, Typography, Space, Tooltip, Alert } from 'antd';
 import { PlusOutlined, QuestionCircleOutlined } from '@ant-design/icons';
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
 import AnswerRow from './AnswerRow';
+import { useEditorContext } from '../../editors/EditorContext';
 
 const { Title, Text } = Typography;
 
-const AnswersList = ({ answers, questionType, questionId, onChange }) => {
-	const maxAnswers = questionType === 'tf' ? 2 : 8;
+/**
+ * How many answers a question type allows.
+ *
+ * @param {string} questionType Question type.
+ * @return {number} Maximum answers.
+ */
+export const getMaxAnswers = (questionType) => (questionType === 'tf' ? 2 : 8);
+
+/**
+ * The answers state addons read: the ppq-answers-changed event's detail,
+ * window._ppqAnswersState, and the answersState slot prop.
+ *
+ * @param {Object} args              Arguments.
+ * @param {number} args.questionId   Question ID (0 for a new question).
+ * @param {string} args.questionType Question type.
+ * @param {Array}  args.answers      Answers.
+ * @return {Object} { questionId, questionType, answers, answerCount, maxAnswers }.
+ */
+export const buildAnswersState = ({ questionId, questionType, answers }) => ({
+	questionId: questionId || 0,
+	questionType,
+	answers,
+	answerCount: answers.length,
+	maxAnswers: getMaxAnswers(questionType),
+});
+
+/**
+ * Answers List
+ *
+ * @param {Object}      props                   Component props.
+ * @param {Array}       props.answers           Answers.
+ * @param {string}      props.questionType      Question type.
+ * @param {number}      props.questionId        Question ID (0 for new).
+ * @param {Function}    props.onChange          Called with the new answers.
+ * @param {Object}      props.feedbackRevisions Per-answer counters; a change re-initialises that answer's feedback editor.
+ * @param {JSX.Element} props.addonActions      question.answers.actions slots.
+ * @return {JSX.Element} The list.
+ */
+const AnswersList = ({ answers, questionType, questionId, onChange, feedbackRevisions = {}, addonActions = null }) => {
+	const { surface } = useEditorContext();
+	const maxAnswers = getMaxAnswers(questionType);
 	const minAnswers = 2;
 
 	// Bumped after each reorder to force the answer editors to re-initialize.
@@ -32,13 +72,7 @@ const AnswersList = ({ answers, questionType, questionId, onChange }) => {
 	 * @since 2.2.0
 	 */
 	useEffect( () => {
-		const detail = {
-			questionId: questionId || 0,
-			questionType,
-			answers,
-			answerCount: answers.length,
-			maxAnswers,
-		};
+		const detail = buildAnswersState( { questionId, questionType, answers } );
 
 		// Cache latest state so late-mounting addons can read it immediately.
 		window._ppqAnswersState = detail;
@@ -186,6 +220,7 @@ const AnswersList = ({ answers, questionType, questionId, onChange }) => {
 														canRemove={answers.length > minAnswers}
 														dragHandleProps={provided.dragHandleProps}
 													dragRevision={dragRevision}
+													feedbackRevision={feedbackRevisions[answer.id] || 0}
 														onUpdate={(updates) => handleUpdateAnswer(answer.id, updates)}
 														onRemove={() => handleRemoveAnswer(answer.id)}
 													/>
@@ -212,10 +247,14 @@ const AnswersList = ({ answers, questionType, questionId, onChange }) => {
 					</Button>
 				)}
 
-				{/* Addon mount point for answer-related actions (e.g., AI distractor generation). @since 2.2.0 */}
-				{questionType !== 'tf' && (
+				{/* Legacy addon mount point for answer-related actions (e.g., AI
+				    distractor generation): wp-admin, non-TF only. @since 2.2.0 */}
+				{'admin' === surface && questionType !== 'tf' && (
 					<div id="ppq-answers-addon-actions" />
 				)}
+
+				{/* question.answers.actions slots, for every question type. */}
+				{addonActions}
 			</Space>
 		</Card>
 	);

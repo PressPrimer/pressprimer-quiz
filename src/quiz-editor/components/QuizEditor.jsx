@@ -29,12 +29,21 @@ import {
 
 import SettingsPanel from './SettingsPanel';
 import { buildTemplateSettings } from '../templates/templateFields';
-import PremiumSettingsPanel from './PremiumSettingsPanel';
+import PremiumSettingsPanel, { getPremiumCards } from './PremiumSettingsPanel';
 import QuestionsPanel from './QuestionsPanel';
 import RulesPanel from './RulesPanel';
 import FeedbackPanel from './FeedbackPanel';
 import { EditorProvider, getSiteFlags } from '../../editors/EditorContext';
 import { emitEditorEvent, emitSaved, toId } from '../../editors/events';
+import {
+	useSlotRegistry,
+	useSlotHost,
+	useSlotEnvironment,
+	getVisibleSlots,
+	hasSlotKey,
+	SlotOutlet,
+} from '../../editors/slots';
+import RulesSummary from './RulesSummary';
 
 const { Content } = Layout;
 const { Title, Paragraph } = Typography;
@@ -63,7 +72,7 @@ const toFormMaScoring = (value, quizData) => {
  * @param {Object}   props.data     Editor data (editor-data service payload)
  * @param {string}   props.surface  Where the editor runs: 'admin' or 'dashboard'
  * @param {Object}   props.nav      Navigation adapter (list, edit, afterCreate, editUrl, back)
- * @param {Object}   props.slots    Addon slots (reserved for the slot contract)
+ * @param {Object}   props.slots    Host slot definitions by slot id, added to the registered ones
  * @param {Function} props.onSaved  Called after a successful save, before navigating
  */
 const QuizEditor = ({ data = {}, surface = 'admin', nav, slots = {}, onSaved }) => {
@@ -81,6 +90,32 @@ const QuizEditor = ({ data = {}, surface = 'admin', nav, slots = {}, onSaved }) 
 	const [defaultsFromName, setDefaultsFromName] = useState('');
 
 	const isNew = !currentQuizId;
+
+	// Addon slots (quiz.tab, quiz.premium.card).
+	useSlotRegistry();
+	const slotHost = useSlotHost(form);
+	const slotEnv = useSlotEnvironment(surface);
+	const site = getSiteFlags(quizData);
+	const slotContext = {
+		surface,
+		site,
+		hostSlots: slots,
+		entityId: toId(currentQuizId) || 0,
+		generationMode,
+	};
+	const tabSlots = getVisibleSlots('quiz.tab', slotContext);
+	const cardSlots = getVisibleSlots('quiz.premium.card', slotContext);
+	const slotProps = {
+		entityId: toId(currentQuizId) || 0,
+		surface,
+		nav,
+		getValues: () => form.getFieldsValue(true),
+		setFieldValue: slotHost.setFieldValue,
+		registerValidator: slotHost.registerValidator,
+		registerAfterSave: slotHost.registerAfterSave,
+		getPopupContainer: slotEnv.getPopupContainer,
+		theme: slotEnv.theme,
+	};
 
 	// Initialise the addon validator registry.
 	// Addons (e.g. Enterprise branching) can push async validator functions
@@ -223,18 +258,24 @@ const QuizEditor = ({ data = {}, surface = 'admin', nav, slots = {}, onSaved }) 
 			// Use currentQuizId (which may have been set by auto-save) or fall back to quizData.id
 			const quizId = currentQuizId || quizData.id;
 
-			// Run addon validators before saving.
-			if (quizId) {
-				const addonErrors = await runAddonValidators(quizId, values);
-				if (addonErrors.length > 0) {
-					addonErrors.forEach((err) => message.error(err));
-					setSaving(false);
-					return;
-				}
+			// Run addon validators before saving: the legacy
+			// ppqQuizEditorValidators for a saved quiz (as before), and the
+			// slots' validators on every save.
+			const addonErrors = [
+				...(quizId ? await runAddonValidators(quizId, values) : []),
+				...(await slotHost.runValidators({ entityId: toId(quizId) || 0, quizId: toId(quizId) || 0, values })),
+			];
+			if (addonErrors.length > 0) {
+				addonErrors.forEach((err) => message.error(err));
+				setSaving(false);
+				return;
 			}
 
-			// Prepare data for submission
+			// Prepare data for submission. Values slots or templates set are
+			// sent too, even when their fields aren't on screen (only when
+			// they set them, so a partial update stays partial).
 			const quizPayload = {
+				...slotHost.setValues(),
 				...values,
 				id: quizId || null,
 				band_feedback_json: JSON.stringify(feedbackBands),
@@ -267,6 +308,7 @@ const QuizEditor = ({ data = {}, surface = 'admin', nav, slots = {}, onSaved }) 
 				generationMode: values.generation_mode || generationMode,
 				surface,
 			}, onSaved);
+			await slotHost.runAfterSave({ entityId: toId(response.id || quizId), isNew: !quizId, values: quizPayload, response });
 
 			// After the first save the editor stays open on the new quiz: the
 			// host swaps the address in place and must not remount.
@@ -362,6 +404,14 @@ const QuizEditor = ({ data = {}, surface = 'admin', nav, slots = {}, onSaved }) 
 			form.setFields([{ name: 'display_settings', value: nextDisplaySettings }]);
 		}
 
+		// Send what the template set with the next save, including fields on
+		// a tab the author hasn't opened (e.g. Premium Settings' spaced
+		// repetition).
+		slotHost.markSet([
+			...Object.keys(patch),
+			...(nextDisplaySettings !== undefined ? ['display_settings'] : []),
+		]);
+
 		if (Array.isArray(nextBands)) {
 			setFeedbackBands(nextBands);
 		}
@@ -426,8 +476,15 @@ const QuizEditor = ({ data = {}, surface = 'admin', nav, slots = {}, onSaved }) 
 			// Validate form
 			const values = await form.validateFields();
 
-			// Prepare data for submission
+			const slotErrors = await slotHost.runValidators({ entityId: toId(currentQuizId) || 0, quizId: toId(currentQuizId) || 0, values });
+			if (slotErrors.length > 0) {
+				slotErrors.forEach((err) => message.error(err));
+				return false;
+			}
+
+			// Prepare data for submission (with what slots or templates set).
 			const quizPayload = {
+				...slotHost.setValues(),
 				...values,
 				id: currentQuizId || null,
 				band_feedback_json: JSON.stringify(feedbackBands),
@@ -453,6 +510,7 @@ const QuizEditor = ({ data = {}, surface = 'admin', nav, slots = {}, onSaved }) 
 				generationMode: values.generation_mode || generationMode,
 				surface,
 			}, onSaved);
+			await slotHost.runAfterSave({ entityId: toId(response.id || currentQuizId), isNew: !currentQuizId, values: quizPayload, response });
 
 			// Update current quiz ID if this was a new quiz (first save: the
 			// address is swapped in place, no remount).
@@ -505,15 +563,36 @@ const QuizEditor = ({ data = {}, surface = 'admin', nav, slots = {}, onSaved }) 
 
 	const hasPremiumAddons = quizData.educatorActive || quizData.enterpriseActive || quizData.schoolActive;
 
-	// Always surface the Premium Settings tab so free-site admins can discover
-	// what premium quiz options exist. On a free site it is admin-only: a teacher
-	// can neither upgrade nor use these options, so they never see the upsell.
-	// When any add-on is active the tab shows the real settings to everyone who
-	// can edit the quiz.
-	const showPremiumTab = hasPremiumAddons || !!quizData.isAdmin;
+	// Which of the Premium tab's built-in cards show here (per-card flags,
+	// and an addon's own slot replacing its built-in card).
+	const premiumCards = getPremiumCards(quizData, surface, {
+		educatorPrepostSlot: hasSlotKey('quiz.premium.card', 'educator-prepost', surface, slots),
+		enterpriseProctoringSlot: hasSlotKey('quiz.premium.card', 'enterprise-proctoring', surface, slots),
+	});
 
-	// Branching tab is available only for fixed-mode quizzes when Enterprise addon provides branching.
-	const showBranchingTab = quizData.branchingActive && generationMode === 'fixed' && currentQuizId;
+	// wp-admin: always surface the Premium Settings tab so free-site admins can
+	// discover what premium quiz options exist. On a free site it is
+	// admin-only: a teacher can neither upgrade nor use these options, so they
+	// never see the upsell. When any add-on is active the tab shows the real
+	// settings to everyone who can edit the quiz.
+	// Dashboard: only when it has cards to show; never the upsell (R14).
+	const showPremiumTab = 'dashboard' === surface
+		? cardSlots.length > 0 || Object.values(premiumCards).some(Boolean)
+		: hasPremiumAddons || !!quizData.isAdmin || cardSlots.length > 0;
+
+	// Branching tab is available only for fixed-mode quizzes when Enterprise
+	// addon provides branching, and only in wp-admin (its legacy mount).
+	const showBranchingTab = 'admin' === surface && quizData.branchingActive && generationMode === 'fixed' && currentQuizId;
+
+	// A dynamic quiz on the dashboard shows its rules read-only.
+	let questionsPane;
+	if (generationMode === 'fixed') {
+		questionsPane = <QuestionsPanel quizId={currentQuizId} generationMode={generationMode} />;
+	} else if ('dashboard' === surface) {
+		questionsPane = <RulesSummary quizId={currentQuizId} ruleScope={quizData.ruleScope} />;
+	} else {
+		questionsPane = <RulesPanel quizId={currentQuizId} generationMode={generationMode} ruleScope={quizData.ruleScope} />;
+	}
 
 	const tabItems = [
 		{
@@ -524,14 +603,22 @@ const QuizEditor = ({ data = {}, surface = 'admin', nav, slots = {}, onSaved }) 
 		showPremiumTab && {
 			key: 'premium',
 			label: __('Premium Settings', 'pressprimer-quiz'),
-			children: <PremiumSettingsPanel form={form} quizData={quizData} generationMode={generationMode} />,
+			children: (
+				<PremiumSettingsPanel
+					form={form}
+					quizData={quizData}
+					generationMode={generationMode}
+					surface={surface}
+					cards={premiumCards}
+					cardSlots={cardSlots}
+					slotProps={slotProps}
+				/>
+			),
 		},
 		{
 			key: 'questions',
 			label: generationMode === 'fixed' ? __('Questions', 'pressprimer-quiz') : __('Rules', 'pressprimer-quiz'),
-			children: generationMode === 'fixed'
-				? <QuestionsPanel quizId={currentQuizId} generationMode={generationMode} />
-				: <RulesPanel quizId={currentQuizId} generationMode={generationMode} ruleScope={quizData.ruleScope} />,
+			children: questionsPane,
 		},
 		showBranchingTab && {
 			key: 'branching',
@@ -543,11 +630,28 @@ const QuizEditor = ({ data = {}, surface = 'admin', nav, slots = {}, onSaved }) 
 			label: __('Feedback', 'pressprimer-quiz'),
 			children: <FeedbackPanel value={feedbackBands} onChange={setFeedbackBands} />,
 		},
+		// quiz.tab slots mount with the editor (not when first opened), so
+		// their validators and after-save hooks are always registered.
+		...tabSlots.map((def) => ({
+			key: `slot:${def.key}`,
+			label: def.label || def.key,
+			forceRender: true,
+			children: <SlotOutlet def={def} slotProps={slotProps} />,
+		})),
 	].filter(Boolean);
 
+	// A tab that stops showing (e.g. a slot whose isVisible turns false)
+	// falls back to Settings.
+	const tabKeys = tabItems.map((item) => item.key).join('|');
+	useEffect(() => {
+		if (!tabKeys.split('|').includes(activeTab)) {
+			setActiveTab('settings');
+		}
+	}, [tabKeys, activeTab]);
+
 	return (
-		<EditorProvider value={{ surface, nav, site: getSiteFlags(quizData), slots }}>
-		<div className="ppq-quiz-editor-container">
+		<EditorProvider value={{ surface, nav, site, slots }}>
+		<div className="ppq-quiz-editor-container" ref={slotEnv.rootRef}>
 			<Spin spinning={loading || saving} tip={saving ? __('Saving quiz...', 'pressprimer-quiz') : __('Loading quiz...', 'pressprimer-quiz')}>
 				<Form
 					form={form}

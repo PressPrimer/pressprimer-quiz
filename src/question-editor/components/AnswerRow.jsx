@@ -5,7 +5,7 @@
  * @since 1.0.0
  */
 
-import { useState } from '@wordpress/element';
+import { useState, useEffect } from '@wordpress/element';
 import { __ } from '@wordpress/i18n';
 import {
 	Card,
@@ -35,10 +35,18 @@ const AnswerRow = ({
 	canRemove,
 	dragHandleProps,
 	dragRevision,
+	feedbackRevision = 0,
 	onUpdate,
 	onRemove,
 }) => {
 	const [feedbackExpanded, setFeedbackExpanded] = useState(!!answer.feedback);
+
+	// An addon replaced this answer's feedback (setAnswerFeedback): show it.
+	useEffect(() => {
+		if (feedbackRevision > 0) {
+			setFeedbackExpanded(true);
+		}
+	}, [feedbackRevision]);
 	const maxChars = 2000;
 
 	const CorrectControl = questionType === 'ma' ? Checkbox : Radio;
@@ -145,7 +153,7 @@ const AnswerRow = ({
 								{__('Provide explanation about why this answer is correct or incorrect (optional)', 'pressprimer-quiz')}
 							</Text>
 							<RichTextEditor
-								key={`answer-feedback-${dragRevision}`}
+								key={`answer-feedback-${dragRevision}-${feedbackRevision}`}
 								value={answer.feedback}
 								onChange={(content) => onUpdate({ feedback: content })}
 								placeholder={__('Explain why this answer is correct or incorrect...', 'pressprimer-quiz')}

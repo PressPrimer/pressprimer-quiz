@@ -9,7 +9,12 @@ import { createRoot } from '@wordpress/element';
 import { message } from 'antd';
 import QuizEditor from './components/QuizEditor';
 import { createAdminNav } from '../editors/adminNav';
+import { getSlotRegistry } from '../editors/slots';
 import './style.css';
+
+// Define window.PPQ.editors.registerSlot() now, so addon scripts that load
+// after this one can register slots before the editor mounts.
+getSlotRegistry();
 
 // Configure Ant Design message component
 message.config({

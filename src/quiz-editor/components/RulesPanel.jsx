@@ -42,7 +42,7 @@ const { Text, Title } = Typography;
  * @param {string} ruleScope 'all', 'own' or 'owner'.
  * @return {{label: string, tooltip: string}} Label and tooltip.
  */
-const getAnyBankCopy = (ruleScope) => {
+export const getAnyBankCopy = (ruleScope) => {
 	const publishedOnly = __('Rules draw published questions only, never drafts.', 'pressprimer-quiz');
 
 	if (ruleScope === 'all') {

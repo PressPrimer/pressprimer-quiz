@@ -27,16 +27,51 @@ import {
 } from '@ant-design/icons';
 
 import PremiumUpsell from './PremiumUpsell';
+import { SlotList } from '../../editors/slots';
 
 const { Title, Text } = Typography;
 
 /**
- * Premium Settings Panel Component
+ * Whether a built-in card's own flag lets it show.
  *
- * @param {Object} props Component props
- * @param {Object} props.form Ant Design form instance
- * @param {Object} props.quizData Initial quiz data (includes addon fields)
+ * An addon sets the flag in the editor data per context. Without it (an
+ * addon release from before 3.2), the card shows in wp-admin as before and
+ * never on the dashboard.
+ *
+ * @param {Object}  quizData Quiz editor data.
+ * @param {string}  flag     Flag name (e.g. 'schoolSrCard').
+ * @param {boolean} legacy   Whether the card showed before the flag existed.
+ * @param {string}  surface  'admin' or 'dashboard'.
+ * @return {boolean} True when the card may show.
  */
+const cardFlag = (quizData, flag, legacy, surface) =>
+	Object.prototype.hasOwnProperty.call(quizData, flag)
+		? !!quizData[flag]
+		: 'admin' === surface && !!legacy;
+
+/**
+ * Which built-in cards the Premium tab shows.
+ *
+ * - Pre/post linking: wp-admin only, and not when Educator registers its own
+ *   'educator-prepost' card slot.
+ * - Proctoring: the enterpriseProctoringCard flag, and not when Enterprise
+ *   registers an 'enterprise-proctoring' card slot.
+ * - Spaced repetition, measured difficulty, WP Fusion: School's
+ *   schoolSrCard, schoolMeasuredCard and wpfCard flags.
+ *
+ * @param {Object} quizData Quiz editor data.
+ * @param {string} surface  'admin' or 'dashboard'.
+ * @param {Object} replaced { educatorPrepostSlot, enterpriseProctoringSlot }: addon slots registered for this surface.
+ * @return {Object} prepost, proctoring, spacedRepetition, measuredDifficulty, wpFusion.
+ */
+export const getPremiumCards = (quizData = {}, surface = 'admin', replaced = {}) => ({
+	prepost: 'admin' === surface && !!quizData.educatorActive && !replaced.educatorPrepostSlot,
+	proctoring: cardFlag(quizData, 'enterpriseProctoringCard', quizData.enterpriseActive, surface) && !replaced.enterpriseProctoringSlot,
+	spacedRepetition: cardFlag(quizData, 'schoolSrCard', quizData.schoolActive, surface),
+	measuredDifficulty: cardFlag(quizData, 'schoolMeasuredCard', quizData.schoolActive && quizData.schoolMeasuredAvailable, surface),
+	wpFusion: cardFlag(quizData, 'wpfCard', quizData.wpfActive, surface),
+});
+
 /**
  * Measured Difficulty card (School 3.1).
  *
@@ -47,9 +82,10 @@ const { Title, Text } = Typography;
  * @param {Object} props                Component props.
  * @param {Object} props.form           The quiz editor form instance.
  * @param {string} props.generationMode The editor's generation mode state.
+ * @param {string} props.surface        'admin' or 'dashboard'.
  * @return {JSX.Element|null} The card, or null for fixed quizzes.
  */
-const MeasuredDifficultyCard = ({ form, generationMode }) => {
+const MeasuredDifficultyCard = ({ form, generationMode, surface }) => {
 	const poolEnabled = Form.useWatch('pool_enabled', form);
 
 	if (generationMode !== 'dynamic' && !poolEnabled) {
@@ -85,14 +121,30 @@ const MeasuredDifficultyCard = ({ form, generationMode }) => {
 			>
 				<Switch size="small" />
 			</Form.Item>
-			<Text type="secondary" style={{ fontSize: 12, display: 'block', marginTop: 8 }}>
-				{__('See the Measured column on the Questions screen for each question’s current measurement.', 'pressprimer-quiz')}
-			</Text>
+			{'admin' === surface && (
+				<Text type="secondary" style={{ fontSize: 12, display: 'block', marginTop: 8 }}>
+					{__('See the Measured column on the Questions screen for each question’s current measurement.', 'pressprimer-quiz')}
+				</Text>
+			)}
 		</Card>
 	);
 };
 
-const PremiumSettingsPanel = ({ form, quizData = {}, generationMode = 'fixed' }) => {
+/**
+ * Premium Settings Panel Component
+ *
+ * @param {Object}   props                Component props
+ * @param {Object}   props.form           Ant Design form instance
+ * @param {Object}   props.quizData       Initial quiz data (includes addon fields)
+ * @param {string}   props.generationMode The editor's generation mode
+ * @param {string}   props.surface        'admin' or 'dashboard'
+ * @param {Object}   props.cards          Built-in cards to show (getPremiumCards())
+ * @param {Object[]} props.cardSlots      quiz.premium.card slots to render
+ * @param {Object}   props.slotProps      Props for the card slots
+ */
+const PremiumSettingsPanel = ({ form, quizData = {}, generationMode = 'fixed', surface = 'admin', cards, cardSlots = [], slotProps = {} }) => {
+	const shown = cards || getPremiumCards(quizData, surface);
+
 	// Pre-test selector state (only used when Educator addon is active).
 	const [preTestOptions, setPreTestOptions] = useState([]);
 	const [preTestLoading, setPreTestLoading] = useState(false);
@@ -102,7 +154,7 @@ const PremiumSettingsPanel = ({ form, quizData = {}, generationMode = 'fixed' })
 	const [wpfTagOptions, setWpfTagOptions] = useState([]);
 
 	useEffect(() => {
-		if (!quizData.wpfActive) {
+		if (!shown.wpFusion) {
 			return;
 		}
 		apiFetch({ path: '/ppqs/v1/wpf/tags' })
@@ -115,7 +167,7 @@ const PremiumSettingsPanel = ({ form, quizData = {}, generationMode = 'fixed' })
 				);
 			})
 			.catch(() => {});
-	}, [quizData.wpfActive]);
+	}, [shown.wpFusion]);
 
 	// Set initial pre-test option if quiz already has one linked.
 	useEffect(() => {
@@ -210,20 +262,28 @@ const PremiumSettingsPanel = ({ form, quizData = {}, generationMode = 'fixed' })
 
 	// Free site: no premium addon active. The tab becomes an upsell preview of
 	// the premium per-quiz options. (Only admins reach this — the editor hides
-	// the tab from teachers on a free site.)
+	// the tab from teachers on a free site — and never on the dashboard.)
 	const hasAnyAddon =
 		quizData.educatorActive ||
 		quizData.schoolActive ||
 		quizData.enterpriseActive;
 
-	if (!hasAnyAddon) {
+	if (!hasAnyAddon && 'admin' === surface && cardSlots.length === 0) {
 		return <PremiumUpsell />;
+	}
+
+	// No wp-admin menu paths on the dashboard.
+	let proctoringDescription = __('These settings override the global proctoring configuration for this quiz only. Choose "Use Global Default" to follow the site’s proctoring settings.', 'pressprimer-quiz');
+	if (quizData.proctoring_global_mode === 'off') {
+		proctoringDescription = __('Global proctoring is currently off. You can enable it for this quiz individually.', 'pressprimer-quiz');
+	} else if ('admin' === surface) {
+		proctoringDescription = __('These settings override the global proctoring configuration for this quiz only. Use "Use Global Default" to inherit from Settings > Proctoring.', 'pressprimer-quiz');
 	}
 
 	return (
 		<Space direction="vertical" size="large" style={{ width: '100%' }}>
-			{/* Pre/Post Test Linking - Only shown when Educator addon is active */}
-			{quizData.educatorActive && (
+			{/* Pre/Post Test Linking - Educator addon (until Educator registers its own card) */}
+			{shown.prepost && (
 				<Card
 					title={
 						<Space>
@@ -278,8 +338,8 @@ const PremiumSettingsPanel = ({ form, quizData = {}, generationMode = 'fixed' })
 				</Card>
 			)}
 
-			{/* Proctoring Overrides - Only shown when Enterprise addon is active */}
-			{quizData.enterpriseActive && (
+			{/* Proctoring Overrides - Enterprise addon */}
+			{shown.proctoring && (
 				<Card
 					title={
 						<Space>
@@ -297,11 +357,7 @@ const PremiumSettingsPanel = ({ form, quizData = {}, generationMode = 'fixed' })
 						type="info"
 						showIcon
 						message={__('Per-Quiz Proctoring Overrides', 'pressprimer-quiz')}
-						description={
-							quizData.proctoring_global_mode === 'off'
-								? __('Global proctoring is currently off. You can enable it for this quiz individually.', 'pressprimer-quiz')
-								: __('These settings override the global proctoring configuration for this quiz only. Use "Use Global Default" to inherit from Settings > Proctoring.', 'pressprimer-quiz')
-						}
+						description={proctoringDescription}
 						style={{ marginBottom: 16 }}
 					/>
 
@@ -413,8 +469,8 @@ const PremiumSettingsPanel = ({ form, quizData = {}, generationMode = 'fixed' })
 				</Card>
 			)}
 
-			{/* Spaced Repetition - Only shown when School addon is active */}
-			{quizData.schoolActive && (
+			{/* Spaced Repetition - School addon */}
+			{shown.spacedRepetition && (
 				<Card
 					title={
 						<Space>
@@ -432,7 +488,7 @@ const PremiumSettingsPanel = ({ form, quizData = {}, generationMode = 'fixed' })
 						label={
 							<Space>
 								<span>{__('Enable Spaced Repetition', 'pressprimer-quiz')}</span>
-								<Tooltip title={__('When enabled, student answers are tracked for mastery using SM-2 (SuperMemo 2), a proven algorithm that schedules reviews at increasing intervals based on how well each question is remembered. Questions answered incorrectly are reviewed sooner; mastered questions are spaced further apart.', 'pressprimer-quiz')}>
+								<Tooltip title={__('Questions from this quiz join each student’s review queue, scheduled with SM-2 or FSRS as set in School settings.', 'pressprimer-quiz')}>
 									<QuestionCircleOutlined style={{ fontSize: 12, color: '#8c8c8c' }} />
 								</Tooltip>
 							</Space>
@@ -450,19 +506,21 @@ const PremiumSettingsPanel = ({ form, quizData = {}, generationMode = 'fixed' })
 			)}
 
 			{/* Measured Difficulty - School addon, dynamic/pool quizzes only */}
-			{quizData.schoolActive && quizData.schoolMeasuredAvailable && (
-				<MeasuredDifficultyCard form={form} generationMode={generationMode} />
+			{shown.measuredDifficulty && (
+				<MeasuredDifficultyCard form={form} generationMode={generationMode} surface={surface} />
 			)}
 
-			{/* WP Fusion - Only shown when the School WP Fusion feature is active */}
-			{quizData.wpfActive && (
+			{/* WP Fusion - School's WP Fusion feature */}
+			{shown.wpFusion && (
 				<Card
 					title={
 						<Space>
 							<Title level={4} style={{ margin: 0 }}>
 								{__('WP Fusion', 'pressprimer-quiz')}
 							</Title>
-							<Tooltip title={__('Apply CRM tags through WP Fusion for this quiz, on top of the site-wide defaults. Logged-in users always sync. Guests sync only if they tick the marketing-consent checkbox shown on the guest email form — enable that checkbox under PressPrimer Quiz → Settings → General → Guest Email Consent.', 'pressprimer-quiz')}>
+							<Tooltip title={'admin' === surface
+								? __('Apply CRM tags through WP Fusion for this quiz, on top of the site-wide defaults. Logged-in users always sync. Guests sync only if they tick the marketing-consent checkbox shown on the guest email form — enable that checkbox under PressPrimer Quiz → Settings → General → Guest Email Consent.', 'pressprimer-quiz')
+								: __('Apply CRM tags through WP Fusion for this quiz, on top of the site-wide defaults. Logged-in users always sync. Guests sync only if they tick the marketing-consent checkbox shown on the guest email form.', 'pressprimer-quiz')}>
 								<QuestionCircleOutlined style={{ color: '#8c8c8c' }} />
 							</Tooltip>
 						</Space>
@@ -470,7 +528,9 @@ const PremiumSettingsPanel = ({ form, quizData = {}, generationMode = 'fixed' })
 					style={{ marginBottom: 24 }}
 				>
 					<Text type="secondary" style={{ fontSize: 12, display: 'block', marginBottom: 16 }}>
-						{__('These tags are added on top of the site-wide defaults set under PressPrimer Quiz → Settings → Integrations → WP Fusion.', 'pressprimer-quiz')}
+						{'admin' === surface
+							? __('These tags are added on top of the site-wide defaults set under PressPrimer Quiz → Settings → Integrations → WP Fusion.', 'pressprimer-quiz')
+							: __('These tags are added on top of the site-wide WP Fusion defaults.', 'pressprimer-quiz')}
 					</Text>
 					{[
 						{ name: 'wpf_tag_signup', label: __('Sign-up (email registration)', 'pressprimer-quiz') },
@@ -495,6 +555,9 @@ const PremiumSettingsPanel = ({ form, quizData = {}, generationMode = 'fixed' })
 					))}
 				</Card>
 			)}
+
+			{/* quiz.premium.card slots, after the built-in cards. */}
+			<SlotList defs={cardSlots} slotProps={slotProps} />
 		</Space>
 	);
 };

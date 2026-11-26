@@ -12,6 +12,13 @@ import { debugError } from '../../utils/debug';
 import { EditorProvider, getSiteFlags } from '../../editors/EditorContext';
 import { emitSaved, toId } from '../../editors/events';
 import {
+	useSlotRegistry,
+	useSlotHost,
+	useSlotEnvironment,
+	getVisibleSlots,
+	SlotList,
+} from '../../editors/slots';
+import {
 	Layout,
 	Form,
 	Input,
@@ -39,7 +46,7 @@ const { TextArea } = Input;
  * @param {Object}   props.data     Editor data (editor-data service payload)
  * @param {string}   props.surface  Where the editor runs: 'admin' or 'dashboard'
  * @param {Object}   props.nav      Navigation adapter (list, edit, afterCreate, editUrl, back)
- * @param {Object}   props.slots    Addon slots (reserved for the slot contract)
+ * @param {Object}   props.slots    Host slot definitions by slot id, added to the registered ones
  * @param {Function} props.onSaved  Called after a successful save, before navigating
  */
 const BankEditor = ({ data = {}, surface = 'admin', nav, slots = {}, onSaved }) => {
@@ -51,6 +58,18 @@ const BankEditor = ({ data = {}, surface = 'admin', nav, slots = {}, onSaved }) 
 
 	const isNew = !currentBankId;
 	const isAdmin = bankData.userCan?.manage_all || false;
+
+	// Addon slots (bank.fields).
+	useSlotRegistry();
+	const slotHost = useSlotHost(form);
+	const slotEnv = useSlotEnvironment(surface);
+	const site = getSiteFlags(bankData);
+	const fieldSlots = getVisibleSlots('bank.fields', {
+		surface,
+		site,
+		hostSlots: slots,
+		entityId: toId(currentBankId) || 0,
+	});
 
 	// Initialize form with bank data
 	useEffect(() => {
@@ -70,16 +89,26 @@ const BankEditor = ({ data = {}, surface = 'admin', nav, slots = {}, onSaved }) 
 		setSaving(true);
 
 		try {
+			const entityId = toId(currentBankId) || 0;
+			const slotErrors = await slotHost.runValidators({ entityId, values });
+			if (slotErrors.length > 0) {
+				slotErrors.forEach((err) => message.error(err));
+				return;
+			}
+
 			const endpoint = isNew
 				? '/ppq/v1/banks'
 				: `/ppq/v1/banks/${currentBankId}`;
 
 			const method = isNew ? 'POST' : 'PUT';
 
+			// Values slots set are sent too (only when a slot set them).
+			const bankPayload = { ...slotHost.setValues(), ...values };
+
 			const response = await apiFetch({
 				path: endpoint,
 				method,
-				data: values,
+				data: bankPayload,
 			});
 
 			message.success(
@@ -93,6 +122,7 @@ const BankEditor = ({ data = {}, surface = 'admin', nav, slots = {}, onSaved }) 
 			// whole form saves from the one Update Bank button. Fired on
 			// create too, before the editor leaves.
 			emitSaved('ppq-bank-saved', { bankId: toId(response.id), isNew }, onSaved);
+			await slotHost.runAfterSave({ entityId: toId(response.id), isNew, values: bankPayload, response });
 
 			// If new, go where questions can be added (the bank's detail page
 			// in wp-admin).
@@ -152,11 +182,11 @@ const BankEditor = ({ data = {}, surface = 'admin', nav, slots = {}, onSaved }) 
 	};
 
 	return (
-		<EditorProvider value={{ surface, nav, site: getSiteFlags(bankData), slots }}>
+		<EditorProvider value={{ surface, nav, site, slots }}>
 		<Layout className="ppq-bank-editor">
 			<Content style={{ padding: '24px 0' }}>
 				<Spin spinning={loading} tip={__('Loading...', 'pressprimer-quiz')}>
-					<div style={{ maxWidth: 800, margin: '0 auto' }}>
+					<div ref={slotEnv.rootRef} style={{ maxWidth: 800, margin: '0 auto' }}>
 						{/* Header */}
 						<div style={{ marginBottom: 24, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
 							<Title level={2} style={{ margin: 0 }}>
@@ -262,6 +292,22 @@ const BankEditor = ({ data = {}, surface = 'admin', nav, slots = {}, onSaved }) 
 								    childless in this tree). Slotted fields save
 								    on the ppq-bank-saved event. */}
 								<div id="ppq-bank-editor-fields-slot"></div>
+
+								{/* bank.fields slots render below the legacy node. */}
+								<SlotList
+									defs={fieldSlots}
+									slotProps={{
+										entityId: toId(currentBankId) || 0,
+										surface,
+										nav,
+										getValues: () => form.getFieldsValue(true),
+										setFieldValue: slotHost.setFieldValue,
+										registerValidator: slotHost.registerValidator,
+										registerAfterSave: slotHost.registerAfterSave,
+										getPopupContainer: slotEnv.getPopupContainer,
+										theme: slotEnv.theme,
+									}}
+								/>
 							</Form>
 						</Card>
 

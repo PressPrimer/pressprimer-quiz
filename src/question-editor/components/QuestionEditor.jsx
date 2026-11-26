@@ -5,7 +5,7 @@
  * @since 1.0.0
  */
 
-import { useState, useEffect } from '@wordpress/element';
+import { useState, useEffect, useRef } from '@wordpress/element';
 import { __ } from '@wordpress/i18n';
 import apiFetch from '@wordpress/api-fetch';
 import { debugError } from '../../utils/debug';
@@ -30,13 +30,21 @@ import {
 
 import QuestionTypeSelector from './QuestionTypeSelector';
 import StemEditor from './StemEditor';
-import AnswersList from './AnswersList';
+import AnswersList, { buildAnswersState } from './AnswersList';
 import MetadataPanel from './MetadataPanel';
 import TaxonomySelector from './TaxonomySelector';
 import BankSelector from './BankSelector';
 import FeedbackFields from './FeedbackFields';
 import { EditorProvider, getSiteFlags } from '../../editors/EditorContext';
 import { emitSaved, toId } from '../../editors/events';
+import {
+	useSlotRegistry,
+	useSlotHost,
+	useSlotEnvironment,
+	getVisibleSlots,
+	SlotList,
+	SlotOutlet,
+} from '../../editors/slots';
 
 const { Content, Sider } = Layout;
 const { Title, Paragraph } = Typography;
@@ -48,7 +56,7 @@ const { Title, Paragraph } = Typography;
  * @param {Object}   props.data     Editor data (editor-data service payload)
  * @param {string}   props.surface  Where the editor runs: 'admin' or 'dashboard'
  * @param {Object}   props.nav      Navigation adapter (list, edit, afterCreate, editUrl, back)
- * @param {Object}   props.slots    Addon slots (reserved for the slot contract)
+ * @param {Object}   props.slots    Host slot definitions by slot id, added to the registered ones
  * @param {Function} props.onSaved  Called after a successful save, before navigating
  */
 const QuestionEditor = ({ data = {}, surface = 'admin', nav, slots = {}, onSaved }) => {
@@ -69,6 +77,60 @@ const QuestionEditor = ({ data = {}, surface = 'admin', nav, slots = {}, onSaved
 
 	// Addon tabs come with the editor data.
 	const addonTabs = Array.isArray(questionData.addonTabs) ? questionData.addonTabs : [];
+
+	// Bumped per answer when a slot replaces its feedback, to re-initialise
+	// that answer's feedback editor.
+	const [feedbackRevisions, setFeedbackRevisions] = useState({});
+
+	// Addon slots (question.tab, question.answers.actions).
+	useSlotRegistry();
+	const slotHost = useSlotHost(form);
+	const slotEnv = useSlotEnvironment(surface);
+	const site = getSiteFlags(questionData);
+	const entityId = toId(questionData.id) || 0;
+	const slotContext = { surface, site, hostSlots: slots, entityId };
+	const tabSlots = getVisibleSlots('question.tab', slotContext);
+	const answerSlots = getVisibleSlots('question.answers.actions', slotContext);
+
+	// Slots read the editor's latest state through getValues().
+	const latest = useRef({});
+	latest.current = { type: questionType, stem, answers };
+
+	const slotProps = {
+		entityId,
+		surface,
+		nav,
+		getValues: () => ({ ...form.getFieldsValue(true), ...latest.current }),
+		setFieldValue: slotHost.setFieldValue,
+		registerValidator: slotHost.registerValidator,
+		registerAfterSave: slotHost.registerAfterSave,
+		getPopupContainer: slotEnv.getPopupContainer,
+		theme: slotEnv.theme,
+		// Same shape as the ppq-answers-changed event's detail.
+		answersState: buildAnswersState({ questionId: questionData.id, questionType, answers }),
+	};
+
+	/**
+	 * Replace one answer's feedback (question.answers.actions slots): updates
+	 * the answers, re-initialises that answer's feedback editor and opens its
+	 * feedback panel. Saved with the question, like a typed edit.
+	 *
+	 * @param {string} answerId Answer ID.
+	 * @param {string} html     Feedback HTML.
+	 * @return {boolean} False when no answer has that ID.
+	 */
+	const setAnswerFeedback = (answerId, html) => {
+		if (!latest.current.answers.some((answer) => answer.id === answerId)) {
+			return false;
+		}
+		setAnswers((current) => current.map((answer) => (
+			answer.id === answerId ? { ...answer, feedback: String(html ?? '') } : answer
+		)));
+		setFeedbackRevisions((current) => ({ ...current, [answerId]: (current[answerId] || 0) + 1 }));
+		return true;
+	};
+
+	const answerSlotProps = { ...slotProps, setAnswerFeedback };
 
 	// Initialize form with question data
 	useEffect(() => {
@@ -122,8 +184,19 @@ const QuestionEditor = ({ data = {}, surface = 'admin', nav, slots = {}, onSaved
 				return;
 			}
 
-			// Prepare data for submission
+			const slotErrors = await slotHost.runValidators({
+				entityId,
+				values: { ...values, type: questionType, stem, answers },
+			});
+			if (slotErrors.length > 0) {
+				slotErrors.forEach((err) => message.error(err));
+				return;
+			}
+
+			// Prepare data for submission. Values slots set are sent too
+			// (only when a slot set them).
 			const questionPayload = {
+				...slotHost.setValues(),
 				...values,
 				type: questionType,
 				stem: stem,
@@ -155,6 +228,7 @@ const QuestionEditor = ({ data = {}, surface = 'admin', nav, slots = {}, onSaved
 				bankIds: (values.banks || []).map(toId).filter(Boolean),
 				surface,
 			}, onSaved);
+			await slotHost.runAfterSave({ entityId: toId(savedId), isNew, values: questionPayload, response });
 
 			// Back to the questions list.
 			setTimeout(() => {
@@ -201,8 +275,9 @@ const QuestionEditor = ({ data = {}, surface = 'admin', nav, slots = {}, onSaved
 	const handleTabChange = (key) => {
 		setActiveTab(key);
 
-		// If switching to an addon tab, dispatch event for the addon to handle
-		if (key !== 'editor') {
+		// If switching to a legacy addon tab, dispatch event for the addon to
+		// handle (slot tabs are already mounted).
+		if (key !== 'editor' && !key.startsWith('slot:')) {
 			document.dispatchEvent(
 				new CustomEvent('ppq-question-editor-tab-active', {
 					detail: {
@@ -237,9 +312,150 @@ const QuestionEditor = ({ data = {}, surface = 'admin', nav, slots = {}, onSaved
 		}
 	};
 
+	// The editor itself: one tree, shown alone or as the first tab.
+	const editorLayout = (
+		<Layout style={{ background: 'transparent' }}>
+			<Content style={{ paddingRight: 24 }}>
+				{/* Question Type Selector */}
+				<QuestionTypeSelector
+					value={questionType}
+					onChange={handleTypeChange}
+				/>
+
+				{/* Question Stem */}
+				<StemEditor
+					value={stem}
+					onChange={(value) => {
+						setStem(value);
+						form.setFieldsValue({ stem: value });
+					}}
+				/>
+
+				{/* Answers */}
+				<AnswersList
+					answers={answers}
+					questionType={questionType}
+					questionId={questionData.id || 0}
+					onChange={setAnswers}
+					feedbackRevisions={feedbackRevisions}
+					addonActions={<SlotList defs={answerSlots} slotProps={answerSlotProps} />}
+				/>
+
+				{/* General Feedback */}
+				<FeedbackFields form={form} />
+			</Content>
+
+			{/* Sidebar */}
+			<Sider
+				width={320}
+				style={{
+					background: '#fff',
+					padding: '24px 24px 12px 24px',
+					borderLeft: '1px solid #f0f0f0',
+				}}
+			>
+				<Space direction="vertical" style={{ width: '100%' }} size="middle">
+					{/* Metadata */}
+					<MetadataPanel form={form} />
+
+					<Divider style={{ margin: '4px 0' }} />
+
+					{/* Categories */}
+					<Form.Item name="categories" noStyle shouldUpdate style={{ marginBottom: 0 }}>
+						<TaxonomySelector
+							type="category"
+						/>
+					</Form.Item>
+
+					<Divider style={{ margin: '4px 0' }} />
+
+					{/* Tags */}
+					<Form.Item name="tags" noStyle shouldUpdate style={{ marginBottom: 0 }}>
+						<TaxonomySelector
+							type="tag"
+						/>
+					</Form.Item>
+
+					<Divider style={{ margin: '4px 0' }} />
+
+					{/* Question Banks */}
+					<Form.Item name="banks" noStyle shouldUpdate style={{ marginBottom: 0 }}>
+						<BankSelector memberships={questionData.bank_memberships || []} />
+					</Form.Item>
+
+					<Divider style={{ margin: '16px 0' }} />
+
+					{/* Save/Cancel Buttons */}
+					<Space direction="vertical" style={{ width: '100%' }} size="small">
+						<Button
+							type="primary"
+							icon={<SaveOutlined />}
+							htmlType="submit"
+							loading={saving}
+							size="large"
+							block
+						>
+							{__('Save Question', 'pressprimer-quiz')}
+						</Button>
+						<Button
+							icon={<CloseOutlined />}
+							onClick={handleCancel}
+							size="large"
+							block
+						>
+							{__('Cancel', 'pressprimer-quiz')}
+						</Button>
+					</Space>
+				</Space>
+			</Sider>
+		</Layout>
+	);
+
+	const tabItems = [
+		{
+			key: 'editor',
+			label: (
+				<span>
+					<EditOutlined />
+					{__('Editor', 'pressprimer-quiz')}
+				</span>
+			),
+			children: editorLayout,
+		},
+		// Legacy addon tabs (#ppq-question-editor-addon-{key}): wp-admin only,
+		// for saved questions, as before.
+		...('admin' === surface && !isNew ? addonTabs : []).map((tab) => ({
+			key: tab.key,
+			label: tab.label,
+			children: (
+				<div
+					id={`ppq-question-editor-addon-${tab.key}`}
+					style={{ minHeight: 300, padding: '16px 0' }}
+				/>
+			),
+		})),
+		// question.tab slots mount with the editor, so their validators and
+		// after-save hooks are always registered.
+		...tabSlots.map((def) => ({
+			key: `slot:${def.key}`,
+			label: def.label || def.key,
+			forceRender: true,
+			children: <SlotOutlet def={def} slotProps={slotProps} />,
+		})),
+	];
+
+	// A tab that stops showing (e.g. a slot whose isVisible turns false)
+	// falls back to the editor.
+	const tabKeys = tabItems.map((item) => item.key).join('|');
+	useEffect(() => {
+		if (!tabKeys.split('|').includes(activeTab)) {
+			setActiveTab('editor');
+		}
+	}, [tabKeys, activeTab]);
+
 	return (
-		<EditorProvider value={{ surface, nav, site: getSiteFlags(questionData), slots }}>
-		<div className="ppq-question-editor-container">
+		<EditorProvider value={{ surface, nav, site, slots }}>
+		<div className="ppq-question-editor-container" ref={slotEnv.rootRef}>
 			<Spin spinning={loading} tip={__('Loading question...', 'pressprimer-quiz')}>
 				<Form
 					form={form}
@@ -328,198 +544,15 @@ const QuestionEditor = ({ data = {}, surface = 'admin', nav, slots = {}, onSaved
 
 					<Divider />
 
-					{/* Tabs - Only show if there are addon tabs and this is an existing question */}
-					{addonTabs.length > 0 && !isNew ? (
+					{/* Tabs only when there is more than the editor: legacy addon tabs
+					    (wp-admin, saved questions) or question.tab slots. */}
+					{tabItems.length > 1 ? (
 						<Tabs
 							activeKey={activeTab}
 							onChange={handleTabChange}
-							items={[
-								{
-									key: 'editor',
-									label: (
-										<span>
-											<EditOutlined />
-											{__('Editor', 'pressprimer-quiz')}
-										</span>
-									),
-									children: (
-										<Layout style={{ background: 'transparent' }}>
-											<Content style={{ paddingRight: 24 }}>
-												<QuestionTypeSelector
-													value={questionType}
-													onChange={handleTypeChange}
-												/>
-												<StemEditor
-													value={stem}
-													onChange={(value) => {
-														setStem(value);
-														form.setFieldsValue({ stem: value });
-													}}
-												/>
-												<AnswersList
-													answers={answers}
-													questionType={questionType}
-													questionId={questionData.id || 0}
-													onChange={setAnswers}
-												/>
-												<FeedbackFields form={form} />
-											</Content>
-											<Sider
-												width={320}
-												style={{
-													background: '#fff',
-													padding: '24px 24px 12px 24px',
-													borderLeft: '1px solid #f0f0f0',
-												}}
-											>
-												<Space direction="vertical" style={{ width: '100%' }} size="middle">
-													<MetadataPanel form={form} />
-													<Divider style={{ margin: '4px 0' }} />
-													<Form.Item name="categories" noStyle shouldUpdate style={{ marginBottom: 0 }}>
-														<TaxonomySelector type="category" />
-													</Form.Item>
-													<Divider style={{ margin: '4px 0' }} />
-													<Form.Item name="tags" noStyle shouldUpdate style={{ marginBottom: 0 }}>
-														<TaxonomySelector type="tag" />
-													</Form.Item>
-													<Divider style={{ margin: '4px 0' }} />
-													<Form.Item name="banks" noStyle shouldUpdate style={{ marginBottom: 0 }}>
-														<BankSelector memberships={questionData.bank_memberships || []} />
-													</Form.Item>
-													<Divider style={{ margin: '16px 0' }} />
-													<Space direction="vertical" style={{ width: '100%' }} size="small">
-														<Button
-															type="primary"
-															icon={<SaveOutlined />}
-															htmlType="submit"
-															loading={saving}
-															size="large"
-															block
-														>
-															{__('Save Question', 'pressprimer-quiz')}
-														</Button>
-														<Button
-															icon={<CloseOutlined />}
-															onClick={handleCancel}
-															size="large"
-															block
-														>
-															{__('Cancel', 'pressprimer-quiz')}
-														</Button>
-													</Space>
-												</Space>
-											</Sider>
-										</Layout>
-									),
-								},
-								...addonTabs.map((tab) => ({
-									key: tab.key,
-									label: tab.label,
-									children: (
-										<div
-											id={`ppq-question-editor-addon-${tab.key}`}
-											style={{ minHeight: 300, padding: '16px 0' }}
-										/>
-									),
-								})),
-							]}
+							items={tabItems}
 						/>
-					) : (
-						/* Original layout without tabs for new questions or when no addon tabs */
-						<Layout style={{ background: 'transparent' }}>
-							<Content style={{ paddingRight: 24 }}>
-								{/* Question Type Selector */}
-								<QuestionTypeSelector
-									value={questionType}
-									onChange={handleTypeChange}
-								/>
-
-								{/* Question Stem */}
-								<StemEditor
-									value={stem}
-									onChange={(value) => {
-										setStem(value);
-										form.setFieldsValue({ stem: value });
-									}}
-								/>
-
-								{/* Answers */}
-								<AnswersList
-									answers={answers}
-									questionType={questionType}
-									questionId={questionData.id || 0}
-									onChange={setAnswers}
-								/>
-
-								{/* General Feedback */}
-								<FeedbackFields form={form} />
-							</Content>
-
-							{/* Sidebar */}
-							<Sider
-								width={320}
-								style={{
-									background: '#fff',
-									padding: '24px 24px 12px 24px',
-									borderLeft: '1px solid #f0f0f0',
-								}}
-							>
-								<Space direction="vertical" style={{ width: '100%' }} size="middle">
-									{/* Metadata */}
-									<MetadataPanel form={form} />
-
-									<Divider style={{ margin: '4px 0' }} />
-
-									{/* Categories */}
-									<Form.Item name="categories" noStyle shouldUpdate style={{ marginBottom: 0 }}>
-										<TaxonomySelector
-											type="category"
-										/>
-									</Form.Item>
-
-									<Divider style={{ margin: '4px 0' }} />
-
-									{/* Tags */}
-									<Form.Item name="tags" noStyle shouldUpdate style={{ marginBottom: 0 }}>
-										<TaxonomySelector
-											type="tag"
-										/>
-									</Form.Item>
-
-									<Divider style={{ margin: '4px 0' }} />
-
-									{/* Question Banks */}
-									<Form.Item name="banks" noStyle shouldUpdate style={{ marginBottom: 0 }}>
-										<BankSelector memberships={questionData.bank_memberships || []} />
-									</Form.Item>
-
-									<Divider style={{ margin: '16px 0' }} />
-
-									{/* Save/Cancel Buttons */}
-									<Space direction="vertical" style={{ width: '100%' }} size="small">
-										<Button
-											type="primary"
-											icon={<SaveOutlined />}
-											htmlType="submit"
-											loading={saving}
-											size="large"
-											block
-										>
-											{__('Save Question', 'pressprimer-quiz')}
-										</Button>
-										<Button
-											icon={<CloseOutlined />}
-											onClick={handleCancel}
-											size="large"
-											block
-										>
-											{__('Cancel', 'pressprimer-quiz')}
-										</Button>
-									</Space>
-								</Space>
-							</Sider>
-						</Layout>
-					)}
+					) : editorLayout}
 				</Form>
 			</Spin>
 		</div>

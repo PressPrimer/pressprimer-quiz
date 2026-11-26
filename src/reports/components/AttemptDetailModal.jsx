@@ -8,7 +8,7 @@
  */
 
 import { useState, useEffect } from '@wordpress/element';
-import { __ } from '@wordpress/i18n';
+import { __, sprintf } from '@wordpress/i18n';
 import apiFetch from '@wordpress/api-fetch';
 import { Modal, Spin, Tag, Divider, List, Button, Descriptions, Tooltip, Pagination } from 'antd';
 import {
@@ -114,9 +114,19 @@ const AttemptDetailModal = ({ visible, attempt, onClose }) => {
 	const scorePercent = details?.score_percent ?? attempt.score_percent ?? 0;
 	const hasScorePoints = scorePoints !== undefined && scorePoints !== null;
 
-	// Get correct/total questions count - prefer from attempt list data, fallback to details
-	const totalQuestions = attempt.total_questions || details?.items?.length || 0;
-	const correctQuestions = attempt.correct_questions || details?.items?.filter(item => item.is_correct).length || 0;
+	// Correct/total questions: from the details once loaded (they leave out
+	// questions the student never saw, such as branching skips); the list's
+	// counts until then.
+	const totalQuestions = details?.items ? details.items.length : (attempt.total_questions || 0);
+	const correctQuestions = details?.items
+		? details.items.filter((item) => item.is_correct).length
+		: (attempt.correct_questions || 0);
+
+	const confidenceLabels = {
+		1: __('Low', 'pressprimer-quiz'),
+		2: __('Medium', 'pressprimer-quiz'),
+		3: __('High', 'pressprimer-quiz'),
+	};
 
 	/**
 	 * Render questions section content based on state
@@ -190,12 +200,23 @@ const AttemptDetailModal = ({ visible, attempt, onClose }) => {
 												))}
 											</div>
 										)}
-										{item.time_spent_ms > 0 && (
+										{(item.time_spent_ms > 0 || confidenceLabels[item.confidence]) && (
 											<div className="ppq-attempt-question-footer">
-												<span className="ppq-attempt-question-time">
-													<ClockCircleOutlined style={{ marginRight: 4 }} />
-													{formatTime(item.time_spent_ms)}
-												</span>
+												{item.time_spent_ms > 0 && (
+													<span className="ppq-attempt-question-time">
+														<ClockCircleOutlined style={{ marginRight: 4 }} />
+														{formatTime(item.time_spent_ms)}
+													</span>
+												)}
+												{confidenceLabels[item.confidence] && (
+													<Tag className="ppq-attempt-question-confidence">
+														{sprintf(
+															/* translators: %s: the student's confidence (Low, Medium or High). */
+															__('Confidence: %s', 'pressprimer-quiz'),
+															confidenceLabels[item.confidence]
+														)}
+													</Tag>
+												)}
 											</div>
 										)}
 									</div>

@@ -542,6 +542,17 @@ class PressPrimer_Quiz_REST_Controller {
 			]
 		);
 
+		// The attempts list as CSV: the same rows, filters and order (v3.2).
+		register_rest_route(
+			'ppq/v1',
+			'/statistics/attempts/export',
+			[
+				'methods'             => WP_REST_Server::READABLE,
+				'callback'            => [ $this, 'export_attempts' ],
+				'permission_callback' => [ $this, 'check_reports_permission' ],
+			]
+		);
+
 		register_rest_route(
 			'ppq/v1',
 			'/statistics/attempts/(?P<id>\d+)',
@@ -4921,19 +4932,10 @@ class PressPrimer_Quiz_REST_Controller {
 	public function get_attempts_stats( $request ) {
 		$service = new PressPrimer_Quiz_Statistics_Service();
 
-		$args = [
-			'quiz_id'   => $request->get_param( 'quiz_id' ) ? absint( $request->get_param( 'quiz_id' ) ) : null,
-			'passed'    => $request->get_param( 'passed' ) !== null ? absint( $request->get_param( 'passed' ) ) : null,
-			'practice'  => 'hide' === $request->get_param( 'practice' ) ? 'hide' : null,
-			'date_from' => $request->get_param( 'date_from' ),
-			'date_to'   => $request->get_param( 'date_to' ),
-			'search'    => $request->get_param( 'search' ) ?? '',
-			'orderby'   => $request->get_param( 'orderby' ) ?? 'finished_at',
-			'order'     => $request->get_param( 'order' ) ?? 'DESC',
-			'per_page'  => $request->get_param( 'per_page' ) ? absint( $request->get_param( 'per_page' ) ) : 20,
-			'page'      => $request->get_param( 'page' ) ? absint( $request->get_param( 'page' ) ) : 1,
-			'owner_id'  => $this->get_owner_id_for_reports(),
-		];
+		$args = $this->get_attempts_filter_args( $request );
+
+		$args['per_page'] = $request->get_param( 'per_page' ) ? absint( $request->get_param( 'per_page' ) ) : 20;
+		$args['page']     = $request->get_param( 'page' ) ? absint( $request->get_param( 'page' ) ) : 1;
 
 		$data = $service->get_recent_attempts( $args );
 
@@ -4944,6 +4946,53 @@ class PressPrimer_Quiz_REST_Controller {
 			],
 			200
 		);
+	}
+
+	/**
+	 * The attempts list's filters from a request (the list and its export)
+	 *
+	 * @since 3.2.0
+	 *
+	 * @param WP_REST_Request $request Request object.
+	 * @return array Arguments for get_recent_attempts() / export_attempts_csv().
+	 */
+	private function get_attempts_filter_args( $request ) {
+		$date_from = $request->get_param( 'date_from' );
+		$date_to   = $request->get_param( 'date_to' );
+
+		return [
+			'quiz_id'   => $request->get_param( 'quiz_id' ) ? absint( $request->get_param( 'quiz_id' ) ) : null,
+			'passed'    => $request->get_param( 'passed' ) !== null ? absint( $request->get_param( 'passed' ) ) : null,
+			'practice'  => 'hide' === $request->get_param( 'practice' ) ? 'hide' : null,
+			'date_from' => is_string( $date_from ) && '' !== $date_from ? sanitize_text_field( $date_from ) : null,
+			'date_to'   => is_string( $date_to ) && '' !== $date_to ? sanitize_text_field( $date_to ) : null,
+			'search'    => sanitize_text_field( (string) ( $request->get_param( 'search' ) ?? '' ) ),
+			'orderby'   => sanitize_key( (string) ( $request->get_param( 'orderby' ) ?? 'finished_at' ) ),
+			'order'     => 'ASC' === strtoupper( (string) $request->get_param( 'order' ) ) ? 'ASC' : 'DESC',
+			'owner_id'  => $this->get_owner_id_for_reports(),
+		];
+	}
+
+	/**
+	 * Export the attempts list as CSV
+	 *
+	 * GET /statistics/attempts/export: the list's filters without paging.
+	 * Returns { filename, content, type } for the export button to download.
+	 *
+	 * @since 3.2.0
+	 *
+	 * @param WP_REST_Request $request Request object.
+	 * @return WP_REST_Response|WP_Error The download, or too_many_rows (413).
+	 */
+	public function export_attempts( $request ) {
+		$service = new PressPrimer_Quiz_Statistics_Service();
+		$result  = $service->export_attempts_csv( $this->get_attempts_filter_args( $request ) );
+
+		if ( is_wp_error( $result ) ) {
+			return $result;
+		}
+
+		return new WP_REST_Response( $result, 200 );
 	}
 
 	/**

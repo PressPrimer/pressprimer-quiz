@@ -816,9 +816,16 @@
 
 .ppq-attempt-question-footer {
 	display: flex;
+	flex-wrap: wrap;
 	align-items: center;
+	gap: 8px 12px;
 	padding-top: 8px;
 	border-top: 1px solid #f0f0f0;
+}
+
+.ppq-attempt-question-footer .ppq-attempt-question-confidence {
+	margin: 0;
+	font-size: 12px;
 }
 
 .ppq-attempt-question-footer .ppq-attempt-question-time {

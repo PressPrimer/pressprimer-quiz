@@ -12,6 +12,7 @@ import ImageUploadModal from './ImageUploadModal';
 import MathInsertModal from './MathInsertModal';
 import { useEditorContext } from '../../editors/EditorContext';
 import { getPpqContentStyle } from '../../utils/ppqTheme';
+import { cleanPastedHtml, stylePluginImages } from '../../utils/cleanPastedHtml';
 
 const { Text } = Typography;
 
@@ -58,6 +59,20 @@ const RichTextEditor = ({ value, onChange, placeholder, maxChars = 2000, rows = 
 							toolbar1: `bold,italic,bullist,numlist,link,forecolor,ppq_image,${mathEnabled ? 'ppq_math,' : ''}removeformat`,
 							menubar: false,
 							height: rows * 40,
+							// Pasted text: the same clean-up in every browser (feature 5).
+							// What the author copies inside an editor keeps its formatting.
+							paste_webkit_styles: 'none',
+							paste_retain_style_properties: '',
+							paste_preprocess: (plugin, args) => {
+								if (!args.internal) {
+									args.content = cleanPastedHtml(args.content);
+								}
+							},
+							paste_postprocess: (plugin, args) => {
+								if (!args.internal) {
+									stylePluginImages(args.node);
+								}
+							},
 							placeholder: placeholder,
 							...('dashboard' === surface ? { content_style: getPpqContentStyle(editorRef.current) } : {}),
 							setup: (editor) => {

@@ -13,6 +13,7 @@ import ImageUploadModal from './ImageUploadModal';
 import MathInsertModal from './MathInsertModal';
 import { useEditorContext } from '../../editors/EditorContext';
 import { getPpqContentStyle } from '../../utils/ppqTheme';
+import { cleanPastedHtml, stylePluginImages } from '../../utils/cleanPastedHtml';
 
 const { Title, Text } = Typography;
 
@@ -68,6 +69,20 @@ const StemEditor = ({ value, onChange }) => {
 							...(isDashboard ? { content_style: getPpqContentStyle(editorRef.current) } : {}),
 							toolbar1: `formatselect,bold,italic,bullist,numlist,link,forecolor,ppq_image,${mathEnabled ? 'ppq_math,' : ''}removeformat`,
 							height: 300,
+							// Pasted text: the same clean-up in every browser (feature 5).
+							// What the author copies inside an editor keeps its formatting.
+							paste_webkit_styles: 'none',
+							paste_retain_style_properties: '',
+							paste_preprocess: (plugin, args) => {
+								if (!args.internal) {
+									args.content = cleanPastedHtml(args.content);
+								}
+							},
+							paste_postprocess: (plugin, args) => {
+								if (!args.internal) {
+									stylePluginImages(args.node);
+								}
+							},
 							setup: (editor) => {
 								editor.addButton('ppq_image', {
 									icon: 'image',

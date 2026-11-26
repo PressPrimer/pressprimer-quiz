@@ -1546,12 +1546,17 @@ class PressPrimer_Quiz_REST_Controller {
 	 *
 	 * @since 1.0.0
 	 * @since 3.2.0 Accepts status (published or draft; default published).
+	 * @since 3.2.0 Trailing empty paragraphs are trimmed from the stem.
 	 *
 	 * @param WP_REST_Request $request Request object.
 	 * @return WP_REST_Response Response object.
 	 */
 	public function create_question( $request ) {
 		$data = $request->get_json_params();
+
+		// The stem as it will be stored: sanitized, without the trailing empty
+		// paragraphs pasted text brings (as answers already are).
+		$stem = $this->trim_trailing_empty_html( wp_kses_post( $data['stem'] ?? '' ) );
 
 		// Convert answer format from React (isCorrect) to database (is_correct) for validation
 		$answers_for_validation = array_map(
@@ -1566,7 +1571,7 @@ class PressPrimer_Quiz_REST_Controller {
 
 		// Validate question content before creating
 		$content_validation = PressPrimer_Quiz_Question::validate_content(
-			$data['stem'] ?? '',
+			$stem,
 			$answers_for_validation,
 			sanitize_key( $data['type'] ?? 'mc' )
 		);
@@ -1639,7 +1644,7 @@ class PressPrimer_Quiz_REST_Controller {
 			$revision                     = new PressPrimer_Quiz_Question_Revision();
 			$revision->question_id        = $question->id;
 			$revision->version            = 1;
-			$revision->stem               = wp_kses_post( $data['stem'] ?? '' );
+			$revision->stem               = $stem;
 			$revision->answers_json       = wp_json_encode( $answers );
 			$revision->settings_json      = wp_json_encode( [] );
 			$revision->feedback_correct   = wp_kses_post( $data['feedbackCorrect'] ?? '' );
@@ -1734,6 +1739,7 @@ class PressPrimer_Quiz_REST_Controller {
 	 * @since 3.2.0 Accepts status (published or draft); a body without one keeps the current status.
 	 * @since 3.2.0 Fields missing from the request keep their stored values;
 	 *              missing content comes from the current revision.
+	 * @since 3.2.0 Trailing empty paragraphs are trimmed from the stem.
 	 *
 	 * @param WP_REST_Request $request Request object.
 	 * @return WP_REST_Response Response object.
@@ -1768,6 +1774,13 @@ class PressPrimer_Quiz_REST_Controller {
 		};
 		$content_sent     = $sent( 'stem' ) || $sent( 'answers' ) || $sent( 'feedbackCorrect' ) || $sent( 'feedbackIncorrect' );
 		$type             = $sent( 'type' ) ? sanitize_key( (string) $data['type'] ) : (string) $question->type;
+		$current_stem     = $current_revision ? (string) $current_revision->stem : '';
+
+		// The stem as it will be stored: sanitized and without trailing empty
+		// paragraphs, so re-saving an unchanged stem writes no revision.
+		$new_stem = $sent( 'stem' )
+			? $this->trim_trailing_empty_html( wp_kses_post( (string) ( $data['stem'] ?? '' ) ) )
+			: $current_stem;
 
 		if ( $sent( 'stem' ) || $sent( 'answers' ) || $sent( 'type' ) ) {
 			// Convert answer format from React (isCorrect) to database (is_correct) for validation
@@ -1785,7 +1798,7 @@ class PressPrimer_Quiz_REST_Controller {
 
 			// Validate question content before updating
 			$content_validation = PressPrimer_Quiz_Question::validate_content(
-				$sent( 'stem' ) ? ( $data['stem'] ?? '' ) : ( $current_revision ? $current_revision->stem : '' ),
+				$new_stem,
 				$answers_for_validation,
 				'' !== $type ? $type : 'mc'
 			);
@@ -1883,8 +1896,7 @@ class PressPrimer_Quiz_REST_Controller {
 					$answers_json = (string) $current_revision->answers_json;
 				}
 
-				$current_stem           = $current_revision ? (string) $current_revision->stem : '';
-				$new_hash               = PressPrimer_Quiz_Question_Revision::generate_hash( $sent( 'stem' ) ? ( $data['stem'] ?? '' ) : $current_stem, $answers );
+				$new_hash               = PressPrimer_Quiz_Question_Revision::generate_hash( $new_stem, $answers );
 				$new_feedback_correct   = $sent( 'feedbackCorrect' ) ? wp_kses_post( $data['feedbackCorrect'] ?? '' ) : ( $current_revision ? (string) $current_revision->feedback_correct : '' );
 				$new_feedback_incorrect = $sent( 'feedbackIncorrect' ) ? wp_kses_post( $data['feedbackIncorrect'] ?? '' ) : ( $current_revision ? (string) $current_revision->feedback_incorrect : '' );
 
@@ -1905,10 +1917,9 @@ class PressPrimer_Quiz_REST_Controller {
 				// them), and case-only text edits (lowercased away).
 				// Compare the sanitized stored values directly; the hash stays
 				// untouched so its dedupe meaning elsewhere is unchanged.
-				$new_stem_kses       = $sent( 'stem' ) ? wp_kses_post( $data['stem'] ?? '' ) : $current_stem;
 				$raw_content_changed = false;
 				if ( $current_revision ) {
-					$raw_content_changed = ( (string) $current_revision->stem !== $new_stem_kses )
+					$raw_content_changed = ( $current_stem !== $new_stem )
 						|| ( (string) $current_revision->answers_json !== $answers_json );
 				}
 
@@ -1917,7 +1928,7 @@ class PressPrimer_Quiz_REST_Controller {
 					$revision                     = new PressPrimer_Quiz_Question_Revision();
 					$revision->question_id        = $question->id;
 					$revision->version            = $current_revision ? $current_revision->version + 1 : 1;
-					$revision->stem               = $new_stem_kses;
+					$revision->stem               = $new_stem;
 					$revision->answers_json       = $answers_json;
 					$revision->settings_json      = wp_json_encode( [] );
 					$revision->feedback_correct   = $new_feedback_correct;

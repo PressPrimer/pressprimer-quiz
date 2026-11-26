@@ -95,6 +95,40 @@ class PressPrimer_Quiz_Onboarding {
 		// AJAX handlers.
 		add_action( 'wp_ajax_pressprimer_quiz_onboarding_progress', array( $this, 'ajax_onboarding_progress' ) );
 		add_action( 'wp_ajax_pressprimer_quiz_get_onboarding_state', array( $this, 'ajax_get_onboarding_state' ) );
+
+		// One ask at a time: the review notice waits while a tour is in progress.
+		add_filter( 'pressprimer_quiz_review_prompt_due', array( $this, 'hold_review_prompt' ), 10, 2 );
+	}
+
+	/**
+	 * Whether a user's tour is in progress (started, not completed or skipped).
+	 *
+	 * @since 3.2.0
+	 *
+	 * @param int|null $user_id Optional. User ID. Default current user.
+	 * @return bool
+	 */
+	public function is_tour_in_progress( $user_id = null ) {
+		if ( null === $user_id ) {
+			$user_id = get_current_user_id();
+		}
+
+		return (int) get_user_meta( $user_id, self::META_STARTED, true ) > 0
+			&& ! get_user_meta( $user_id, self::META_COMPLETED, true )
+			&& ! get_user_meta( $user_id, self::META_SKIPPED, true );
+	}
+
+	/**
+	 * Hold the review notice while the user's tour is in progress.
+	 *
+	 * @since 3.2.0
+	 *
+	 * @param bool $due     Whether the review notice is due.
+	 * @param int  $user_id User ID.
+	 * @return bool
+	 */
+	public function hold_review_prompt( $due, $user_id ) {
+		return $due && ! $this->is_tour_in_progress( (int) $user_id );
 	}
 
 	/**

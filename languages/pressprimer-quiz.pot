@@ -9,7 +9,7 @@ msgstr ""
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"POT-Creation-Date: 2026-11-26T17:41:08+00:00\n"
+"POT-Creation-Date: 2026-11-26T19:06:24+00:00\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "X-Generator: WP-CLI 2.12.0\n"
 "X-Domain: pressprimer-quiz\n"
@@ -1745,10 +1745,7 @@ msgstr ""
 #: includes/admin/class-ppq-admin-settings.php:2276
 #: includes/admin/class-ppq-admin-settings.php:2311
 #: includes/admin/class-ppq-admin-settings.php:2341
-#: includes/admin/class-ppq-review-notice.php:260
-#: includes/admin/class-ppq-review-notice.php:282
-#: includes/admin/class-ppq-review-notice.php:304
-#: includes/admin/class-ppq-review-notice.php:323
+#: includes/admin/class-ppq-review-notice.php:287
 #: includes/database/class-ppq-migrator.php:1403
 #: includes/integrations/class-ppq-learndash.php:1332
 #: includes/integrations/class-ppq-learnpress.php:420
@@ -1958,44 +1955,44 @@ msgstr ""
 msgid "No categories found."
 msgstr ""
 
-#: includes/admin/class-ppq-onboarding.php:327
-#: includes/admin/class-ppq-onboarding.php:373
+#: includes/admin/class-ppq-onboarding.php:361
+#: includes/admin/class-ppq-onboarding.php:407
 msgid "Unauthorized access."
 msgstr ""
 
-#: includes/admin/class-ppq-onboarding.php:358
+#: includes/admin/class-ppq-onboarding.php:392
 msgid "Invalid action."
 msgstr ""
 
-#: includes/admin/class-ppq-onboarding.php:401
+#: includes/admin/class-ppq-onboarding.php:435
 #: src/onboarding/tourSteps.js:51
 msgid "Welcome to PressPrimer Quiz!"
 msgstr ""
 
-#: includes/admin/class-ppq-onboarding.php:402
+#: includes/admin/class-ppq-onboarding.php:436
 msgid "Create powerful quizzes for your WordPress site in minutes. Let us show you around!"
 msgstr ""
 
-#: includes/admin/class-ppq-onboarding.php:403
+#: includes/admin/class-ppq-onboarding.php:437
 msgid "Get Started"
 msgstr ""
 
-#: includes/admin/class-ppq-onboarding.php:404
+#: includes/admin/class-ppq-onboarding.php:438
 msgid "Skip for Now"
 msgstr ""
 
-#: includes/admin/class-ppq-onboarding.php:405
+#: includes/admin/class-ppq-onboarding.php:439
 #: src/onboarding/components/WelcomeModal.jsx:104
 msgid "Don't show this again"
 msgstr ""
 
-#: includes/admin/class-ppq-onboarding.php:406
+#: includes/admin/class-ppq-onboarding.php:440
 #: src/onboarding/components/Onboarding.jsx:205
 #: src/onboarding/components/Onboarding.jsx:238
 msgid "Back"
 msgstr ""
 
-#: includes/admin/class-ppq-onboarding.php:407
+#: includes/admin/class-ppq-onboarding.php:441
 #: includes/frontend/class-ppq-quiz-renderer.php:1043
 #: includes/frontend/class-ppq-shortcodes.php:678
 #: src/onboarding/components/Onboarding.jsx:216
@@ -2003,98 +2000,98 @@ msgstr ""
 msgid "Next"
 msgstr ""
 
-#: includes/admin/class-ppq-onboarding.php:408
+#: includes/admin/class-ppq-onboarding.php:442
 msgid "Skip"
 msgstr ""
 
-#: includes/admin/class-ppq-onboarding.php:409
+#: includes/admin/class-ppq-onboarding.php:443
 #: src/onboarding/components/Onboarding.jsx:216
 #: src/onboarding/components/Onboarding.jsx:237
 msgid "Finish"
 msgstr ""
 
 #. translators: 1: current step number, 2: total number of steps
-#: includes/admin/class-ppq-onboarding.php:411
+#: includes/admin/class-ppq-onboarding.php:445
 #, php-format
 msgid "Step %1$d of %2$d"
 msgstr ""
 
-#: includes/admin/class-ppq-onboarding.php:412
+#: includes/admin/class-ppq-onboarding.php:446
 msgid "How PressPrimer Quiz Works"
 msgstr ""
 
-#: includes/admin/class-ppq-onboarding.php:413
+#: includes/admin/class-ppq-onboarding.php:447
 msgid "PressPrimer Quiz follows a simple workflow: create questions, organize them into banks, build quizzes, and track results."
 msgstr ""
 
-#: includes/admin/class-ppq-onboarding.php:414
+#: includes/admin/class-ppq-onboarding.php:448
 msgid "Create Questions"
 msgstr ""
 
-#: includes/admin/class-ppq-onboarding.php:415
+#: includes/admin/class-ppq-onboarding.php:449
 msgid "Start by creating questions. Choose from multiple choice, multiple answer, or true/false formats."
 msgstr ""
 
-#: includes/admin/class-ppq-onboarding.php:416
+#: includes/admin/class-ppq-onboarding.php:450
 msgid "Organize with Banks"
 msgstr ""
 
-#: includes/admin/class-ppq-onboarding.php:417
+#: includes/admin/class-ppq-onboarding.php:451
 msgid "Group related questions into banks. This makes it easy to build dynamic quizzes and reuse questions."
 msgstr ""
 
-#: includes/admin/class-ppq-onboarding.php:418
+#: includes/admin/class-ppq-onboarding.php:452
 msgid "Build Quizzes"
 msgstr ""
 
-#: includes/admin/class-ppq-onboarding.php:419
+#: includes/admin/class-ppq-onboarding.php:453
 msgid "Create quizzes by selecting specific questions or using rules to pull from your banks."
 msgstr ""
 
-#: includes/admin/class-ppq-onboarding.php:420
+#: includes/admin/class-ppq-onboarding.php:454
 #: src/ai-generation/components/AiGenerationPanel.jsx:140
 msgid "AI Question Generation"
 msgstr ""
 
-#: includes/admin/class-ppq-onboarding.php:421
+#: includes/admin/class-ppq-onboarding.php:455
 msgid "Generate questions automatically from your content using AI. Just paste text or upload a document."
 msgstr ""
 
-#: includes/admin/class-ppq-onboarding.php:422
+#: includes/admin/class-ppq-onboarding.php:456
 msgid "Configure your Anthropic or OpenAI API key in Settings to enable AI generation."
 msgstr ""
 
-#: includes/admin/class-ppq-onboarding.php:423
+#: includes/admin/class-ppq-onboarding.php:457
 msgid "Track Results"
 msgstr ""
 
-#: includes/admin/class-ppq-onboarding.php:424
+#: includes/admin/class-ppq-onboarding.php:458
 msgid "Monitor quiz performance, view student attempts, and identify areas for improvement."
 msgstr ""
 
-#: includes/admin/class-ppq-onboarding.php:425
+#: includes/admin/class-ppq-onboarding.php:459
 msgid "You're All Set!"
 msgstr ""
 
-#: includes/admin/class-ppq-onboarding.php:426
+#: includes/admin/class-ppq-onboarding.php:460
 msgid "You've learned the basics of PressPrimer Quiz. Here's what you can do next:"
 msgstr ""
 
-#: includes/admin/class-ppq-onboarding.php:427
+#: includes/admin/class-ppq-onboarding.php:461
 msgid "Create Your First Quiz"
 msgstr ""
 
-#: includes/admin/class-ppq-onboarding.php:428
+#: includes/admin/class-ppq-onboarding.php:462
 #: src/editors/QuestionPickerModal.jsx:324
 #: src/quiz-editor/components/QuestionsPanel.jsx:328
 msgid "Add Questions"
 msgstr ""
 
-#: includes/admin/class-ppq-onboarding.php:429
+#: includes/admin/class-ppq-onboarding.php:463
 msgid "Explore Settings"
 msgstr ""
 
-#: includes/admin/class-ppq-onboarding.php:430
+#: includes/admin/class-ppq-onboarding.php:464
 #: includes/admin/views/upgrade-page.php:140
 msgid "View Documentation"
 msgstr ""
@@ -2636,27 +2633,27 @@ msgstr ""
 msgid "Upgrade to %s"
 msgstr ""
 
-#: includes/admin/class-ppq-review-notice.php:152
+#: includes/admin/class-ppq-review-notice.php:227
 msgid "Dismiss this notice"
 msgstr ""
 
-#: includes/admin/class-ppq-review-notice.php:161
+#: includes/admin/class-ppq-review-notice.php:236
 msgid "Congratulations! Your students have completed 100 quiz attempts with PressPrimer Quiz!"
 msgstr ""
 
-#: includes/admin/class-ppq-review-notice.php:164
+#: includes/admin/class-ppq-review-notice.php:239
 msgid "We'd love to hear your feedback. Are you enjoying the plugin?"
 msgstr ""
 
-#: includes/admin/class-ppq-review-notice.php:169
+#: includes/admin/class-ppq-review-notice.php:244
 msgid "Yes, I love it!"
 msgstr ""
 
-#: includes/admin/class-ppq-review-notice.php:172
+#: includes/admin/class-ppq-review-notice.php:247
 msgid "It could be better"
 msgstr ""
 
-#: includes/admin/class-ppq-review-notice.php:175
+#: includes/admin/class-ppq-review-notice.php:250
 msgid "Remind me later"
 msgstr ""
 

@@ -5,8 +5,8 @@
  * Rendered by PressPrimer_Quiz_Upgrade_Page::render_page(). Receives the
  * following variables in scope:
  *
- * @var array  $features          Comparison features array (from get_comparison_features).
- * @var array  $tiers             Tier metadata array (from get_tiers).
+ * @var array  $features          Comparison rows (PressPrimer_Quiz_Premium_Catalog::get_comparison_rows()).
+ * @var array  $tiers             Tiers (PressPrimer_Quiz_Premium_Catalog::get_tiers()), `featured` on School.
  * @var string $pricing_url       Pricing page URL.
  * @var string $logo_url          URL of the white PressPrimer logo SVG.
  * @var string $hero_mascot_url   URL of the hero mascot image (brown cheering squirrel).
@@ -23,6 +23,9 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 ?>
 <div class="wrap ppq-upgrade-page">
+
+	<?php // Admin notices go here, above the hero (WordPress moves them after the first h1 otherwise). ?>
+	<hr class="wp-header-end">
 
 	<section class="ppq-upgrade-hero">
 		<div class="ppq-upgrade-hero-content">

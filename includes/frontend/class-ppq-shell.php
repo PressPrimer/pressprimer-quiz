@@ -535,10 +535,8 @@ class PressPrimer_Quiz_Shell {
 		$upsells_suppressed = (bool) apply_filters( 'pressprimer_quiz_shell_suppress_upsells', pressprimer_quiz_has_addon( 'enterprise' ) );
 		$upgrade_url        = admin_url( 'admin.php?page=pressprimer-quiz-upgrade' );
 
-		// Locked-card copy comes from the upgrade-page content source (decision 005).
-		$tiers = ( class_exists( 'PressPrimer_Quiz_Upgrade_Page' ) && method_exists( 'PressPrimer_Quiz_Upgrade_Page', 'get_tiers' ) )
-			? PressPrimer_Quiz_Upgrade_Page::get_tiers()
-			: array();
+		// Locked-card copy comes from the premium catalog (decision 005).
+		$tiers = PressPrimer_Quiz_Premium_Catalog::get_tiers();
 
 		$visible = array();
 

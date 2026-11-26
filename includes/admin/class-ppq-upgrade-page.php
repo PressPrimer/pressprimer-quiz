@@ -183,9 +183,9 @@ class PressPrimer_Quiz_Upgrade_Page {
 			);
 		}
 
-		$features          = self::get_comparison_features();
-		$tiers             = self::get_tiers();
-		$pricing_url       = 'https://pressprimer.com/pressprimer-quiz-pricing/#pricing';
+		$features          = PressPrimer_Quiz_Premium_Catalog::get_comparison_rows();
+		$tiers             = PressPrimer_Quiz_Premium_Catalog::get_tiers();
+		$pricing_url       = PressPrimer_Quiz_Premium_Catalog::PRICING_URL . '#pricing';
 		$logo_url          = PRESSPRIMER_QUIZ_PLUGIN_URL . 'assets/images/PressPrimer-Logo-White.svg';
 		$hero_mascot_url   = PRESSPRIMER_QUIZ_PLUGIN_URL . 'assets/images/mascot-waving.png';
 		$footer_mascot_url = PRESSPRIMER_QUIZ_PLUGIN_URL . 'assets/images/mascot-celebrating-confetti.png';
@@ -222,550 +222,58 @@ class PressPrimer_Quiz_Upgrade_Page {
 	}
 
 	/**
-	 * Curated comparison table contents.
-	 *
-	 * Rows are added or updated by code change as part of each release. The
-	 * canonical editorial source is `docs/guides/upgrade-page-maintenance.md`
-	 * — this PHP array MUST match that guide row-for-row. When a tier
-	 * boundary changes for any feature, edit both files in the same commit.
-	 *
-	 * Order is meaningful: it is the display order on the page. Category
-	 * headers are emitted by the view whenever the `category` value changes
-	 * between consecutive rows.
-	 *
-	 * Each row's tier value is:
-	 *   - true   : feature included in that tier
-	 *   - false  : not included
-	 *   - string : included with a caveat (e.g., "Unlimited", "2 sites")
+	 * Comparison table rows.
 	 *
 	 * @since 2.3.0
+	 * @deprecated 3.2.0 Use PressPrimer_Quiz_Premium_Catalog::get_comparison_rows().
 	 *
-	 * @return array<int, array<string, mixed>> Array of feature row arrays.
+	 * @return array[] Rows: category, feature, and a cell per tier column.
 	 */
 	public static function get_comparison_features() {
-		$core      = __( 'Core Quiz Features', 'pressprimer-quiz' );
-		$ai_banks  = __( 'AI & Question Banks', 'pressprimer-quiz' );
-		$lms       = __( 'Integrations', 'pressprimer-quiz' );
-		$reporting = __( 'Reporting & Analytics', 'pressprimer-quiz' );
-		$groups    = __( 'Groups & Assignments', 'pressprimer-quiz' );
-		$advanced  = __( 'Advanced & Compliance', 'pressprimer-quiz' );
-		$privacy   = __( 'Data & Privacy', 'pressprimer-quiz' );
-		$support   = __( 'Support & Branding', 'pressprimer-quiz' );
+		_deprecated_function( __METHOD__, '3.2.0', 'PressPrimer_Quiz_Premium_Catalog::get_comparison_rows()' );
 
-		return array(
-			// Core Quiz Features.
-			array(
-				'category'   => $core,
-				'feature'    => __( 'Multiple choice, multiple answer, true/false questions', 'pressprimer-quiz' ),
-				'free'       => true,
-				'educator'   => true,
-				'school'     => true,
-				'enterprise' => true,
-			),
-			array(
-				'category'   => $core,
-				'feature'    => __( 'Question banks with categories', 'pressprimer-quiz' ),
-				'free'       => true,
-				'educator'   => true,
-				'school'     => true,
-				'enterprise' => true,
-			),
-			array(
-				'category'   => $core,
-				'feature'    => __( 'Time limits, attempt limits, retakes', 'pressprimer-quiz' ),
-				'free'       => true,
-				'educator'   => true,
-				'school'     => true,
-				'enterprise' => true,
-			),
-			array(
-				'category'   => $core,
-				'feature'    => __( 'Math & equation rendering (LaTeX)', 'pressprimer-quiz' ),
-				'free'       => true,
-				'educator'   => true,
-				'school'     => true,
-				'enterprise' => true,
-			),
-			array(
-				'category'   => $core,
-				'feature'    => __( 'Quiz templates', 'pressprimer-quiz' ),
-				'free'       => true,
-				'educator'   => true,
-				'school'     => true,
-				'enterprise' => true,
-			),
-			array(
-				'category'   => $core,
-				'feature'    => __( '6 built-in themes and appearance settings', 'pressprimer-quiz' ),
-				'free'       => true,
-				'educator'   => true,
-				'school'     => true,
-				'enterprise' => true,
-			),
-			array(
-				'category'   => $core,
-				'feature'    => __( 'Hide /wp-admin/ from students and teachers', 'pressprimer-quiz' ),
-				'free'       => false,
-				'educator'   => true,
-				'school'     => true,
-				'enterprise' => true,
-			),
-			array(
-				'category'   => $core,
-				'feature'    => __( 'Site licenses included', 'pressprimer-quiz' ),
-				'free'       => __( 'Unlimited', 'pressprimer-quiz' ),
-				'educator'   => __( '1 site', 'pressprimer-quiz' ),
-				'school'     => __( '2 sites', 'pressprimer-quiz' ),
-				'enterprise' => __( '5 sites', 'pressprimer-quiz' ),
-			),
-
-			// AI & Question Banks (4 rows).
-			array(
-				'category'   => $ai_banks,
-				'feature'    => __( 'AI question generation from documents', 'pressprimer-quiz' ),
-				'free'       => true,
-				'educator'   => true,
-				'school'     => true,
-				'enterprise' => true,
-			),
-			array(
-				'category'   => $ai_banks,
-				'feature'    => __( 'AI-generated distractors for existing questions', 'pressprimer-quiz' ),
-				'free'       => false,
-				'educator'   => true,
-				'school'     => true,
-				'enterprise' => true,
-			),
-			array(
-				'category'   => $ai_banks,
-				'feature'    => __( 'Question bank import/export (CSV, JSON, XML)', 'pressprimer-quiz' ),
-				'free'       => false,
-				'educator'   => true,
-				'school'     => true,
-				'enterprise' => true,
-			),
-			array(
-				'category'   => $ai_banks,
-				'feature'    => __( 'Spaced repetition scheduling', 'pressprimer-quiz' ),
-				'free'       => false,
-				'educator'   => false,
-				'school'     => true,
-				'enterprise' => true,
-			),
-
-			// LMS Integrations (3 rows).
-			array(
-				'category'   => $lms,
-				'feature'    => __( 'LearnDash, Tutor LMS, LifterLMS, LearnPress integration', 'pressprimer-quiz' ),
-				'free'       => true,
-				'educator'   => true,
-				'school'     => true,
-				'enterprise' => true,
-			),
-			array(
-				'category'   => $lms,
-				'feature'    => __( 'Uncanny Automator integration', 'pressprimer-quiz' ),
-				'free'       => true,
-				'educator'   => true,
-				'school'     => true,
-				'enterprise' => true,
-			),
-			array(
-				'category'   => $lms,
-				'feature'    => __( 'LearnDash & LifterLMS quiz import', 'pressprimer-quiz' ),
-				'free'       => false,
-				'educator'   => false,
-				'school'     => true,
-				'enterprise' => true,
-			),
-			array(
-				'category'   => $lms,
-				'feature'    => __( 'WP Fusion integration', 'pressprimer-quiz' ),
-				'free'       => false,
-				'educator'   => false,
-				'school'     => true,
-				'enterprise' => true,
-			),
-
-			// Reporting & Analytics (4 rows).
-			array(
-				'category'   => $reporting,
-				'feature'    => __( 'Basic attempt reporting', 'pressprimer-quiz' ),
-				'free'       => true,
-				'educator'   => true,
-				'school'     => true,
-				'enterprise' => true,
-			),
-			array(
-				'category'   => $reporting,
-				'feature'    => __( 'Visual charts and dashboards', 'pressprimer-quiz' ),
-				'free'       => false,
-				'educator'   => true,
-				'school'     => true,
-				'enterprise' => true,
-			),
-			array(
-				'category'   => $reporting,
-				'feature'    => __( 'Question analysis (difficulty, discrimination)', 'pressprimer-quiz' ),
-				'free'       => false,
-				'educator'   => false,
-				'school'     => true,
-				'enterprise' => true,
-			),
-			array(
-				'category'   => $reporting,
-				'feature'    => __( 'Pre/post test comparison analysis', 'pressprimer-quiz' ),
-				'free'       => false,
-				'educator'   => false,
-				'school'     => true,
-				'enterprise' => true,
-			),
-
-			// Groups & Assignments (3 rows).
-			array(
-				'category'   => $groups,
-				'feature'    => __( 'Student groups and group reporting', 'pressprimer-quiz' ),
-				'free'       => false,
-				'educator'   => true,
-				'school'     => true,
-				'enterprise' => true,
-			),
-			array(
-				'category'   => $groups,
-				'feature'    => __( 'Front-end teacher dashboard', 'pressprimer-quiz' ),
-				'free'       => false,
-				'educator'   => true,
-				'school'     => true,
-				'enterprise' => true,
-			),
-			array(
-				'category'   => $groups,
-				'feature'    => __( 'LearnDash Groups support', 'pressprimer-quiz' ),
-				'free'       => false,
-				'educator'   => true,
-				'school'     => true,
-				'enterprise' => true,
-			),
-			array(
-				'category'   => $groups,
-				'feature'    => __( 'Assignment due dates and reminder emails', 'pressprimer-quiz' ),
-				'free'       => false,
-				'educator'   => true,
-				'school'     => true,
-				'enterprise' => true,
-			),
-			array(
-				'category'   => $groups,
-				'feature'    => __( 'Availability windows (quiz scheduled open/close)', 'pressprimer-quiz' ),
-				'free'       => false,
-				'educator'   => false,
-				'school'     => true,
-				'enterprise' => true,
-			),
-
-			// Advanced & Compliance (4 rows).
-			array(
-				'category'   => $advanced,
-				'feature'    => __( 'xAPI / LRS integration', 'pressprimer-quiz' ),
-				'free'       => false,
-				'educator'   => false,
-				'school'     => true,
-				'enterprise' => true,
-			),
-			array(
-				'category'   => $advanced,
-				'feature'    => __( 'Branching logic (conditional questions)', 'pressprimer-quiz' ),
-				'free'       => false,
-				'educator'   => false,
-				'school'     => false,
-				'enterprise' => true,
-			),
-			array(
-				'category'   => $advanced,
-				'feature'    => __( 'Proctoring tools', 'pressprimer-quiz' ),
-				'free'       => false,
-				'educator'   => false,
-				'school'     => false,
-				'enterprise' => true,
-			),
-			array(
-				'category'   => $advanced,
-				'feature'    => __( 'Integrity analytics', 'pressprimer-quiz' ),
-				'free'       => false,
-				'educator'   => false,
-				'school'     => false,
-				'enterprise' => true,
-			),
-			array(
-				'category'   => $advanced,
-				'feature'    => __( 'Audit log', 'pressprimer-quiz' ),
-				'free'       => false,
-				'educator'   => false,
-				'school'     => false,
-				'enterprise' => true,
-			),
-
-			// Data & Privacy.
-			array(
-				'category'   => $privacy,
-				'feature'    => __( 'Guest data eraser (GDPR)', 'pressprimer-quiz' ),
-				'free'       => true,
-				'educator'   => true,
-				'school'     => true,
-				'enterprise' => true,
-			),
-			array(
-				'category'   => $privacy,
-				'feature'    => __( 'Quiz data reset', 'pressprimer-quiz' ),
-				'free'       => true,
-				'educator'   => true,
-				'school'     => true,
-				'enterprise' => true,
-			),
-			array(
-				'category'   => $privacy,
-				'feature'    => __( 'Marketing-consent capture for guests', 'pressprimer-quiz' ),
-				'free'       => true,
-				'educator'   => true,
-				'school'     => true,
-				'enterprise' => true,
-			),
-
-			// Support & Branding (2 rows).
-			array(
-				'category'   => $support,
-				'feature'    => __( 'Priority support', 'pressprimer-quiz' ),
-				'free'       => false,
-				'educator'   => true,
-				'school'     => true,
-				'enterprise' => true,
-			),
-			array(
-				'category'   => $support,
-				'feature'    => __( 'White-label branding (remove PressPrimer references)', 'pressprimer-quiz' ),
-				'free'       => false,
-				'educator'   => false,
-				'school'     => false,
-				'enterprise' => true,
-			),
-		);
+		return PressPrimer_Quiz_Premium_Catalog::get_comparison_rows();
 	}
 
 	/**
-	 * Tier metadata for the cards section.
-	 *
-	 * Highlights array drives the bulleted "what you get" list under each
-	 * tier's tagline — keep these short and benefit-focused, not a feature
-	 * inventory (the comparison table is for that).
+	 * Tier cards.
 	 *
 	 * @since 2.3.0
+	 * @deprecated 3.2.0 Use PressPrimer_Quiz_Premium_Catalog::get_tiers().
 	 *
-	 * @return array<string, array<string, mixed>> Map of slug → tier data.
+	 * @return array Slug => tier, with `featured` on School.
 	 */
 	public static function get_tiers() {
-		return array(
-			'educator'   => array(
-				'name'        => __( 'Educator', 'pressprimer-quiz' ),
-				'tagline'     => __( 'For individual instructors and small teams', 'pressprimer-quiz' ),
-				'description' => __( 'Add groups, assignments, AI distractor generation, and quality reports.', 'pressprimer-quiz' ),
-				'highlights'  => array(
-					__( 'Student groups & assignments', 'pressprimer-quiz' ),
-					__( 'AI-generated distractors', 'pressprimer-quiz' ),
-					__( 'Question bank import/export', 'pressprimer-quiz' ),
-					__( 'Visual reports & charts', 'pressprimer-quiz' ),
-					__( 'Priority support', 'pressprimer-quiz' ),
-				),
-				'url'         => 'https://pressprimer.com/pressprimer-quiz-educator/',
-			),
-			'school'     => array(
-				'name'        => __( 'School', 'pressprimer-quiz' ),
-				'tagline'     => __( 'For multi-instructor programs and institutions', 'pressprimer-quiz' ),
-				'description' => __( 'Everything in Educator plus item analysis, xAPI/LRS, availability windows, and spaced repetition.', 'pressprimer-quiz' ),
-				'highlights'  => array(
-					__( 'Everything in Educator', 'pressprimer-quiz' ),
-					__( 'Question analysis & pre/post comparison', 'pressprimer-quiz' ),
-					__( 'xAPI / LRS integration', 'pressprimer-quiz' ),
-					__( 'Spaced repetition scheduling', 'pressprimer-quiz' ),
-					__( 'WP Fusion integration', 'pressprimer-quiz' ),
-					__( 'LearnDash & LifterLMS quiz import', 'pressprimer-quiz' ),
-				),
-				'url'         => 'https://pressprimer.com/pressprimer-quiz-school/',
-				'featured'    => true,
-			),
-			'enterprise' => array(
-				'name'        => __( 'Enterprise', 'pressprimer-quiz' ),
-				'tagline'     => __( 'For organizations with compliance requirements', 'pressprimer-quiz' ),
-				'description' => __( 'Everything in School plus audit logging, white-label branding, branching logic, and proctoring.', 'pressprimer-quiz' ),
-				'highlights'  => array(
-					__( 'Everything in School', 'pressprimer-quiz' ),
-					__( 'Proctoring tools', 'pressprimer-quiz' ),
-					__( 'Integrity analytics', 'pressprimer-quiz' ),
-					__( 'Branching logic', 'pressprimer-quiz' ),
-					__( 'White-label branding', 'pressprimer-quiz' ),
-					__( 'Audit log', 'pressprimer-quiz' ),
-				),
-				'url'         => 'https://pressprimer.com/pressprimer-quiz-enterprise/',
-			),
-		);
+		_deprecated_function( __METHOD__, '3.2.0', 'PressPrimer_Quiz_Premium_Catalog::get_tiers()' );
+
+		return PressPrimer_Quiz_Premium_Catalog::get_tiers();
 	}
 
 	/**
-	 * Ordered catalog of premium report cards shown on the Reports page.
-	 *
-	 * The free plugin's own knowledge of the reports each premium tier adds, so
-	 * the Reports page can advertise them (locked) even when the providing addon
-	 * is not installed. Order is meaningful — it is the display order, grouped by
-	 * tier (Educator, then School, then Enterprise) — and MUST stay stable whether
-	 * a report is locked or available, so the grid does not reflow when an addon
-	 * is activated. Keys, colors, icon types, and the within-tier order mirror the
-	 * cards each addon registers via `pressprimer_quiz_reports_addon_reports` (in
-	 * that addon's own registration order), so a locked card sits exactly where
-	 * its real card appears once the add-on is active.
+	 * Premium report cards, in display order.
 	 *
 	 * @since 3.0.0
+	 * @deprecated 3.2.0 Use PressPrimer_Quiz_Premium_Catalog::get_reports().
 	 *
-	 * @return array<int, array<string, string>> Ordered premium report catalog.
+	 * @return array[] Reports.
 	 */
 	public static function get_premium_report_catalog() {
-		return array(
-			array(
-				'key'         => 'quiz-detail',
-				'tier'        => 'educator',
-				'title'       => __( 'Quiz Detail', 'pressprimer-quiz' ),
-				'description' => __( 'In-depth analysis with score distribution, category performance, and question difficulty.', 'pressprimer-quiz' ),
-				'iconType'    => 'BarChartOutlined',
-				'color'       => '#14b8a6',
-			),
-			array(
-				'key'         => 'prepost-analysis',
-				'tier'        => 'educator',
-				'title'       => __( 'Pre/Post Analysis', 'pressprimer-quiz' ),
-				'description' => __( 'Compare quiz scores across linked pairs, any two quizzes, or individual attempts.', 'pressprimer-quiz' ),
-				'iconType'    => 'SwapOutlined',
-				'color'       => '#8b5cf6',
-			),
-			array(
-				'key'         => 'question-quality',
-				'tier'        => 'school',
-				'title'       => __( 'Question Quality', 'pressprimer-quiz' ),
-				'description' => __( 'Analyze question difficulty, discrimination, and distractor efficiency with psychometric measures.', 'pressprimer-quiz' ),
-				'iconType'    => 'ExperimentOutlined',
-				'color'       => '#52c41a',
-			),
-			array(
-				'key'         => 'curve-grading',
-				'tier'        => 'school',
-				'title'       => __( 'Curve Grading', 'pressprimer-quiz' ),
-				'description' => __( 'Apply grading curves to adjust quiz scores with a before/after distribution preview.', 'pressprimer-quiz' ),
-				'iconType'    => 'LineChartOutlined',
-				'color'       => '#722ed1',
-			),
-			array(
-				'key'         => 'spaced-repetition',
-				'tier'        => 'school',
-				'title'       => __( 'Spaced Repetition', 'pressprimer-quiz' ),
-				'description' => __( 'Track mastery progress and review questions at optimal intervals using spaced repetition.', 'pressprimer-quiz' ),
-				'iconType'    => 'RocketOutlined',
-				'color'       => '#14b8a6',
-			),
-			array(
-				'key'         => 'group-performance',
-				'tier'        => 'school',
-				'title'       => __( 'Group Performance', 'pressprimer-quiz' ),
-				'description' => __( 'Compare performance across groups with member drill-down and trends.', 'pressprimer-quiz' ),
-				'iconType'    => 'TeamOutlined',
-				'color'       => '#f59e0b',
-			),
-			array(
-				'key'         => 'proctoring',
-				'tier'        => 'enterprise',
-				'title'       => __( 'Proctoring Report', 'pressprimer-quiz' ),
-				'description' => __( 'Review proctoring incidents, flagged attempts, and quiz integrity data.', 'pressprimer-quiz' ),
-				'iconType'    => 'EyeOutlined',
-				'color'       => '#eb2f96',
-			),
-			array(
-				'key'         => 'audit-trail',
-				'tier'        => 'enterprise',
-				'title'       => __( 'Audit Trail', 'pressprimer-quiz' ),
-				'description' => __( 'A complete audit log of quiz, question, and user activity for compliance and troubleshooting.', 'pressprimer-quiz' ),
-				'iconType'    => 'AuditOutlined',
-				'color'       => '#722ed1',
-			),
-			array(
-				'key'         => 'deleted-questions',
-				'tier'        => 'enterprise',
-				'title'       => __( 'Deleted Questions', 'pressprimer-quiz' ),
-				'description' => __( 'Recover or permanently delete questions that were previously removed.', 'pressprimer-quiz' ),
-				'iconType'    => 'DeleteOutlined',
-				'color'       => '#ff4d4f',
-			),
-			array(
-				'key'         => 'integrity-review',
-				'tier'        => 'enterprise',
-				'title'       => __( 'Integrity Review', 'pressprimer-quiz' ),
-				'description' => __( 'Review attempts flagged for statistically unusual patterns — timing, answer similarity, shared devices, and concurrent sessions.', 'pressprimer-quiz' ),
-				'iconType'    => 'SafetyCertificateOutlined',
-				'color'       => '#14b8a6',
-			),
-		);
+		_deprecated_function( __METHOD__, '3.2.0', 'PressPrimer_Quiz_Premium_Catalog::get_reports()' );
+
+		return PressPrimer_Quiz_Premium_Catalog::get_reports();
 	}
 
 	/**
-	 * Premium report cards prepared for the Reports page, with lock state.
-	 *
-	 * Walks the catalog in order and marks each report locked when the tier that
-	 * provides it is not active. Locked cards gain the tier's display name and the
-	 * pricing URL so the Reports page can render an upgrade prompt in place, and
-	 * are shown to administrators only. The order never changes with which tiers
-	 * are active — an inactive report keeps its slot as a locked card — so the
-	 * grid does not reflow when an add-on is enabled or disabled.
+	 * Premium report cards for the current user, with lock state.
 	 *
 	 * @since 3.0.0
+	 * @deprecated 3.2.0 Use PressPrimer_Quiz_Premium_Catalog::report_cards_for_user().
 	 *
-	 * @return array<int, array<string, mixed>> Ordered premium report cards.
+	 * @return array[] Cards.
 	 */
 	public static function get_premium_report_cards() {
-		$pricing_url = 'https://pressprimer.com/pressprimer-quiz-pricing/#pricing';
-		$tiers       = self::get_tiers();
+		_deprecated_function( __METHOD__, '3.2.0', 'PressPrimer_Quiz_Premium_Catalog::report_cards_for_user()' );
 
-		// Locked (upsell) cards are for administrators only — a teacher can neither
-		// buy an upgrade nor should be shown a report they cannot reach. Non-admins
-		// receive only the reports whose tier is active (resolved to real,
-		// capability-checked cards on the client).
-		$is_admin = current_user_can( 'manage_options' );
-
-		$cards = array();
-
-		foreach ( self::get_premium_report_catalog() as $entry ) {
-			$tier        = isset( $entry['tier'] ) ? (string) $entry['tier'] : '';
-			$tier_active = function_exists( 'pressprimer_quiz_has_addon' ) && pressprimer_quiz_has_addon( $tier );
-			$locked      = ! $tier_active;
-
-			// Never advertise an unavailable report to non-admins. Skipping keeps
-			// the remaining cards in the same catalog order for everyone.
-			if ( $locked && ! $is_admin ) {
-				continue;
-			}
-
-			$card = array(
-				'key'         => $entry['key'],
-				'title'       => $entry['title'],
-				'description' => $entry['description'],
-				'iconType'    => $entry['iconType'],
-				'color'       => $entry['color'],
-				'tier'        => $tier,
-				'locked'      => $locked,
-			);
-
-			if ( $locked ) {
-				$card['tierName']   = isset( $tiers[ $tier ]['name'] ) ? $tiers[ $tier ]['name'] : ucfirst( $tier );
-				$card['upgradeUrl'] = $pricing_url;
-			}
-
-			$cards[] = $card;
-		}
-
-		return $cards;
+		return PressPrimer_Quiz_Premium_Catalog::report_cards_for_user();
 	}
 }

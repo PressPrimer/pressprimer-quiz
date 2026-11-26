@@ -458,9 +458,7 @@ class PressPrimer_Quiz_Admin {
 		// Premium report cards the free plugin knows about, each flagged with its
 		// lock state, so reports from inactive tiers still appear (locked) in a
 		// stable order alongside the real cards active addons register above.
-		$premium_reports = ( class_exists( 'PressPrimer_Quiz_Upgrade_Page' ) && method_exists( 'PressPrimer_Quiz_Upgrade_Page', 'get_premium_report_cards' ) )
-			? PressPrimer_Quiz_Upgrade_Page::get_premium_report_cards()
-			: [];
+		$premium_reports = PressPrimer_Quiz_Premium_Catalog::report_cards_for_user();
 
 		/**
 		 * Filters the reports page header mascot image URL.

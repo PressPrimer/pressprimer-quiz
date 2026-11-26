@@ -1,0 +1,6 @@
+{
+	"_about": "Report card keys each addon registers through pressprimer_quiz_reports_addon_reports, in the addon's own registration order. Read from the addons' develop branches on 2026-11-26 (Educator 3.1.2: class-ppqe-admin-reports.php; School 3.1.2: class-ppqs-admin.php, then class-ppqs-admin-reports.php; Enterprise 3.1.1: class-ppqen-proctoring-hooks.php, then class-ppqen-admin.php). Update this file in the release where an addon adds, renames or reorders a report card; the catalog test then says what PressPrimer_Quiz_Premium_Catalog::get_reports() must change.",
+	"educator": [ "quiz-detail", "prepost-analysis" ],
+	"school": [ "question-quality", "curve-grading", "spaced-repetition", "group-performance" ],
+	"enterprise": [ "proctoring", "audit-trail", "deleted-questions", "integrity-review" ]
+}

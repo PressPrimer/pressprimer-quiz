@@ -76,3 +76,59 @@ if ( ! function_exists( 'wp_unslash' ) ) {
 		return is_array( $value ) ? array_map( 'wp_unslash', $value ) : stripslashes( (string) $value );
 	}
 }
+
+if ( ! function_exists( 'apply_filters' ) ) {
+	/**
+	 * Stub: Run a filter (no callbacks are registered in unit tests).
+	 *
+	 * @param string $hook_name Filter name.
+	 * @param mixed  $value     Value to filter.
+	 * @return mixed The value, unchanged.
+	 */
+	function apply_filters( $hook_name, $value ) {
+		return $value;
+	}
+}
+
+if ( ! function_exists( '__' ) ) {
+	/**
+	 * Stub: Translate a string (returns it unchanged).
+	 *
+	 * @param string $text   Text.
+	 * @param string $domain Text domain.
+	 * @return string
+	 */
+	function __( $text, $domain = 'default' ) {
+		return $text;
+	}
+}
+
+if ( ! function_exists( 'current_user_can' ) ) {
+	/**
+	 * Stub: Capability check, driven by $GLOBALS['pressprimer_quiz_test_caps'].
+	 *
+	 * @param string $capability Capability.
+	 * @return bool
+	 */
+	function current_user_can( $capability ) {
+		return in_array( $capability, isset( $GLOBALS['pressprimer_quiz_test_caps'] ) ? (array) $GLOBALS['pressprimer_quiz_test_caps'] : array(), true );
+	}
+}
+
+if ( ! function_exists( 'add_query_arg' ) ) {
+	/**
+	 * Stub: Add query arguments to a URL (the array form only).
+	 *
+	 * @param array  $args Arguments.
+	 * @param string $url  URL.
+	 * @return string
+	 */
+	function add_query_arg( $args, $url ) {
+		$query = array();
+		foreach ( $args as $key => $value ) {
+			$query[] = $key . '=' . $value;
+		}
+
+		return $url . ( false === strpos( $url, '?' ) ? '?' : '&' ) . implode( '&', $query );
+	}
+}

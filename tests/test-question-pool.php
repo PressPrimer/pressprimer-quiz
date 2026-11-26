@@ -27,6 +27,52 @@ use PHPUnit\Framework\TestCase;
 class Test_Question_Pool extends TestCase {
 
 	/**
+	 * Stand in for $wpdb: every question asked about is servable.
+	 *
+	 * Since 3.1.2 the quiz checks fixed items against the questions table
+	 * (filter_servable_question_ids()); these tests cover pool selection,
+	 * not that check.
+	 */
+	protected function setUp(): void {
+		$GLOBALS['wpdb'] = new class() {
+			/**
+			 * Table prefix.
+			 *
+			 * @var string
+			 */
+			public $prefix = 'wp_';
+
+			/**
+			 * Return the bound IDs in place of a prepared query.
+			 *
+			 * @param string $query Query.
+			 * @param array  $args  Bound values (the question IDs).
+			 * @return array
+			 */
+			public function prepare( $query, $args ) {
+				return $args;
+			}
+
+			/**
+			 * Every ID asked about exists and is servable.
+			 *
+			 * @param array $ids What prepare() returned.
+			 * @return array
+			 */
+			public function get_col( $ids ) {
+				return $ids;
+			}
+		};
+	}
+
+	/**
+	 * Remove the stand-in.
+	 */
+	protected function tearDown(): void {
+		unset( $GLOBALS['wpdb'] );
+	}
+
+	/**
 	 * Create a mock quiz with the given properties and item/rule stubs.
 	 *
 	 * @param array $props     Quiz properties to set.

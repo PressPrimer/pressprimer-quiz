@@ -285,6 +285,7 @@ class PressPrimer_Quiz_Editor_Data_Service {
 
 		// Prepare bank data for JavaScript
 		$bank_data = [];
+		$bank      = null;
 
 		if ( $bank_id > 0 ) {
 			$bank = PressPrimer_Quiz_Bank::get( $bank_id );
@@ -304,6 +305,11 @@ class PressPrimer_Quiz_Editor_Data_Service {
 			}
 		}
 
+		// Whether the user may change the bank and its questions (its owner
+		// and manage_all users). The dashboard opens a bank shared with the
+		// user read-only. A new bank is the user's own.
+		$bank_data['canEdit'] = empty( $bank ) || PressPrimer_Quiz_Question_Access_Service::can_edit_bank( $bank, get_current_user_id() );
+
 		// Help under the Visibility field. Addons that change who can see a
 		// bank say so here.
 		$bank_data['visibilityHelp'] = __( 'Private: Only you can access this bank. Shared: Teachers in your groups can access this bank.', 'pressprimer-quiz' );
@@ -315,7 +321,7 @@ class PressPrimer_Quiz_Editor_Data_Service {
 		 *
 		 * @since 3.2.0
 		 *
-		 * @param array  $bank_data Bank fields (empty for a new bank), userCan, visibilityHelp and the site flags.
+		 * @param array  $bank_data Bank fields (empty for a new bank), canEdit, userCan, visibilityHelp and the site flags.
 		 * @param int    $bank_id   Bank ID; 0 for a new bank.
 		 * @param string $context   Where the editor runs: 'admin' or 'dashboard'.
 		 */

@@ -893,6 +893,29 @@ class PressPrimer_Quiz_REST_Controller {
 	}
 
 	/**
+	 * Load a bank the current user can see: their own, any for
+	 * manage_all users, and banks shared with them (an addon decides).
+	 *
+	 * @since 3.2.0
+	 *
+	 * @param int $bank_id Bank ID.
+	 * @return PressPrimer_Quiz_Bank|WP_Error The bank, or 404/403.
+	 */
+	private function get_accessible_bank_or_error( $bank_id ) {
+		$bank = PressPrimer_Quiz_Bank::get( absint( $bank_id ) );
+
+		if ( ! $bank || ! empty( $bank->deleted_at ) ) {
+			return new WP_Error( 'not_found', __( 'Bank not found.', 'pressprimer-quiz' ), [ 'status' => 404 ] );
+		}
+
+		if ( ! $bank->can_access( get_current_user_id() ) ) {
+			return new WP_Error( 'forbidden', __( 'You do not have permission to access this bank.', 'pressprimer-quiz' ), [ 'status' => 403 ] );
+		}
+
+		return $bank;
+	}
+
+	/**
 	 * Load a bank whose questions the current user may change.
 	 *
 	 * @since 3.2.0
@@ -1302,6 +1325,15 @@ class PressPrimer_Quiz_REST_Controller {
 		$category_id = absint( $request->get_param( 'category_id' ) ?: 0 );
 		$bank_id     = absint( $request->get_param( 'bank_id' ) ?: 0 );
 		$exclude     = $request->get_param( 'exclude' ) ?: '';
+		// Leave out a bank's questions (the bank editor's picker). Only for a
+		// bank the user can see, so it can't reveal another bank's contents.
+		$exclude_bank_id = absint( $request->get_param( 'exclude_bank_id' ) ?: 0 );
+		if ( $exclude_bank_id > 0 ) {
+			$exclude_bank = PressPrimer_Quiz_Bank::get( $exclude_bank_id );
+			if ( ! $exclude_bank || ! $exclude_bank->can_access( get_current_user_id() ) ) {
+				$exclude_bank_id = 0;
+			}
+		}
 
 		$questions_table      = $wpdb->prefix . 'ppq_questions';
 		$revisions_table      = $wpdb->prefix . 'ppq_question_revisions';
@@ -1354,6 +1386,11 @@ class PressPrimer_Quiz_REST_Controller {
 		if ( $bank_id > 0 ) {
 			$where[]        = "q.id IN (SELECT question_id FROM {$bank_questions_table} WHERE bank_id = %d)";
 			$where_values[] = $bank_id;
+		}
+
+		if ( $exclude_bank_id > 0 ) {
+			$where[]        = "q.id NOT IN (SELECT question_id FROM {$bank_questions_table} WHERE bank_id = %d)";
+			$where_values[] = $exclude_bank_id;
 		}
 
 		// Exclude specific question IDs
@@ -2001,8 +2038,9 @@ class PressPrimer_Quiz_REST_Controller {
 	 * Get the data an editor starts with.
 	 *
 	 * Applies the editor pages' checks: the user owns the quiz, question or
-	 * bank (or has pressprimer_quiz_manage_all). A deleted question or bank,
-	 * and School's review containers, are 404.
+	 * bank (or has pressprimer_quiz_manage_all). A bank shared with the user
+	 * is served too, read-only (its canEdit is false). A deleted question or
+	 * bank, and School's review containers, are 404.
 	 *
 	 * @since 3.2.0
 	 *
@@ -2020,7 +2058,8 @@ class PressPrimer_Quiz_REST_Controller {
 			} elseif ( 'question' === $type ) {
 				$entity = $this->get_owned_question_or_error( $id );
 			} else {
-				$entity = $this->get_editable_bank_or_error( $id );
+				// A bank shared with the user opens read-only (canEdit false).
+				$entity = $this->get_accessible_bank_or_error( $id );
 			}
 
 			if ( is_wp_error( $entity ) ) {
@@ -2236,6 +2275,10 @@ class PressPrimer_Quiz_REST_Controller {
 		$attachment_metadata = wp_generate_attachment_metadata( $attachment_id, $upload['file'] );
 		wp_update_attachment_metadata( $attachment_id, $attachment_metadata );
 
+		// The plugin uploaded it (FR-010): only such images can be owned by
+		// questions and deleted with them.
+		PressPrimer_Quiz_Question::mark_uploaded_image( $attachment_id, get_current_user_id() );
+
 		// Tag for refcount cleanup. Use add_post_meta (not update_post_meta)
 		// so duplicating a question can add a SECOND row referencing the
 		// same attachment without overwriting the original ownership.
@@ -2382,6 +2425,10 @@ class PressPrimer_Quiz_REST_Controller {
 
 		$attachment_metadata = wp_generate_attachment_metadata( $attachment_id, $upload['file'] );
 		wp_update_attachment_metadata( $attachment_id, $attachment_metadata );
+
+		// The plugin uploaded it (FR-010): only such images, and only the
+		// uploader's own, can become owned by a question.
+		PressPrimer_Quiz_Question::mark_uploaded_image( $attachment_id, get_current_user_id() );
 
 		// No _ppq_question_id tagging here — ownership is registered at
 		// question save time by the create_question / update_question

@@ -25,6 +25,16 @@ if ( ! defined( 'ABSPATH' ) ) {
 class PressPrimer_Quiz_Question extends PressPrimer_Quiz_Model {
 
 	/**
+	 * Post meta that marks an image the plugin uploaded, with the uploader's
+	 * user ID. Only these attachments can become owned by a question, and
+	 * only these are deleted with their last owning question.
+	 *
+	 * @since 3.2.0
+	 * @var string
+	 */
+	const UPLOADED_BY_META = '_pressprimer_quiz_uploaded_by';
+
+	/**
 	 * Question UUID
 	 *
 	 * @since 1.0.0
@@ -670,7 +680,7 @@ class PressPrimer_Quiz_Question extends PressPrimer_Quiz_Model {
 			if ( ! empty( $new_revision->feedback_incorrect ) ) {
 				$ownership_html .= ' ' . $new_revision->feedback_incorrect;
 			}
-			self::register_image_ownership( $new_question->id, $ownership_html );
+			self::register_image_ownership( $new_question->id, $ownership_html, $this->id );
 
 			$category_ids = wp_list_pluck( $this->get_categories(), 'id' );
 			if ( ! empty( $category_ids ) ) {
@@ -779,14 +789,18 @@ class PressPrimer_Quiz_Question extends PressPrimer_Quiz_Model {
 
 	/**
 	 * Remove this question's row from each owned attachment's refcount meta;
-	 * delete the attachment outright if no other question still references it.
+	 * delete the attachment outright if no other question still references it
+	 * and the plugin uploaded it.
 	 *
 	 * The `_ppq_question_id` post meta key allows multiple rows per
 	 * attachment (one per owning question), so we use
 	 * `delete_post_meta( $att, $key, $this->id )` to remove just our row,
 	 * then count remaining rows to decide whether to delete the attachment.
+	 * An attachment without the uploaded-by tag (an LMS's media, or an image
+	 * from before 3.2) loses its row but stays in the media library.
 	 *
 	 * @since 2.3.0
+	 * @since 3.2.0 Deletes only attachments the plugin uploaded.
 	 *
 	 * @return void
 	 */
@@ -815,7 +829,7 @@ class PressPrimer_Quiz_Question extends PressPrimer_Quiz_Model {
 			// Count remaining rows. If anything else owns this attachment,
 			// leave it alone — that question still needs it.
 			$remaining = get_post_meta( $attachment_id, '_ppq_question_id', false );
-			if ( empty( $remaining ) ) {
+			if ( empty( $remaining ) && self::is_uploaded_image( $attachment_id ) ) {
 				wp_delete_attachment( $attachment_id, true );
 			}
 		}
@@ -837,17 +851,28 @@ class PressPrimer_Quiz_Question extends PressPrimer_Quiz_Model {
 	 * remain as orphan references in the original question and persist
 	 * naturally because their refcount was never decremented.
 	 *
-	 * @since 2.3.0
+	 * Since 3.2 only images the plugin uploaded (the uploaded-by tag) are
+	 * registered: the current user's own uploads, any for users with
+	 * pressprimer_quiz_manage_all, and any the source question owns when
+	 * copying. Ownership already registered stays as it is.
 	 *
-	 * @param int    $question_id Question that should be added as an owner.
-	 * @param string $html        Concatenated HTML to scan for attachment references.
+	 * @since 2.3.0
+	 * @since 3.2.0 Registers only plugin-uploaded images; added $source_question_id.
+	 *
+	 * @param int    $question_id        Question that should be added as an owner.
+	 * @param string $html               Concatenated HTML to scan for attachment references.
+	 * @param int    $source_question_id Question being copied, whose images the copy may share (optional).
 	 * @return int Number of attachment refcount rows added.
 	 */
-	public static function register_image_ownership( $question_id, $html ) {
-		$question_id = (int) $question_id;
+	public static function register_image_ownership( $question_id, $html, $source_question_id = 0 ) {
+		$question_id        = (int) $question_id;
+		$source_question_id = absint( $source_question_id );
 		if ( $question_id <= 0 || ! is_string( $html ) || '' === $html ) {
 			return 0;
 		}
+
+		$user_id    = get_current_user_id();
+		$manage_all = current_user_can( 'pressprimer_quiz_manage_all' );
 
 		$matched = preg_match_all( '/data-ppq-attachment-id=["\'](\d+)["\']/i', $html, $matches );
 		if ( ! $matched ) {
@@ -869,7 +894,21 @@ class PressPrimer_Quiz_Question extends PressPrimer_Quiz_Model {
 
 			// Skip if this question is already registered as an owner.
 			$existing = get_post_meta( $attachment_id, '_ppq_question_id', false );
-			if ( is_array( $existing ) && in_array( $question_id, array_map( 'intval', $existing ), true ) ) {
+			$owners   = is_array( $existing ) ? array_map( 'intval', $existing ) : [];
+			if ( in_array( $question_id, $owners, true ) ) {
+				continue;
+			}
+
+			// Only the plugin's own uploads: the user's, or any for a manager
+			// or the question being copied.
+			$uploader = self::get_image_uploader( $attachment_id );
+			if ( ! $uploader ) {
+				continue;
+			}
+			$allowed = $manage_all
+				|| ( $user_id && $uploader === $user_id )
+				|| ( $source_question_id && in_array( $source_question_id, $owners, true ) );
+			if ( ! $allowed ) {
 				continue;
 			}
 
@@ -878,6 +917,54 @@ class PressPrimer_Quiz_Question extends PressPrimer_Quiz_Model {
 		}
 
 		return $added;
+	}
+
+	/**
+	 * Mark an attachment as an image the plugin uploaded.
+	 *
+	 * The upload routes call this; an addon that creates question images
+	 * itself (e.g. an importer that sideloads them) can too, so the images
+	 * can be owned by questions and are deleted with their last owner.
+	 *
+	 * @since 3.2.0
+	 *
+	 * @param int $attachment_id Attachment ID.
+	 * @param int $user_id       Uploader (default: the current user).
+	 * @return bool Whether the tag was stored.
+	 */
+	public static function mark_uploaded_image( $attachment_id, $user_id = 0 ) {
+		$attachment_id = absint( $attachment_id );
+		$user_id       = $user_id ? absint( $user_id ) : get_current_user_id();
+
+		if ( ! $attachment_id || ! $user_id || 'attachment' !== get_post_type( $attachment_id ) ) {
+			return false;
+		}
+
+		return (bool) update_post_meta( $attachment_id, self::UPLOADED_BY_META, $user_id );
+	}
+
+	/**
+	 * Whether the plugin uploaded an attachment.
+	 *
+	 * @since 3.2.0
+	 *
+	 * @param int $attachment_id Attachment ID.
+	 * @return bool True when it carries the uploaded-by tag.
+	 */
+	public static function is_uploaded_image( $attachment_id ) {
+		return self::get_image_uploader( $attachment_id ) > 0;
+	}
+
+	/**
+	 * The user who uploaded a plugin image.
+	 *
+	 * @since 3.2.0
+	 *
+	 * @param int $attachment_id Attachment ID.
+	 * @return int User ID, or 0 when the plugin didn't upload it.
+	 */
+	private static function get_image_uploader( $attachment_id ) {
+		return absint( get_post_meta( absint( $attachment_id ), self::UPLOADED_BY_META, true ) );
 	}
 
 	/**

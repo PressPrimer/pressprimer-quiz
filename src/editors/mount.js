@@ -35,6 +35,11 @@ const EDITORS = {
 
 const NAV_METHODS = ['list', 'edit', 'afterCreate', 'editUrl', 'back'];
 
+// Optional: an editor shows the control that uses one only when the host
+// supplies it. create( type, initial ) opens a new entity's editor (the bank
+// editor's "New question", with { bankIds }).
+const OPTIONAL_NAV_METHODS = ['create'];
+
 // Mounted roots by element, so mounting into the same element again replaces
 // the editor there.
 const mounted = new WeakMap();
@@ -42,6 +47,7 @@ const mounted = new WeakMap();
 /**
  * Fill a host's navigation adapter: a method it leaves out does nothing, and
  * editUrl() returns '' (the editor then shows no "open in a new tab" link).
+ * Optional methods are passed through only when the host has them.
  *
  * @param {Object} nav Host adapter.
  * @return {Object} Adapter with every method.
@@ -53,6 +59,11 @@ const normalizeNav = (nav) => {
 			adapter[method] = (...args) => nav[method](...args);
 		} else {
 			adapter[method] = 'editUrl' === method ? () => '' : () => {};
+		}
+	});
+	OPTIONAL_NAV_METHODS.forEach((method) => {
+		if (nav && typeof nav[method] === 'function') {
+			adapter[method] = (...args) => nav[method](...args);
 		}
 	});
 	return adapter;
@@ -160,7 +171,7 @@ const MountedEditor = ({ type, id, surface, options, container }) => {
  * @param {string}  options.type          'quiz', 'question' or 'bank'.
  * @param {number}  options.id            Entity ID; 0 (the default) for new.
  * @param {string}  options.surface       'dashboard' (the default) or 'admin'.
- * @param {Object}  options.nav           Navigation adapter: list, edit, afterCreate, editUrl, back.
+ * @param {Object}  options.nav           Navigation adapter: list, edit, afterCreate, editUrl, back; optional create.
  * @param {Object}  options.initial       Preset values for a new entity (question: bankIds; quiz: templateId).
  * @param {Object}  options.slots         Host slot definitions by slot id.
  * @param {Function} options.onSaved       Called after each save with the saved event's detail.

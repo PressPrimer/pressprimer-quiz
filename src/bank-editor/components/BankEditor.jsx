@@ -19,6 +19,7 @@ import {
 	SlotList,
 } from '../../editors/slots';
 import { useDirtyTracker } from '../../editors/dirty';
+import BankQuestionsPanel from './BankQuestionsPanel';
 import {
 	Layout,
 	Form,
@@ -30,10 +31,12 @@ import {
 	Typography,
 	Card,
 	Select,
+	Alert,
 } from 'antd';
 import {
 	SaveOutlined,
 	CloseOutlined,
+	ArrowLeftOutlined,
 } from '@ant-design/icons';
 
 const { Content } = Layout;
@@ -60,6 +63,9 @@ const BankEditor = ({ data = {}, surface = 'admin', nav, slots = {}, onSaved, on
 
 	const isNew = !currentBankId;
 	const isAdmin = bankData.userCan?.manage_all || false;
+	// A bank shared with the author opens read-only on the dashboard (its
+	// owner and managers may change it). Missing means editable, as before.
+	const canEdit = undefined === bankData.canEdit || !!bankData.canEdit;
 
 	// Unsaved changes, for the host's navigation guard.
 	const dirty = useDirtyTracker(onDirtyChange);
@@ -69,12 +75,13 @@ const BankEditor = ({ data = {}, surface = 'admin', nav, slots = {}, onSaved, on
 	const slotHost = useSlotHost(form);
 	const slotEnv = useSlotEnvironment(surface);
 	const site = getSiteFlags(bankData);
-	const fieldSlots = getVisibleSlots('bank.fields', {
+	// bank.fields slots edit the bank, so a read-only bank has none.
+	const fieldSlots = canEdit ? getVisibleSlots('bank.fields', {
 		surface,
 		site,
 		hostSlots: slots,
 		entityId: toId(currentBankId) || 0,
-	});
+	}) : [];
 
 	// Initialize form with bank data
 	useEffect(() => {
@@ -192,6 +199,18 @@ const BankEditor = ({ data = {}, surface = 'admin', nav, slots = {}, onSaved, on
 		}
 	};
 
+	/**
+	 * The editor's heading.
+	 *
+	 * @return {string} Heading text.
+	 */
+	const getTitle = () => {
+		if (isNew) {
+			return __('Add Question Bank', 'pressprimer-quiz');
+		}
+		return canEdit ? __('Edit Question Bank', 'pressprimer-quiz') : __('Question Bank', 'pressprimer-quiz');
+	};
+
 	return (
 		<EditorProvider value={{ surface, nav, site, slots }}>
 		<Layout className="ppq-bank-editor">
@@ -201,28 +220,32 @@ const BankEditor = ({ data = {}, surface = 'admin', nav, slots = {}, onSaved, on
 						{/* Header */}
 						<div className="ppq-editor-header-row" style={{ marginBottom: 24, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
 							<Title level={2} style={{ margin: 0 }}>
-								{isNew
-									? __('Add Question Bank', 'pressprimer-quiz')
-									: __('Edit Question Bank', 'pressprimer-quiz')}
+								{getTitle()}
 							</Title>
-							<Space>
-								<Button
-									icon={<CloseOutlined />}
-									onClick={handleCancel}
-								>
-									{__('Cancel', 'pressprimer-quiz')}
+							{canEdit ? (
+								<Space>
+									<Button
+										icon={<CloseOutlined />}
+										onClick={handleCancel}
+									>
+										{__('Cancel', 'pressprimer-quiz')}
+									</Button>
+									<Button
+										type="primary"
+										icon={<SaveOutlined />}
+										loading={saving}
+										onClick={() => form.submit()}
+									>
+										{isNew
+											? __('Create Bank', 'pressprimer-quiz')
+											: __('Update Bank', 'pressprimer-quiz')}
+									</Button>
+								</Space>
+							) : (
+								<Button icon={<ArrowLeftOutlined />} onClick={handleCancel}>
+									{__('Back to banks', 'pressprimer-quiz')}
 								</Button>
-								<Button
-									type="primary"
-									icon={<SaveOutlined />}
-									loading={saving}
-									onClick={() => form.submit()}
-								>
-									{isNew
-										? __('Create Bank', 'pressprimer-quiz')
-										: __('Update Bank', 'pressprimer-quiz')}
-								</Button>
-							</Space>
+							)}
 						</div>
 
 						{/* Form */}
@@ -232,6 +255,7 @@ const BankEditor = ({ data = {}, surface = 'admin', nav, slots = {}, onSaved, on
 								layout="vertical"
 								onFinish={handleSubmit}
 								onValuesChange={dirty.markDirty}
+								disabled={!canEdit}
 								autoComplete="off"
 							>
 								<Form.Item
@@ -328,6 +352,7 @@ const BankEditor = ({ data = {}, surface = 'admin', nav, slots = {}, onSaved, on
 						</Card>
 
 						{/* Bottom action bar (mirrors the quiz editor) */}
+						{canEdit && (
 						<div style={{
 							background: '#fff',
 							padding: '20px 24px',
@@ -367,6 +392,19 @@ const BankEditor = ({ data = {}, surface = 'admin', nav, slots = {}, onSaved, on
 								</Button>
 							</Space>
 						</div>
+						)}
+
+						{/* The bank's questions: dashboard only in 3.2 (wp-admin
+						    keeps its bank detail page). */}
+						{'dashboard' === surface && (
+							isNew ? (
+								<Card className="ppq-bank-questions" title={__('Questions', 'pressprimer-quiz')} style={{ marginTop: 20 }}>
+									<Alert type="info" showIcon message={__('Create the bank first, then add questions to it.', 'pressprimer-quiz')} />
+								</Card>
+							) : (
+								<BankQuestionsPanel bankId={toId(currentBankId)} canEdit={canEdit} />
+							)
+						)}
 					</div>
 				</Spin>
 			</Content>

@@ -26,6 +26,18 @@ if ( ! function_exists( 'pressprimer_quiz_has_addon' ) ) {
 	}
 }
 
+if ( ! function_exists( 'pressprimer_quiz_show_prompts' ) ) {
+	/**
+	 * Stub: the prompt switch, on unless $GLOBALS['pressprimer_quiz_test_prompts_off'] is set.
+	 *
+	 * @param string $type Prompt type.
+	 * @return bool
+	 */
+	function pressprimer_quiz_show_prompts( $type = 'upsell' ) {
+		return empty( $GLOBALS['pressprimer_quiz_test_prompts_off'] );
+	}
+}
+
 /**
  * Premium catalog test case.
  *
@@ -45,7 +57,7 @@ class Test_Premium_Catalog extends TestCase {
 	 * Clean up the globals.
 	 */
 	protected function tearDown(): void {
-		unset( $GLOBALS['pressprimer_quiz_test_tiers'], $GLOBALS['pressprimer_quiz_test_caps'] );
+		unset( $GLOBALS['pressprimer_quiz_test_tiers'], $GLOBALS['pressprimer_quiz_test_caps'], $GLOBALS['pressprimer_quiz_test_prompts_off'] );
 	}
 
 	/**
@@ -307,7 +319,7 @@ class Test_Premium_Catalog extends TestCase {
 			$this->assertSame( 'educator' !== $card['tier'], $card['locked'], $card['key'] );
 			if ( $card['locked'] ) {
 				$this->assertSame( 'School' === $card['tierName'] ? 'school' : 'enterprise', $card['tier'] );
-				$this->assertStringStartsWith( PressPrimer_Quiz_Premium_Catalog::PRICING_URL, $card['upgradeUrl'] );
+				$this->assertSame( PressPrimer_Quiz_Premium_Catalog::pricing_url( 'reports', 'locked-card-' . $card['key'] ), $card['upgradeUrl'] );
 			} else {
 				$this->assertArrayNotHasKey( 'upgradeUrl', $card );
 			}
@@ -316,5 +328,59 @@ class Test_Premium_Catalog extends TestCase {
 		// Anyone else sees only the active tier's reports.
 		$GLOBALS['pressprimer_quiz_test_caps'] = array();
 		$this->assertSame( array( 'quiz-detail', 'prepost-analysis' ), array_column( PressPrimer_Quiz_Premium_Catalog::report_cards_for_user(), 'key' ) );
+
+		// With upsells switched off, an admin sees no locked cards either.
+		$GLOBALS['pressprimer_quiz_test_caps']        = array( 'manage_options' );
+		$GLOBALS['pressprimer_quiz_test_prompts_off'] = true;
+		$this->assertSame( array( 'quiz-detail', 'prepost-analysis' ), array_column( PressPrimer_Quiz_Premium_Catalog::report_cards_for_user(), 'key' ) );
+	}
+
+	/**
+	 * Premium tab: the options of every tier that isn't active, for admins
+	 * while upsells are on, each with its tier and a tagged link.
+	 */
+	public function test_quiz_options_for_user() {
+		$by_tier = array();
+		foreach ( PressPrimer_Quiz_Premium_Catalog::get_quiz_options() as $option ) {
+			$by_tier[ $option['tier'] ][] = $option['key'];
+		}
+
+		$GLOBALS['pressprimer_quiz_test_caps'] = array( 'manage_options' );
+		$states                                = array(
+			array(),
+			array( 'educator' ),
+			array( 'educator', 'school' ),
+			array( 'educator', 'school', 'enterprise' ),
+		);
+
+		foreach ( $states as $active ) {
+			$GLOBALS['pressprimer_quiz_test_tiers'] = $active;
+
+			$expected = array();
+			foreach ( PressPrimer_Quiz_Premium_Catalog::TIERS as $tier ) {
+				if ( ! in_array( $tier, $active, true ) ) {
+					$expected = array_merge( $expected, $by_tier[ $tier ] );
+				}
+			}
+
+			$options = PressPrimer_Quiz_Premium_Catalog::quiz_options_for_user();
+			$label   = implode( '+', $active ) ? implode( '+', $active ) : 'none';
+			$this->assertSame( $expected, array_column( $options, 'key' ), $label );
+
+			foreach ( $options as $option ) {
+				$this->assertNotEmpty( $option['tierName'], $option['key'] );
+				$this->assertNotEmpty( $option['tierColor'], $option['key'] );
+				$this->assertSame( PressPrimer_Quiz_Premium_Catalog::pricing_url( 'quiz-editor', 'premium-' . $option['key'] ), $option['upgradeUrl'] );
+			}
+		}
+
+		// Nobody but an admin gets any, and nobody while upsells are off.
+		$GLOBALS['pressprimer_quiz_test_tiers'] = array();
+		$GLOBALS['pressprimer_quiz_test_caps']  = array( 'pressprimer_quiz_manage_settings' );
+		$this->assertSame( array(), PressPrimer_Quiz_Premium_Catalog::quiz_options_for_user() );
+
+		$GLOBALS['pressprimer_quiz_test_caps']        = array( 'manage_options' );
+		$GLOBALS['pressprimer_quiz_test_prompts_off'] = true;
+		$this->assertSame( array(), PressPrimer_Quiz_Premium_Catalog::quiz_options_for_user() );
 	}
 }

@@ -155,6 +155,13 @@ class PressPrimer_Quiz_Editor_Data_Service {
 
 		$quiz_data = array_merge( $quiz_data, self::get_site_data() );
 
+		// The Premium tab's locked options (tiers not active; admins only,
+		// while upsells are on) and its pricing button (feature 011 FR-005).
+		$quiz_data['quizOptions']           = PressPrimer_Quiz_Premium_Catalog::quiz_options_for_user();
+		$quiz_data['quizOptionsPricingUrl'] = $quiz_data['quizOptions']
+			? PressPrimer_Quiz_Premium_Catalog::pricing_url( 'quiz-editor', 'premium-cta' )
+			: '';
+
 		/**
 		 * Filter quiz editor data before passing to React
 		 *
@@ -169,7 +176,7 @@ class PressPrimer_Quiz_Editor_Data_Service {
 		 */
 		$quiz_data = apply_filters( 'pressprimer_quiz_quiz_editor_data', $quiz_data, $quiz_id, $context );
 
-		return self::remove_upsells( $quiz_data, $context, [ 'touchpoints', 'quizOptions' ] );
+		return self::remove_upsells( $quiz_data, $context, [ 'touchpoints', 'quizOptions', 'quizOptionsPricingUrl' ] );
 	}
 
 	/**
@@ -334,9 +341,9 @@ class PressPrimer_Quiz_Editor_Data_Service {
 	 * Site flags every editor gets.
 	 *
 	 * The canManageSettings flag gates the quiz builder's "Save as template"
-	 * (templates are a site-wide policy object); isAdmin gates the Premium
-	 * Settings tab's upsell preview on a free site (admins-only upsells);
-	 * mathEnabled shows the Insert Math control and preview.
+	 * (templates are a site-wide policy object); isAdmin answers slots that
+	 * require manage_options; mathEnabled shows the Insert Math control and
+	 * preview.
 	 *
 	 * @since 3.2.0
 	 *
@@ -357,8 +364,9 @@ class PressPrimer_Quiz_Editor_Data_Service {
 	/**
 	 * Empty the upsell keys on the dashboard.
 	 *
-	 * Upsells are wp-admin only; on the dashboard these keys are always empty,
-	 * whatever a filter added (features 11 and 12).
+	 * Upsells are wp-admin only; on the dashboard these keys are always empty
+	 * (an empty list, or '' for a link), whatever a filter added (features 11
+	 * and 12).
 	 *
 	 * @since 3.2.0
 	 *
@@ -373,7 +381,7 @@ class PressPrimer_Quiz_Editor_Data_Service {
 		}
 
 		foreach ( $keys as $key ) {
-			$data[ $key ] = [];
+			$data[ $key ] = ( isset( $data[ $key ] ) && is_string( $data[ $key ] ) ) ? '' : [];
 		}
 
 		return $data;

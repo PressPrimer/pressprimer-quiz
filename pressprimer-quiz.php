@@ -158,16 +158,16 @@ function pressprimer_quiz_has_addon( $tier ) {
 /**
  * Whether white-label branding is on.
  *
- * Enterprise 3.2 answers through the filter. Enterprise 3.1.x doesn't hook
- * it, so while Enterprise is loaded the default reads its setting directly
- * (a compatibility read of `pressprimer_quiz_enterprise_white_label_enabled`).
+ * While Enterprise is loaded, reads its white-label setting
+ * (`pressprimer_quiz_enterprise_white_label_enabled`), the same option
+ * Enterprise's own check reads. The filter lets a site override the answer.
  *
  * @since 3.2.0
  *
  * @return bool True when white-label branding is on.
  */
 function pressprimer_quiz_white_label_active() {
-	$fallback = defined( 'PRESSPRIMER_QUIZ_ENTERPRISE_VERSION' )
+	$active = defined( 'PRESSPRIMER_QUIZ_ENTERPRISE_VERSION' )
 		&& (bool) get_option( 'pressprimer_quiz_enterprise_white_label_enabled', false );
 
 	/**
@@ -177,7 +177,40 @@ function pressprimer_quiz_white_label_active() {
 	 *
 	 * @param bool $active Whether white-label branding is on.
 	 */
-	return (bool) apply_filters( 'pressprimer_quiz_white_label_active', $fallback );
+	return (bool) apply_filters( 'pressprimer_quiz_white_label_active', $active );
+}
+
+/**
+ * Whether a kind of in-product prompt may show.
+ *
+ * One switch for every prompt: `add_filter( 'pressprimer_quiz_show_prompts',
+ * '__return_false' )` turns them all off, and `$type` allows targeted control.
+ *
+ * - 'upsell': the Upgrade menu and page, the Reports locked cards, the quiz
+ *   editor's locked Premium options and the touchpoints. Default: on until
+ *   Enterprise is active.
+ * - 'review' (the review notice) and 'email-optin' (the opt-in card and the
+ *   onboarding ask). Default: on unless white-label is on.
+ *
+ * @since 3.2.0
+ *
+ * @param string $type 'upsell', 'review' or 'email-optin'.
+ * @return bool True when prompts of that type may show.
+ */
+function pressprimer_quiz_show_prompts( $type = 'upsell' ) {
+	$default = 'upsell' === $type
+		? ! PressPrimer_Quiz_Premium_Catalog::tier_active( 'enterprise' )
+		: ! pressprimer_quiz_white_label_active();
+
+	/**
+	 * Filters whether a kind of in-product prompt may show.
+	 *
+	 * @since 3.2.0
+	 *
+	 * @param bool   $show Whether prompts of this type may show.
+	 * @param string $type 'upsell', 'review' or 'email-optin'.
+	 */
+	return (bool) apply_filters( 'pressprimer_quiz_show_prompts', $default, $type );
 }
 
 /**

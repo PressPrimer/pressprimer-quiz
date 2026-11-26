@@ -8,10 +8,12 @@
  *
  * Ownership states (3.2, spec 011 FR-003): an owned tier's card shows
  * "Active on This Site" and a documentation link instead of a buy button.
- * School is always "Most Popular". The menu item hides once Enterprise is
- * active, but the page stays reachable by URL: with every tier owned it is
- * calm (no buy buttons, footer CTA or sticky bar), and under white-label it
- * is a neutral notice with no PressPrimer name, logo or link (A21).
+ * School is always "Most Popular". The menu item follows the upsell prompt
+ * switch (off once Enterprise is active). With every tier owned the page
+ * stays reachable by URL and is calm (no buy buttons, footer CTA or sticky
+ * bar); under white-label it is a neutral notice with no PressPrimer name,
+ * logo or link (A21). With upsells turned off on a site without every tier,
+ * the page isn't registered: no page sells (R9).
  *
  * @package PressPrimer_Quiz
  * @subpackage Admin
@@ -65,14 +67,19 @@ class PressPrimer_Quiz_Upgrade_Page {
 	/**
 	 * Register the Upgrade page.
 	 *
-	 * Always registered, so the page answers by URL. hide_menu_item() takes
-	 * the menu item away once Enterprise is active.
+	 * Registered while upsells are on, and on a site with every tier (the calm
+	 * page answers by URL). hide_menu_item() takes the menu item away when
+	 * upsells are off.
 	 *
 	 * @since 2.3.0
 	 *
 	 * @return void
 	 */
 	public function register_menu() {
+		if ( ! $this->menu_visible() && ! PressPrimer_Quiz_Premium_Catalog::all_tiers_active() ) {
+			return;
+		}
+
 		// Under white-label the browser title carries no PressPrimer name.
 		$page_title = pressprimer_quiz_white_label_active()
 			? __( 'Upgrade', 'pressprimer-quiz' )
@@ -91,15 +98,15 @@ class PressPrimer_Quiz_Upgrade_Page {
 	/**
 	 * Whether the Upgrade menu item shows.
 	 *
-	 * It hides only at the top tier: Educator and School sites still see it,
-	 * because a higher tier is available to them.
+	 * The upsell prompt switch: on until Enterprise is active, so Educator and
+	 * School sites still see it (a higher tier is available to them).
 	 *
 	 * @since 3.2.0
 	 *
 	 * @return bool
 	 */
 	public function menu_visible() {
-		return ! $this->enterprise_addon_active();
+		return pressprimer_quiz_show_prompts( 'upsell' );
 	}
 
 	/**

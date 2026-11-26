@@ -62,6 +62,7 @@ class PressPrimer_Quiz_Shell {
 	 * Premium tiers a locked nav entry may advertise.
 	 *
 	 * @since 3.0.0
+	 * @deprecated 3.2.0 Locked entries are no longer rendered.
 	 * @var string[]
 	 */
 	const LOCKED_TIERS = array( 'educator', 'school', 'enterprise' );
@@ -353,10 +354,12 @@ class PressPrimer_Quiz_Shell {
 		/**
 		 * Filters the front-end shell screen registry.
 		 *
-		 * Each entry is keyed by a unique screen id. A normal screen requires
-		 * 'label', 'capability', and 'handle' (a registered script); 'group',
-		 * 'order', and 'icon' are optional. A locked upsell entry sets
-		 * 'locked' => true plus 'locked_tier' and omits capability/handle.
+		 * Each entry is keyed by a unique screen id. A screen requires 'label',
+		 * 'capability', and 'handle' (a registered script); 'group', 'order',
+		 * and 'icon' are optional.
+		 *
+		 * Since 3.2 a locked upsell entry ('locked' => true) is deprecated and
+		 * not rendered: the front end carries no upsells.
 		 *
 		 * @since 3.0.0
 		 *
@@ -405,24 +408,21 @@ class PressPrimer_Quiz_Shell {
 		$icon  = self::sanitize_icon( isset( $entry['icon'] ) ? $entry['icon'] : '' );
 		$label = ( isset( $entry['label'] ) && is_string( $entry['label'] ) ) ? $entry['label'] : '';
 
-		// Locked upsell entry: no capability/handle, but needs a valid tier.
+		// Locked upsell entries are deprecated: the front end carries no
+		// upsells (feature 011 FR-007.4), so nothing renders for one.
 		if ( ! empty( $entry['locked'] ) ) {
-			$tier = isset( $entry['locked_tier'] ) ? (string) $entry['locked_tier'] : '';
-
-			if ( '' === $label || ! in_array( $tier, self::LOCKED_TIERS, true ) ) {
-				self::debug_log( "locked screen '{$id}' missing label or valid locked_tier" );
-				return null;
-			}
-
-			return array(
-				'id'          => $id,
-				'label'       => $label,
-				'group'       => $group,
-				'order'       => $order,
-				'icon'        => $icon,
-				'locked'      => true,
-				'locked_tier' => $tier,
+			_deprecated_argument(
+				'pressprimer_quiz_shell_screens',
+				'3.2.0',
+				esc_html(
+					sprintf(
+						/* translators: %s: screen id */
+						__( 'Locked upsell entries are no longer rendered on the front-end dashboard (screen: %s).', 'pressprimer-quiz' ),
+						$id
+					)
+				)
 			);
+			return null;
 		}
 
 		// Normal screen: label, capability, and a registered handle are required.
@@ -507,12 +507,33 @@ class PressPrimer_Quiz_Shell {
 	}
 
 	/**
+	 * Whether front-end upsells are suppressed.
+	 *
+	 * Free's shell shows none since 3.2 (locked entries are deprecated); the
+	 * filter keeps working for code that reads it, and its default now
+	 * follows the upsell prompt switch.
+	 *
+	 * @since 3.2.0
+	 *
+	 * @return bool True when upsells are suppressed.
+	 */
+	public static function upsells_suppressed() {
+		/**
+		 * Filters whether front-end upsells are suppressed.
+		 *
+		 * @since 3.0.0
+		 * @since 3.2.0 Defaults to ! pressprimer_quiz_show_prompts( 'upsell' ).
+		 *
+		 * @param bool $suppressed Whether upsells are suppressed.
+		 */
+		return (bool) apply_filters( 'pressprimer_quiz_shell_suppress_upsells', ! pressprimer_quiz_show_prompts( 'upsell' ) );
+	}
+
+	/**
 	 * Get the screens visible to the current user, sorted for the nav.
 	 *
-	 * Normal screens are included when the current user has their capability;
-	 * locked entries are included only when their tier is inactive and upsells
-	 * are not suppressed (each then gains an upgrade_url). Sorted by group
-	 * order, then entry order, then id.
+	 * Screens are included when the current user has their capability.
+	 * Sorted by group order, then entry order, then id.
 	 *
 	 * @since 3.0.0
 	 *
@@ -521,42 +542,9 @@ class PressPrimer_Quiz_Shell {
 	public static function get_visible_screens() {
 		$screens = self::get_screens();
 		$groups  = self::get_groups();
-
-		/**
-		 * Filters whether front-end upsell (locked) entries are suppressed.
-		 *
-		 * Defaults to suppressed when the Enterprise (white-label) tier is
-		 * active, matching the wp-admin Upgrade page.
-		 *
-		 * @since 3.0.0
-		 *
-		 * @param bool $suppressed Whether upsells are suppressed.
-		 */
-		$upsells_suppressed = (bool) apply_filters( 'pressprimer_quiz_shell_suppress_upsells', pressprimer_quiz_has_addon( 'enterprise' ) );
-		$upgrade_url        = admin_url( 'admin.php?page=pressprimer-quiz-upgrade' );
-
-		// Locked-card copy comes from the premium catalog (decision 005).
-		$tiers = PressPrimer_Quiz_Premium_Catalog::get_tiers();
-
 		$visible = array();
 
 		foreach ( $screens as $screen ) {
-			if ( ! empty( $screen['locked'] ) ) {
-				if ( $upsells_suppressed || pressprimer_quiz_has_addon( $screen['locked_tier'] ) ) {
-					continue;
-				}
-
-				$tier = isset( $tiers[ $screen['locked_tier'] ] ) ? $tiers[ $screen['locked_tier'] ] : array();
-
-				$screen['upgrade_url']      = $upgrade_url;
-				$screen['tier_name']        = isset( $tier['name'] ) ? $tier['name'] : '';
-				$screen['tier_description'] = isset( $tier['description'] ) ? $tier['description'] : '';
-				$screen['tier_highlights']  = ( isset( $tier['highlights'] ) && is_array( $tier['highlights'] ) ) ? array_values( $tier['highlights'] ) : array();
-				$screen['tier_url']         = isset( $tier['url'] ) ? $tier['url'] : '';
-				$visible[]                  = $screen;
-				continue;
-			}
-
 			if ( current_user_can( $screen['capability'] ) ) {
 				$visible[] = $screen;
 			}
@@ -608,16 +596,6 @@ class PressPrimer_Quiz_Shell {
 				'icon'  => $screen['icon'],
 				'order' => $screen['order'],
 			);
-
-			if ( ! empty( $screen['locked'] ) ) {
-				$entry['locked']          = true;
-				$entry['lockedTier']      = $screen['locked_tier'];
-				$entry['upgradeUrl']      = isset( $screen['upgrade_url'] ) ? $screen['upgrade_url'] : '';
-				$entry['tierName']        = isset( $screen['tier_name'] ) ? $screen['tier_name'] : '';
-				$entry['tierDescription'] = isset( $screen['tier_description'] ) ? $screen['tier_description'] : '';
-				$entry['tierHighlights']  = isset( $screen['tier_highlights'] ) ? $screen['tier_highlights'] : array();
-				$entry['tierUrl']         = isset( $screen['tier_url'] ) ? $screen['tier_url'] : '';
-			}
 
 			$client_screens[] = $entry;
 		}

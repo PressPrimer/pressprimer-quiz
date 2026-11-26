@@ -9,7 +9,7 @@ msgstr ""
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"POT-Creation-Date: 2026-11-26T16:52:53+00:00\n"
+"POT-Creation-Date: 2026-11-26T17:04:39+00:00\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "X-Generator: WP-CLI 2.12.0\n"
 "X-Domain: pressprimer-quiz\n"
@@ -63,7 +63,7 @@ msgstr ""
 #: includes/admin/class-ppq-admin-settings.php:1616
 #: includes/admin/class-ppq-admin.php:561
 #: includes/admin/class-ppq-admin.php:652
-#: includes/admin/class-ppq-upgrade-page.php:210
+#: includes/admin/class-ppq-upgrade-page.php:217
 msgid "You do not have permission to access this page."
 msgstr ""
 
@@ -75,7 +75,7 @@ msgstr ""
 #: includes/admin/class-ppq-admin-settings.php:1617
 #: includes/admin/class-ppq-admin.php:562
 #: includes/admin/class-ppq-admin.php:653
-#: includes/admin/class-ppq-upgrade-page.php:211
+#: includes/admin/class-ppq-upgrade-page.php:218
 msgid "Permission Denied"
 msgstr ""
 
@@ -2101,7 +2101,6 @@ msgstr ""
 
 #: includes/admin/class-ppq-premium-catalog.php:98
 #: includes/admin/views/upgrade-page.php:178
-#: src/quiz-editor/components/PremiumUpsell.jsx:32
 #: src/settings-panel/components/StatusTab.jsx:461
 msgid "Educator"
 msgstr ""
@@ -2150,7 +2149,6 @@ msgstr ""
 
 #: includes/admin/class-ppq-premium-catalog.php:115
 #: includes/admin/views/upgrade-page.php:181
-#: src/quiz-editor/components/PremiumUpsell.jsx:33
 #: src/settings-panel/components/StatusTab.jsx:467
 msgid "School"
 msgstr ""
@@ -2196,7 +2194,6 @@ msgstr ""
 
 #: includes/admin/class-ppq-premium-catalog.php:132
 #: includes/admin/views/upgrade-page.php:185
-#: src/quiz-editor/components/PremiumUpsell.jsx:34
 #: src/settings-panel/components/StatusTab.jsx:473
 msgid "Enterprise"
 msgstr ""
@@ -2483,8 +2480,7 @@ msgstr ""
 
 #: includes/admin/class-ppq-premium-catalog.php:333
 #: includes/admin/class-ppq-premium-catalog.php:426
-#: src/quiz-editor/components/PremiumSettingsPanel.jsx:478
-#: src/quiz-editor/components/PremiumUpsell.jsx:57
+#: src/quiz-editor/components/PremiumSettingsPanel.jsx:482
 #: src/quiz-editor/templates/templateFields.js:141
 msgid "Spaced Repetition"
 msgstr ""
@@ -2534,13 +2530,11 @@ msgid "Review attempts flagged for statistically unusual patterns — timing, an
 msgstr ""
 
 #: includes/admin/class-ppq-premium-catalog.php:399
-#: src/quiz-editor/components/PremiumSettingsPanel.jsx:291
-#: src/quiz-editor/components/PremiumUpsell.jsx:46
+#: src/quiz-editor/components/PremiumSettingsPanel.jsx:295
 msgid "Pre/Post Test Linking"
 msgstr ""
 
 #: includes/admin/class-ppq-premium-catalog.php:400
-#: src/quiz-editor/components/PremiumUpsell.jsx:47
 msgid "Link a pre-test to this quiz to automatically show students their improvement on the results page."
 msgstr ""
 
@@ -2590,35 +2584,29 @@ msgid "Report scaled scores and percentiles for this quiz on a score report stud
 msgstr ""
 
 #: includes/admin/class-ppq-premium-catalog.php:462
-#: src/quiz-editor/components/PremiumUpsell.jsx:68
 msgid "Branching Logic"
 msgstr ""
 
 #: includes/admin/class-ppq-premium-catalog.php:463
-#: src/quiz-editor/components/PremiumUpsell.jsx:69
 msgid "Route students to different questions based on their answers to build adaptive, conditional quizzes."
 msgstr ""
 
 #: includes/admin/class-ppq-premium-catalog.php:471
-#: src/quiz-editor/components/PremiumSettingsPanel.jsx:347
-#: src/quiz-editor/components/PremiumUpsell.jsx:79
+#: src/quiz-editor/components/PremiumSettingsPanel.jsx:351
 msgid "Proctoring"
 msgstr ""
 
 #: includes/admin/class-ppq-premium-catalog.php:472
-#: src/quiz-editor/components/PremiumUpsell.jsx:80
 msgid "Monitor tab-switching and focus loss, require full-screen mode, and restrict quizzes to desktop browsers."
 msgstr ""
 
 #: includes/admin/class-ppq-premium-catalog.php:480
-#: src/quiz-editor/components/PremiumSettingsPanel.jsx:434
-#: src/quiz-editor/components/PremiumUpsell.jsx:90
+#: src/quiz-editor/components/PremiumSettingsPanel.jsx:438
 #: src/quiz-editor/templates/templateFields.js:146
 msgid "Integrity Analysis"
 msgstr ""
 
 #: includes/admin/class-ppq-premium-catalog.php:481
-#: src/quiz-editor/components/PremiumUpsell.jsx:91
 msgid "Flag completed attempts with statistically unusual patterns — timing, answer similarity, shared devices, and concurrent sessions."
 msgstr ""
 
@@ -2666,23 +2654,23 @@ msgstr ""
 msgid "Remind me later"
 msgstr ""
 
-#: includes/admin/class-ppq-upgrade-page.php:78
-#: includes/admin/class-ppq-upgrade-page.php:84
+#: includes/admin/class-ppq-upgrade-page.php:85
+#: includes/admin/class-ppq-upgrade-page.php:91
 #: includes/admin/views/upgrade-page-white-label.php:20
 #: includes/admin/views/upgrade-page.php:262
 #: src/reports/components/Reports.jsx:275
 msgid "Upgrade"
 msgstr ""
 
-#: includes/admin/class-ppq-upgrade-page.php:79
+#: includes/admin/class-ppq-upgrade-page.php:86
 msgid "Upgrade PressPrimer Quiz"
 msgstr ""
 
-#: includes/admin/class-ppq-upgrade-page.php:285
+#: includes/admin/class-ppq-upgrade-page.php:292
 msgid "Included"
 msgstr ""
 
-#: includes/admin/class-ppq-upgrade-page.php:289
+#: includes/admin/class-ppq-upgrade-page.php:296
 msgid "Not included"
 msgstr ""
 
@@ -2712,7 +2700,7 @@ msgstr ""
 
 #: includes/admin/views/upgrade-page.php:69
 #: includes/admin/views/upgrade-page.php:247
-#: src/quiz-editor/components/PremiumUpsell.jsx:128
+#: src/quiz-editor/components/PremiumUpsell.jsx:93
 msgid "View Pricing & Upgrade"
 msgstr ""
 
@@ -2742,7 +2730,8 @@ msgstr ""
 
 #. translators: %s: tier name (Educator, School, or Enterprise)
 #: includes/admin/views/upgrade-page.php:150
-#, php-format
+#: src/quiz-editor/components/PremiumUpsell.jsx:150
+#, php-format,js-format
 msgid "Get %s"
 msgstr ""
 
@@ -3606,7 +3595,7 @@ msgstr ""
 #: includes/frontend/class-ppq-quiz-renderer.php:1423
 #: src/bank-editor/components/BankEditor.jsx:218
 #: src/dashboard/components/Dashboard.jsx:129
-#: src/quiz-editor/components/PremiumSettingsPanel.jsx:332
+#: src/quiz-editor/components/PremiumSettingsPanel.jsx:336
 #: src/reports/components/Reports.jsx:209
 msgid "Loading..."
 msgstr ""
@@ -3823,20 +3812,26 @@ msgstr ""
 msgid "Scoring — %s"
 msgstr ""
 
-#: includes/frontend/class-ppq-shell.php:112
+#: includes/frontend/class-ppq-shell.php:113
 msgid "The PressPrimer dashboard can appear only once per page. Additional instances are ignored."
 msgstr ""
 
-#: includes/frontend/class-ppq-shell.php:121
+#: includes/frontend/class-ppq-shell.php:122
 msgid "The dashboard requires JavaScript to be enabled."
 msgstr ""
 
-#: includes/frontend/class-ppq-shell.php:319
+#: includes/frontend/class-ppq-shell.php:320
 msgid "Home"
 msgstr ""
 
-#: includes/frontend/class-ppq-shell.php:334
+#: includes/frontend/class-ppq-shell.php:335
 msgid "My Results"
+msgstr ""
+
+#. translators: %s: screen id
+#: includes/frontend/class-ppq-shell.php:420
+#, php-format
+msgid "Locked upsell entries are no longer rendered on the front-end dashboard (screen: %s)."
 msgstr ""
 
 #. translators: Default name when student name is unknown
@@ -4071,7 +4066,7 @@ msgstr ""
 #: includes/integrations/class-ppq-tutorlms.php:584
 #: assets/js/learndash-editor.js:155
 #: assets/js/tutorlms-editor.js:153
-#: src/quiz-editor/components/PremiumSettingsPanel.jsx:332
+#: src/quiz-editor/components/PremiumSettingsPanel.jsx:336
 msgid "No quizzes found"
 msgstr ""
 
@@ -4968,7 +4963,7 @@ msgstr ""
 msgid "You've used all %1$d AI items for this month. Your limit resets on %2$s."
 msgstr ""
 
-#: includes/services/class-ppq-editor-data-service.php:315
+#: includes/services/class-ppq-editor-data-service.php:322
 #: src/bank-editor/components/BankEditor.jsx:313
 msgid "Private: Only you can access this bank. Shared: Teachers in your groups can access this bank."
 msgstr ""
@@ -7070,67 +7065,67 @@ msgstr ""
 msgid "Unlink"
 msgstr ""
 
-#: src/quiz-editor/components/PremiumSettingsPanel.jsx:276
+#: src/quiz-editor/components/PremiumSettingsPanel.jsx:280
 msgid "These settings override the global proctoring configuration for this quiz only. Choose \"Use Global Default\" to follow the site’s proctoring settings."
 msgstr ""
 
-#: src/quiz-editor/components/PremiumSettingsPanel.jsx:278
+#: src/quiz-editor/components/PremiumSettingsPanel.jsx:282
 msgid "Global proctoring is currently off. You can enable it for this quiz individually."
 msgstr ""
 
-#: src/quiz-editor/components/PremiumSettingsPanel.jsx:280
+#: src/quiz-editor/components/PremiumSettingsPanel.jsx:284
 msgid "These settings override the global proctoring configuration for this quiz only. Use \"Use Global Default\" to inherit from Settings > Proctoring."
 msgstr ""
 
-#: src/quiz-editor/components/PremiumSettingsPanel.jsx:293
+#: src/quiz-editor/components/PremiumSettingsPanel.jsx:297
 msgid "Link this quiz to a pre-test to track student improvement between assessments"
 msgstr ""
 
-#: src/quiz-editor/components/PremiumSettingsPanel.jsx:303
+#: src/quiz-editor/components/PremiumSettingsPanel.jsx:307
 msgid "Pre/Post Test Comparison"
 msgstr ""
 
-#: src/quiz-editor/components/PremiumSettingsPanel.jsx:304
+#: src/quiz-editor/components/PremiumSettingsPanel.jsx:308
 msgid "Link a pre-test to this quiz to automatically show students their improvement on the results page. The pre-test should be taken before this quiz."
 msgstr ""
 
-#: src/quiz-editor/components/PremiumSettingsPanel.jsx:311
+#: src/quiz-editor/components/PremiumSettingsPanel.jsx:315
 msgid "Pre-Test Quiz"
 msgstr ""
 
-#: src/quiz-editor/components/PremiumSettingsPanel.jsx:312
+#: src/quiz-editor/components/PremiumSettingsPanel.jsx:316
 msgid "Select the quiz that serves as the pre-test for this quiz. Students who complete both will see a comparison of their scores."
 msgstr ""
 
-#: src/quiz-editor/components/PremiumSettingsPanel.jsx:323
+#: src/quiz-editor/components/PremiumSettingsPanel.jsx:327
 msgid "None (no pre-test linked)"
 msgstr ""
 
-#: src/quiz-editor/components/PremiumSettingsPanel.jsx:336
+#: src/quiz-editor/components/PremiumSettingsPanel.jsx:340
 msgid "Select a quiz to use as the pre-test for this quiz"
 msgstr ""
 
-#: src/quiz-editor/components/PremiumSettingsPanel.jsx:349
+#: src/quiz-editor/components/PremiumSettingsPanel.jsx:353
 msgid "Override global proctoring settings for this quiz"
 msgstr ""
 
-#: src/quiz-editor/components/PremiumSettingsPanel.jsx:359
+#: src/quiz-editor/components/PremiumSettingsPanel.jsx:363
 msgid "Per-Quiz Proctoring Overrides"
 msgstr ""
 
-#: src/quiz-editor/components/PremiumSettingsPanel.jsx:367
+#: src/quiz-editor/components/PremiumSettingsPanel.jsx:371
 #: src/quiz-editor/templates/templateFields.js:142
 msgid "Proctoring Mode"
 msgstr ""
 
-#: src/quiz-editor/components/PremiumSettingsPanel.jsx:368
+#: src/quiz-editor/components/PremiumSettingsPanel.jsx:372
 msgid "Controls the level of proctoring for this quiz. Monitor logs incidents silently. Strict warns students of violations."
 msgstr ""
 
-#: src/quiz-editor/components/PremiumSettingsPanel.jsx:379
-#: src/quiz-editor/components/PremiumSettingsPanel.jsx:402
-#: src/quiz-editor/components/PremiumSettingsPanel.jsx:424
-#: src/quiz-editor/components/PremiumSettingsPanel.jsx:446
+#: src/quiz-editor/components/PremiumSettingsPanel.jsx:383
+#: src/quiz-editor/components/PremiumSettingsPanel.jsx:406
+#: src/quiz-editor/components/PremiumSettingsPanel.jsx:428
+#: src/quiz-editor/components/PremiumSettingsPanel.jsx:450
 #: src/quiz-editor/components/SettingsPanel.jsx:779
 #: src/quiz-editor/components/SettingsPanel.jsx:945
 #: src/quiz-editor/templates/templateFields.js:36
@@ -7140,141 +7135,145 @@ msgstr ""
 msgid "Use Global Default"
 msgstr ""
 
-#: src/quiz-editor/components/PremiumSettingsPanel.jsx:380
+#: src/quiz-editor/components/PremiumSettingsPanel.jsx:384
 #: src/quiz-editor/templates/templateFields.js:100
 msgid "Off"
 msgstr ""
 
-#: src/quiz-editor/components/PremiumSettingsPanel.jsx:381
+#: src/quiz-editor/components/PremiumSettingsPanel.jsx:385
 #: src/quiz-editor/templates/templateFields.js:101
 msgid "Monitor"
 msgstr ""
 
-#: src/quiz-editor/components/PremiumSettingsPanel.jsx:382
+#: src/quiz-editor/components/PremiumSettingsPanel.jsx:386
 #: src/quiz-editor/templates/templateFields.js:102
 msgid "Strict"
 msgstr ""
 
-#: src/quiz-editor/components/PremiumSettingsPanel.jsx:390
+#: src/quiz-editor/components/PremiumSettingsPanel.jsx:394
 #: src/quiz-editor/templates/templateFields.js:143
 msgid "Tab/Focus Monitoring"
 msgstr ""
 
-#: src/quiz-editor/components/PremiumSettingsPanel.jsx:391
+#: src/quiz-editor/components/PremiumSettingsPanel.jsx:395
 msgid "Detect when the student leaves the quiz tab or switches to another application."
 msgstr ""
 
-#: src/quiz-editor/components/PremiumSettingsPanel.jsx:403
-#: src/quiz-editor/components/PremiumSettingsPanel.jsx:425
-#: src/quiz-editor/components/PremiumSettingsPanel.jsx:447
+#: src/quiz-editor/components/PremiumSettingsPanel.jsx:407
+#: src/quiz-editor/components/PremiumSettingsPanel.jsx:429
+#: src/quiz-editor/components/PremiumSettingsPanel.jsx:451
 #: src/quiz-editor/templates/templateFields.js:106
 msgid "Enabled"
 msgstr ""
 
-#: src/quiz-editor/components/PremiumSettingsPanel.jsx:404
-#: src/quiz-editor/components/PremiumSettingsPanel.jsx:426
-#: src/quiz-editor/components/PremiumSettingsPanel.jsx:448
+#: src/quiz-editor/components/PremiumSettingsPanel.jsx:408
+#: src/quiz-editor/components/PremiumSettingsPanel.jsx:430
+#: src/quiz-editor/components/PremiumSettingsPanel.jsx:452
 #: src/quiz-editor/templates/templateFields.js:107
 msgid "Disabled"
 msgstr ""
 
-#: src/quiz-editor/components/PremiumSettingsPanel.jsx:412
+#: src/quiz-editor/components/PremiumSettingsPanel.jsx:416
 #: src/quiz-editor/templates/templateFields.js:144
 msgid "Full-Screen Mode"
 msgstr ""
 
-#: src/quiz-editor/components/PremiumSettingsPanel.jsx:413
+#: src/quiz-editor/components/PremiumSettingsPanel.jsx:417
 msgid "Require the quiz to be taken in full-screen mode. Exiting full-screen is logged as a proctoring incident."
 msgstr ""
 
-#: src/quiz-editor/components/PremiumSettingsPanel.jsx:435
+#: src/quiz-editor/components/PremiumSettingsPanel.jsx:439
 msgid "Analyze the completed attempts on this quiz for statistically unusual patterns (timing, answer similarity, shared devices). Separate from real-time proctoring; flags only direct reviewer attention and never change scores."
 msgstr ""
 
-#: src/quiz-editor/components/PremiumSettingsPanel.jsx:460
+#: src/quiz-editor/components/PremiumSettingsPanel.jsx:464
 #: src/quiz-editor/templates/templateFields.js:145
 msgid "Require Desktop Browser"
 msgstr ""
 
-#: src/quiz-editor/components/PremiumSettingsPanel.jsx:461
+#: src/quiz-editor/components/PremiumSettingsPanel.jsx:465
 msgid "Block mobile and tablet devices from taking this quiz. Detection is based on user agent strings and may not be 100% accurate."
 msgstr ""
 
-#: src/quiz-editor/components/PremiumSettingsPanel.jsx:467
+#: src/quiz-editor/components/PremiumSettingsPanel.jsx:471
 msgid "Mobile devices have limited proctoring support. Enable this to restrict quizzes to desktop browsers only."
 msgstr ""
 
-#: src/quiz-editor/components/PremiumSettingsPanel.jsx:480
+#: src/quiz-editor/components/PremiumSettingsPanel.jsx:484
 msgid "Track student mastery over time and generate review quizzes for questions they need to practice"
 msgstr ""
 
-#: src/quiz-editor/components/PremiumSettingsPanel.jsx:490
+#: src/quiz-editor/components/PremiumSettingsPanel.jsx:494
 msgid "Enable Spaced Repetition"
 msgstr ""
 
-#: src/quiz-editor/components/PremiumSettingsPanel.jsx:491
+#: src/quiz-editor/components/PremiumSettingsPanel.jsx:495
 msgid "Questions from this quiz join each student’s review queue, scheduled with SM-2 or FSRS as set in School settings."
 msgstr ""
 
-#: src/quiz-editor/components/PremiumSettingsPanel.jsx:503
+#: src/quiz-editor/components/PremiumSettingsPanel.jsx:507
 msgid "Students will see review prompts and can generate personalized review quizzes from questions they need to practice."
 msgstr ""
 
-#: src/quiz-editor/components/PremiumSettingsPanel.jsx:519
+#: src/quiz-editor/components/PremiumSettingsPanel.jsx:523
 #: src/settings-panel/components/IntegrationsTab.jsx:462
 msgid "WP Fusion"
 msgstr ""
 
-#: src/quiz-editor/components/PremiumSettingsPanel.jsx:522
+#: src/quiz-editor/components/PremiumSettingsPanel.jsx:526
 msgid "Apply CRM tags through WP Fusion for this quiz, on top of the site-wide defaults. Logged-in users always sync. Guests sync only if they tick the marketing-consent checkbox shown on the guest email form — enable that checkbox under PressPrimer Quiz → Settings → General → Guest Email Consent."
 msgstr ""
 
-#: src/quiz-editor/components/PremiumSettingsPanel.jsx:523
+#: src/quiz-editor/components/PremiumSettingsPanel.jsx:527
 msgid "Apply CRM tags through WP Fusion for this quiz, on top of the site-wide defaults. Logged-in users always sync. Guests sync only if they tick the marketing-consent checkbox shown on the guest email form."
 msgstr ""
 
-#: src/quiz-editor/components/PremiumSettingsPanel.jsx:532
+#: src/quiz-editor/components/PremiumSettingsPanel.jsx:536
 msgid "These tags are added on top of the site-wide defaults set under PressPrimer Quiz → Settings → Integrations → WP Fusion."
 msgstr ""
 
-#: src/quiz-editor/components/PremiumSettingsPanel.jsx:533
+#: src/quiz-editor/components/PremiumSettingsPanel.jsx:537
 msgid "These tags are added on top of the site-wide WP Fusion defaults."
 msgstr ""
 
-#: src/quiz-editor/components/PremiumSettingsPanel.jsx:536
+#: src/quiz-editor/components/PremiumSettingsPanel.jsx:540
 #: src/settings-panel/components/IntegrationsTab.jsx:38
 msgid "Sign-up (email registration)"
 msgstr ""
 
-#: src/quiz-editor/components/PremiumSettingsPanel.jsx:537
+#: src/quiz-editor/components/PremiumSettingsPanel.jsx:541
 #: src/settings-panel/components/IntegrationsTab.jsx:39
 msgid "Completion"
 msgstr ""
 
-#: src/quiz-editor/components/PremiumSettingsPanel.jsx:538
+#: src/quiz-editor/components/PremiumSettingsPanel.jsx:542
 #: src/settings-panel/components/IntegrationsTab.jsx:40
 msgid "Pass"
 msgstr ""
 
-#: src/quiz-editor/components/PremiumSettingsPanel.jsx:539
+#: src/quiz-editor/components/PremiumSettingsPanel.jsx:543
 #: src/settings-panel/components/IntegrationsTab.jsx:41
 msgid "Fail"
 msgstr ""
 
-#: src/quiz-editor/components/PremiumSettingsPanel.jsx:550
+#: src/quiz-editor/components/PremiumSettingsPanel.jsx:554
 #: src/settings-panel/components/IntegrationsTab.jsx:515
 msgid "Select tags…"
 msgstr ""
 
-#: src/quiz-editor/components/PremiumUpsell.jsx:58
-msgid "Track question mastery with the SM-2 algorithm and generate personalized review quizzes at optimal intervals."
+#: src/quiz-editor/components/PremiumUpsell.jsx:74
+msgid "More quiz options"
 msgstr ""
 
-#: src/quiz-editor/components/PremiumUpsell.jsx:114
+#: src/quiz-editor/components/PremiumUpsell.jsx:75
 msgid "Unlock more quiz options"
 msgstr ""
 
-#: src/quiz-editor/components/PremiumUpsell.jsx:117
+#: src/quiz-editor/components/PremiumUpsell.jsx:79
+msgid "These options come with the premium tiers this site doesn’t have yet."
+msgstr ""
+
+#: src/quiz-editor/components/PremiumUpsell.jsx:80
 msgid "Premium add-ons unlock advanced per-quiz options like pre/post test linking, spaced repetition, branching logic, and proctoring. Upgrade to configure them right here in the quiz editor."
 msgstr ""
 

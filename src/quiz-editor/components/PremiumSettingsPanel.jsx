@@ -1,8 +1,8 @@
 /**
  * Premium Settings Panel Component
  *
- * Settings provided by premium addons (Educator, School, Enterprise).
- * Displayed as a separate tab in the Quiz Editor when at least one addon is active.
+ * Settings provided by premium addons (Educator, School, Enterprise), then
+ * the locked options of the tiers that aren't active (admins only).
  *
  * @package PressPrimer_Quiz
  * @since 2.2.0
@@ -260,16 +260,20 @@ const PremiumSettingsPanel = ({ form, quizData = {}, generationMode = 'fixed', s
 		form.setFieldsValue({ pre_test_id: value || null });
 	}, [form]);
 
-	// Free site: no premium addon active. The tab becomes an upsell preview of
-	// the premium per-quiz options. (Only admins reach this — the editor hides
-	// the tab from teachers on a free site — and never on the dashboard.)
+	// Locked options of the tiers that aren't active (admins only, while
+	// upsells are on; the editor data empties them on the dashboard).
+	const lockedOptions = 'admin' === surface && Array.isArray(quizData.quizOptions)
+		? quizData.quizOptions
+		: [];
+
+	// Free site: no premium addon active. The tab is the locked options alone.
 	const hasAnyAddon =
 		quizData.educatorActive ||
 		quizData.schoolActive ||
 		quizData.enterpriseActive;
 
-	if (!hasAnyAddon && 'admin' === surface && cardSlots.length === 0) {
-		return <PremiumUpsell />;
+	if (!hasAnyAddon && cardSlots.length === 0) {
+		return <PremiumUpsell options={lockedOptions} pricingUrl={quizData.quizOptionsPricingUrl} />;
 	}
 
 	// No wp-admin menu paths on the dashboard.
@@ -558,6 +562,9 @@ const PremiumSettingsPanel = ({ form, quizData = {}, generationMode = 'fixed', s
 
 			{/* quiz.premium.card slots, after the built-in cards. */}
 			<SlotList defs={cardSlots} slotProps={slotProps} />
+
+			{/* The tiers this site doesn't have, after its real cards. */}
+			<PremiumUpsell options={lockedOptions} pricingUrl={quizData.quizOptionsPricingUrl} compact />
 		</Space>
 	);
 };

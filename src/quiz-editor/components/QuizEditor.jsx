@@ -631,15 +631,15 @@ const QuizEditor = ({ data = {}, surface = 'admin', nav, slots = {}, onSaved, in
 		enterpriseProctoringSlot: hasSlotKey('quiz.premium.card', 'enterprise-proctoring', surface, slots),
 	});
 
-	// wp-admin: always surface the Premium Settings tab so free-site admins can
-	// discover what premium quiz options exist. On a free site it is
-	// admin-only: a teacher can neither upgrade nor use these options, so they
-	// never see the upsell. When any add-on is active the tab shows the real
-	// settings to everyone who can edit the quiz.
+	// wp-admin: when any add-on is active the tab shows the real settings to
+	// everyone who can edit the quiz; it also shows when there are locked
+	// options of the tiers that aren't active (quizOptions: admins only, while
+	// upsells are on), so admins can discover them.
 	// Dashboard: only when it has cards to show; never the upsell (R14).
+	const hasLockedOptions = Array.isArray(quizData.quizOptions) && quizData.quizOptions.length > 0;
 	const showPremiumTab = 'dashboard' === surface
 		? cardSlots.length > 0 || Object.values(premiumCards).some(Boolean)
-		: hasPremiumAddons || !!quizData.isAdmin || cardSlots.length > 0;
+		: hasPremiumAddons || hasLockedOptions || cardSlots.length > 0;
 
 	// Branching tab is available only for fixed-mode quizzes when Enterprise
 	// addon provides branching, and only in wp-admin (its legacy mount).

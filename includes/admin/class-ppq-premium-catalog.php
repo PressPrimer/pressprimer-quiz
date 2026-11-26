@@ -712,13 +712,28 @@ final class PressPrimer_Quiz_Premium_Catalog {
 	}
 
 	/**
+	 * Whether the current user sees locked (upsell) cards.
+	 *
+	 * Administrators only, and only while upsell prompts are on.
+	 *
+	 * @since 3.2.0
+	 *
+	 * @return bool
+	 */
+	public static function user_sees_upsells() {
+		return current_user_can( 'manage_options' )
+			&& function_exists( 'pressprimer_quiz_show_prompts' )
+			&& pressprimer_quiz_show_prompts( 'upsell' );
+	}
+
+	/**
 	 * The Reports page's premium cards for the current user.
 	 *
 	 * Catalog order, whatever is active, so the grid doesn't reflow when an
 	 * addon is turned on. A report whose tier isn't active is a locked card
-	 * with the tier name and an upgrade link, for administrators only; other
-	 * users get only the reports of active tiers (the page swaps in the
-	 * addon's real card).
+	 * with the tier name and an upgrade link, for administrators only while
+	 * upsells are on; other users get only the reports of active tiers (the
+	 * page swaps in the addon's real card).
 	 *
 	 * @since 3.2.0
 	 *
@@ -726,14 +741,14 @@ final class PressPrimer_Quiz_Premium_Catalog {
 	 *                 locked, and for locked cards tierName and upgradeUrl.
 	 */
 	public static function report_cards_for_user() {
-		$tiers    = self::get_tiers();
-		$is_admin = current_user_can( 'manage_options' );
-		$cards    = array();
+		$tiers   = self::get_tiers();
+		$upsells = self::user_sees_upsells();
+		$cards   = array();
 
 		foreach ( self::get_reports() as $report ) {
 			$locked = ! self::tier_active( $report['tier'] );
 
-			if ( $locked && ! $is_admin ) {
+			if ( $locked && ! $upsells ) {
 				continue;
 			}
 
@@ -749,12 +764,54 @@ final class PressPrimer_Quiz_Premium_Catalog {
 
 			if ( $locked ) {
 				$card['tierName']   = $tiers[ $report['tier'] ]['name'];
-				$card['upgradeUrl'] = self::PRICING_URL . '#pricing';
+				$card['upgradeUrl'] = self::pricing_url( 'reports', 'locked-card-' . $report['key'] );
 			}
 
 			$cards[] = $card;
 		}
 
 		return $cards;
+	}
+
+	/**
+	 * The quiz editor Premium tab's locked options for the current user.
+	 *
+	 * The options of every tier that isn't active, in catalog order, for
+	 * administrators while upsells are on; nobody else gets any. The tab shows
+	 * the active tiers' real cards itself. The editor data empties this list
+	 * on the front-end dashboard.
+	 *
+	 * @since 3.2.0
+	 *
+	 * @return array[] Options: key, title, description, iconType, color, tier,
+	 *                 tierName, tierColor, upgradeUrl.
+	 */
+	public static function quiz_options_for_user() {
+		if ( ! self::user_sees_upsells() ) {
+			return array();
+		}
+
+		$tiers   = self::get_tiers();
+		$options = array();
+
+		foreach ( self::get_quiz_options() as $option ) {
+			if ( self::tier_active( $option['tier'] ) ) {
+				continue;
+			}
+
+			$options[] = array(
+				'key'         => $option['key'],
+				'title'       => $option['title'],
+				'description' => $option['description'],
+				'iconType'    => $option['iconType'],
+				'color'       => $option['color'],
+				'tier'        => $option['tier'],
+				'tierName'    => $tiers[ $option['tier'] ]['name'],
+				'tierColor'   => $tiers[ $option['tier'] ]['color'],
+				'upgradeUrl'  => self::pricing_url( 'quiz-editor', 'premium-' . $option['key'] ),
+			);
+		}
+
+		return $options;
 	}
 }

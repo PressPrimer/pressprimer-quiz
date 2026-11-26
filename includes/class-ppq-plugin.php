@@ -275,6 +275,12 @@ class PressPrimer_Quiz_Plugin {
 			$controller = new PressPrimer_Quiz_REST_Controller();
 			$controller->init();
 		}
+
+		// AI question generation (v3.2).
+		if ( class_exists( 'PressPrimer_Quiz_REST_AI_Controller' ) ) {
+			$ai_controller = new PressPrimer_Quiz_REST_AI_Controller();
+			$ai_controller->init();
+		}
 	}
 
 	/**

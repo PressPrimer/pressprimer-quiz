@@ -475,7 +475,8 @@ class PressPrimer_Quiz_REST_Controller {
 			[
 				'methods'             => WP_REST_Server::READABLE,
 				'callback'            => [ $this, 'get_api_models' ],
-				'permission_callback' => [ $this, 'check_permission' ],
+				// Only Settings uses it; it calls the provider with the site's key.
+				'permission_callback' => [ $this, 'check_settings_permission' ],
 			]
 		);
 
@@ -1554,38 +1555,6 @@ class PressPrimer_Quiz_REST_Controller {
 	public function create_question( $request ) {
 		$data = $request->get_json_params();
 
-		// The stem as it will be stored: sanitized, without the trailing empty
-		// paragraphs pasted text brings (as answers already are).
-		$stem = $this->trim_trailing_empty_html( wp_kses_post( $data['stem'] ?? '' ) );
-
-		// Convert answer format from React (isCorrect) to database (is_correct) for validation
-		$answers_for_validation = array_map(
-			function ( $answer ) {
-				return [
-					'text'       => $answer['text'] ?? '',
-					'is_correct' => $answer['isCorrect'] ?? false,
-				];
-			},
-			$data['answers'] ?? []
-		);
-
-		// Validate question content before creating
-		$content_validation = PressPrimer_Quiz_Question::validate_content(
-			$stem,
-			$answers_for_validation,
-			sanitize_key( $data['type'] ?? 'mc' )
-		);
-
-		if ( is_wp_error( $content_validation ) ) {
-			return new WP_REST_Response(
-				[
-					'success' => false,
-					'message' => $content_validation->get_error_message(),
-				],
-				400
-			);
-		}
-
 		$status = $this->get_requested_question_status( $data, 'published' );
 		if ( is_wp_error( $status ) ) {
 			return $status;
@@ -1598,138 +1567,79 @@ class PressPrimer_Quiz_REST_Controller {
 			return $this->bank_not_allowed_error();
 		}
 
-		global $wpdb;
-		$wpdb->query( 'START TRANSACTION' );
+		// Convert answer format from React (isCorrect) to database (is_correct)
+		$answers = array_map(
+			function ( $answer ) {
+				return [
+					'id'         => $answer['id'] ?? '',
+					'text'       => $this->trim_trailing_empty_html( wp_kses_post( $answer['text'] ?? '' ) ),
+					'is_correct' => $answer['isCorrect'] ?? false,
+					'feedback'   => $this->trim_trailing_empty_html( wp_kses_post( $answer['feedback'] ?? '' ) ),
+					'order'      => $answer['order'] ?? 1,
+				];
+			},
+			(array) ( $data['answers'] ?? [] )
+		);
 
-		try {
-			// Create question using static create method
-			$question_id = PressPrimer_Quiz_Question::create(
-				[
-					'uuid'              => wp_generate_uuid4(),
-					'type'              => sanitize_key( $data['type'] ),
-					'difficulty_author' => sanitize_key( $data['difficulty'] ?? '' ),
-					'expected_seconds'  => absint( $data['timeLimit'] ?? 0 ),
-					'max_points'        => floatval( $data['points'] ?? 1 ),
-					'author_id'         => get_current_user_id(),
-					'status'            => $status,
-				]
-			);
-
-			if ( is_wp_error( $question_id ) ) {
-				throw new Exception( $question_id->get_error_message() );
-			}
-
-			// Load the newly created question
-			$question = PressPrimer_Quiz_Question::get( $question_id );
-
-			if ( ! $question ) {
-				throw new Exception( __( 'Failed to load created question.', 'pressprimer-quiz' ) );
-			}
-
-			// Convert answer format from React (isCorrect) to database (is_correct)
-			$answers = array_map(
-				function ( $answer ) {
-					return [
-						'id'         => $answer['id'] ?? '',
-						'text'       => $this->trim_trailing_empty_html( wp_kses_post( $answer['text'] ?? '' ) ),
-						'is_correct' => $answer['isCorrect'] ?? false,
-						'feedback'   => $this->trim_trailing_empty_html( wp_kses_post( $answer['feedback'] ?? '' ) ),
-						'order'      => $answer['order'] ?? 1,
-					];
+		// The shared create path (the AI save uses it too).
+		$question = PressPrimer_Quiz_Question::create_with_content(
+			[
+				'type'               => sanitize_key( $data['type'] ?? 'mc' ),
+				'difficulty_author'  => sanitize_key( $data['difficulty'] ?? '' ),
+				'expected_seconds'   => absint( $data['timeLimit'] ?? 0 ),
+				'max_points'         => floatval( $data['points'] ?? 1 ),
+				'status'             => $status,
+				'author_id'          => get_current_user_id(),
+				'source'             => 'editor',
+				// Sanitized, without the trailing empty paragraphs pasted text
+				// brings (as answers already are).
+				'stem'               => $this->trim_trailing_empty_html( wp_kses_post( $data['stem'] ?? '' ) ),
+				'answers'            => $answers,
+				'feedback_correct'   => wp_kses_post( $data['feedbackCorrect'] ?? '' ),
+				'feedback_incorrect' => wp_kses_post( $data['feedbackIncorrect'] ?? '' ),
+				'category_ids'       => (array) ( $data['categories'] ?? [] ),
+				'tag_ids'            => (array) ( $data['tags'] ?? [] ),
+				'bank_ids'           => $bank_ids,
+			],
+			[
+				'revision_source' => 'rest',
+				'before_commit'   => static function ( $question ) use ( $data ) {
+					/**
+					 * Fires after a question is saved via the REST API
+					 *
+					 * On create and update, after the question's content, taxonomies
+					 * and banks are written and before the transaction commits (like
+					 * pressprimer_quiz_rest_quiz_saved). Addons save their own
+					 * per-question fields from $data here.
+					 *
+					 * @since 3.2.0
+					 *
+					 * @param PressPrimer_Quiz_Question $question The saved question.
+					 * @param array                     $data     The request's JSON body.
+					 */
+					do_action( 'pressprimer_quiz_rest_question_saved', $question, $data );
 				},
-				$data['answers'] ?? []
-			);
+			]
+		);
 
-			// Create revision
-			$revision                     = new PressPrimer_Quiz_Question_Revision();
-			$revision->question_id        = $question->id;
-			$revision->version            = 1;
-			$revision->stem               = $stem;
-			$revision->answers_json       = wp_json_encode( $answers );
-			$revision->settings_json      = wp_json_encode( [] );
-			$revision->feedback_correct   = wp_kses_post( $data['feedbackCorrect'] ?? '' );
-			$revision->feedback_incorrect = wp_kses_post( $data['feedbackIncorrect'] ?? '' );
-			$revision->content_hash       = PressPrimer_Quiz_Question_Revision::generate_hash( $revision->stem, $answers );
-			$revision->created_by         = get_current_user_id();
+		if ( is_wp_error( $question ) ) {
+			$error_data = $question->get_error_data();
 
-			$result = $revision->save();
-
-			if ( is_wp_error( $result ) ) {
-				throw new Exception( $result->get_error_message() );
+			// Content errors keep this route's 400 response.
+			if ( is_array( $error_data ) && 400 === ( $error_data['status'] ?? 0 ) ) {
+				return new WP_REST_Response(
+					[
+						'success' => false,
+						'message' => $question->get_error_message(),
+					],
+					400
+				);
 			}
 
-			// Update question with revision ID
-			$question->current_revision_id = $revision->id;
-			$question->save();
-			PressPrimer_Quiz_Question_Revision::fire_created( $question->id, $revision->id, 'rest' );
-
-			// Register image ownership for any `data-ppq-attachment-id`
-			// markers in the saved content. With the 2.3 decoupled upload
-			// endpoint, the /upload-image route creates attachments without
-			// binding them — this is where they get attached to the saved
-			// question. The helper is idempotent (skips attachment IDs that
-			// already own this question), so it's safe even when no new
-			// attachments were added.
-			$ownership_html = implode(
-				"\n",
-				array_merge(
-					array( $revision->stem ),
-					array_map(
-						static function ( $answer ) {
-							return isset( $answer['text'] ) ? (string) $answer['text'] : '';
-						},
-						$answers
-					),
-					array( $revision->feedback_correct, $revision->feedback_incorrect )
-				)
-			);
-			PressPrimer_Quiz_Question::register_image_ownership( $question->id, $ownership_html );
-
-			// Set taxonomies
-			if ( ! empty( $data['categories'] ) ) {
-				$question->set_categories( array_map( 'absint', $data['categories'] ) );
-			}
-
-			if ( ! empty( $data['tags'] ) ) {
-				$question->set_tags( array_map( 'absint', $data['tags'] ) );
-			}
-
-			// Set banks (ownership checked before the transaction).
-			foreach ( array_unique( $bank_ids ) as $bank_id ) {
-				$bank = PressPrimer_Quiz_Bank::get( $bank_id );
-				if ( $bank ) {
-					$bank->add_question( $question->id );
-				}
-			}
-
-			/**
-			 * Fires after a question is saved via the REST API
-			 *
-			 * On create and update, after the question's content, taxonomies
-			 * and banks are written and before the transaction commits (like
-			 * pressprimer_quiz_rest_quiz_saved). Addons save their own
-			 * per-question fields from $data here.
-			 *
-			 * @since 3.2.0
-			 *
-			 * @param PressPrimer_Quiz_Question $question The saved question.
-			 * @param array                     $data     The request's JSON body.
-			 */
-			do_action( 'pressprimer_quiz_rest_question_saved', $question, $data );
-
-			$wpdb->query( 'COMMIT' );
-
-			// Clear dashboard stats cache for fresh counts
-			if ( class_exists( 'PressPrimer_Quiz_Statistics_Service' ) ) {
-				PressPrimer_Quiz_Statistics_Service::clear_dashboard_cache();
-			}
-
-			return new WP_REST_Response( [ 'id' => $question->id ], 201 );
-
-		} catch ( Exception $e ) {
-			$wpdb->query( 'ROLLBACK' );
-			return new WP_Error( 'create_failed', $e->getMessage(), [ 'status' => 500 ] );
+			return $question;
 		}
+
+		return new WP_REST_Response( [ 'id' => $question->id ], 201 );
 	}
 
 	/**

@@ -209,7 +209,7 @@ class PressPrimer_Quiz_AI_Provider_OpenAI implements PressPrimer_Quiz_AI_Provide
 		if ( 401 === $code ) {
 			return new WP_Error(
 				'ppq_invalid_key',
-				__( 'OpenAI rejected the API key. Check the key in Settings → AI.', 'pressprimer-quiz' )
+				__( 'OpenAI rejected the API key. Check the key in Settings → Integrations.', 'pressprimer-quiz' )
 			);
 		}
 
@@ -230,7 +230,7 @@ class PressPrimer_Quiz_AI_Provider_OpenAI implements PressPrimer_Quiz_AI_Provide
 		if ( 'model_not_found' === $err_code || 404 === $code ) {
 			return new WP_Error(
 				'ppq_model_not_found',
-				__( 'The selected OpenAI model is unavailable. Choose a different model in Settings → AI and try again.', 'pressprimer-quiz' )
+				__( 'The selected OpenAI model is unavailable. Choose a different model in Settings → Integrations and try again.', 'pressprimer-quiz' )
 			);
 		}
 

@@ -605,7 +605,7 @@ class PressPrimer_Quiz_AI_Service {
 		if ( empty( $this->api_key ) ) {
 			return new WP_Error(
 				'ppq_no_api_key',
-				__( 'OpenAI API key is not configured.', 'pressprimer-quiz' )
+				__( 'No AI API key is configured. Add one in Settings → Integrations.', 'pressprimer-quiz' )
 			);
 		}
 

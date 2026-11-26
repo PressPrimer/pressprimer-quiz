@@ -546,6 +546,174 @@ class PressPrimer_Quiz_Question extends PressPrimer_Quiz_Model {
 	}
 
 	/**
+	 * Create a question with its content in one step
+	 *
+	 * The create path the REST question route and the AI save share: checks
+	 * the content (validate_content()), then, in one transaction, creates the
+	 * question and its first revision, registers image ownership, sets
+	 * categories and tags and adds it to banks; then clears the dashboard
+	 * cache. Fields arrive sanitized, and the caller has already checked that
+	 * the user may save into the banks.
+	 *
+	 * @since 3.2.0
+	 *
+	 * @param array $fields {
+	 *     @type string $type               'mc', 'ma' or 'tf'.
+	 *     @type string $difficulty_author  Difficulty ('' for none).
+	 *     @type int    $expected_seconds   Expected time.
+	 *     @type float  $max_points         Points.
+	 *     @type string $status             'published' or 'draft'.
+	 *     @type int    $author_id          Author (default: the current user).
+	 *     @type string $source             'editor', 'ai', 'import' or 'duplicate' (for pressprimer_quiz_question_created).
+	 *     @type string $stem               Stem HTML.
+	 *     @type array  $answers            Answers as stored: text, is_correct, feedback (and id, order).
+	 *     @type string $feedback_correct   Feedback HTML.
+	 *     @type string $feedback_incorrect Feedback HTML.
+	 *     @type int[]  $category_ids       Category IDs.
+	 *     @type int[]  $tag_ids            Tag IDs.
+	 *     @type int[]  $bank_ids           Banks to add it to.
+	 * }
+	 * @param array $args {
+	 *     @type string   $revision_source For pressprimer_quiz_question_revision_created ('rest', 'ai', 'addon').
+	 *     @type callable $before_commit   Called with the question before the transaction commits.
+	 * }
+	 * @return PressPrimer_Quiz_Question|WP_Error The question; a content error has status 400 in its data, a failed write 500.
+	 */
+	public static function create_with_content( array $fields, array $args = [] ) {
+		global $wpdb;
+
+		$fields = wp_parse_args(
+			$fields,
+			[
+				'type'               => 'mc',
+				'difficulty_author'  => '',
+				'expected_seconds'   => 0,
+				'max_points'         => 1,
+				'status'             => 'published',
+				'author_id'          => get_current_user_id(),
+				'source'             => 'editor',
+				'stem'               => '',
+				'answers'            => [],
+				'feedback_correct'   => '',
+				'feedback_incorrect' => '',
+				'category_ids'       => [],
+				'tag_ids'            => [],
+				'bank_ids'           => [],
+			]
+		);
+		$args   = wp_parse_args(
+			$args,
+			[
+				'revision_source' => 'rest',
+				'before_commit'   => null,
+			]
+		);
+
+		$answers = array_values( (array) $fields['answers'] );
+
+		$valid = self::validate_content( $fields['stem'], $answers, $fields['type'] );
+		if ( is_wp_error( $valid ) ) {
+			$valid->add_data( [ 'status' => 400 ] );
+			return $valid;
+		}
+
+		$wpdb->query( 'START TRANSACTION' );
+
+		try {
+			$question_id = self::create(
+				[
+					'uuid'              => wp_generate_uuid4(),
+					'type'              => $fields['type'],
+					'difficulty_author' => $fields['difficulty_author'],
+					'expected_seconds'  => absint( $fields['expected_seconds'] ),
+					'max_points'        => floatval( $fields['max_points'] ),
+					'author_id'         => absint( $fields['author_id'] ),
+					'status'            => $fields['status'],
+					'source'            => $fields['source'],
+				]
+			);
+
+			if ( is_wp_error( $question_id ) ) {
+				throw new Exception( $question_id->get_error_message() );
+			}
+
+			$question = self::get( $question_id );
+
+			if ( ! $question ) {
+				throw new Exception( __( 'Failed to load created question.', 'pressprimer-quiz' ) );
+			}
+
+			$revision                     = new PressPrimer_Quiz_Question_Revision();
+			$revision->question_id        = $question->id;
+			$revision->version            = 1;
+			$revision->stem               = $fields['stem'];
+			$revision->answers_json       = wp_json_encode( $answers );
+			$revision->settings_json      = wp_json_encode( [] );
+			$revision->feedback_correct   = $fields['feedback_correct'];
+			$revision->feedback_incorrect = $fields['feedback_incorrect'];
+			$revision->content_hash       = PressPrimer_Quiz_Question_Revision::generate_hash( $revision->stem, $answers );
+			$revision->created_by         = absint( $fields['author_id'] );
+
+			$result = $revision->save();
+
+			if ( is_wp_error( $result ) ) {
+				throw new Exception( $result->get_error_message() );
+			}
+
+			$question->current_revision_id = $revision->id;
+			$question->save();
+			PressPrimer_Quiz_Question_Revision::fire_created( $question->id, $revision->id, $args['revision_source'] );
+
+			// Images the content uses (data-ppq-attachment-id), by FR-010's rules.
+			$ownership_html = implode(
+				"\n",
+				array_merge(
+					[ $revision->stem ],
+					array_map(
+						static function ( $answer ) {
+							return isset( $answer['text'] ) ? (string) $answer['text'] : '';
+						},
+						$answers
+					),
+					[ $revision->feedback_correct, $revision->feedback_incorrect ]
+				)
+			);
+			self::register_image_ownership( $question->id, $ownership_html );
+
+			if ( ! empty( $fields['category_ids'] ) ) {
+				$question->set_categories( array_map( 'absint', (array) $fields['category_ids'] ) );
+			}
+
+			if ( ! empty( $fields['tag_ids'] ) ) {
+				$question->set_tags( array_map( 'absint', (array) $fields['tag_ids'] ) );
+			}
+
+			foreach ( array_unique( array_map( 'absint', (array) $fields['bank_ids'] ) ) as $bank_id ) {
+				$bank = PressPrimer_Quiz_Bank::get( $bank_id );
+				if ( $bank ) {
+					$bank->add_question( $question->id );
+				}
+			}
+
+			if ( is_callable( $args['before_commit'] ) ) {
+				call_user_func( $args['before_commit'], $question );
+			}
+
+			$wpdb->query( 'COMMIT' );
+		} catch ( Exception $e ) {
+			$wpdb->query( 'ROLLBACK' );
+			return new WP_Error( 'create_failed', $e->getMessage(), [ 'status' => 500 ] );
+		}
+
+		// Fresh counts on the dashboard.
+		if ( class_exists( 'PressPrimer_Quiz_Statistics_Service' ) ) {
+			PressPrimer_Quiz_Statistics_Service::clear_dashboard_cache();
+		}
+
+		return $question;
+	}
+
+	/**
 	 * Duplicate question
 	 *
 	 * Copies the current revision (the stem marked "Copy of", new answer IDs),

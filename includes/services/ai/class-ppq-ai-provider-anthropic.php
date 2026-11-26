@@ -463,7 +463,7 @@ class PressPrimer_Quiz_AI_Provider_Anthropic implements PressPrimer_Quiz_AI_Prov
 		if ( 401 === $code || 'authentication_error' === $err_type ) {
 			return new WP_Error(
 				'ppq_invalid_key',
-				__( 'Anthropic rejected the API key. Check the key in Settings → AI.', 'pressprimer-quiz' )
+				__( 'Anthropic rejected the API key. Check the key in Settings → Integrations.', 'pressprimer-quiz' )
 			);
 		}
 
@@ -484,7 +484,7 @@ class PressPrimer_Quiz_AI_Provider_Anthropic implements PressPrimer_Quiz_AI_Prov
 		if ( 404 === $code || 'not_found_error' === $err_type ) {
 			return new WP_Error(
 				'ppq_model_not_found',
-				__( 'The selected Anthropic model is unavailable. Choose a different model in Settings → AI and try again.', 'pressprimer-quiz' )
+				__( 'The selected Anthropic model is unavailable. Choose a different model in Settings → Integrations and try again.', 'pressprimer-quiz' )
 			);
 		}
 

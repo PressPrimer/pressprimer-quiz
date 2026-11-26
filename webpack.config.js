@@ -7,6 +7,10 @@ module.exports = {
 		'question-editor': path.resolve(process.cwd(), 'src', 'question-editor', 'index.js'),
 		'quiz-editor': path.resolve(process.cwd(), 'src', 'quiz-editor', 'index.js'),
 		'bank-editor': path.resolve(process.cwd(), 'src', 'bank-editor', 'index.js'),
+		// The three editors in one bundle for the front-end dashboard (handle
+		// ppq-editors), and the small loader that adds it on demand.
+		'editors': path.resolve(process.cwd(), 'src', 'editors', 'index.js'),
+		'editors-loader': path.resolve(process.cwd(), 'src', 'editors', 'loader.js'),
 		'settings-panel': path.resolve(process.cwd(), 'src', 'settings-panel', 'index.js'),
 		'dashboard': path.resolve(process.cwd(), 'src', 'dashboard', 'index.js'),
 		'reports': path.resolve(process.cwd(), 'src', 'reports', 'index.js'),

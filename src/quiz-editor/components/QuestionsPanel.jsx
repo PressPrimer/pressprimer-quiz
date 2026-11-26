@@ -469,15 +469,18 @@ const QuestionsPanel = ({ quizId, generationMode }) => {
 			width: 100,
 			render: (_, record) => (
 				<Space size="small">
-					<Tooltip title={__('Edit question', 'pressprimer-quiz')}>
-						<Button
-							type="text"
-							icon={<EditOutlined />}
-							onClick={() => {
-								window.open(nav.editUrl('question', record.question_id), '_blank');
-							}}
-						/>
-					</Tooltip>
+					{/* A host without question URLs (editUrl returns '') shows no edit link. */}
+					{nav.editUrl('question', record.question_id) && (
+						<Tooltip title={__('Edit question', 'pressprimer-quiz')}>
+							<Button
+								type="text"
+								icon={<EditOutlined />}
+								onClick={() => {
+									window.open(nav.editUrl('question', record.question_id), '_blank');
+								}}
+							/>
+						</Tooltip>
+					)}
 					<Popconfirm
 						title={__('Remove this question?', 'pressprimer-quiz')}
 						onConfirm={() => handleRemove(record.id)}

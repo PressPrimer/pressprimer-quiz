@@ -18,6 +18,7 @@ import {
 	getVisibleSlots,
 	SlotList,
 } from '../../editors/slots';
+import { useDirtyTracker } from '../../editors/dirty';
 import {
 	Layout,
 	Form,
@@ -42,14 +43,15 @@ const { TextArea } = Input;
 /**
  * Main Bank Editor Component
  *
- * @param {Object}   props          Component props
- * @param {Object}   props.data     Editor data (editor-data service payload)
- * @param {string}   props.surface  Where the editor runs: 'admin' or 'dashboard'
- * @param {Object}   props.nav      Navigation adapter (list, edit, afterCreate, editUrl, back)
- * @param {Object}   props.slots    Host slot definitions by slot id, added to the registered ones
- * @param {Function} props.onSaved  Called after a successful save, before navigating
+ * @param {Object}   props               Component props
+ * @param {Object}   props.data          Editor data (editor-data service payload)
+ * @param {string}   props.surface       Where the editor runs: 'admin' or 'dashboard'
+ * @param {Object}   props.nav           Navigation adapter (list, edit, afterCreate, editUrl, back)
+ * @param {Object}   props.slots         Host slot definitions by slot id, added to the registered ones
+ * @param {Function} props.onSaved       Called after a successful save, before navigating
+ * @param {Function} props.onDirtyChange Called with true or false when unsaved changes appear or go
  */
-const BankEditor = ({ data = {}, surface = 'admin', nav, slots = {}, onSaved }) => {
+const BankEditor = ({ data = {}, surface = 'admin', nav, slots = {}, onSaved, onDirtyChange }) => {
 	const bankData = data;
 	const [form] = Form.useForm();
 	const [loading, setLoading] = useState(false);
@@ -58,6 +60,9 @@ const BankEditor = ({ data = {}, surface = 'admin', nav, slots = {}, onSaved }) 
 
 	const isNew = !currentBankId;
 	const isAdmin = bankData.userCan?.manage_all || false;
+
+	// Unsaved changes, for the host's navigation guard.
+	const dirty = useDirtyTracker(onDirtyChange);
 
 	// Addon slots (bank.fields).
 	useSlotRegistry();
@@ -121,13 +126,18 @@ const BankEditor = ({ data = {}, surface = 'admin', nav, slots = {}, onSaved }) 
 			// Practice Access) persist their own state on this event so the
 			// whole form saves from the one Update Bank button. Fired on
 			// create too, before the editor leaves.
+			dirty.markClean();
 			emitSaved('ppq-bank-saved', { bankId: toId(response.id), isNew }, onSaved);
 			await slotHost.runAfterSave({ entityId: toId(response.id), isNew, values: bankPayload, response });
 
 			// If new, go where questions can be added (the bank's detail page
-			// in wp-admin).
+			// in wp-admin). wp-admin leaves the page; a dashboard host may keep
+			// the editor mounted on the new bank.
 			if (isNew && response.id) {
 				nav.afterCreate('bank', response.id);
+				if ('admin' !== surface) {
+					setCurrentBankId(response.id);
+				}
 			} else {
 				setCurrentBankId(response.id);
 			}
@@ -167,6 +177,7 @@ const BankEditor = ({ data = {}, surface = 'admin', nav, slots = {}, onSaved }) 
 			});
 
 			message.success(__('Bank deleted successfully!', 'pressprimer-quiz'));
+			dirty.markClean();
 
 			// Back to the banks list
 			setTimeout(() => {
@@ -188,7 +199,7 @@ const BankEditor = ({ data = {}, surface = 'admin', nav, slots = {}, onSaved }) 
 				<Spin spinning={loading} tip={__('Loading...', 'pressprimer-quiz')}>
 					<div ref={slotEnv.rootRef} style={{ maxWidth: 800, margin: '0 auto' }}>
 						{/* Header */}
-						<div style={{ marginBottom: 24, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+						<div className="ppq-editor-header-row" style={{ marginBottom: 24, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
 							<Title level={2} style={{ margin: 0 }}>
 								{isNew
 									? __('Add Question Bank', 'pressprimer-quiz')
@@ -220,6 +231,7 @@ const BankEditor = ({ data = {}, surface = 'admin', nav, slots = {}, onSaved }) 
 								form={form}
 								layout="vertical"
 								onFinish={handleSubmit}
+								onValuesChange={dirty.markDirty}
 								autoComplete="off"
 							>
 								<Form.Item
@@ -290,8 +302,9 @@ const BankEditor = ({ data = {}, surface = 'admin', nav, slots = {}, onSaved }) 
 								{/* Addon fields slot: addons render extra bank
 								    fields here (React portal target — must stay
 								    childless in this tree). Slotted fields save
-								    on the ppq-bank-saved event. */}
-								<div id="ppq-bank-editor-fields-slot"></div>
+								    on the ppq-bank-saved event. wp-admin only,
+								    like the other legacy mount nodes. */}
+								{'admin' === surface && <div id="ppq-bank-editor-fields-slot"></div>}
 
 								{/* bank.fields slots render below the legacy node. */}
 								<SlotList
@@ -301,7 +314,10 @@ const BankEditor = ({ data = {}, surface = 'admin', nav, slots = {}, onSaved }) 
 										surface,
 										nav,
 										getValues: () => form.getFieldsValue(true),
-										setFieldValue: slotHost.setFieldValue,
+										setFieldValue: (name, value) => {
+											slotHost.setFieldValue(name, value);
+											dirty.markDirty();
+										},
 										registerValidator: slotHost.registerValidator,
 										registerAfterSave: slotHost.registerAfterSave,
 										getPopupContainer: slotEnv.getPopupContainer,

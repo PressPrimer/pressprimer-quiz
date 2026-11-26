@@ -1,6 +1,9 @@
 /**
  * Bank Editor Styles
  *
+ * Shared by wp-admin and the front-end dashboard; every rule is scoped under
+ * .ppq-bank-editor. wp-admin's page-wide message rule is in admin/style.css.
+ *
  * @package PressPrimer_Quiz
  * @since 1.0.0
  */
@@ -28,9 +31,4 @@
 .ppq-bank-editor .ant-form-item-extra {
 	font-size: 13px;
 	color: #646970;
-}
-
-/* Success message positioning */
-.ant-message {
-	z-index: 999999;
 }

@@ -1,6 +1,13 @@
 /**
  * Quiz Editor Styles
  *
+ * Shared by wp-admin and the front-end dashboard. Rules are scoped under the
+ * editor's container with :where(), which keeps each rule's specificity as it
+ * was, so they reach nothing outside the editor (the dashboard also shows
+ * other screens). The template preview rules aren't scoped: the preview is a
+ * dialog, rendered outside the container. wp-admin keeps its page-wide
+ * copies in admin/style.css.
+ *
  * @package PressPrimer_Quiz
  * @since 1.0.0
  */
@@ -11,7 +18,7 @@
 	padding: 20px;
 }
 
-.ppq-editor-header {
+:where(.ppq-quiz-editor-container) .ppq-editor-header {
 	background: #fff;
 	padding: 24px;
 	border-radius: 8px;
@@ -19,13 +26,13 @@
 	box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
 }
 
-.ant-card {
+:where(.ppq-quiz-editor-container) .ant-card {
 	margin-bottom: 16px;
 	border-radius: 8px;
 	box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
 }
 
-.ant-tabs {
+:where(.ppq-quiz-editor-container) .ant-tabs {
 	background: #fff;
 	padding: 24px;
 	border-radius: 8px;
@@ -33,36 +40,36 @@
 }
 
 /* Drag and Drop Styles */
-.drag-handle {
+:where(.ppq-quiz-editor-container) .drag-handle {
 	cursor: grab !important;
 }
 
-.drag-handle:active {
+:where(.ppq-quiz-editor-container) .drag-handle:active {
 	cursor: grabbing !important;
 }
 
 /* Add visual feedback for drag target area */
-tbody tr {
+:where(.ppq-quiz-editor-container) tbody tr {
 	transition: all 0.2s ease;
 }
 
-tbody tr:hover {
+:where(.ppq-quiz-editor-container) tbody tr:hover {
 	background-color: #fafafa;
 }
 
 /* Style for the placeholder that shows where item will drop */
-[data-rfd-placeholder-context-id] {
+:where(.ppq-quiz-editor-container) [data-rfd-placeholder-context-id] {
 	background-color: #e6f7ff;
 	border: 2px dashed #1890ff;
 	border-radius: 4px;
 }
 
 /* Make drag handle more obvious */
-.drag-handle .anticon {
+:where(.ppq-quiz-editor-container) .drag-handle .anticon {
 	transition: all 0.2s ease;
 }
 
-.drag-handle:hover .anticon {
+:where(.ppq-quiz-editor-container) .drag-handle:hover .anticon {
 	color: #1890ff !important;
 	transform: scale(1.1);
 }
@@ -76,13 +83,13 @@ tbody tr:hover {
    takes the full width.
    ============================================================= */
 
-.ppq-settings-layout {
+:where(.ppq-quiz-editor-container) .ppq-settings-layout {
 	display: flex;
 	gap: 24px;
 	align-items: flex-start;
 }
 
-.ppq-settings-content {
+:where(.ppq-quiz-editor-container) .ppq-settings-content {
 	flex: 1 1 auto;
 	min-width: 0;
 }
@@ -90,7 +97,7 @@ tbody tr:hover {
 /* The whole TOC card sticks together (heading + Save button + anchor
    links) by using `position: sticky` on the wrap. offsetTop accounts
    for the WP admin bar (32px) plus a 25px buffer below it. */
-.ppq-settings-toc-wrap {
+:where(.ppq-quiz-editor-container) .ppq-settings-toc-wrap {
 	flex: 0 0 260px;
 	position: sticky;
 	top: 57px;
@@ -99,35 +106,35 @@ tbody tr:hover {
 /* Each settings section sets scroll-margin-top so the WP admin
    bar (32px) plus a small breathing room doesn't crowd the
    section title when the Anchor scrolls to it. */
-.ppq-settings-section {
+:where(.ppq-quiz-editor-container) .ppq-settings-section {
 	scroll-margin-top: 80px;
 }
 
 /* TOC card visual treatment. */
-.ppq-settings-toc-card .ant-card-head-title {
+:where(.ppq-quiz-editor-container) .ppq-settings-toc-card .ant-card-head-title {
 	text-align: center;
 }
 
-.ppq-settings-toc-card .ant-card-body {
+:where(.ppq-quiz-editor-container) .ppq-settings-toc-card .ant-card-body {
 	padding: 16px;
 }
 
-.ppq-settings-toc-card .ant-anchor-link {
+:where(.ppq-quiz-editor-container) .ppq-settings-toc-card .ant-anchor-link {
 	padding: 6px 0 6px 16px;
 }
 
-.ppq-settings-toc-card .ant-anchor-link-title {
+:where(.ppq-quiz-editor-container) .ppq-settings-toc-card .ant-anchor-link-title {
 	font-size: 13px;
 	color: #475569;
 	transition: color 0.15s ease;
 }
 
-.ppq-settings-toc-card .ant-anchor-link-active > .ant-anchor-link-title {
+:where(.ppq-quiz-editor-container) .ppq-settings-toc-card .ant-anchor-link-active > .ant-anchor-link-title {
 	color: #1890ff;
 	font-weight: 600;
 }
 
-.ppq-settings-toc-card .ant-anchor-link-title:hover {
+:where(.ppq-quiz-editor-container) .ppq-settings-toc-card .ant-anchor-link-title:hover {
 	color: #1890ff;
 }
 
@@ -135,19 +142,19 @@ tbody tr:hover {
    takes the full width naturally because the flex item is gone. */
 @media (max-width: 1099px) {
 
-	.ppq-settings-toc-wrap {
+	:where(.ppq-quiz-editor-container) .ppq-settings-toc-wrap {
 		display: none;
 	}
 }
 
 /* Apply-template toolbar above the settings cards. */
-.ppq-settings-toolbar {
+:where(.ppq-quiz-editor-container) .ppq-settings-toolbar {
 	display: flex;
 	gap: 8px;
 	margin-bottom: 16px;
 }
 
-/* Apply-template preview dialog. */
+/* Apply-template preview dialog (a popup, outside the container). */
 .ppq-template-preview-list {
 	margin: 0;
 	padding: 0;

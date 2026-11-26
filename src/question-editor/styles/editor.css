@@ -1,6 +1,11 @@
 /**
  * Question Editor Styles
  *
+ * Shared by wp-admin and the front-end dashboard. Rules are scoped under the
+ * editor's container with :where(), which keeps each rule's specificity as it
+ * was, so they reach nothing outside the editor. wp-admin keeps its page-wide
+ * copies in admin.css.
+ *
  * @package PressPrimer_Quiz
  * @since 1.0.0
  */
@@ -11,7 +16,7 @@
 	padding: 24px;
 }
 
-.ppq-editor-header {
+:where(.ppq-question-editor-container) .ppq-editor-header {
 	background: #fff;
 	padding: 24px;
 	border-radius: 8px;
@@ -20,21 +25,21 @@
 }
 
 /* Ant Design customizations */
-.ant-card {
+:where(.ppq-question-editor-container) .ant-card {
 	border-radius: 8px;
 	box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
 }
 
-.ant-card-head {
+:where(.ppq-question-editor-container) .ant-card-head {
 	background: linear-gradient(to bottom, #fafafa, #fff);
 	border-bottom: 2px solid #f0f0f0;
 }
 
-.ant-form-item-label > label {
+:where(.ppq-question-editor-container) .ant-form-item-label > label {
 	font-weight: 600;
 }
 
-/* TinyMCE Container */
+/* TinyMCE Container (the wp-admin editor's textarea) */
 #ppq-stem-editor {
 	border: 1px solid #d9d9d9;
 	border-radius: 4px;
@@ -42,7 +47,8 @@
 
 /* Responsive adjustments */
 @media (max-width: 1200px) {
-	.ant-layout-sider {
+
+	:where(.ppq-question-editor-container) .ant-layout-sider {
 		position: static !important;
 		width: 100% !important;
 		max-width: 100% !important;
@@ -51,7 +57,7 @@
 		margin-top: 24px;
 	}
 
-	.ant-layout-content {
+	:where(.ppq-question-editor-container) .ant-layout-content {
 		padding-right: 0 !important;
 	}
 }
@@ -62,26 +68,26 @@
 }
 
 /* Smooth transitions */
-.ant-card,
-.ant-btn,
-.ant-input,
-.ant-select-selector {
+:where(.ppq-question-editor-container) .ant-card,
+:where(.ppq-question-editor-container) .ant-btn,
+:where(.ppq-question-editor-container) .ant-input,
+:where(.ppq-question-editor-container) .ant-select-selector {
 	transition: all 0.3s cubic-bezier(0.645, 0.045, 0.355, 1);
 }
 
 /* Focus states */
-.ant-input:focus,
-.ant-select-focused .ant-select-selector {
+:where(.ppq-question-editor-container) .ant-input:focus,
+:where(.ppq-question-editor-container) .ant-select-focused .ant-select-selector {
 	border-color: #40a9ff;
 	box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.2);
 }
 
 /* Success states for correct answers */
-.ppq-correct-answer-card {
+:where(.ppq-question-editor-container) .ppq-correct-answer-card {
 	background: linear-gradient(to right, #f6ffed, #fff);
 }
 
 /* Sidebar height fix */
-aside.ant-layout-sider.ant-layout-sider-dark {
+:where(.ppq-question-editor-container) aside.ant-layout-sider.ant-layout-sider-dark {
 	height: 1050px !important;
 }

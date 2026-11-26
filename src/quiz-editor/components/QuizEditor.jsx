@@ -43,6 +43,7 @@ import {
 	hasSlotKey,
 	SlotOutlet,
 } from '../../editors/slots';
+import { useDirtyTracker } from '../../editors/dirty';
 import RulesSummary from './RulesSummary';
 
 const { Content } = Layout;
@@ -68,14 +69,16 @@ const toFormMaScoring = (value, quizData) => {
 /**
  * Main Quiz Editor Component
  *
- * @param {Object}   props          Component props
- * @param {Object}   props.data     Editor data (editor-data service payload)
- * @param {string}   props.surface  Where the editor runs: 'admin' or 'dashboard'
- * @param {Object}   props.nav      Navigation adapter (list, edit, afterCreate, editUrl, back)
- * @param {Object}   props.slots    Host slot definitions by slot id, added to the registered ones
- * @param {Function} props.onSaved  Called after a successful save, before navigating
+ * @param {Object}   props               Component props
+ * @param {Object}   props.data          Editor data (editor-data service payload)
+ * @param {string}   props.surface       Where the editor runs: 'admin' or 'dashboard'
+ * @param {Object}   props.nav           Navigation adapter (list, edit, afterCreate, editUrl, back)
+ * @param {Object}   props.slots         Host slot definitions by slot id, added to the registered ones
+ * @param {Function} props.onSaved       Called after a successful save, before navigating
+ * @param {Object}   props.initial       Preset values for a new quiz: templateId (a preset key or saved template ID)
+ * @param {Function} props.onDirtyChange Called with true or false when unsaved changes appear or go
  */
-const QuizEditor = ({ data = {}, surface = 'admin', nav, slots = {}, onSaved }) => {
+const QuizEditor = ({ data = {}, surface = 'admin', nav, slots = {}, onSaved, initial = {}, onDirtyChange }) => {
 	const quizData = data;
 	const [form] = Form.useForm();
 	const [loading, setLoading] = useState(false);
@@ -90,6 +93,9 @@ const QuizEditor = ({ data = {}, surface = 'admin', nav, slots = {}, onSaved }) 
 	const [defaultsFromName, setDefaultsFromName] = useState('');
 
 	const isNew = !currentQuizId;
+
+	// Unsaved changes, for the host's navigation guard.
+	const dirty = useDirtyTracker(onDirtyChange);
 
 	// Addon slots (quiz.tab, quiz.premium.card).
 	useSlotRegistry();
@@ -110,7 +116,10 @@ const QuizEditor = ({ data = {}, surface = 'admin', nav, slots = {}, onSaved }) 
 		surface,
 		nav,
 		getValues: () => form.getFieldsValue(true),
-		setFieldValue: slotHost.setFieldValue,
+		setFieldValue: (name, value) => {
+			slotHost.setFieldValue(name, value);
+			dirty.markDirty();
+		},
 		registerValidator: slotHost.registerValidator,
 		registerAfterSave: slotHost.registerAfterSave,
 		getPopupContainer: slotEnv.getPopupContainer,
@@ -301,6 +310,7 @@ const QuizEditor = ({ data = {}, surface = 'admin', nav, slots = {}, onSaved }) 
 			// can render them inline.
 			setMaxAnswersWarnings(Array.isArray(response.warnings) ? response.warnings : []);
 
+			dirty.markClean();
 			emitSaved('ppq-quiz-saved', {
 				quizId: toId(response.id || quizId),
 				isNew: !quizId,
@@ -426,6 +436,7 @@ const QuizEditor = ({ data = {}, surface = 'admin', nav, slots = {}, onSaved }) 
 	 */
 	const applyTemplate = (settings = {}, reminders = [], template = {}) => {
 		applyTemplateToForm(settings);
+		dirty.markDirty();
 		reminders.forEach((reminder) => message.warning(reminder));
 		message.success(__('Template applied. Review the settings and save the quiz to keep them.', 'pressprimer-quiz'));
 
@@ -436,14 +447,62 @@ const QuizEditor = ({ data = {}, surface = 'admin', nav, slots = {}, onSaved }) 
 		});
 	};
 
-	// Pre-fill a brand-new quiz from the site default template once on mount
-	// (feature 003, FR-006). Existing quizzes load their own saved values.
+	// Pre-fill a brand-new quiz once on mount: from the template the host
+	// asked for (mount()'s initial.templateId), else from the site default
+	// template (feature 003, FR-006). Existing quizzes load their own saved
+	// values.
 	useEffect(() => {
-		if (!quizData.id && quizData.defaultTemplate && quizData.defaultTemplate.settings) {
-			applyTemplateToForm(quizData.defaultTemplate.settings);
-			setDefaultsFromName(quizData.defaultTemplate.name || '');
+		if (quizData.id) {
+			return undefined;
 		}
-		// Intentionally mount-only: apply the default once before the author edits.
+
+		const applyDefault = () => {
+			if (quizData.defaultTemplate && quizData.defaultTemplate.settings) {
+				applyTemplateToForm(quizData.defaultTemplate.settings);
+				setDefaultsFromName(quizData.defaultTemplate.name || '');
+			}
+		};
+
+		const templateId = initial && initial.templateId;
+		if (templateId === undefined || templateId === null || templateId === '') {
+			applyDefault();
+			return undefined;
+		}
+
+		// A numeric ID is a saved template; anything else is a preset key.
+		const source = /^\d+$/.test(String(templateId)) ? 'template' : 'preset';
+		let active = true;
+		setLoading(true);
+		apiFetch({ path: '/ppq/v1/quiz-templates' })
+			.then((res) => {
+				if (!active) {
+					return;
+				}
+				const items = Array.isArray(res?.items) ? res.items : [];
+				const template = items.find((item) => item.source === source && String(item.id) === String(templateId));
+				if (template && template.settings) {
+					applyTemplateToForm(template.settings);
+					setDefaultsFromName(template.name || '');
+				} else {
+					applyDefault();
+				}
+			})
+			.catch((error) => {
+				debugError('Failed to load the quiz template:', error);
+				if (active) {
+					applyDefault();
+				}
+			})
+			.finally(() => {
+				if (active) {
+					setLoading(false);
+				}
+			});
+
+		return () => {
+			active = false;
+		};
+		// Intentionally mount-only: pre-fill once before the author edits.
 		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, []);
 
@@ -462,6 +521,7 @@ const QuizEditor = ({ data = {}, surface = 'admin', nav, slots = {}, onSaved }) 
 	 */
 	const handleCancel = () => {
 		if (window.confirm(__('Are you sure you want to cancel? Any unsaved changes will be lost.', 'pressprimer-quiz'))) {
+			dirty.markClean();
 			nav.list('quiz');
 		}
 	};
@@ -503,6 +563,7 @@ const QuizEditor = ({ data = {}, surface = 'admin', nav, slots = {}, onSaved }) 
 				data: quizPayload,
 			});
 
+			dirty.markClean();
 			emitSaved('ppq-quiz-saved', {
 				quizId: toId(response.id || currentQuizId),
 				isNew: !currentQuizId,
@@ -628,7 +689,15 @@ const QuizEditor = ({ data = {}, surface = 'admin', nav, slots = {}, onSaved }) 
 		{
 			key: 'feedback',
 			label: __('Feedback', 'pressprimer-quiz'),
-			children: <FeedbackPanel value={feedbackBands} onChange={setFeedbackBands} />,
+			children: (
+				<FeedbackPanel
+					value={feedbackBands}
+					onChange={(bands) => {
+						setFeedbackBands(bands);
+						dirty.markDirty();
+					}}
+				/>
+			),
 		},
 		// quiz.tab slots mount with the editor (not when first opened), so
 		// their validators and after-save hooks are always registered.
@@ -657,6 +726,7 @@ const QuizEditor = ({ data = {}, surface = 'admin', nav, slots = {}, onSaved }) 
 					form={form}
 					layout="vertical"
 					onFinish={handleSubmit}
+					onValuesChange={dirty.markDirty}
 					initialValues={{
 						title: '',
 						description: '',
@@ -691,7 +761,7 @@ const QuizEditor = ({ data = {}, surface = 'admin', nav, slots = {}, onSaved }) 
 					{/* Header */}
 					<div className="ppq-editor-header">
 						<Space direction="vertical" style={{ width: '100%' }}>
-							<div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+							<div className="ppq-editor-header-row" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
 								<Title level={2} style={{ margin: 0 }}>
 									{isNew
 										? __('Create New Quiz', 'pressprimer-quiz')
@@ -721,12 +791,15 @@ const QuizEditor = ({ data = {}, surface = 'admin', nav, slots = {}, onSaved }) 
 								message={__('Quiz Editor Guide', 'pressprimer-quiz')}
 								description={
 									<>
-										<Paragraph style={{ marginBottom: 8 }}>
+										<Paragraph style={{ marginBottom: 'admin' === surface ? 8 : 0 }}>
 											{__('Create engaging quizzes for your students. Configure settings, add questions or rules, and customize the experience.', 'pressprimer-quiz')}
 										</Paragraph>
-										<Paragraph style={{ marginBottom: 0 }}>
-											<strong>{__('Pro Tip:', 'pressprimer-quiz')}</strong> {__('Use Fixed mode to select specific questions (same for everyone), or Dynamic mode with rules to randomly select from question banks (different for each student).', 'pressprimer-quiz')}
-										</Paragraph>
+										{/* Dynamic mode is set in wp-admin only. */}
+										{'admin' === surface && (
+											<Paragraph style={{ marginBottom: 0 }}>
+												<strong>{__('Pro Tip:', 'pressprimer-quiz')}</strong> {__('Use Fixed mode to select specific questions (same for everyone), or Dynamic mode with rules to randomly select from question banks (different for each student).', 'pressprimer-quiz')}
+											</Paragraph>
+										)}
 									</>
 								}
 								type="info"

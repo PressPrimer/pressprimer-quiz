@@ -45,6 +45,7 @@ import {
 	SlotList,
 	SlotOutlet,
 } from '../../editors/slots';
+import { useDirtyTracker } from '../../editors/dirty';
 
 const { Content, Sider } = Layout;
 const { Title, Paragraph } = Typography;
@@ -52,15 +53,20 @@ const { Title, Paragraph } = Typography;
 /**
  * Main Question Editor Component
  *
- * @param {Object}   props          Component props
- * @param {Object}   props.data     Editor data (editor-data service payload)
- * @param {string}   props.surface  Where the editor runs: 'admin' or 'dashboard'
- * @param {Object}   props.nav      Navigation adapter (list, edit, afterCreate, editUrl, back)
- * @param {Object}   props.slots    Host slot definitions by slot id, added to the registered ones
- * @param {Function} props.onSaved  Called after a successful save, before navigating
+ * @param {Object}   props               Component props
+ * @param {Object}   props.data          Editor data (editor-data service payload)
+ * @param {string}   props.surface       Where the editor runs: 'admin' or 'dashboard'
+ * @param {Object}   props.nav           Navigation adapter (list, edit, afterCreate, editUrl, back)
+ * @param {Object}   props.slots         Host slot definitions by slot id, added to the registered ones
+ * @param {Function} props.onSaved       Called after a successful save, before navigating
+ * @param {Object}   props.initial       Preset values for a new question: bankIds
+ * @param {Function} props.onDirtyChange Called with true or false when unsaved changes appear or go
  */
-const QuestionEditor = ({ data = {}, surface = 'admin', nav, slots = {}, onSaved }) => {
+const QuestionEditor = ({ data = {}, surface = 'admin', nav, slots = {}, onSaved, initial = {}, onDirtyChange }) => {
 	const questionData = data;
+	// The saved question's ID. A new question that the host keeps mounted
+	// after nav.afterCreate() goes on as an edit of the new question.
+	const [currentQuestionId, setCurrentQuestionId] = useState(questionData.id || null);
 	const [form] = Form.useForm();
 	const [loading, setLoading] = useState(false);
 	const [saving, setSaving] = useState(false);
@@ -73,7 +79,15 @@ const QuestionEditor = ({ data = {}, surface = 'admin', nav, slots = {}, onSaved
 	const [activeTab, setActiveTab] = useState('editor');
 	const status = Form.useWatch('status', form);
 
-	const isNew = !questionData.id;
+	const isNew = !currentQuestionId;
+
+	// Unsaved changes, for the host's navigation guard.
+	const dirty = useDirtyTracker(onDirtyChange);
+
+	// The leave-after-save timer, cleared if the host unmounts the editor
+	// first.
+	const leaveTimer = useRef(null);
+	useEffect(() => () => clearTimeout(leaveTimer.current), []);
 
 	// Addon tabs come with the editor data.
 	const addonTabs = Array.isArray(questionData.addonTabs) ? questionData.addonTabs : [];
@@ -87,7 +101,7 @@ const QuestionEditor = ({ data = {}, surface = 'admin', nav, slots = {}, onSaved
 	const slotHost = useSlotHost(form);
 	const slotEnv = useSlotEnvironment(surface);
 	const site = getSiteFlags(questionData);
-	const entityId = toId(questionData.id) || 0;
+	const entityId = toId(currentQuestionId) || 0;
 	const slotContext = { surface, site, hostSlots: slots, entityId };
 	const tabSlots = getVisibleSlots('question.tab', slotContext);
 	const answerSlots = getVisibleSlots('question.answers.actions', slotContext);
@@ -101,13 +115,16 @@ const QuestionEditor = ({ data = {}, surface = 'admin', nav, slots = {}, onSaved
 		surface,
 		nav,
 		getValues: () => ({ ...form.getFieldsValue(true), ...latest.current }),
-		setFieldValue: slotHost.setFieldValue,
+		setFieldValue: (name, value) => {
+			slotHost.setFieldValue(name, value);
+			dirty.markDirty();
+		},
 		registerValidator: slotHost.registerValidator,
 		registerAfterSave: slotHost.registerAfterSave,
 		getPopupContainer: slotEnv.getPopupContainer,
 		theme: slotEnv.theme,
 		// Same shape as the ppq-answers-changed event's detail.
-		answersState: buildAnswersState({ questionId: questionData.id, questionType, answers }),
+		answersState: buildAnswersState({ questionId: currentQuestionId, questionType, answers }),
 	};
 
 	/**
@@ -127,6 +144,7 @@ const QuestionEditor = ({ data = {}, surface = 'admin', nav, slots = {}, onSaved
 			answer.id === answerId ? { ...answer, feedback: String(html ?? '') } : answer
 		)));
 		setFeedbackRevisions((current) => ({ ...current, [answerId]: (current[answerId] || 0) + 1 }));
+		dirty.markDirty();
 		return true;
 	};
 
@@ -201,15 +219,15 @@ const QuestionEditor = ({ data = {}, surface = 'admin', nav, slots = {}, onSaved
 				type: questionType,
 				stem: stem,
 				answers: answers,
-				id: questionData.id || null,
+				id: currentQuestionId || null,
 			};
 
 			// Submit via REST API
-			const endpoint = questionData.id
-				? `/ppq/v1/questions/${questionData.id}`
+			const endpoint = currentQuestionId
+				? `/ppq/v1/questions/${currentQuestionId}`
 				: '/ppq/v1/questions';
 
-			const method = questionData.id ? 'PUT' : 'POST';
+			const method = currentQuestionId ? 'PUT' : 'POST';
 
 			const response = await apiFetch({
 				path: endpoint,
@@ -219,7 +237,8 @@ const QuestionEditor = ({ data = {}, surface = 'admin', nav, slots = {}, onSaved
 
 			message.success(__('Question saved successfully!', 'pressprimer-quiz'));
 
-			const savedId = response.id || questionData.id;
+			const savedId = response.id || currentQuestionId;
+			dirty.markClean();
 			emitSaved('ppq-question-saved', {
 				questionId: toId(savedId),
 				isNew,
@@ -231,9 +250,14 @@ const QuestionEditor = ({ data = {}, surface = 'admin', nav, slots = {}, onSaved
 			await slotHost.runAfterSave({ entityId: toId(savedId), isNew, values: questionPayload, response });
 
 			// Back to the questions list.
-			setTimeout(() => {
+			leaveTimer.current = setTimeout(() => {
 				if (isNew) {
 					nav.afterCreate('question', savedId);
+					// wp-admin leaves the page; a dashboard host may keep
+					// the editor mounted on the new question.
+					if ('admin' !== surface) {
+						setCurrentQuestionId(savedId);
+					}
 				} else {
 					nav.list('question', { saved: true });
 				}
@@ -260,6 +284,7 @@ const QuestionEditor = ({ data = {}, surface = 'admin', nav, slots = {}, onSaved
 	 */
 	const handleCancel = () => {
 		if (window.confirm(__('Are you sure you want to cancel? Any unsaved changes will be lost.', 'pressprimer-quiz'))) {
+			dirty.markClean();
 			nav.list('question');
 		}
 	};
@@ -282,7 +307,7 @@ const QuestionEditor = ({ data = {}, surface = 'admin', nav, slots = {}, onSaved
 				new CustomEvent('ppq-question-editor-tab-active', {
 					detail: {
 						tabKey: key,
-						questionId: questionData.id || 0,
+						questionId: currentQuestionId || 0,
 					},
 				})
 			);
@@ -294,6 +319,7 @@ const QuestionEditor = ({ data = {}, surface = 'admin', nav, slots = {}, onSaved
 	 */
 	const handleTypeChange = (type) => {
 		setQuestionType(type);
+		dirty.markDirty();
 
 		// If switching to TF, adjust answers
 		if (type === 'tf' && answers.length > 2) {
@@ -326,6 +352,9 @@ const QuestionEditor = ({ data = {}, surface = 'admin', nav, slots = {}, onSaved
 				<StemEditor
 					value={stem}
 					onChange={(value) => {
+						if (value !== stem) {
+							dirty.markDirty();
+						}
 						setStem(value);
 						form.setFieldsValue({ stem: value });
 					}}
@@ -335,8 +364,13 @@ const QuestionEditor = ({ data = {}, surface = 'admin', nav, slots = {}, onSaved
 				<AnswersList
 					answers={answers}
 					questionType={questionType}
-					questionId={questionData.id || 0}
-					onChange={setAnswers}
+					questionId={currentQuestionId || 0}
+					onChange={(next) => {
+						if (JSON.stringify(next) !== JSON.stringify(answers)) {
+							dirty.markDirty();
+						}
+						setAnswers(next);
+					}}
 					feedbackRevisions={feedbackRevisions}
 					addonActions={<SlotList defs={answerSlots} slotProps={answerSlotProps} />}
 				/>
@@ -461,6 +495,7 @@ const QuestionEditor = ({ data = {}, surface = 'admin', nav, slots = {}, onSaved
 					form={form}
 					layout="vertical"
 					onFinish={handleSubmit}
+					onValuesChange={dirty.markDirty}
 					initialValues={{
 						type: 'mc',
 						status: 'published',
@@ -472,13 +507,16 @@ const QuestionEditor = ({ data = {}, surface = 'admin', nav, slots = {}, onSaved
 						feedbackIncorrect: '',
 						categories: [],
 						tags: [],
-						banks: [],
+						// A host can preset a new question's banks.
+						banks: !questionData.id && Array.isArray(initial.bankIds)
+							? initial.bankIds.map(toId).filter(Boolean)
+							: [],
 					}}
 				>
 					{/* Header */}
 					<div className="ppq-editor-header">
 						<Space direction="vertical" style={{ width: '100%' }}>
-							<div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+							<div className="ppq-editor-header-row" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
 								<Title level={2} style={{ margin: 0 }}>
 									{isNew
 										? __('Create New Question', 'pressprimer-quiz')

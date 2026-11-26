@@ -11,6 +11,7 @@ import { Typography, Space, Progress } from 'antd';
 import ImageUploadModal from './ImageUploadModal';
 import MathInsertModal from './MathInsertModal';
 import { useEditorContext } from '../../editors/EditorContext';
+import { getPpqContentStyle } from '../../utils/ppqTheme';
 
 const { Text } = Typography;
 
@@ -18,8 +19,9 @@ const { Text } = Typography;
 let editorCounter = 0;
 
 const RichTextEditor = ({ value, onChange, placeholder, maxChars = 2000, rows = 3 }) => {
+	const { surface, site } = useEditorContext();
 	// Math notation authoring is shown only when the site setting is on.
-	const mathEnabled = useEditorContext().site.mathEnabled;
+	const mathEnabled = site.mathEnabled;
 	const [charCount, setCharCount] = useState(0);
 	const [imageModalOpen, setImageModalOpen] = useState(false);
 	const [mathModalOpen, setMathModalOpen] = useState(false);
@@ -57,6 +59,7 @@ const RichTextEditor = ({ value, onChange, placeholder, maxChars = 2000, rows = 
 							menubar: false,
 							height: rows * 40,
 							placeholder: placeholder,
+							...('dashboard' === surface ? { content_style: getPpqContentStyle(editorRef.current) } : {}),
 							setup: (editor) => {
 								editor.addButton('ppq_image', {
 									icon: 'image',

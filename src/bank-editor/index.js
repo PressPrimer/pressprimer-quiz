@@ -11,6 +11,7 @@ import BankEditor from './components/BankEditor';
 import { createAdminNav } from '../editors/adminNav';
 import { getSlotRegistry } from '../editors/slots';
 import './style.css';
+import './admin/style.css';
 
 // Define window.PPQ.editors.registerSlot() now, so addon scripts that load
 // after this one can register slots before the editor mounts.

@@ -1,0 +1,155 @@
+/**
+ * Portable editors: dashboard styles
+ *
+ * Only in the editors bundle (build/editors.css), and every rule is under
+ * .ppq-shell. The editors' layout here follows the width they're given
+ * (container queries), not the window: the shell's navigation takes part of
+ * the page. wp-admin keeps its own layout rules in assets/css/admin.css.
+ *
+ * @package PressPrimer_Quiz
+ * @since 3.2.0
+ */
+
+/* The editor canvas sits inside the shell's main panel. */
+.ppq-shell .ppq-quiz-editor-container,
+.ppq-shell .ppq-question-editor-container {
+	container-type: inline-size;
+	min-height: 0;
+	padding: 0;
+	background: transparent;
+}
+
+.ppq-shell .ppq-bank-editor {
+	container-type: inline-size;
+	background: transparent;
+}
+
+.ppq-shell .ppq-bank-editor > .ant-layout-content {
+	padding: 0 !important;
+}
+
+/* Quiz settings: the table of contents needs room beside the form. */
+@container (max-width: 1099px) {
+
+	.ppq-shell .ppq-settings-toc-wrap {
+		display: none;
+	}
+}
+
+/* Question editor: the sidebar moves below the editor when narrow. */
+@container (max-width: 999px) {
+
+	.ppq-shell .ppq-question-editor-container .ant-layout {
+		flex-direction: column;
+	}
+
+	/* Ant Design sizes the content column to 0 and lets it grow in a row. */
+	.ppq-shell .ppq-question-editor-container .ant-layout-content {
+		width: 100% !important;
+		padding-right: 0 !important;
+	}
+
+	.ppq-shell .ppq-question-editor-container aside.ant-layout-sider {
+		flex: none !important;
+		width: 100% !important;
+		min-width: 0 !important;
+		max-width: none !important;
+		height: auto !important;
+		margin-top: 24px;
+		position: static !important;
+	}
+}
+
+/* Narrow: a phone, or a theme that keeps page content narrow. */
+@container (max-width: 599px) {
+
+	.ppq-shell .ppq-editor-header {
+		padding: 16px;
+	}
+
+	.ppq-shell .ppq-editor-header-row {
+		flex-wrap: wrap;
+		gap: 12px;
+	}
+
+	.ppq-shell .ppq-quiz-editor-container .ant-tabs {
+		padding: 12px;
+	}
+
+	.ppq-shell .ppq-quiz-editor-container .ant-card-head,
+	.ppq-shell .ppq-question-editor-container .ant-card-head {
+		padding: 0 16px;
+	}
+
+	.ppq-shell .ppq-quiz-editor-container .ant-card-body,
+	.ppq-shell .ppq-question-editor-container .ant-card-body,
+	.ppq-shell .ppq-question-editor-container aside.ant-layout-sider {
+		padding: 16px !important;
+	}
+
+	/* Side-by-side fields stack, and fixed-width fields fit. */
+	.ppq-shell .ppq-quiz-editor-container .ant-row > .ant-col,
+	.ppq-shell .ppq-question-editor-container .ant-row > .ant-col {
+		flex: 0 0 100%;
+		max-width: 100%;
+	}
+
+	.ppq-shell .ppq-quiz-editor-container .ant-select,
+	.ppq-shell .ppq-quiz-editor-container .ant-input,
+	.ppq-shell .ppq-quiz-editor-container .ant-input-number,
+	.ppq-shell .ppq-quiz-editor-container .ant-input-number-group-wrapper,
+	.ppq-shell .ppq-question-editor-container .ant-select,
+	.ppq-shell .ppq-question-editor-container .ant-input-number,
+	.ppq-shell .ppq-bank-editor .ant-select {
+		max-width: 100%;
+	}
+}
+
+/* TinyMCE ---------------------------------------------------------------- */
+
+/* The stem's Code view textarea (wp-admin styles it by its fixed ID). */
+.ppq-shell .ppq-question-editor-container .wp-editor-container textarea.wp-editor-area {
+	border: 1px solid #d9d9d9;
+	border-radius: 4px;
+}
+
+/* Host themes style button:hover, :focus and :active (often a filled brand
+   colour), which out-ranks TinyMCE's own reset. Its toolbar, menus and
+   dialogs keep TinyMCE's look. Menus and dialogs open at the end of the
+   page, outside the shell, so those rules are under TinyMCE's floating-panel
+   class. */
+.mce-floatpanel button:hover,
+.mce-floatpanel button:focus,
+.mce-floatpanel button:active {
+	background: transparent;
+	box-shadow: none;
+	color: #595959;
+}
+
+.mce-floatpanel .mce-primary button:hover,
+.mce-floatpanel .mce-primary button:focus,
+.mce-floatpanel .mce-primary button:active {
+	color: #fff;
+}
+
+.ppq-shell .mce-container button:hover,
+.ppq-shell .mce-container button:focus,
+.ppq-shell .mce-container button:active {
+	background: transparent;
+	box-shadow: none;
+	color: #595959;
+}
+
+/* The Visual and Code tabs. */
+.ppq-shell .wp-editor-tabs .wp-switch-editor:hover,
+.ppq-shell .wp-editor-tabs .wp-switch-editor:active {
+	background: #f6f7f7;
+	box-shadow: none;
+	color: #50575e;
+}
+
+.ppq-shell .wp-editor-tabs .wp-switch-editor:focus {
+	background: #f6f7f7;
+	box-shadow: 0 0 0 1.5px var(--ppq-primary, #0073aa);
+	color: #50575e;
+}

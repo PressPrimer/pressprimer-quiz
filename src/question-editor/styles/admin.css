@@ -1,0 +1,37 @@
+/**
+ * Question Editor Styles (wp-admin only)
+ *
+ * On the wp-admin question editor page these rules have always reached the
+ * whole page, dialogs and add-on popups included. They stay page-wide there;
+ * the editor's own copies in editor.css are scoped for the dashboard.
+ *
+ * @package PressPrimer_Quiz
+ * @since 3.2.0
+ */
+
+.ant-card {
+	border-radius: 8px;
+	box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.ant-card-head {
+	background: linear-gradient(to bottom, #fafafa, #fff);
+	border-bottom: 2px solid #f0f0f0;
+}
+
+.ant-form-item-label > label {
+	font-weight: 600;
+}
+
+.ant-card,
+.ant-btn,
+.ant-input,
+.ant-select-selector {
+	transition: all 0.3s cubic-bezier(0.645, 0.045, 0.355, 1);
+}
+
+.ant-input:focus,
+.ant-select-focused .ant-select-selector {
+	border-color: #40a9ff;
+	box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.2);
+}

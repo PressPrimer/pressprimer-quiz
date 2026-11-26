@@ -26,10 +26,12 @@ const readVar = (cs, name, fallback) => {
 /**
  * Build an Ant Design theme from the shell's --ppq-* tokens.
  *
+ * @param {Element|null} el An element inside the shell (optional; the page's
+ *                          shell is used otherwise).
  * @return {Object} Ant Design theme config ({ token }).
  */
-export const getPpqTheme = () => {
-	const root = document.querySelector('.ppq-shell') || document.documentElement;
+export const getPpqTheme = (el = null) => {
+	const root = (el && el.closest && el.closest('.ppq-shell')) || document.querySelector('.ppq-shell') || document.documentElement;
 	const cs = root ? window.getComputedStyle(root) : null;
 
 	const token = {
@@ -50,4 +52,24 @@ export const getPpqTheme = () => {
 	}
 
 	return { token };
+};
+
+/**
+ * CSS for the inside of a TinyMCE editor on the dashboard, from the shell's
+ * tokens, so the editing area matches the shell rather than the theme's
+ * editor styles (TinyMCE's content_style is applied after them).
+ *
+ * @param {Element|null} el An element inside the shell (or null).
+ * @return {string} CSS for TinyMCE's content_style.
+ */
+export const getPpqContentStyle = (el = null) => {
+	const root = (el && el.closest && el.closest('.ppq-shell')) || document.querySelector('.ppq-shell');
+	const cs = root ? window.getComputedStyle(root) : null;
+
+	const font = readVar(cs, '--ppq-font-family', '') || (cs ? cs.fontFamily : '') || 'sans-serif';
+	const text = readVar(cs, '--ppq-text', '#1d2327');
+	const bg = readVar(cs, '--ppq-bg', '#fff');
+	const link = readVar(cs, '--ppq-primary', '#0073aa');
+
+	return `body{font-family:${font};font-size:16px;line-height:1.6;color:${text};background:${bg};}a{color:${link};}`;
 };

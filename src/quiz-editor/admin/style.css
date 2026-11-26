@@ -1,0 +1,31 @@
+/**
+ * Quiz Editor Styles (wp-admin only)
+ *
+ * On the wp-admin quiz editor page these rules have always reached the whole
+ * page, dialogs and add-on popups included. They stay page-wide there; the
+ * editor's own copies in ../style.css are scoped for the dashboard.
+ *
+ * @package PressPrimer_Quiz
+ * @since 3.2.0
+ */
+
+.ant-card {
+	margin-bottom: 16px;
+	border-radius: 8px;
+	box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+}
+
+.ant-tabs {
+	background: #fff;
+	padding: 24px;
+	border-radius: 8px;
+	box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+}
+
+tbody tr {
+	transition: all 0.2s ease;
+}
+
+tbody tr:hover {
+	background-color: #fafafa;
+}

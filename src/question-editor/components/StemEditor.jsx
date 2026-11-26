@@ -12,13 +12,19 @@ import { QuestionCircleOutlined } from '@ant-design/icons';
 import ImageUploadModal from './ImageUploadModal';
 import MathInsertModal from './MathInsertModal';
 import { useEditorContext } from '../../editors/EditorContext';
+import { getPpqContentStyle } from '../../utils/ppqTheme';
 
 const { Title, Text } = Typography;
 
+// Dashboard stem editors get their own IDs, so a page can hold more than one.
+let stemCounter = 0;
+
 
 const StemEditor = ({ value, onChange }) => {
+	const { surface, site } = useEditorContext();
+	const isDashboard = 'dashboard' === surface;
 	// Math notation authoring is shown only when the site setting is on.
-	const mathEnabled = useEditorContext().site.mathEnabled;
+	const mathEnabled = site.mathEnabled;
 	const [charCount, setCharCount] = useState(0);
 	const [imageModalOpen, setImageModalOpen] = useState(false);
 	const [mathModalOpen, setMathModalOpen] = useState(false);
@@ -26,7 +32,8 @@ const StemEditor = ({ value, onChange }) => {
 	const editorInstanceRef = useRef(null);
 	const textareaSyncRef = useRef(null);
 	const maxChars = 10000;
-	const editorId = 'ppq-stem-editor';
+	// wp-admin keeps its one fixed ID.
+	const [editorId] = useState(() => (isDashboard ? `ppq-stem-editor-${++stemCounter}` : 'ppq-stem-editor'));
 	const [isInitialized, setIsInitialized] = useState(false);
 	const onChangeRef = useRef(onChange);
 
@@ -53,7 +60,12 @@ const StemEditor = ({ value, onChange }) => {
 					window.wp.editor.initialize(editorId, {
 						tinymce: {
 							wpautop: true,
-							plugins: 'lists,link,textcolor,paste,wordpress,wplink',
+							// The dashboard uses TinyMCE's own link dialog: wplink
+							// needs wp-admin's ajaxurl.
+							plugins: isDashboard
+								? 'lists,link,textcolor,paste,wordpress'
+								: 'lists,link,textcolor,paste,wordpress,wplink',
+							...(isDashboard ? { content_style: getPpqContentStyle(editorRef.current) } : {}),
 							toolbar1: `formatselect,bold,italic,bullist,numlist,link,forecolor,ppq_image,${mathEnabled ? 'ppq_math,' : ''}removeformat`,
 							height: 300,
 							setup: (editor) => {

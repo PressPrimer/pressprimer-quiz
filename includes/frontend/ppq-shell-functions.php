@@ -60,3 +60,21 @@ if ( ! function_exists( 'pressprimer_quiz_get_dashboard_url' ) ) {
 		return $permalink;
 	}
 }
+
+if ( ! function_exists( 'pressprimer_quiz_enqueue_portable_editors' ) ) {
+	/**
+	 * Enqueue what a dashboard page needs to open the portable editors.
+	 *
+	 * For hosts (Educator's authoring screens): call it on a dashboard page
+	 * for a user who can author (pressprimer_quiz_manage_own), during
+	 * wp_enqueue_scripts. It enqueues the small editors loader and its
+	 * manifest, TinyMCE and the math assets; the editors bundle itself loads
+	 * when the host calls PPQ.editors.load(). Hosts check function_exists()
+	 * first: free 3.1 has no portable editors.
+	 *
+	 * @since 3.2.0
+	 */
+	function pressprimer_quiz_enqueue_portable_editors() {
+		PressPrimer_Quiz_Portable_Editors::enqueue();
+	}
+}

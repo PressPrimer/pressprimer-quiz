@@ -32,6 +32,7 @@ import {
 } from '@ant-design/icons';
 import ApplyTemplateButton from '../templates/ApplyTemplateButton';
 import SaveAsTemplateButton from '../templates/SaveAsTemplateButton';
+import { useEditorContext } from '../../editors/EditorContext';
 
 const { TextArea } = Input;
 const { Title, Text } = Typography;
@@ -118,6 +119,13 @@ const DISPLAY_OPTION_SECTIONS = [
  *                                              fresh quiz, shown as a badge (empty otherwise).
  */
 const SettingsPanel = ({ form, generationMode, setGenerationMode, quizData = {}, maxAnswersWarnings = [], saving = false, applyTemplate, collectTemplateSettings, defaultsFromName = '' }) => {
+	// The dashboard shows fixed-question settings only: choosing the
+	// generation mode, question pools and Save as template stay in wp-admin.
+	const isAdminSurface = 'admin' === useEditorContext().surface;
+	const tocSections = isAdminSurface
+		? TOC_SECTIONS
+		: TOC_SECTIONS.filter((section) => 'ppq-settings-question-generation' !== section.id);
+
 	// Watch access_mode to show/hide login message field
 	const accessMode = Form.useWatch('access_mode', form);
 
@@ -203,7 +211,7 @@ const SettingsPanel = ({ form, generationMode, setGenerationMode, quizData = {},
 		{applyTemplate && (
 			<div className="ppq-settings-toolbar">
 				<ApplyTemplateButton form={form} quizData={quizData} onApply={applyTemplate} />
-				{quizData.canManageSettings && collectTemplateSettings && (
+				{isAdminSurface && quizData.canManageSettings && collectTemplateSettings && (
 					<SaveAsTemplateButton onCollectSettings={collectTemplateSettings} />
 				)}
 				{defaultsFromName && (
@@ -330,6 +338,7 @@ const SettingsPanel = ({ form, generationMode, setGenerationMode, quizData = {},
 			</div>
 
 			{/* Question Generation */}
+			{isAdminSurface && (
 			<div id="ppq-settings-question-generation" className="ppq-settings-section">
 			<Card
 				title={
@@ -398,6 +407,7 @@ const SettingsPanel = ({ form, generationMode, setGenerationMode, quizData = {},
 				</Form.Item>
 			</Card>
 			</div>
+			)}
 
 			{/* Quiz Behavior */}
 			<div id="ppq-settings-quiz-behavior" className="ppq-settings-section">
@@ -996,15 +1006,22 @@ const SettingsPanel = ({ form, generationMode, setGenerationMode, quizData = {},
 
 				<Divider />
 
-				{/* Question Pool */}
-				<Text strong>{__('Question Pool', 'pressprimer-quiz')}</Text>
-				<Text type="secondary" style={{ fontSize: 13, display: 'block', marginBottom: 12 }}>
-					{__('Randomly select a subset of questions for each attempt', 'pressprimer-quiz')}
-				</Text>
+				{/* Question Pool (wp-admin only) */}
+				{isAdminSurface && (
+					<>
+						<Text strong>{__('Question Pool', 'pressprimer-quiz')}</Text>
+						<Text type="secondary" style={{ fontSize: 13, display: 'block', marginBottom: 12 }}>
+							{__('Randomly select a subset of questions for each attempt', 'pressprimer-quiz')}
+						</Text>
+					</>
+				)}
 
 				<Row gutter={24}>
+					{/* On the dashboard this column has only Prefer Unseen
+					    Questions, for a dynamic quiz. */}
+					{(isAdminSurface || generationMode === 'dynamic') && (
 					<Col xs={24} sm={12}>
-						{(() => {
+						{isAdminSurface && (() => {
 							const poolSize = Number(quizData.pool_size) || 0;
 
 							if (poolSize === 0 && !quizData.id) {
@@ -1136,6 +1153,7 @@ const SettingsPanel = ({ form, generationMode, setGenerationMode, quizData = {},
 							</Form.Item>
 						)}
 					</Col>
+					)}
 					<Col xs={24} sm={12}>
 						<Form.Item
 							label={
@@ -1238,7 +1256,7 @@ const SettingsPanel = ({ form, generationMode, setGenerationMode, quizData = {},
 						affix={false}
 						targetOffset={80}
 						onClick={(e) => e.preventDefault()}
-						items={TOC_SECTIONS.map((s) => ({
+						items={tocSections.map((s) => ({
 							key: s.id,
 							href: `#${s.id}`,
 							title: s.label,

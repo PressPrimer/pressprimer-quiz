@@ -344,11 +344,13 @@ class PressPrimer_Quiz_Admin_Questions {
 			'5.12.0'
 		);
 
-		// Enqueue built React app
+		// Enqueue built React app. TinyMCE (wp.editor) comes from the classic
+		// editor scripts wp_enqueue_editor() adds, not the block editor's
+		// wp-editor package.
 		wp_enqueue_script(
 			'ppq-question-editor',
 			PRESSPRIMER_QUIZ_PLUGIN_URL . 'build/question-editor.js',
-			[ 'wp-element', 'wp-i18n', 'wp-api-fetch', 'wp-editor' ],
+			[ 'wp-element', 'wp-i18n', 'wp-api-fetch' ],
 			PRESSPRIMER_QUIZ_VERSION,
 			true
 		);

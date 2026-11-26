@@ -1,0 +1,11 @@
+/**
+ * Bank Editor Styles (wp-admin only)
+ *
+ * @package PressPrimer_Quiz
+ * @since 3.2.0
+ */
+
+/* Success message positioning */
+.ant-message {
+	z-index: 999999;
+}

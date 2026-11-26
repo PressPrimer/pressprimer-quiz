@@ -476,17 +476,27 @@ class PressPrimer_Quiz_Admin {
 			PRESSPRIMER_QUIZ_PLUGIN_URL . 'assets/images/reports-mascot.png'
 		);
 
+		// Recent Attempts' Export CSV. Educator releases before 3.2 replace a
+		// teacher's list (group members' attempts) but not the export, so the
+		// CSV couldn't match the screen; hide it for users without
+		// view_results_all until Educator 3.2, which scopes both through
+		// pressprimer_quiz_report_visible_user_ids.
+		$can_export_attempts = current_user_can( 'pressprimer_quiz_view_results_all' )
+			|| ! defined( 'PRESSPRIMER_QUIZ_EDUCATOR_VERSION' )
+			|| version_compare( PRESSPRIMER_QUIZ_EDUCATOR_VERSION, '3.2.0', '>=' );
+
 		// Localize script with reports data
 		wp_localize_script(
 			'ppq-reports',
 			'pressprimerQuizReportsData',
 			[
-				'pluginUrl'      => PRESSPRIMER_QUIZ_PLUGIN_URL,
-				'reportsMascot'  => $reports_mascot,
-				'resultsUrl'     => home_url( '/quiz-results/' ),
-				'addonReports'   => $addon_reports,
-				'premiumReports' => $premium_reports,
-				'mathEnabled'    => pressprimer_quiz_math_enabled(),
+				'pluginUrl'         => PRESSPRIMER_QUIZ_PLUGIN_URL,
+				'reportsMascot'     => $reports_mascot,
+				'resultsUrl'        => home_url( '/quiz-results/' ),
+				'addonReports'      => $addon_reports,
+				'premiumReports'    => $premium_reports,
+				'mathEnabled'       => pressprimer_quiz_math_enabled(),
+				'canExportAttempts' => $can_export_attempts,
 			]
 		);
 	}

@@ -327,6 +327,11 @@
 	gap: 12px;
 }
 
+/* An action (Export CSV) at the end of the filter row. */
+.ppq-reports-table-header-action {
+	margin-left: auto;
+}
+
 /* Search Fields */
 .ppq-reports-search {
 	width: 320px;
@@ -391,6 +396,12 @@
 }
 
 /* Tables */
+
+/* A table wider than its card scrolls inside the card, not the page. */
+.ppq-reports-table {
+	overflow-x: auto;
+}
+
 .ppq-reports-table .ant-table-thead > tr > th {
 	background: #fafafa;
 	font-weight: 600;
@@ -893,6 +904,10 @@
 		align-items: stretch;
 	}
 
+	.ppq-reports-table-header-action {
+		margin-left: 0;
+	}
+
 	.ppq-reports-search {
 		width: 100%;
 	}
@@ -904,10 +919,6 @@
 }
 
 @media screen and (max-width: 600px) {
-	.ppq-reports-table {
-		overflow-x: auto;
-	}
-
 	.ppq-reports-table .ant-table {
 		min-width: 600px;
 	}

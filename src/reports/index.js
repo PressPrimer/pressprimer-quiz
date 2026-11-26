@@ -6,10 +6,18 @@
  */
 
 import { render } from '@wordpress/element';
+import { message } from 'antd';
 import Reports from './components/Reports';
 import QuizPerformanceReport from './components/QuizPerformanceReport';
 import RecentAttemptsReport from './components/RecentAttemptsReport';
 import './style.css';
+
+// Configure Ant Design message component
+message.config({
+	top: 50, // Position below WordPress admin bar (32px height + some padding)
+	duration: 5, // Show messages for 5 seconds
+	maxCount: 3, // Show max 3 messages at once
+});
 
 document.addEventListener('DOMContentLoaded', () => {
 	const root = document.getElementById('ppq-reports-root');

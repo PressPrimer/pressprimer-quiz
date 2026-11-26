@@ -23,6 +23,7 @@ import {
 import DateRangePicker from './DateRangePicker';
 import AttemptDetailModal from './AttemptDetailModal';
 import ConsentBadge from '../../utils/ConsentBadge';
+import ExportCsvButton from '../../shared/components/ExportCsvButton';
 import { getDateRange, formatTime, formatDate } from '../utils/dateUtils';
 
 const { Search } = Input;
@@ -74,37 +75,45 @@ const RecentAttemptsReport = () => {
 		}
 	}, []);
 
+	// The report's filters and sort, shared by the list and the export so the
+	// CSV holds exactly the rows on screen.
+	const buildFilterParams = useCallback(() => {
+		const dates = getEffectiveDates();
+		const params = new URLSearchParams();
+		params.append('orderby', sortField);
+		params.append('order', sortOrder === 'ascend' ? 'ASC' : 'DESC');
+
+		if (search) {
+			params.append('search', search);
+		}
+		if (quizFilter) {
+			params.append('quiz_id', quizFilter);
+		}
+		if (statusFilter !== null) {
+			params.append('passed', statusFilter);
+		}
+		if (practiceFilter === 'hide') {
+			params.append('practice', 'hide');
+		}
+		if (dates.from) {
+			params.append('date_from', dates.from);
+		}
+		if (dates.to) {
+			params.append('date_to', dates.to);
+		}
+
+		return params;
+	}, [sortField, sortOrder, search, quizFilter, statusFilter, practiceFilter, getEffectiveDates]);
+
 	// Fetch data
 	const fetchData = useCallback(async () => {
 		setLoading(true);
 		setError(null);
 
 		try {
-			const dates = getEffectiveDates();
-			const params = new URLSearchParams();
+			const params = buildFilterParams();
 			params.append('page', pagination.current);
 			params.append('per_page', pagination.pageSize);
-			params.append('orderby', sortField);
-			params.append('order', sortOrder === 'ascend' ? 'ASC' : 'DESC');
-
-			if (search) {
-				params.append('search', search);
-			}
-			if (quizFilter) {
-				params.append('quiz_id', quizFilter);
-			}
-			if (statusFilter !== null) {
-				params.append('passed', statusFilter);
-			}
-			if (practiceFilter === 'hide') {
-				params.append('practice', 'hide');
-			}
-			if (dates.from) {
-				params.append('date_from', dates.from);
-			}
-			if (dates.to) {
-				params.append('date_to', dates.to);
-			}
 
 			const response = await apiFetch({
 				path: `/ppq/v1/statistics/attempts?${params.toString()}`,
@@ -122,7 +131,7 @@ const RecentAttemptsReport = () => {
 		} finally {
 			setLoading(false);
 		}
-	}, [pagination.current, pagination.pageSize, sortField, sortOrder, search, quizFilter, statusFilter, practiceFilter, getEffectiveDates]);
+	}, [pagination.current, pagination.pageSize, buildFilterParams]);
 
 	// Initial fetch
 	useEffect(() => {
@@ -278,6 +287,7 @@ const RecentAttemptsReport = () => {
 
 	// Get the plugin URL and mascot from localized data
 	const pluginUrl = window.pressprimerQuizReportsData?.pluginUrl || '';
+	const canExport = Boolean(window.pressprimerQuizReportsData?.canExportAttempts);
 	const reportsMascot = window.pressprimerQuizReportsData?.reportsMascot ||
 		`${pluginUrl}assets/images/reports-mascot.png`;
 
@@ -370,6 +380,13 @@ const RecentAttemptsReport = () => {
 							className="ppq-reports-search"
 						/>
 					</Space>
+					{canExport && (
+						<ExportCsvButton
+							path={`/ppq/v1/statistics/attempts/export?${buildFilterParams().toString()}`}
+							disabled={0 === pagination.total}
+							className="ppq-reports-table-header-action"
+						/>
+					)}
 				</div>
 				<Spin spinning={loading}>
 					<Table

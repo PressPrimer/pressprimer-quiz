@@ -770,7 +770,7 @@ class PressPrimer_Quiz_Admin_Banks {
 						<?php endif; ?>
 					</div>
 					<div style="text-align: center; min-width: 140px; padding: 20px; background: #f6f7f7; border: 1px solid #dcdcde; border-radius: 3px;">
-						<div style="font-size: 48px; font-weight: 700; color: #2271b1; line-height: 1; margin-bottom: 8px;">
+						<div class="ppq-bank-total-count" style="font-size: 48px; font-weight: 700; color: #2271b1; line-height: 1; margin-bottom: 8px;">
 							<?php echo absint( $total_count ); ?>
 						</div>
 						<div style="font-size: 13px; color: #50575e; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">
@@ -794,10 +794,9 @@ class PressPrimer_Quiz_Admin_Banks {
 					</button>
 				</div>
 
-				<!-- AI Generation Tab -->
+				<!-- AI Generation Tab (React; refreshes the questions list when it saves) -->
 				<div class="ppq-bank-tab-content ppq-bank-tab-content--active" data-tab-content="ai-generate">
 					<?php
-					// Include AI generation panel
 					if ( class_exists( 'PressPrimer_Quiz_Admin_AI_Generation' ) ) {
 						$ai_generation = new PressPrimer_Quiz_Admin_AI_Generation();
 						$ai_generation->render_panel( $bank_id );

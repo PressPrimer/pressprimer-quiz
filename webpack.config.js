@@ -7,6 +7,8 @@ module.exports = {
 		'question-editor': path.resolve(process.cwd(), 'src', 'question-editor', 'index.js'),
 		'quiz-editor': path.resolve(process.cwd(), 'src', 'quiz-editor', 'index.js'),
 		'bank-editor': path.resolve(process.cwd(), 'src', 'bank-editor', 'index.js'),
+		// The bank page's AI generation panel (the dashboard's comes in editors).
+		'ai-generation': path.resolve(process.cwd(), 'src', 'ai-generation', 'index.js'),
 		// The three editors in one bundle for the front-end dashboard (handle
 		// ppq-editors), and the small loader that adds it on demand.
 		'editors': path.resolve(process.cwd(), 'src', 'editors', 'index.js'),

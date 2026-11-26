@@ -22,6 +22,7 @@ import { getPpqTheme } from '../utils/ppqTheme';
 import '../quiz-editor/style.css?editors';
 import '../question-editor/styles/editor.css?editors';
 import '../bank-editor/style.css?editors';
+import '../ai-generation/style.css?editors';
 /* eslint-enable import/no-unresolved */
 import './dashboard.css';
 

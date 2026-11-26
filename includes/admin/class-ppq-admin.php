@@ -66,12 +66,6 @@ class PressPrimer_Quiz_Admin {
 			$quizzes = new PressPrimer_Quiz_Admin_Quizzes();
 			$quizzes->init();
 		}
-
-		// Initialize AI generation admin
-		if ( class_exists( 'PressPrimer_Quiz_Admin_AI_Generation' ) ) {
-			$ai_generation = new PressPrimer_Quiz_Admin_AI_Generation();
-			$ai_generation->init();
-		}
 	}
 
 	/**

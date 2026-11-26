@@ -3,9 +3,9 @@
  *
  * A saved bank's questions in the dashboard bank editor (R13): the list,
  * with search and paging, adding questions the author may use (the quiz
- * editor's picker) and removing them, through the bank membership routes.
- * A bank shared with the author is a read-only list. wp-admin keeps its bank
- * detail page in 3.2.
+ * editor's picker) and removing them, through the bank membership routes,
+ * and a "Generate with AI" tab (the AI generation panel). A bank shared with
+ * the author is a read-only list. wp-admin keeps its bank detail page in 3.2.
  *
  * Fires ppq-bank-questions-added and ppq-bank-questions-removed on document
  * with { bankId, questionIds }.
@@ -35,6 +35,7 @@ import { DeleteOutlined, EditOutlined, PlusOutlined } from '@ant-design/icons';
 import { useEditorContext } from '../../editors/EditorContext';
 import { emitEditorEvent, toId } from '../../editors/events';
 import QuestionPickerModal from '../../editors/QuestionPickerModal';
+import AiGenerationPanel from '../../ai-generation/components/AiGenerationPanel';
 import { debugError } from '../../utils/debug';
 
 const { Text } = Typography;
@@ -331,10 +332,18 @@ const BankQuestionsPanel = ({ bankId, canEdit }) => {
 		</Space>
 	);
 
-	// Phase 4 adds the AI generation tab here (feature 3).
 	const tabs = [
 		{ key: 'questions', label: __('Questions', 'pressprimer-quiz'), children: list },
 	];
+
+	// Only into banks the author can change (the save route's rule).
+	if (canEdit) {
+		tabs.push({
+			key: 'ai',
+			label: __('Generate with AI', 'pressprimer-quiz'),
+			children: <AiGenerationPanel bankId={bankId} onSaved={() => load(page, search)} />,
+		});
+	}
 
 	return (
 		<Card className="ppq-bank-questions" title={__('Questions', 'pressprimer-quiz')} style={{ marginTop: 20 }}>

@@ -24,7 +24,7 @@ Most WordPress quiz plugins are built for BuzzFeed-style trivia and basic scorin
 
 PressPrimer Quiz delivers enterprise-grade assessment and includes all of the critical features you get in premium plugins at no cost:
 
-* **AI-Powered Question Generation** – Use your own OpenAI or Anthropic (Claude) API key to generate questions from text, PDFs, or Word documents. No credits to buy, no middleware fees, no limits.
+* **AI-Powered Question Generation** – Use your own OpenAI or Anthropic (Claude) API key to generate questions from text, PDFs, or Word documents. No credits to buy and no middleware fees, with optional per-teacher monthly limits.
 * **Deep LMS Integration** – Native integration with popular WordPress LMS plugins, including LearnDash, Tutor LMS, LifterLMS, and LearnPress. Quizzes appear in lessons or topics, trigger completions, and respect enrollment—automatically.
 * **Modern, Beautiful Design** – Six professional themes.
 * **Real Reporting** – Score distribution, category breakdowns, time analytics, confidence reporting, and attempt history. 

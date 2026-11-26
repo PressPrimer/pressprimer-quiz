@@ -187,12 +187,14 @@ class PressPrimer_Quiz_AI_Usage_Service {
 	 * @since 3.2.0
 	 *
 	 * @param int $user_id User ID.
-	 * @return array { period, units, requests, tokens, by_feature, limit, remaining, resets_at }; limit and remaining are null without a limit.
+	 * @return array { period, units, requests, tokens, by_feature, limit, remaining, resets_at, resets_on }; limit and remaining are null without a limit.
 	 */
 	public static function get_usage( $user_id ) {
 		$user_id = absint( $user_id );
 		$record  = self::get_record( $user_id );
 		$limit   = self::get_limit( $user_id );
+
+		$resets_at = self::get_resets_at();
 
 		return [
 			'period'     => $record['period'],
@@ -202,7 +204,9 @@ class PressPrimer_Quiz_AI_Usage_Service {
 			'by_feature' => $record['by_feature'],
 			'limit'      => $limit,
 			'remaining'  => null === $limit ? null : max( 0, $limit - $record['units'] ),
-			'resets_at'  => self::get_resets_at(),
+			'resets_at'  => $resets_at,
+			// The reset date in the site's date format, for messages.
+			'resets_on'  => wp_date( get_option( 'date_format' ), $resets_at ),
 		];
 	}
 

@@ -245,9 +245,13 @@ class PressPrimer_Quiz_REST_AI_Controller {
 			'usage'               => PressPrimer_Quiz_AI_Usage_Service::get_usage( get_current_user_id() ),
 		];
 
-		// The masked key is for the people who manage it.
-		if ( $status['can_manage_settings'] && ! empty( $key['masked_key'] ) ) {
-			$status['masked_key'] = $key['masked_key'];
+		// The masked key and the Settings link are for the people who manage it.
+		if ( $status['can_manage_settings'] ) {
+			$status['settings_url'] = admin_url( 'admin.php?page=pressprimer-quiz-settings&tab=integrations' );
+
+			if ( ! empty( $key['masked_key'] ) ) {
+				$status['masked_key'] = $key['masked_key'];
+			}
 		}
 
 		return new WP_REST_Response( $status, 200 );
@@ -437,7 +441,7 @@ class PressPrimer_Quiz_REST_AI_Controller {
 	 * @since 3.2.0
 	 *
 	 * @param WP_REST_Request $request Request.
-	 * @return WP_REST_Response|WP_Error { saved_count, question_ids, errors }, or an error.
+	 * @return WP_REST_Response|WP_Error { saved_count, question_ids, errors, failed, message }, or an error.
 	 */
 	public function save_questions( $request ) {
 		$bank = $this->get_bank_for_saving( absint( $request['id'] ) );
@@ -471,6 +475,7 @@ class PressPrimer_Quiz_REST_AI_Controller {
 		$category_ids = $this->existing_category_ids( $data['categories'] ?? [] );
 		$saved_ids    = [];
 		$errors       = [];
+		$failed       = [];
 
 		foreach ( $questions as $index => $raw ) {
 			$question = $this->save_question( $raw, $category_ids, (int) $bank->id );
@@ -482,6 +487,7 @@ class PressPrimer_Quiz_REST_AI_Controller {
 					$index + 1,
 					$question->get_error_message()
 				);
+				$failed[] = (int) $index;
 				continue;
 			}
 
@@ -495,6 +501,7 @@ class PressPrimer_Quiz_REST_AI_Controller {
 				[
 					'status' => 422,
 					'errors' => $errors,
+					'failed' => $failed,
 				]
 			);
 		}
@@ -504,6 +511,8 @@ class PressPrimer_Quiz_REST_AI_Controller {
 				'saved_count'  => count( $saved_ids ),
 				'question_ids' => $saved_ids,
 				'errors'       => $errors,
+				// Positions (from 0) of the sent questions that weren't saved.
+				'failed'       => $failed,
 				'message'      => sprintf(
 					/* translators: %d: number of questions saved */
 					_n( '%d question saved to bank.', '%d questions saved to bank.', count( $saved_ids ), 'pressprimer-quiz' ),

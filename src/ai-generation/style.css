@@ -1,0 +1,376 @@
+/**
+ * AI generation panel
+ *
+ * Built into build/style-ai-generation.css for the wp-admin bank page and
+ * into the editors bundle for the dashboard's bank editor. Every rule is
+ * under a .ppq-ai-* class.
+ *
+ * @package PressPrimer_Quiz
+ * @since 3.2.0
+ */
+
+.ppq-ai-panel {
+	display: flex;
+	flex-direction: column;
+	gap: 20px;
+
+	/* The layout follows the panel's width (a phone, a narrow theme). */
+	container-type: inline-size;
+}
+
+.ppq-ai-hint {
+	display: block;
+	font-size: 13px;
+}
+
+/* No key */
+.ppq-ai-setup {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: 8px;
+	max-width: 520px;
+	margin: 0 auto;
+	padding: 32px 16px;
+	text-align: center;
+}
+
+.ppq-ai-setup-icon {
+	font-size: 40px;
+	color: #8c8c8c;
+}
+
+.ppq-ai-setup-title {
+	font-size: 16px;
+}
+
+/* Source */
+.ppq-ai-source-tabs .ant-tabs-nav {
+	margin-bottom: 0;
+}
+
+.ppq-ai-source {
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+	padding: 16px;
+	border: 1px solid #f0f0f0;
+	border-top: 0;
+	border-radius: 0 0 8px 8px;
+}
+
+.ppq-ai-label {
+	display: block;
+}
+
+.ppq-ai-char-count {
+	align-self: flex-end;
+	font-size: 12px;
+}
+
+.ppq-ai-file {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 8px;
+	padding: 12px;
+	background: #fafafa;
+	border: 1px solid #d9d9d9;
+	border-radius: 6px;
+}
+
+.ppq-ai-file-icon {
+	font-size: 20px;
+	color: #1890ff;
+}
+
+.ppq-ai-file-name {
+	overflow-wrap: anywhere;
+}
+
+.ppq-ai-extracted {
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+	margin-top: 12px;
+}
+
+.ppq-ai-extracted-text {
+	max-height: 200px;
+	overflow-y: auto;
+	padding: 12px;
+	background: #fafafa;
+	border: 1px solid #f0f0f0;
+	border-radius: 6px;
+	font-size: 13px;
+	white-space: pre-wrap;
+	overflow-wrap: anywhere;
+}
+
+/* Parameters */
+.ppq-ai-parameters {
+	padding: 16px;
+	background: #fafafa;
+	border: 1px solid #f0f0f0;
+	border-radius: 8px;
+}
+
+.ppq-ai-parameters-title {
+	display: block;
+	margin-bottom: 16px;
+	padding-bottom: 12px;
+	border-bottom: 1px solid #f0f0f0;
+	font-size: 15px;
+}
+
+.ppq-ai-parameters-grid {
+	display: grid;
+	grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+	gap: 20px 24px;
+}
+
+.ppq-ai-param {
+	display: flex;
+	flex-direction: column;
+	align-items: flex-start;
+	gap: 6px;
+	min-width: 0;
+}
+
+.ppq-ai-param--wide {
+	grid-column: 1 / -1;
+	align-items: stretch;
+}
+
+.ppq-ai-checkboxes {
+	display: flex;
+	flex-direction: column;
+	gap: 6px;
+}
+
+.ppq-ai-switch {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+}
+
+/* Generate */
+.ppq-ai-actions {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: 10px;
+	text-align: center;
+}
+
+.ppq-ai-usage-alert {
+	max-width: 600px;
+	text-align: left;
+}
+
+.ppq-ai-note {
+	font-size: 13px;
+}
+
+.ppq-ai-error-details {
+	margin: 4px 0 0;
+	padding-left: 20px;
+}
+
+/* Generated questions */
+
+/* The header's buttons move under the title when there's no room. */
+.ppq-ai-results .ant-card-head-wrapper {
+	flex-wrap: wrap;
+	gap: 8px;
+	padding: 8px 0;
+}
+
+.ppq-ai-results .ant-card-head-title {
+	flex: 1 0 auto;
+}
+
+.ppq-ai-results .ant-card-extra {
+	margin-inline-start: 0;
+}
+
+.ppq-ai-results-notice {
+	margin-bottom: 12px;
+}
+
+.ppq-ai-results-tokens {
+	display: block;
+	margin-bottom: 12px;
+	font-size: 12px;
+}
+
+.ppq-ai-questions {
+	display: flex;
+	flex-direction: column;
+	gap: 16px;
+}
+
+.ppq-ai-question {
+	overflow: hidden;
+	border: 1px solid #d9d9d9;
+	border-radius: 8px;
+}
+
+.ppq-ai-question--selected {
+	border-color: #1890ff;
+	box-shadow: 0 0 0 1px #1890ff;
+}
+
+.ppq-ai-question-header {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 8px 12px;
+	padding: 10px 14px;
+	background: #fafafa;
+	border-bottom: 1px solid #f0f0f0;
+}
+
+.ppq-ai-question-number {
+	font-weight: 600;
+}
+
+.ppq-ai-question-actions {
+	margin-left: auto;
+}
+
+.ppq-ai-question-body {
+	padding: 14px;
+}
+
+.ppq-ai-question-stem {
+	margin-bottom: 12px;
+	font-size: 14px;
+	white-space: pre-wrap;
+	overflow-wrap: anywhere;
+}
+
+.ppq-ai-answers {
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+}
+
+.ppq-ai-answer {
+	display: flex;
+	align-items: flex-start;
+	gap: 10px;
+	padding: 8px 10px;
+	background: #fafafa;
+	border: 1px solid transparent;
+	border-radius: 6px;
+}
+
+.ppq-ai-answer--correct {
+	background: #f6ffed;
+	border-color: #b7eb8f;
+}
+
+.ppq-ai-answer-letter {
+	display: flex;
+	flex-shrink: 0;
+	align-items: center;
+	justify-content: center;
+	width: 22px;
+	height: 22px;
+	background: #fff;
+	border: 1px solid #d9d9d9;
+	border-radius: 50%;
+	font-size: 11px;
+	font-weight: 600;
+}
+
+.ppq-ai-answer--correct .ppq-ai-answer-letter {
+	background: #52c41a;
+	border-color: #52c41a;
+	color: #fff;
+}
+
+.ppq-ai-answer-text {
+	flex: 1;
+	min-width: 0;
+	font-size: 13px;
+	overflow-wrap: anywhere;
+}
+
+.ppq-ai-answer-correct {
+	color: #52c41a;
+	font-size: 16px;
+}
+
+.ppq-ai-save {
+	display: flex;
+	justify-content: center;
+	margin-top: 20px;
+	padding-top: 16px;
+	border-top: 1px solid #f0f0f0;
+}
+
+/* Narrow: less padding around each level. */
+@container (max-width: 519px) {
+
+	.ppq-ai-source-tabs .ant-tabs-tab {
+		padding: 6px 10px;
+	}
+
+	.ppq-ai-source-tabs .ant-tabs-tab .anticon {
+		display: none;
+	}
+
+	.ppq-ai-source,
+	.ppq-ai-parameters {
+		padding: 12px;
+	}
+
+	.ppq-ai-results .ant-card-head,
+	.ppq-ai-results .ant-card-body {
+		padding-right: 12px;
+		padding-left: 12px;
+	}
+
+	.ppq-ai-question-header,
+	.ppq-ai-question-body {
+		padding: 10px;
+	}
+
+	.ppq-ai-answer {
+		gap: 8px;
+		padding: 6px 8px;
+	}
+
+	.ppq-ai-save .ant-btn {
+		height: auto;
+		max-width: 100%;
+		white-space: normal;
+	}
+}
+
+/* Edit dialog */
+.ppq-ai-edit-field {
+	display: flex;
+	flex-direction: column;
+	gap: 6px;
+	margin-bottom: 16px;
+}
+
+.ppq-ai-edit-answers {
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+}
+
+.ppq-ai-edit-answer {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	margin-bottom: 8px;
+}
+
+.ppq-ai-edit-answers .ppq-ai-edit-answer {
+	margin-bottom: 0;
+}

@@ -77,8 +77,13 @@
 	}
 
 	.ppq-shell .ppq-quiz-editor-container .ant-card-head,
-	.ppq-shell .ppq-question-editor-container .ant-card-head {
+	.ppq-shell .ppq-question-editor-container .ant-card-head,
+	.ppq-shell .ppq-bank-questions > .ant-card-head {
 		padding: 0 16px;
+	}
+
+	.ppq-shell .ppq-bank-questions > .ant-card-body {
+		padding: 12px;
 	}
 
 	.ppq-shell .ppq-quiz-editor-container .ant-card-body,

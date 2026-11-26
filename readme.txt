@@ -14,7 +14,7 @@ Enterprise-grade quiz and assessment platform for educators with AI question gen
 
 **PressPrimer Quiz** is a professional assessment plugin that bridges the gap between basic quiz plugins and expensive enterprise platforms. Create beautiful, engaging quizzes with AI-powered question generation, deep LMS integration, and the reporting features serious educators need—all without monthly fees or per-student pricing.
 
-**This isn't a crippled trial.** The free version is genuinely useful forever with unlimited quizzes, unlimited questions, AI generation, LMS integration, and six professional themes. We earn upgrades by delivering specialized features, not by hobbling what you get for free.
+**This isn't a crippled trial.** The free version is genuinely useful forever with unlimited quizzes, unlimited questions, AI generation, LMS integration, and three professional themes. We earn upgrades by delivering specialized features, not by hobbling what you get for free.
 
 https://www.youtube.com/watch?v=YHyooYXKLo0
 
@@ -26,7 +26,7 @@ PressPrimer Quiz delivers enterprise-grade assessment and includes all of the cr
 
 * **AI-Powered Question Generation** – Use your own OpenAI or Anthropic (Claude) API key to generate questions from text, PDFs, or Word documents. No credits to buy and no middleware fees, with optional per-teacher monthly limits.
 * **Deep LMS Integration** – Native integration with popular WordPress LMS plugins, including LearnDash, Tutor LMS, LifterLMS, and LearnPress. Quizzes appear in lessons or topics, trigger completions, and respect enrollment—automatically.
-* **Modern, Beautiful Design** – Six professional themes.
+* **Modern, Beautiful Design** – Three professional themes: Default, Modern, Minimal.
 * **Real Reporting** – Score distribution, category breakdowns, time analytics, confidence reporting, and attempt history. 
 * **Built to Prevent Cheating** – Server-side answer validation means correct answers are never exposed in page source. You can also limit attempts and force delays between retries.
 * **Server-Side Resume That Works Everywhere** – Every answer is instantly saved to the server. Students can pause on their phone and resume on their laptop without losing a single response.
@@ -90,24 +90,28 @@ Unlock additional premium features at [pressprimer.com](https://pressprimer.com/
 
 **Educator**
 
-* **Groups & Assignments** – Organize students into groups, assign quizzes with due dates, and track completion progress
-* **Front-End Dashboard for Teachers & Students** – Groups, assignments, and the full reporting suite on a front-end page, with an option to keep instructors and students out of wp-admin entirely
+* **Groups & Assignments** – Organize students into groups (including LearnDash Groups), assign quizzes with due dates, and track completion progress
+* **Front-End Dashboard for Teachers & Students** – Build quizzes and questions, run groups and assignments, and see student results and the full reporting suite on a front-end page, with an option to keep instructors and students out of wp-admin entirely
+* **Shareable Quiz Links** – Copy a link to a quiz and send it to students, with no page to set up
 * **Contacts & Email Campaigns** – A deduplicated view of guest emails captured from your quizzes, with consent state, CSV export, and erasure. Send campaigns to opted-in contacts, groups, or roles, with sender identification and one-click unsubscribe in every email. It's a basic CRM built right into your quiz platform.
 * **Import/Export** – Move questions between sites or migrate from other quiz plugins with CSV, JSON, and XML support
+* **Shared Question Banks** – Share question banks with co-teachers so you can use each other's questions
 * **Pre-/Post-Test Analysis** – Link quizzes as pre/post pairs and measure learning gain with score and category comparison charts
 * **Quiz Detail Reports** – Per-quiz analytics dashboard with score distribution, category performance, question difficulty analysis, and score trends over time
 * **Assignment Reminder Emails** – Automated reminder emails for students approaching assignment deadlines, with configurable timing windows and customizable templates
-* **AI Distractor Generation** – Generate plausible wrong answers for multiple choice questions using OpenAI or Anthropic (Claude), with individual review and bulk generation across entire question banks
+* **AI Distractors & Answer Feedback** – Generate plausible wrong answers for multiple choice questions and draft feedback that explains each answer, using OpenAI or Anthropic (Claude). Review each suggestion before saving, one question at a time or in bulk across a question bank or quiz
 
 **School**
 
 * **Student Study Plans** – Students build their own scheduled practice plans from teacher-granted question banks, with sessions weighted toward their weak areas, streaks, and an exam-readiness trend
 * **Mastery Tracking** – Per-category mastery scores built from every answer, with a student mastery map and an admin rebuild tool
 * **Spaced Repetition** – Schedule review sessions using the SM-2 and FSRS algorithms with a student dashboard, email reminders, and educator tracking
+* **Score Reports** – Report scaled scores, percentiles, and a topic breakdown on a score report students can print or save as a PDF
+* **Measured Question Difficulty** – See each question's real-world difficulty once it has enough attempts, flagged when it disagrees with the authored rating
 * **Group Performance Reports** – Compare groups side by side, drill into individual member results, and track weekly score trends
 * **Question Quality Analytics** – Identify problem questions with detailed analysis
 * **Curve Grading** – Apply grading curves to quiz scores with multiple methods, right from the dashboard or wp-admin
-* **LearnDash & LifterLMS Quiz Import** – Migrate entire quizzes with questions from LearnDash or LifterLMS, individually or in batches
+* **LearnDash, LifterLMS & Tutor LMS Quiz Import** – Migrate entire quizzes with questions from LearnDash, LifterLMS, or Tutor LMS
 * **xAPI/LRS Integration** – Send detailed learning data to your Learning Record Store for compliance and analytics
 * **WP Fusion Integration** – Apply CRM tags on quiz registration, completion, pass, or fail across 60+ CRMs through WP Fusion
 
@@ -174,7 +178,7 @@ If you have LearnDash, Tutor LMS, LifterLMS, or LearnPress installed, integratio
 
 = Is this really free forever, or is it a limited trial? =
 
-It's really free forever and not locked down. PressPrimer Quiz includes unlimited quizzes, unlimited questions, AI generation (with your own API key), LMS integrations, confidence ratings, per-question feedback, and six professional themes in the free version. We believe in earning upgrades by offering genuinely valuable premium features, not by crippling the free experience.
+It's really free forever and not locked down. PressPrimer Quiz includes unlimited quizzes, unlimited questions, AI generation (with your own API key), LMS integrations, confidence ratings, per-question feedback, and three professional themes in the free version. We believe in earning upgrades by offering genuinely valuable premium features, not by crippling the free experience.
 
 = How does AI question generation work? =
 

@@ -9,7 +9,7 @@ msgstr ""
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"POT-Creation-Date: 2026-11-26T16:43:30+00:00\n"
+"POT-Creation-Date: 2026-11-26T16:52:53+00:00\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "X-Generator: WP-CLI 2.12.0\n"
 "X-Domain: pressprimer-quiz\n"
@@ -43,7 +43,7 @@ msgstr ""
 
 #. Author of the plugin
 #: pressprimer-quiz.php
-#: includes/admin/views/upgrade-page.php:33
+#: includes/admin/views/upgrade-page.php:46
 msgid "PressPrimer"
 msgstr ""
 
@@ -63,6 +63,7 @@ msgstr ""
 #: includes/admin/class-ppq-admin-settings.php:1616
 #: includes/admin/class-ppq-admin.php:561
 #: includes/admin/class-ppq-admin.php:652
+#: includes/admin/class-ppq-upgrade-page.php:210
 msgid "You do not have permission to access this page."
 msgstr ""
 
@@ -74,6 +75,7 @@ msgstr ""
 #: includes/admin/class-ppq-admin-settings.php:1617
 #: includes/admin/class-ppq-admin.php:562
 #: includes/admin/class-ppq-admin.php:653
+#: includes/admin/class-ppq-upgrade-page.php:211
 msgid "Permission Denied"
 msgstr ""
 
@@ -2093,11 +2095,12 @@ msgid "Explore Settings"
 msgstr ""
 
 #: includes/admin/class-ppq-onboarding.php:430
+#: includes/admin/views/upgrade-page.php:140
 msgid "View Documentation"
 msgstr ""
 
 #: includes/admin/class-ppq-premium-catalog.php:98
-#: includes/admin/views/upgrade-page.php:128
+#: includes/admin/views/upgrade-page.php:178
 #: src/quiz-editor/components/PremiumUpsell.jsx:32
 #: src/settings-panel/components/StatusTab.jsx:461
 msgid "Educator"
@@ -2146,7 +2149,7 @@ msgid "Priority support"
 msgstr ""
 
 #: includes/admin/class-ppq-premium-catalog.php:115
-#: includes/admin/views/upgrade-page.php:131
+#: includes/admin/views/upgrade-page.php:181
 #: src/quiz-editor/components/PremiumUpsell.jsx:33
 #: src/settings-panel/components/StatusTab.jsx:467
 msgid "School"
@@ -2192,7 +2195,7 @@ msgid "LearnDash, LifterLMS & Tutor LMS quiz import"
 msgstr ""
 
 #: includes/admin/class-ppq-premium-catalog.php:132
-#: includes/admin/views/upgrade-page.php:135
+#: includes/admin/views/upgrade-page.php:185
 #: src/quiz-editor/components/PremiumUpsell.jsx:34
 #: src/settings-panel/components/StatusTab.jsx:473
 msgid "Enterprise"
@@ -2663,104 +2666,123 @@ msgstr ""
 msgid "Remind me later"
 msgstr ""
 
-#: includes/admin/class-ppq-upgrade-page.php:65
-msgid "Upgrade PressPrimer Quiz"
-msgstr ""
-
-#: includes/admin/class-ppq-upgrade-page.php:66
-#: includes/admin/views/upgrade-page.php:210
+#: includes/admin/class-ppq-upgrade-page.php:78
+#: includes/admin/class-ppq-upgrade-page.php:84
+#: includes/admin/views/upgrade-page-white-label.php:20
+#: includes/admin/views/upgrade-page.php:262
 #: src/reports/components/Reports.jsx:275
 msgid "Upgrade"
 msgstr ""
 
-#: includes/admin/class-ppq-upgrade-page.php:180
-msgid "You already have the full PressPrimer Quiz feature set."
+#: includes/admin/class-ppq-upgrade-page.php:79
+msgid "Upgrade PressPrimer Quiz"
 msgstr ""
 
-#: includes/admin/class-ppq-upgrade-page.php:181
-#: src/settings-panel/components/StatusTab.jsx:637
-#: src/settings-panel/components/StatusTab.jsx:651
-#: src/settings-panel/components/StatusTab.jsx:665
-msgid "Not Available"
-msgstr ""
-
-#: includes/admin/class-ppq-upgrade-page.php:214
+#: includes/admin/class-ppq-upgrade-page.php:285
 msgid "Included"
 msgstr ""
 
-#: includes/admin/class-ppq-upgrade-page.php:218
+#: includes/admin/class-ppq-upgrade-page.php:289
 msgid "Not included"
 msgstr ""
 
-#: includes/admin/views/upgrade-page.php:35
+#: includes/admin/views/upgrade-page-white-label.php:23
+msgid "You have every feature available."
+msgstr ""
+
+#: includes/admin/views/upgrade-page.php:49
+msgid "You Have the Complete PressPrimer Quiz Suite"
+msgstr ""
+
+#: includes/admin/views/upgrade-page.php:51
+msgid "Every premium tier is active on this site. Thank you! The knowledge base covers every feature, and our support team is a message away."
+msgstr ""
+
+#: includes/admin/views/upgrade-page.php:57
+msgid "Browse the Knowledge Base"
+msgstr ""
+
+#: includes/admin/views/upgrade-page.php:61
 msgid "Unlock the Full PressPrimer Quiz Experience"
 msgstr ""
 
-#: includes/admin/views/upgrade-page.php:37
+#: includes/admin/views/upgrade-page.php:63
 msgid "You're already using the most flexible free quiz plugin for WordPress. Premium add-ons add the groups, analytics, compliance, and white-label tools that turn it into a complete assessment platform for your organization."
 msgstr ""
 
-#: includes/admin/views/upgrade-page.php:43
-#: includes/admin/views/upgrade-page.php:195
+#: includes/admin/views/upgrade-page.php:69
+#: includes/admin/views/upgrade-page.php:247
 #: src/quiz-editor/components/PremiumUpsell.jsx:128
 msgid "View Pricing & Upgrade"
 msgstr ""
 
-#: includes/admin/views/upgrade-page.php:59
+#: includes/admin/views/upgrade-page.php:87
+msgid "Your Plan"
+msgstr ""
+
+#: includes/admin/views/upgrade-page.php:88
+msgid "Everything below is active on this site."
+msgstr ""
+
+#: includes/admin/views/upgrade-page.php:90
 msgid "Choose the Plan That Fits Your Program"
 msgstr ""
 
-#: includes/admin/views/upgrade-page.php:60
+#: includes/admin/views/upgrade-page.php:91
 msgid "Every premium tier includes a year of updates, priority support, and a 14-day money-back guarantee."
 msgstr ""
 
-#: includes/admin/views/upgrade-page.php:75
+#: includes/admin/views/upgrade-page.php:112
+msgid "Active on This Site"
+msgstr ""
+
+#: includes/admin/views/upgrade-page.php:116
 msgid "Most Popular"
 msgstr ""
 
 #. translators: %s: tier name (Educator, School, or Enterprise)
-#: includes/admin/views/upgrade-page.php:101
+#: includes/admin/views/upgrade-page.php:150
 #, php-format
 msgid "Get %s"
 msgstr ""
 
-#: includes/admin/views/upgrade-page.php:113
+#: includes/admin/views/upgrade-page.php:163
 msgid "Compare Every Feature"
 msgstr ""
 
-#: includes/admin/views/upgrade-page.php:114
+#: includes/admin/views/upgrade-page.php:164
 msgid "A complete side-by-side of what's in each plan."
 msgstr ""
 
-#: includes/admin/views/upgrade-page.php:122
+#: includes/admin/views/upgrade-page.php:172
 msgid "Feature"
 msgstr ""
 
-#: includes/admin/views/upgrade-page.php:125
+#: includes/admin/views/upgrade-page.php:175
 msgid "Free"
 msgstr ""
 
-#: includes/admin/views/upgrade-page.php:132
+#: includes/admin/views/upgrade-page.php:182
 msgid "Popular"
 msgstr ""
 
-#: includes/admin/views/upgrade-page.php:187
+#: includes/admin/views/upgrade-page.php:239
 msgid "Try Risk-Free for 14 Days"
 msgstr ""
 
-#: includes/admin/views/upgrade-page.php:189
+#: includes/admin/views/upgrade-page.php:241
 msgid "Every premium plan comes with a 14-day money-back guarantee. If PressPrimer Quiz isn't the right fit, we'll refund your purchase — no questions asked."
 msgstr ""
 
-#: includes/admin/views/upgrade-page.php:200
+#: includes/admin/views/upgrade-page.php:252
 msgid "Upgrade actions"
 msgstr ""
 
-#: includes/admin/views/upgrade-page.php:203
+#: includes/admin/views/upgrade-page.php:255
 msgid "Ready to upgrade PressPrimer Quiz?"
 msgstr ""
 
-#: includes/admin/views/upgrade-page.php:204
+#: includes/admin/views/upgrade-page.php:256
 msgid "Compare plans and pick the tier that fits your program. 14-day money-back guarantee."
 msgstr ""
 
@@ -9988,6 +10010,12 @@ msgstr ""
 #: src/settings-panel/components/StatusTab.jsx:647
 #: src/settings-panel/components/StatusTab.jsx:661
 msgid "Available"
+msgstr ""
+
+#: src/settings-panel/components/StatusTab.jsx:637
+#: src/settings-panel/components/StatusTab.jsx:651
+#: src/settings-panel/components/StatusTab.jsx:665
+msgid "Not Available"
 msgstr ""
 
 #: src/settings-panel/components/StatusTab.jsx:643

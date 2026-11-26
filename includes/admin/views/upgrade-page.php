@@ -5,12 +5,17 @@
  * Rendered by PressPrimer_Quiz_Upgrade_Page::render_page(). Receives the
  * following variables in scope:
  *
- * @var array  $features          Comparison rows (PressPrimer_Quiz_Premium_Catalog::get_comparison_rows()).
- * @var array  $tiers             Tiers (PressPrimer_Quiz_Premium_Catalog::get_tiers()), `featured` on School.
- * @var string $pricing_url       Pricing page URL.
- * @var string $logo_url          URL of the white PressPrimer logo SVG.
- * @var string $hero_mascot_url   URL of the hero mascot image (brown cheering squirrel).
- * @var string $footer_mascot_url URL of the footer mascot image (confetti celebration).
+ * @var array  $features           Comparison rows (PressPrimer_Quiz_Premium_Catalog::get_comparison_rows()).
+ * @var array  $tiers              Tiers (PressPrimer_Quiz_Premium_Catalog::get_tiers()), `featured` on School,
+ *                                 plus `owned`; `url` is already tagged (knowledge base when owned).
+ * @var bool   $all_active         True when every tier is owned: the calm page.
+ * @var string $pricing_hero_url   Tagged pricing URL for the hero button.
+ * @var string $pricing_footer_url Tagged pricing URL for the footer button.
+ * @var string $pricing_sticky_url Tagged pricing URL for the sticky bar.
+ * @var string $kb_url             Tagged knowledge base URL (calm page hero).
+ * @var string $logo_url           URL of the white PressPrimer logo SVG.
+ * @var string $hero_mascot_url    URL of the hero mascot image (brown cheering squirrel).
+ * @var string $footer_mascot_url  URL of the footer mascot image (confetti celebration).
  * @var PressPrimer_Quiz_Upgrade_Page $upgrade_page The controller instance, for render_cell_value().
  *
  * @package PressPrimer_Quiz
@@ -21,8 +26,16 @@
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
+
+// Allowlist for the comparison cell markup from render_cell_value().
+$pressprimer_quiz_cell_allowed_html = array(
+	'span' => array(
+		'class'      => true,
+		'aria-label' => true,
+	),
+);
 ?>
-<div class="wrap ppq-upgrade-page">
+<div class="wrap ppq-upgrade-page<?php echo $all_active ? ' is-calm' : ''; ?>">
 
 	<?php // Admin notices go here, above the hero (WordPress moves them after the first h1 otherwise). ?>
 	<hr class="wp-header-end">
@@ -32,17 +45,31 @@ if ( ! defined( 'ABSPATH' ) ) {
 			<img src="<?php echo esc_url( $logo_url ); ?>"
 				alt="<?php esc_attr_e( 'PressPrimer', 'pressprimer-quiz' ); ?>"
 				class="ppq-upgrade-hero-logo" />
-			<h1><?php esc_html_e( 'Unlock the Full PressPrimer Quiz Experience', 'pressprimer-quiz' ); ?></h1>
-			<p class="ppq-upgrade-intro">
-				<?php esc_html_e( 'You\'re already using the most flexible free quiz plugin for WordPress. Premium add-ons add the groups, analytics, compliance, and white-label tools that turn it into a complete assessment platform for your organization.', 'pressprimer-quiz' ); ?>
-			</p>
-			<a href="<?php echo esc_url( $pricing_url ); ?>"
-				class="button button-primary button-hero ppq-upgrade-cta"
-				target="_blank"
-				rel="noopener noreferrer">
-				<?php esc_html_e( 'View Pricing & Upgrade', 'pressprimer-quiz' ); ?>
-				<span class="ppq-upgrade-cta-arrow" aria-hidden="true">&rarr;</span>
-			</a>
+			<?php if ( $all_active ) : ?>
+				<h1><?php esc_html_e( 'You Have the Complete PressPrimer Quiz Suite', 'pressprimer-quiz' ); ?></h1>
+				<p class="ppq-upgrade-intro">
+					<?php esc_html_e( 'Every premium tier is active on this site. Thank you! The knowledge base covers every feature, and our support team is a message away.', 'pressprimer-quiz' ); ?>
+				</p>
+				<a href="<?php echo esc_url( $kb_url ); ?>"
+					class="button button-primary button-hero ppq-upgrade-cta"
+					target="_blank"
+					rel="noopener noreferrer">
+					<?php esc_html_e( 'Browse the Knowledge Base', 'pressprimer-quiz' ); ?>
+					<span class="ppq-upgrade-cta-arrow" aria-hidden="true">&rarr;</span>
+				</a>
+			<?php else : ?>
+				<h1><?php esc_html_e( 'Unlock the Full PressPrimer Quiz Experience', 'pressprimer-quiz' ); ?></h1>
+				<p class="ppq-upgrade-intro">
+					<?php esc_html_e( 'You\'re already using the most flexible free quiz plugin for WordPress. Premium add-ons add the groups, analytics, compliance, and white-label tools that turn it into a complete assessment platform for your organization.', 'pressprimer-quiz' ); ?>
+				</p>
+				<a href="<?php echo esc_url( $pricing_hero_url ); ?>"
+					class="button button-primary button-hero ppq-upgrade-cta"
+					target="_blank"
+					rel="noopener noreferrer">
+					<?php esc_html_e( 'View Pricing & Upgrade', 'pressprimer-quiz' ); ?>
+					<span class="ppq-upgrade-cta-arrow" aria-hidden="true">&rarr;</span>
+				</a>
+			<?php endif; ?>
 		</div>
 		<?php if ( $hero_mascot_url ) : ?>
 			<div class="ppq-upgrade-hero-mascot-wrap" aria-hidden="true">
@@ -56,21 +83,35 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 	<section class="ppq-upgrade-tiers" aria-labelledby="ppq-upgrade-tiers-heading">
 		<header class="ppq-upgrade-section-header">
-			<h2 id="ppq-upgrade-tiers-heading"><?php esc_html_e( 'Choose the Plan That Fits Your Program', 'pressprimer-quiz' ); ?></h2>
-			<p><?php esc_html_e( 'Every premium tier includes a year of updates, priority support, and a 14-day money-back guarantee.', 'pressprimer-quiz' ); ?></p>
+			<?php if ( $all_active ) : ?>
+				<h2 id="ppq-upgrade-tiers-heading"><?php esc_html_e( 'Your Plan', 'pressprimer-quiz' ); ?></h2>
+				<p><?php esc_html_e( 'Everything below is active on this site.', 'pressprimer-quiz' ); ?></p>
+			<?php else : ?>
+				<h2 id="ppq-upgrade-tiers-heading"><?php esc_html_e( 'Choose the Plan That Fits Your Program', 'pressprimer-quiz' ); ?></h2>
+				<p><?php esc_html_e( 'Every premium tier includes a year of updates, priority support, and a 14-day money-back guarantee.', 'pressprimer-quiz' ); ?></p>
+			<?php endif; ?>
 		</header>
 
 		<div class="ppq-upgrade-tier-cards">
 			<?php foreach ( $tiers as $tier_slug => $tier ) : ?>
 				<?php
-				$is_featured = ! empty( $tier['featured'] );
+				// An owned card is calm: its badge replaces "Most Popular".
+				$is_owned    = ! empty( $tier['owned'] );
+				$is_featured = ! $is_owned && ! empty( $tier['featured'] );
 				$card_class  = 'ppq-upgrade-tier-card ppq-upgrade-tier-' . sanitize_html_class( $tier_slug );
 				if ( $is_featured ) {
 					$card_class .= ' is-featured';
 				}
+				if ( $is_owned ) {
+					$card_class .= ' is-owned';
+				}
 				?>
 				<div class="<?php echo esc_attr( $card_class ); ?>">
-					<?php if ( $is_featured ) : ?>
+					<?php if ( $is_owned ) : ?>
+						<span class="ppq-upgrade-tier-badge ppq-upgrade-tier-badge-owned">
+							<?php esc_html_e( 'Active on This Site', 'pressprimer-quiz' ); ?>
+						</span>
+					<?php elseif ( $is_featured ) : ?>
 						<span class="ppq-upgrade-tier-badge">
 							<?php esc_html_e( 'Most Popular', 'pressprimer-quiz' ); ?>
 						</span>
@@ -91,18 +132,27 @@ if ( ! defined( 'ABSPATH' ) ) {
 						</ul>
 					<?php endif; ?>
 
-					<a href="<?php echo esc_url( $tier['url'] ); ?>"
-						class="button ppq-upgrade-tier-link <?php echo $is_featured ? 'button-primary' : 'button-secondary'; ?>"
-						target="_blank"
-						rel="noopener noreferrer">
-						<?php
-						printf(
-							/* translators: %s: tier name (Educator, School, or Enterprise) */
-							esc_html__( 'Get %s', 'pressprimer-quiz' ),
-							esc_html( $tier['name'] )
-						);
-						?>
-					</a>
+					<?php if ( $is_owned ) : ?>
+						<a href="<?php echo esc_url( $tier['url'] ); ?>"
+							class="button button-secondary ppq-upgrade-tier-link"
+							target="_blank"
+							rel="noopener noreferrer">
+							<?php esc_html_e( 'View Documentation', 'pressprimer-quiz' ); ?>
+						</a>
+					<?php else : ?>
+						<a href="<?php echo esc_url( $tier['url'] ); ?>"
+							class="button ppq-upgrade-tier-link <?php echo $is_featured ? 'button-primary' : 'button-secondary'; ?>"
+							target="_blank"
+							rel="noopener noreferrer">
+							<?php
+							printf(
+								/* translators: %s: tier name (Educator, School, or Enterprise) */
+								esc_html__( 'Get %s', 'pressprimer-quiz' ),
+								esc_html( $tier['name'] )
+							);
+							?>
+						</a>
+					<?php endif; ?>
 				</div>
 			<?php endforeach; ?>
 		</div>
@@ -161,9 +211,10 @@ if ( ! defined( 'ABSPATH' ) ) {
 							<?php foreach ( array( 'free', 'educator', 'school', 'enterprise' ) as $tier_key ) : ?>
 								<td class="ppq-upgrade-cell ppq-upgrade-cell-<?php echo esc_attr( $tier_key ); ?>">
 									<?php
-									// $upgrade_page->render_cell_value() returns hardcoded safe HTML
-									// (checkmark span, em dash, or esc_html'd string). Output as-is.
-									echo $upgrade_page->render_cell_value( isset( $row[ $tier_key ] ) ? $row[ $tier_key ] : false ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
+									echo wp_kses(
+										$upgrade_page->render_cell_value( isset( $row[ $tier_key ] ) ? $row[ $tier_key ] : false ),
+										$pressprimer_quiz_cell_allowed_html
+									);
 									?>
 								</td>
 							<?php endforeach; ?>
@@ -174,42 +225,44 @@ if ( ! defined( 'ABSPATH' ) ) {
 		</div>
 	</section>
 
-	<section class="ppq-upgrade-footer-cta" aria-labelledby="ppq-upgrade-footer-heading">
-		<?php if ( $footer_mascot_url ) : ?>
-			<div class="ppq-upgrade-footer-mascot-wrap" aria-hidden="true">
-				<img src="<?php echo esc_url( $footer_mascot_url ); ?>"
-					alt=""
-					class="ppq-upgrade-footer-mascot"
-					role="presentation" />
+	<?php if ( ! $all_active ) : ?>
+		<section class="ppq-upgrade-footer-cta" aria-labelledby="ppq-upgrade-footer-heading">
+			<?php if ( $footer_mascot_url ) : ?>
+				<div class="ppq-upgrade-footer-mascot-wrap" aria-hidden="true">
+					<img src="<?php echo esc_url( $footer_mascot_url ); ?>"
+						alt=""
+						class="ppq-upgrade-footer-mascot"
+						role="presentation" />
+				</div>
+			<?php endif; ?>
+			<div class="ppq-upgrade-footer-content">
+				<h2 id="ppq-upgrade-footer-heading"><?php esc_html_e( 'Try Risk-Free for 14 Days', 'pressprimer-quiz' ); ?></h2>
+				<p>
+					<?php esc_html_e( 'Every premium plan comes with a 14-day money-back guarantee. If PressPrimer Quiz isn\'t the right fit, we\'ll refund your purchase — no questions asked.', 'pressprimer-quiz' ); ?>
+				</p>
+				<a href="<?php echo esc_url( $pricing_footer_url ); ?>"
+					class="button button-primary ppq-upgrade-footer-button"
+					target="_blank"
+					rel="noopener noreferrer">
+					<?php esc_html_e( 'View Pricing & Upgrade', 'pressprimer-quiz' ); ?>
+				</a>
 			</div>
-		<?php endif; ?>
-		<div class="ppq-upgrade-footer-content">
-			<h2 id="ppq-upgrade-footer-heading"><?php esc_html_e( 'Try Risk-Free for 14 Days', 'pressprimer-quiz' ); ?></h2>
-			<p>
-				<?php esc_html_e( 'Every premium plan comes with a 14-day money-back guarantee. If PressPrimer Quiz isn\'t the right fit, we\'ll refund your purchase — no questions asked.', 'pressprimer-quiz' ); ?>
-			</p>
-			<a href="<?php echo esc_url( $pricing_url ); ?>"
-				class="button button-primary ppq-upgrade-footer-button"
-				target="_blank"
-				rel="noopener noreferrer">
-				<?php esc_html_e( 'View Pricing & Upgrade', 'pressprimer-quiz' ); ?>
-			</a>
-		</div>
-	</section>
+		</section>
 
-	<div class="ppq-upgrade-sticky-bar" role="region" aria-label="<?php esc_attr_e( 'Upgrade actions', 'pressprimer-quiz' ); ?>">
-		<div class="ppq-upgrade-sticky-bar-inner">
-			<div class="ppq-upgrade-sticky-bar-text">
-				<strong><?php esc_html_e( 'Ready to upgrade PressPrimer Quiz?', 'pressprimer-quiz' ); ?></strong>
-				<span><?php esc_html_e( 'Compare plans and pick the tier that fits your program. 14-day money-back guarantee.', 'pressprimer-quiz' ); ?></span>
+		<div class="ppq-upgrade-sticky-bar" role="region" aria-label="<?php esc_attr_e( 'Upgrade actions', 'pressprimer-quiz' ); ?>">
+			<div class="ppq-upgrade-sticky-bar-inner">
+				<div class="ppq-upgrade-sticky-bar-text">
+					<strong><?php esc_html_e( 'Ready to upgrade PressPrimer Quiz?', 'pressprimer-quiz' ); ?></strong>
+					<span><?php esc_html_e( 'Compare plans and pick the tier that fits your program. 14-day money-back guarantee.', 'pressprimer-quiz' ); ?></span>
+				</div>
+				<a href="<?php echo esc_url( $pricing_sticky_url ); ?>"
+					class="button button-primary button-hero ppq-upgrade-sticky-bar-cta"
+					target="_blank"
+					rel="noopener noreferrer">
+					<?php esc_html_e( 'Upgrade', 'pressprimer-quiz' ); ?>
+				</a>
 			</div>
-			<a href="<?php echo esc_url( $pricing_url ); ?>"
-				class="button button-primary button-hero ppq-upgrade-sticky-bar-cta"
-				target="_blank"
-				rel="noopener noreferrer">
-				<?php esc_html_e( 'Upgrade', 'pressprimer-quiz' ); ?>
-			</a>
 		</div>
-	</div>
+	<?php endif; ?>
 
 </div>

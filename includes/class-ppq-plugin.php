@@ -169,8 +169,9 @@ class PressPrimer_Quiz_Plugin {
 			$review_notice->init();
 		}
 
-		// Initialize Upgrade page (v2.3). Only shown to free-only users —
-		// the class registers nothing when any premium addon is active.
+		// Initialize the Upgrade page (v2.3). Its menu item shows until
+		// Enterprise is active; the page itself always answers by URL, with
+		// owned tiers marked (3.2).
 		if ( class_exists( 'PressPrimer_Quiz_Upgrade_Page' ) ) {
 			$upgrade_page = new PressPrimer_Quiz_Upgrade_Page();
 			$upgrade_page->init();

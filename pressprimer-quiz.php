@@ -156,6 +156,31 @@ function pressprimer_quiz_has_addon( $tier ) {
 }
 
 /**
+ * Whether white-label branding is on.
+ *
+ * Enterprise 3.2 answers through the filter. Enterprise 3.1.x doesn't hook
+ * it, so while Enterprise is loaded the default reads its setting directly
+ * (a compatibility read of `pressprimer_quiz_enterprise_white_label_enabled`).
+ *
+ * @since 3.2.0
+ *
+ * @return bool True when white-label branding is on.
+ */
+function pressprimer_quiz_white_label_active() {
+	$fallback = defined( 'PRESSPRIMER_QUIZ_ENTERPRISE_VERSION' )
+		&& (bool) get_option( 'pressprimer_quiz_enterprise_white_label_enabled', false );
+
+	/**
+	 * Filters whether white-label branding is on.
+	 *
+	 * @since 3.2.0
+	 *
+	 * @param bool $active Whether white-label branding is on.
+	 */
+	return (bool) apply_filters( 'pressprimer_quiz_white_label_active', $fallback );
+}
+
+/**
  * Render answer text HTML for output.
  *
  * Sanitizes the stored HTML with {@see wp_kses_post()} and then forces every

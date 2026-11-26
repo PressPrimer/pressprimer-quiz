@@ -792,3 +792,34 @@
 		transition: none;
 	}
 }
+
+/* =============================================================
+   Owned tiers (3.2, Certificate's pattern) — an active tier's
+   card drops the sales treatment: a green "Active on This Site"
+   badge, a tinted surface and a documentation link instead of a
+   buy button. Never lifted or bordered like the featured card.
+   ============================================================= */
+
+.ppq-upgrade-tier-card.is-owned {
+	background: linear-gradient(180deg, #f0fdf4 0%, #fff 45%);
+	border-color: #86efac;
+}
+
+.ppq-upgrade-tier-card.is-owned:hover {
+	transform: none;
+	box-shadow: 0 1px 3px rgba(15, 23, 42, 0.06);
+}
+
+.ppq-upgrade-tier-badge-owned {
+	background: #1f7a3a;
+	box-shadow: 0 3px 8px rgba(31, 122, 58, 0.35);
+}
+
+.ppq-upgrade-tier-card.is-owned .ppq-upgrade-tier-check {
+	color: #1f7a3a;
+}
+
+/* Every tier owned: no sticky bar, so no room kept for it. */
+.ppq-upgrade-page.is-calm {
+	padding-bottom: 20px;
+}

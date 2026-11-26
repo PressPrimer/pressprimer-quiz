@@ -2,11 +2,16 @@
 /**
  * Upgrade Page Controller
  *
- * Registers and renders the "Upgrade" submenu shown to free-only users.
- * The page surfaces a comparison table and tier cards for the three premium
- * addons (Educator, School, Enterprise). The menu, inline highlight styles,
- * and asset enqueue are all skipped when the Enterprise addon is active —
- * because at that point the user already has the full feature set.
+ * Registers and renders the "Upgrade" page: the hero, the tier cards and the
+ * comparison table for the three premium addons (Educator, School,
+ * Enterprise), all read from PressPrimer_Quiz_Premium_Catalog.
+ *
+ * Ownership states (3.2, spec 011 FR-003): an owned tier's card shows
+ * "Active on This Site" and a documentation link instead of a buy button.
+ * School is always "Most Popular". The menu item hides once Enterprise is
+ * active, but the page stays reachable by URL: with every tier owned it is
+ * calm (no buy buttons, footer CTA or sticky bar), and under white-label it
+ * is a neutral notice with no PressPrimer name, logo or link (A21).
  *
  * @package PressPrimer_Quiz
  * @subpackage Admin
@@ -34,6 +39,14 @@ class PressPrimer_Quiz_Upgrade_Page {
 	const MENU_SLUG = 'pressprimer-quiz-upgrade';
 
 	/**
+	 * UTM campaign for every link on the page.
+	 *
+	 * @since 3.2.0
+	 * @var string
+	 */
+	const UTM_CAMPAIGN = 'upgrade-page';
+
+	/**
 	 * Initialize hooks.
 	 *
 	 * @since 2.3.0
@@ -44,25 +57,30 @@ class PressPrimer_Quiz_Upgrade_Page {
 		// Register the menu after the core PPQ menu (priority 99 so it lands
 		// after Dashboard / Quizzes / Settings, but before WP's default 100).
 		add_action( 'admin_menu', array( $this, 'register_menu' ), 99 );
-		add_action( 'admin_head', array( $this, 'menu_styles' ) );
+		add_action( 'admin_head', array( $this, 'hide_menu_item' ) );
+		add_action( 'admin_enqueue_scripts', array( $this, 'enqueue_menu_styles' ) );
 		add_action( 'admin_enqueue_scripts', array( $this, 'enqueue_assets' ) );
 	}
 
 	/**
-	 * Register the Upgrade submenu, conditional on Enterprise not being active.
+	 * Register the Upgrade page.
+	 *
+	 * Always registered, so the page answers by URL. hide_menu_item() takes
+	 * the menu item away once Enterprise is active.
 	 *
 	 * @since 2.3.0
 	 *
 	 * @return void
 	 */
 	public function register_menu() {
-		if ( $this->enterprise_addon_active() ) {
-			return;
-		}
+		// Under white-label the browser title carries no PressPrimer name.
+		$page_title = pressprimer_quiz_white_label_active()
+			? __( 'Upgrade', 'pressprimer-quiz' )
+			: __( 'Upgrade PressPrimer Quiz', 'pressprimer-quiz' );
 
 		add_submenu_page(
 			'pressprimer-quiz',
-			esc_html__( 'Upgrade PressPrimer Quiz', 'pressprimer-quiz' ),
+			esc_html( $page_title ),
 			esc_html__( 'Upgrade', 'pressprimer-quiz' ),
 			'manage_options',
 			self::MENU_SLUG,
@@ -71,67 +89,81 @@ class PressPrimer_Quiz_Upgrade_Page {
 	}
 
 	/**
-	 * Check whether the Enterprise addon is currently active.
+	 * Whether the Upgrade menu item shows.
 	 *
-	 * The Upgrade page hides itself only at the top tier — users on Educator
-	 * or School still see "Upgrade" because there are higher tiers available
-	 * to them.
+	 * It hides only at the top tier: Educator and School sites still see it,
+	 * because a higher tier is available to them.
+	 *
+	 * @since 3.2.0
+	 *
+	 * @return bool
+	 */
+	public function menu_visible() {
+		return ! $this->enterprise_addon_active();
+	}
+
+	/**
+	 * Take the Upgrade item out of the menu when it shouldn't show.
+	 *
+	 * Runs on admin_head, after WordPress has checked access to the current
+	 * page, so the page itself still opens by URL (Educator's import page
+	 * does the same).
+	 *
+	 * @since 3.2.0
+	 *
+	 * @return void
+	 */
+	public function hide_menu_item() {
+		if ( ! $this->menu_visible() ) {
+			remove_submenu_page( 'pressprimer-quiz', self::MENU_SLUG );
+		}
+	}
+
+	/**
+	 * Check whether the Enterprise addon is currently active.
 	 *
 	 * @since 2.3.0
 	 *
 	 * @return bool True when the Enterprise addon is active.
 	 */
 	public function enterprise_addon_active() {
-		// Constant fallback: the Enterprise plugin defines
-		// PRESSPRIMER_QUIZ_ENTERPRISE_VERSION on load (before its addon
-		// manager registration runs). This catches the rare case where
-		// addon registration fires late or is skipped — e.g., a third
-		// party hooks `pressprimer_quiz_register_addons` to remove
-		// Enterprise's registration, or load ordering shifts. The constant
-		// is the simplest "is the plugin loaded?" signal we can rely on.
-		if ( defined( 'PRESSPRIMER_QUIZ_ENTERPRISE_VERSION' ) ) {
-			return true;
-		}
-
-		if ( ! function_exists( 'pressprimer_quiz_addon_active' ) ) {
-			// Defensive — if the helper is missing, show the page.
-			return false;
-		}
-
-		return pressprimer_quiz_addon_active( 'ppq-enterprise' );
+		return PressPrimer_Quiz_Premium_Catalog::tier_active( 'enterprise' );
 	}
 
 	/**
-	 * Output inline admin styles to highlight the Upgrade menu item.
+	 * Highlight the Upgrade menu item.
 	 *
-	 * Targets the submenu link by its slug-anchor href so we don't paint
-	 * unrelated submenu items. Skips output entirely when Enterprise is
-	 * active (the menu item itself isn't registered in that case).
+	 * The submenu is visible on every wp-admin page, so this loads everywhere
+	 * the item shows. A source-less handle carries the inline CSS (no raw
+	 * style tags); the CSS is static apart from the class-constant slug.
 	 *
-	 * @since 2.3.0
+	 * @since 3.2.0
 	 *
 	 * @return void
 	 */
-	public function menu_styles() {
-		if ( $this->enterprise_addon_active() ) {
+	public function enqueue_menu_styles() {
+		if ( ! $this->menu_visible() ) {
 			return;
 		}
 
-		?>
-		<style>
-			#adminmenu .wp-submenu a[href$="<?php echo esc_attr( self::MENU_SLUG ); ?>"],
-			#adminmenu .wp-submenu li.current a[href$="<?php echo esc_attr( self::MENU_SLUG ); ?>"] {
+		$css = sprintf(
+			'#adminmenu .wp-submenu a[href$="%1$s"],
+			#adminmenu .wp-submenu li.current a[href$="%1$s"] {
 				background-color: #1f7a3a;
 				color: #fff !important;
 				font-weight: 700;
 			}
-			#adminmenu .wp-submenu a[href$="<?php echo esc_attr( self::MENU_SLUG ); ?>"]:hover,
-			#adminmenu .wp-submenu a[href$="<?php echo esc_attr( self::MENU_SLUG ); ?>"]:focus {
+			#adminmenu .wp-submenu a[href$="%1$s"]:hover,
+			#adminmenu .wp-submenu a[href$="%1$s"]:focus {
 				background-color: #186730;
 				color: #fff !important;
-			}
-		</style>
-		<?php
+			}',
+			self::MENU_SLUG
+		);
+
+		wp_register_style( 'pressprimer-quiz-upgrade-menu', false, array(), PRESSPRIMER_QUIZ_VERSION );
+		wp_enqueue_style( 'pressprimer-quiz-upgrade-menu' );
+		wp_add_inline_style( 'pressprimer-quiz-upgrade-menu', $css );
 	}
 
 	/**
@@ -149,7 +181,8 @@ class PressPrimer_Quiz_Upgrade_Page {
 			return;
 		}
 
-		if ( $this->enterprise_addon_active() ) {
+		// The white-label notice uses core styles only.
+		if ( pressprimer_quiz_white_label_active() ) {
 			return;
 		}
 
@@ -172,28 +205,63 @@ class PressPrimer_Quiz_Upgrade_Page {
 	 * @return void
 	 */
 	public function render_page() {
-		// Defensive — if Enterprise was activated after the menu item was
-		// registered (e.g., admin loaded the page in one tab, then activated
-		// Enterprise in another), the direct-URL access should fail closed.
-		if ( $this->enterprise_addon_active() ) {
+		if ( ! current_user_can( 'manage_options' ) ) {
 			wp_die(
-				esc_html__( 'You already have the full PressPrimer Quiz feature set.', 'pressprimer-quiz' ),
-				esc_html__( 'Not Available', 'pressprimer-quiz' ),
+				esc_html__( 'You do not have permission to access this page.', 'pressprimer-quiz' ),
+				esc_html__( 'Permission Denied', 'pressprimer-quiz' ),
 				array( 'response' => 403 )
 			);
 		}
 
-		$features          = PressPrimer_Quiz_Premium_Catalog::get_comparison_rows();
-		$tiers             = PressPrimer_Quiz_Premium_Catalog::get_tiers();
-		$pricing_url       = PressPrimer_Quiz_Premium_Catalog::PRICING_URL . '#pricing';
-		$logo_url          = PRESSPRIMER_QUIZ_PLUGIN_URL . 'assets/images/PressPrimer-Logo-White.svg';
-		$hero_mascot_url   = PRESSPRIMER_QUIZ_PLUGIN_URL . 'assets/images/mascot-waving.png';
-		$footer_mascot_url = PRESSPRIMER_QUIZ_PLUGIN_URL . 'assets/images/mascot-celebrating-confetti.png';
+		if ( pressprimer_quiz_white_label_active() ) {
+			include PRESSPRIMER_QUIZ_PLUGIN_PATH . 'includes/admin/views/upgrade-page-white-label.php';
+			return;
+		}
+
+		$tier_states = PressPrimer_Quiz_Premium_Catalog::tier_states();
+		$all_active  = ! in_array( false, $tier_states, true );
+		$tiers       = self::prepare_tiers( $tier_states );
+
+		$features           = PressPrimer_Quiz_Premium_Catalog::get_comparison_rows();
+		$pricing_hero_url   = PressPrimer_Quiz_Premium_Catalog::pricing_url( self::UTM_CAMPAIGN, 'hero-cta' );
+		$pricing_footer_url = PressPrimer_Quiz_Premium_Catalog::pricing_url( self::UTM_CAMPAIGN, 'footer-cta' );
+		$pricing_sticky_url = PressPrimer_Quiz_Premium_Catalog::pricing_url( self::UTM_CAMPAIGN, 'sticky-bar' );
+		$kb_url             = PressPrimer_Quiz_Premium_Catalog::utm_url( PressPrimer_Quiz_Premium_Catalog::KB_URL, self::UTM_CAMPAIGN, 'hero-cta' );
+		$logo_url           = PRESSPRIMER_QUIZ_PLUGIN_URL . 'assets/images/PressPrimer-Logo-White.svg';
+		$hero_mascot_url    = PRESSPRIMER_QUIZ_PLUGIN_URL . 'assets/images/mascot-waving.png';
+		$footer_mascot_url  = PRESSPRIMER_QUIZ_PLUGIN_URL . 'assets/images/mascot-celebrating-confetti.png';
 
 		// Make $this available to the view so render_cell_value() is callable.
 		$upgrade_page = $this;
 
 		include PRESSPRIMER_QUIZ_PLUGIN_PATH . 'includes/admin/views/upgrade-page.php';
+	}
+
+	/**
+	 * The tier cards for a set of ownership states.
+	 *
+	 * Adds `owned` to each tier and tags its link: an owned tier links to the
+	 * knowledge base (tier-docs-{tier}), any other to its product page
+	 * (tier-card-{tier}).
+	 *
+	 * @since 3.2.0
+	 *
+	 * @param array $tier_states Tier => active (PressPrimer_Quiz_Premium_Catalog::tier_states()).
+	 * @return array Tiers from the catalog, with `owned` and a tagged `url`.
+	 */
+	public static function prepare_tiers( array $tier_states ) {
+		$tiers = PressPrimer_Quiz_Premium_Catalog::get_tiers();
+
+		foreach ( $tiers as $tier_slug => $tier ) {
+			$owned = ! empty( $tier_states[ $tier_slug ] );
+
+			$tiers[ $tier_slug ]['owned'] = $owned;
+			$tiers[ $tier_slug ]['url']   = $owned
+				? PressPrimer_Quiz_Premium_Catalog::utm_url( PressPrimer_Quiz_Premium_Catalog::KB_URL, self::UTM_CAMPAIGN, 'tier-docs-' . $tier_slug )
+				: PressPrimer_Quiz_Premium_Catalog::utm_url( $tier['url'], self::UTM_CAMPAIGN, 'tier-card-' . $tier_slug );
+		}
+
+		return $tiers;
 	}
 
 	/**
@@ -203,6 +271,9 @@ class PressPrimer_Quiz_Upgrade_Page {
 	 *   - true   → green checkmark
 	 *   - false  → em dash
 	 *   - string → escaped text (allows row-specific notes like "Limited")
+	 *
+	 * Output contains only spans and escaped text; the view runs it through
+	 * wp_kses() with a matching allowlist.
 	 *
 	 * @since 2.3.0
 	 *

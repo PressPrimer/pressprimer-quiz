@@ -7,6 +7,7 @@
 
 import { render, unmountComponentAtNode } from '@wordpress/element';
 import Onboarding from './components/Onboarding';
+import { clearSetupSession } from './setupSession';
 import './style.css';
 
 /**
@@ -41,14 +42,21 @@ const initOnboarding = () => {
 };
 
 // Initialize on DOM ready
-document.addEventListener('DOMContentLoaded', initOnboarding);
+if (document.readyState === 'loading') {
+	document.addEventListener('DOMContentLoaded', initOnboarding);
+} else {
+	initOnboarding();
+}
 
 /**
  * Export relaunch function for external use (e.g., from Dashboard)
- * This resets the tour and starts from step 1
+ * This resets the tour and starts from the welcome step with a fresh run
  */
 window.ppqLaunchOnboarding = async () => {
 	const onboardingData = window.pressprimerQuizOnboardingData || {};
+
+	// A relaunched tour never reconciles against the previous run.
+	clearSetupSession();
 
 	// First reset the state via AJAX
 	try {
@@ -75,13 +83,17 @@ window.ppqLaunchOnboarding = async () => {
 		// Ignore errors if nothing mounted
 	}
 
-	// Force show from step 1 with fresh state
+	// Force show from the welcome step with fresh state
 	const launchData = {
 		...onboardingData,
 		state: {
 			...onboardingData.state,
 			should_show: true,
-			step: 1,
+			step_id: 'welcome',
+			completed: false,
+			skipped: false,
+			started: 0,
+			run: {},
 		},
 	};
 

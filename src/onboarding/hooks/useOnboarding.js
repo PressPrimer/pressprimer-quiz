@@ -1,13 +1,91 @@
 /**
  * useOnboarding Hook
  *
- * Manages the interactive onboarding tour state across page navigations.
+ * Tour state across the page loads the tour choreographs: the current step
+ * (by id) and the run's records, persisted over admin-ajax.
  *
  * @package PressPrimer_Quiz
  * @since 1.0.0
  */
 
 import { useState, useCallback } from '@wordpress/element';
+import {
+	STEP_TYPE,
+	TOUR_PATH,
+	getAdjacentStepId,
+	getPath,
+	getStepById,
+	getStepNumber,
+	getStepUrl,
+	getTotalSteps,
+	isOnCorrectPage,
+} from '../tourSteps';
+import { clearSetupSession, consumeAdvancePending, writeAdvancePending } from '../setupSession';
+
+/**
+ * Send a progress update
+ *
+ * keepalive lets the request finish while the page navigates or reloads.
+ * Callers that navigate wait for it, so the landing step is stored first.
+ *
+ * @param {Object} initialData Localized data (nonce, ajaxUrl).
+ * @param {string} action      start, progress, complete, skip or reset.
+ * @param {Object} extra       Extra fields (step_id, run, permanent).
+ * @return {Promise} Fetch promise (never rejects).
+ */
+const sendProgress = (initialData, action, extra = {}) => {
+	const formData = new FormData();
+	formData.append('action', 'pressprimer_quiz_onboarding_progress');
+	formData.append('onboarding_action', action);
+	formData.append('nonce', initialData.nonce || '');
+
+	Object.entries(extra).forEach(([key, value]) => {
+		formData.append(key, value);
+	});
+
+	return fetch(initialData.ajaxUrl || '/wp-admin/admin-ajax.php', {
+		method: 'POST',
+		body: formData,
+		credentials: 'same-origin',
+		keepalive: true,
+	}).catch(() => {
+		// Silently fail - progress is best-effort
+	});
+};
+
+// The reconciliation heal is sent at most once per page load.
+let healSent = false;
+
+/**
+ * The step to start this page load on
+ *
+ * When the previous page marked an advance pending and the server still
+ * reports the step it left, the advance wins: the reload beat the request
+ * that stored it, so it's sent again.
+ *
+ * @param {Object} initialData Localized data.
+ * @return {string} Step id.
+ */
+const getInitialStepId = (initialData) => {
+	const state = initialData.state || {};
+	const path = getPath(state.run);
+	let stepId = state.step_id || 'welcome';
+
+	// Always consume: the marker only ever affects the next page load.
+	const pending = consumeAdvancePending();
+
+	if (pending && pending.from === stepId && getStepNumber(pending.to, path)) {
+		stepId = pending.to;
+
+		if (!healSent) {
+			healSent = true;
+			sendProgress(initialData, 'progress', { step_id: stepId });
+		}
+	}
+
+	// A step this path doesn't have (or doesn't have yet) starts over.
+	return getStepNumber(stepId, path) ? stepId : 'welcome';
+};
 
 /**
  * useOnboarding Hook
@@ -17,156 +95,165 @@ import { useState, useCallback } from '@wordpress/element';
  */
 const useOnboarding = (initialData = {}) => {
 	const [isLoading, setIsLoading] = useState(false);
-	const [currentStep, setCurrentStep] = useState(initialData.state?.step || 1);
 	const [isActive, setIsActive] = useState(initialData.state?.should_show || false);
-	const [hasApiKey] = useState(initialData.state?.has_api_key || false);
+	const [run, setRun] = useState(() => initialData.state?.run || {});
+	const [stepId, setStepId] = useState(() => getInitialStepId(initialData));
 
-	const totalSteps = initialData.state?.total_steps || 8;
-	const nonce = initialData.nonce || '';
-	const ajaxUrl = initialData.ajaxUrl || '/wp-admin/admin-ajax.php';
+	const path = getPath(run);
+	const step = getStepById(stepId);
 
 	/**
-	 * Make AJAX request to update onboarding state
+	 * Move to a step, storing it (and any run fields) first
+	 *
+	 * @param {string}      targetId     Step id.
+	 * @param {string}      action       'start' or 'progress'.
+	 * @param {Object|null} runChanges   Run fields to merge (or the fresh run on start).
+	 * @param {Object}      baseRun      Run the changes merge into.
 	 */
-	const updateState = useCallback(async (action, data = {}) => {
-		setIsLoading(true);
+	const goTo = useCallback((targetId, action, runChanges, baseRun) => {
+		const target = getStepById(targetId);
+		const nextRun = runChanges ? { ...baseRun, ...runChanges } : baseRun;
+		const needsNavigation = target && target.type === STEP_TYPE.SPOTLIGHT && !isOnCorrectPage(target);
 
-		try {
-			const formData = new FormData();
-			formData.append('action', 'pressprimer_quiz_onboarding_progress');
-			formData.append('onboarding_action', action);
-			formData.append('nonce', nonce);
+		setRun(nextRun);
+		setStepId(targetId);
 
-			Object.entries(data).forEach(([key, value]) => {
-				formData.append(key, value);
-			});
+		// Hide the tour until the step's screen takes over.
+		if (needsNavigation) {
+			setIsLoading(true);
+		}
 
-			const response = await fetch(ajaxUrl, {
-				method: 'POST',
-				body: formData,
-				credentials: 'same-origin',
-			});
+		const extra = { step_id: targetId };
+		if (runChanges) {
+			extra.run = JSON.stringify(runChanges);
+		}
 
-			const result = await response.json();
-
-			if (result.success) {
-				return result.data;
+		sendProgress(initialData, action, extra).then(() => {
+			if (needsNavigation) {
+				const url = getStepUrl(target, nextRun);
+				if (url) {
+					window.location.href = url;
+				}
 			}
-		} catch (err) {
-			// Silently fail - onboarding state update is non-critical
-		} finally {
-			setIsLoading(false);
-		}
-
-		return null;
-	}, [ajaxUrl, nonce]);
-
-	/**
-	 * Start the onboarding tour (from welcome modal)
-	 */
-	const startTour = useCallback(async () => {
-		await updateState('start');
-		setCurrentStep(2); // Move to first spotlight step
-	}, [updateState]);
-
-	/**
-	 * Go to next step, optionally navigating to a URL
-	 */
-	const nextStep = useCallback(async (targetUrl = null) => {
-		const newStep = currentStep + 1;
-
-		if (newStep > totalSteps) {
-			// Complete the tour
-			await updateState('complete');
-			setIsActive(false);
-			return;
-		}
-
-		await updateState('progress', { step: newStep });
-		setCurrentStep(newStep);
-
-		// Navigate to target URL if provided and not already there
-		if (targetUrl) {
-			const currentUrl = window.location.href;
-			// Check if we need to navigate (simple check - URL doesn't contain the page slug)
-			if (!currentUrl.includes(targetUrl.split('?page=')[1]?.split('&')[0])) {
-				window.location.href = targetUrl;
-			}
-		}
-	}, [currentStep, totalSteps, updateState]);
-
-	/**
-	 * Go to previous step, optionally navigating to a URL
-	 */
-	const prevStep = useCallback(async (targetUrl = null) => {
-		const newStep = currentStep - 1;
-
-		if (newStep < 1) {
-			return;
-		}
-
-		await updateState('progress', { step: newStep });
-		setCurrentStep(newStep);
-
-		// Navigate to target URL if provided
-		if (targetUrl) {
-			const currentUrl = window.location.href;
-			if (!currentUrl.includes(targetUrl.split('?page=')[1]?.split('&')[0])) {
-				window.location.href = targetUrl;
-			}
-		}
-	}, [currentStep, updateState]);
-
-	/**
-	 * Skip the tour (with optional permanent flag)
-	 */
-	const skipTour = useCallback(async (permanent = false) => {
-		await updateState('skip', { permanent: permanent ? '1' : '' });
-		setIsActive(false);
-	}, [updateState]);
+		});
+	}, [initialData]);
 
 	/**
 	 * Complete the tour
 	 */
-	const completeTour = useCallback(async () => {
-		await updateState('complete');
+	const completeTour = useCallback(() => {
 		setIsActive(false);
-	}, [updateState]);
+		sendProgress(initialData, 'complete');
+	}, [initialData]);
 
 	/**
-	 * Close/dismiss the tour temporarily
+	 * Start the build (from the welcome modal): a fresh run on a path
+	 *
+	 * @param {string} startPath TOUR_PATH value.
 	 */
-	const closeTour = useCallback(async () => {
-		// Just mark as completed so it doesn't show again
-		await updateState('complete');
-		setIsActive(false);
-	}, [updateState]);
+	const startTour = useCallback((startPath = TOUR_PATH.MANUAL) => {
+		// A fresh run must never reconcile against a previous one.
+		clearSetupSession();
+
+		const freshRun = { path: startPath };
+		const firstId = getAdjacentStepId('welcome', startPath, 1) || 'complete';
+
+		goTo(firstId, 'start', freshRun, {});
+	}, [goTo]);
 
 	/**
-	 * Reset and relaunch tour from step 1
+	 * Go to the next step (the last one completes the tour)
 	 */
-	const relaunchTour = useCallback(async () => {
-		await updateState('reset');
-		setCurrentStep(1);
-		setIsActive(true);
-	}, [updateState]);
+	const nextStep = useCallback(() => {
+		const nextId = getAdjacentStepId(stepId, path, 1);
+
+		if (!nextId) {
+			completeTour();
+			return;
+		}
+
+		goTo(nextId, 'progress', null, run);
+	}, [stepId, path, run, goTo, completeTour]);
+
+	/**
+	 * Go to the previous step
+	 */
+	const prevStep = useCallback(() => {
+		const prevId = getAdjacentStepId(stepId, path, -1);
+
+		if (prevId) {
+			goTo(prevId, 'progress', null, run);
+		}
+	}, [stepId, path, run, goTo]);
+
+	/**
+	 * Advance because the step's real action happened
+	 *
+	 * @param {Object|null} runChanges Run fields the action produced.
+	 */
+	const advance = useCallback((runChanges = null) => {
+		const nextId = getAdjacentStepId(stepId, path, 1);
+
+		if (!nextId) {
+			completeTour();
+			return;
+		}
+
+		if (step && step.reloadsAfterAdvance) {
+			writeAdvancePending(stepId, nextId);
+		}
+
+		goTo(nextId, 'progress', runChanges, run);
+	}, [step, stepId, path, run, goTo, completeTour]);
+
+	/**
+	 * Keep run fields without moving
+	 *
+	 * @param {Object} runChanges Run fields to merge.
+	 */
+	const recordRun = useCallback((runChanges) => {
+		setRun((current) => ({ ...current, ...runChanges }));
+		sendProgress(initialData, 'progress', { run: JSON.stringify(runChanges) });
+	}, [initialData]);
+
+	/**
+	 * Skip the tour (with optional permanent flag)
+	 *
+	 * @param {boolean} permanent Don't show it again.
+	 */
+	const skipTour = useCallback((permanent = false) => {
+		setIsActive(false);
+		sendProgress(initialData, 'skip', { permanent: permanent ? '1' : '' });
+	}, [initialData]);
+
+	/**
+	 * Close the tour: it doesn't reopen until relaunched
+	 */
+	const closeTour = useCallback(() => {
+		skipTour(false);
+	}, [skipTour]);
 
 	return {
 		// State
 		isLoading,
 		isActive,
-		currentStep,
-		totalSteps,
-		hasApiKey,
+		step,
+		stepId,
+		run,
+		path,
+		stepNumber: getStepNumber(stepId, path),
+		totalSteps: getTotalSteps(path),
+		prevStepId: getAdjacentStepId(stepId, path, -1),
 
 		// Actions
 		startTour,
 		nextStep,
 		prevStep,
+		advance,
+		recordRun,
 		skipTour,
 		completeTour,
 		closeTour,
-		relaunchTour,
 	};
 };
 

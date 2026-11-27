@@ -8,7 +8,8 @@
  */
 
 import { useState, useEffect, useRef, useCallback } from '@wordpress/element';
-import { Button } from 'antd';
+import { __, sprintf } from '@wordpress/i18n';
+import { Button, Tooltip as AntTooltip } from 'antd';
 import { LeftOutlined, RightOutlined, CloseOutlined } from '@ant-design/icons';
 
 /**
@@ -96,13 +97,12 @@ const calculatePosition = (targetRect, tooltipRect, preferredPosition = 'bottom'
  * @param {string} props.position Preferred position (top, bottom, left, right)
  * @param {number} props.currentStep Current step number
  * @param {number} props.totalSteps Total number of steps
+ * @param {boolean} props.nextDisabled Whether Next waits for the step's action
+ * @param {string|null} props.nextDisabledReason Shown on the disabled Next
  * @param {Function} props.onPrev Previous step handler
  * @param {Function} props.onNext Next step handler
  * @param {Function} props.onSkip Skip handler
  * @param {Function} props.onClose Close handler
- * @param {boolean} props.showNavigation Whether to show navigation buttons
- * @param {string} props.nextLabel Label for next button
- * @param {string} props.prevLabel Label for previous button
  */
 const Tooltip = ({
 	targetRect,
@@ -111,13 +111,12 @@ const Tooltip = ({
 	position = 'bottom',
 	currentStep,
 	totalSteps,
+	nextDisabled = false,
+	nextDisabledReason = null,
 	onPrev,
 	onNext,
 	onSkip,
 	onClose,
-	showNavigation = true,
-	nextLabel = 'Next',
-	prevLabel = 'Back',
 }) => {
 	const tooltipRef = useRef(null);
 	const [tooltipStyle, setTooltipStyle] = useState({ opacity: 0 });
@@ -179,7 +178,7 @@ const Tooltip = ({
 					type="button"
 					className="ppq-tooltip__close"
 					onClick={onClose}
-					aria-label="Close"
+					aria-label={__('Close', 'pressprimer-quiz')}
 				>
 					<CloseOutlined />
 				</button>
@@ -192,48 +191,64 @@ const Tooltip = ({
 			</div>
 
 			{/* Navigation */}
-			{showNavigation && (
-				<div className="ppq-tooltip__navigation">
-					<div className="ppq-tooltip__nav-left">
-						{currentStep > 1 && onPrev && (
-							<Button
-								type="text"
-								icon={<LeftOutlined />}
-								onClick={onPrev}
-								size="small"
-							>
-								{prevLabel}
-							</Button>
-						)}
-					</div>
-
-					<div className="ppq-tooltip__nav-center">
-						{currentStep && totalSteps && (
-							<span className="ppq-tooltip__step-indicator">
-								{currentStep} / {totalSteps}
-							</span>
-						)}
-					</div>
-
-					<div className="ppq-tooltip__nav-right">
-						{onSkip && currentStep < totalSteps && (
-							<Button type="text" onClick={onSkip} size="small">
-								Skip
-							</Button>
-						)}
-						{onNext && (
-							<Button
-								type="primary"
-								onClick={onNext}
-								size="small"
-							>
-								{currentStep === totalSteps ? 'Finish' : nextLabel}
-								{currentStep < totalSteps && <RightOutlined />}
-							</Button>
-						)}
-					</div>
+			<div className="ppq-tooltip__navigation">
+				<div className="ppq-tooltip__nav-left">
+					{onPrev && (
+						<Button
+							type="text"
+							icon={<LeftOutlined />}
+							onClick={onPrev}
+							size="small"
+						>
+							{__('Back', 'pressprimer-quiz')}
+						</Button>
+					)}
 				</div>
-			)}
+
+				<div className="ppq-tooltip__nav-center">
+					{currentStep > 0 && totalSteps > 0 && (
+						<span
+							className="ppq-tooltip__step-indicator"
+							aria-label={sprintf(
+								/* translators: 1: current step number, 2: total number of steps */
+								__('Step %1$d of %2$d', 'pressprimer-quiz'),
+								currentStep,
+								totalSteps
+							)}
+						>
+							{currentStep} / {totalSteps}
+						</span>
+					)}
+				</div>
+
+				<div className="ppq-tooltip__nav-right">
+					{onSkip && currentStep < totalSteps && (
+						<Button type="text" onClick={onSkip} size="small">
+							{__('Skip', 'pressprimer-quiz')}
+						</Button>
+					)}
+					{onNext && (
+						<AntTooltip
+							title={nextDisabled ? nextDisabledReason : null}
+							overlayStyle={{ zIndex: 100002 }}
+						>
+							{/* Disabled buttons swallow mouse events; the span
+							    keeps the reason's tooltip working. */}
+							<span className="ppq-tooltip__next-wrap">
+								<Button
+									type="primary"
+									onClick={onNext}
+									size="small"
+									disabled={nextDisabled}
+								>
+									{currentStep === totalSteps ? __('Finish', 'pressprimer-quiz') : __('Next', 'pressprimer-quiz')}
+									{currentStep < totalSteps && <RightOutlined />}
+								</Button>
+							</span>
+						</AntTooltip>
+					)}
+				</div>
+			</div>
 		</div>
 	);
 };

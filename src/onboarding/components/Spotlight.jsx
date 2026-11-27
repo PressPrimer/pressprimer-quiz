@@ -1,214 +1,222 @@
 /**
  * Spotlight Component
  *
- * SVG mask overlay with cutout for highlighting target elements.
+ * SVG mask overlay with a cutout around the target element. The dim layer
+ * is visual only, so the admin keeps working in the real screen. A render
+ * prop passes the target's rect to the Tooltip.
  *
  * @package PressPrimer_Quiz
  * @since 1.0.0
  */
 
-import { useState, useEffect, useCallback, useRef, createPortal } from '@wordpress/element';
+import { useState, useEffect, useCallback, createPortal } from '@wordpress/element';
+
+/**
+ * The visible-content rect of an element
+ *
+ * The union of its children's boxes rather than its own border box: framing
+ * a padded container leaves the highlight far from what the user sees.
+ *
+ * @param {Element} element Target element.
+ * @return {Object} Rect (the element's own when it has no visible children).
+ */
+const contentRect = (element) => {
+	const children = [...element.children].filter((child) => child.getClientRects().length > 0);
+
+	if (!children.length) {
+		return element.getBoundingClientRect();
+	}
+
+	let top = Infinity;
+	let left = Infinity;
+	let bottom = -Infinity;
+	let right = -Infinity;
+
+	for (const child of children) {
+		const rect = child.getBoundingClientRect();
+		top = Math.min(top, rect.top);
+		left = Math.min(left, rect.left);
+		bottom = Math.max(bottom, rect.bottom);
+		right = Math.max(right, rect.right);
+	}
+
+	return { top, left, bottom, right, width: right - left, height: bottom - top };
+};
 
 /**
  * Spotlight Component
  *
- * Creates an overlay with a transparent cutout around the target element.
- *
- * @param {Object} props Component props
- * @param {string} props.targetSelector CSS selector for the target element
- * @param {number} props.padding Padding around the target element (default: 8)
- * @param {number} props.borderRadius Border radius of the cutout (default: 8)
- * @param {boolean} props.pulse Whether to show pulse animation (default: true)
- * @param {boolean} props.scrollIntoView Whether to scroll target into view (default: true)
- * @param {Function} props.onTargetNotFound Callback when target element is not found
- * @param {React.ReactNode} props.children Content to render (usually Tooltip)
+ * @param {Object}   props            Component props
+ * @param {string}   props.selector   CSS selector for the target element
+ * @param {number}   props.padding    Padding around the target element (default: 8)
+ * @param {boolean}  props.fitContent Frame the children's union instead of the padded box
+ * @param {Function} props.children   Render prop receiving the target rect
  */
-const Spotlight = ({
-	targetSelector,
-	padding = 8,
-	borderRadius = 8,
-	pulse = true,
-	scrollIntoView = true,
-	onTargetNotFound,
-	children,
-}) => {
+const Spotlight = ({ selector, padding = 8, fitContent = false, children }) => {
 	const [targetRect, setTargetRect] = useState(null);
-	const [isVisible, setIsVisible] = useState(false);
-	const resizeObserverRef = useRef(null);
-	const targetElementRef = useRef(null);
 
 	/**
-	 * Get the bounding rect of the target element
+	 * Measure the target
+	 *
+	 * Keeps the previous rect when nothing moved, so polling doesn't churn.
 	 */
-	const updateTargetRect = useCallback(() => {
-		if (!targetSelector) {
-			setTargetRect(null);
-			setIsVisible(false);
+	const updatePosition = useCallback(() => {
+		if (!selector) {
 			return;
 		}
 
-		const element = document.querySelector(targetSelector);
-
+		const element = document.querySelector(selector);
 		if (!element) {
 			setTargetRect(null);
-			setIsVisible(false);
-			if (onTargetNotFound) {
-				onTargetNotFound();
-			}
 			return;
 		}
 
-		targetElementRef.current = element;
+		const rect = fitContent ? contentRect(element) : element.getBoundingClientRect();
 
-		// Scroll to top of page first for better context, then ensure element is visible
-		if (scrollIntoView) {
-			window.scrollTo({ top: 0, behavior: 'smooth' });
-		}
+		setTargetRect((prev) => {
+			if (prev && prev.top === rect.top && prev.left === rect.left && prev.width === rect.width && prev.height === rect.height) {
+				return prev;
+			}
 
-		// Wait a bit for scroll to complete before getting rect
-		const updateRect = () => {
-			const rect = element.getBoundingClientRect();
-			setTargetRect({
-				top: rect.top - padding,
-				left: rect.left - padding,
-				width: rect.width + padding * 2,
-				height: rect.height + padding * 2,
-			});
-			setIsVisible(true);
-		};
-
-		// If scrolling, wait for it to complete
-		if (scrollIntoView) {
-			setTimeout(updateRect, 300);
-		} else {
-			updateRect();
-		}
-	}, [targetSelector, padding, scrollIntoView, onTargetNotFound]);
+			return {
+				top: rect.top,
+				left: rect.left,
+				width: rect.width,
+				height: rect.height,
+				bottom: rect.bottom,
+				right: rect.right,
+			};
+		});
+	}, [selector, fitContent]);
 
 	/**
-	 * Set up resize observer and event listeners
+	 * Track the target's position
 	 */
 	useEffect(() => {
-		updateTargetRect();
+		// Bring the target into view: it may sit below the fold.
+		const element = selector ? document.querySelector(selector) : null;
+		if (element) {
+			element.scrollIntoView({ block: 'start', behavior: 'smooth' });
+		}
 
-		// Handle window resize
-		const handleResize = () => {
-			updateTargetRect();
-		};
+		const timer = setTimeout(updatePosition, 300);
 
-		// Handle scroll
-		const handleScroll = () => {
-			if (targetElementRef.current) {
-				const rect = targetElementRef.current.getBoundingClientRect();
-				setTargetRect({
-					top: rect.top - padding,
-					left: rect.left - padding,
-					width: rect.width + padding * 2,
-					height: rect.height + padding * 2,
-				});
-			}
-		};
+		// Poll while the step is open: late-loading content moves targets
+		// without resizing them, which no listener below can see.
+		const interval = setInterval(updatePosition, 300);
 
-		window.addEventListener('resize', handleResize);
-		window.addEventListener('scroll', handleScroll, true);
+		window.addEventListener('resize', updatePosition);
+		window.addEventListener('scroll', updatePosition);
 
-		// Set up ResizeObserver for target element changes
-		if (typeof ResizeObserver !== 'undefined') {
-			resizeObserverRef.current = new ResizeObserver(() => {
-				updateTargetRect();
-			});
-
-			const element = document.querySelector(targetSelector);
-			if (element) {
-				resizeObserverRef.current.observe(element);
-			}
+		let observer;
+		if (element && typeof window.ResizeObserver !== 'undefined') {
+			observer = new window.ResizeObserver(updatePosition);
+			observer.observe(element);
 		}
 
 		return () => {
-			window.removeEventListener('resize', handleResize);
-			window.removeEventListener('scroll', handleScroll, true);
-
-			if (resizeObserverRef.current) {
-				resizeObserverRef.current.disconnect();
+			clearTimeout(timer);
+			clearInterval(interval);
+			window.removeEventListener('resize', updatePosition);
+			window.removeEventListener('scroll', updatePosition);
+			if (observer) {
+				observer.disconnect();
 			}
 		};
-	}, [targetSelector, padding, updateTargetRect]);
+	}, [selector, updatePosition]);
 
-	// Don't render if no target rect
-	if (!targetRect || !isVisible) {
-		return null;
+	if (!targetRect) {
+		return typeof children === 'function' ? children(null) : null;
 	}
 
-	const overlayContent = (
-		<div className="ppq-spotlight">
-			{/* SVG mask overlay */}
+	const cutout = {
+		x: targetRect.left - padding,
+		y: targetRect.top - padding,
+		width: targetRect.width + padding * 2,
+		height: targetRect.height + padding * 2,
+		rx: 8,
+	};
+
+	// The frame stays inside the admin content area: never up into the
+	// fixed admin bar, never left into the admin menu.
+	const adminBar = document.getElementById('wpadminbar');
+	const adminMenu = document.getElementById('adminmenuwrap');
+	const minTop = adminBar ? adminBar.getBoundingClientRect().bottom + 4 : 4;
+	const minLeft = adminMenu ? adminMenu.getBoundingClientRect().right + 4 : 4;
+
+	if (cutout.y < minTop) {
+		cutout.height -= minTop - cutout.y;
+		cutout.y = minTop;
+	}
+
+	if (cutout.x < minLeft) {
+		cutout.width -= minLeft - cutout.x;
+		cutout.x = minLeft;
+	}
+
+	const overlay = createPortal(
+		<>
 			<svg
 				className="ppq-spotlight__overlay"
-				width="100%"
-				height="100%"
 				style={{
 					position: 'fixed',
-					top: 0,
-					left: 0,
-					width: '100vw',
-					height: '100vh',
-					pointerEvents: 'none',
+					inset: 0,
+					width: '100%',
+					height: '100%',
 					zIndex: 99998,
+					pointerEvents: 'none',
 				}}
 			>
 				<defs>
 					<mask id="ppq-spotlight-mask">
-						{/* White background = visible overlay */}
 						<rect x="0" y="0" width="100%" height="100%" fill="white" />
-						{/* Black cutout = transparent area */}
 						<rect
-							x={targetRect.left}
-							y={targetRect.top}
-							width={targetRect.width}
-							height={targetRect.height}
-							rx={borderRadius}
-							ry={borderRadius}
+							x={cutout.x}
+							y={cutout.y}
+							width={cutout.width}
+							height={cutout.height}
+							rx={cutout.rx}
 							fill="black"
 						/>
 					</mask>
 				</defs>
-				{/* Semi-transparent overlay with mask */}
+				{/* Visual only: an SVG mask cuts a visual hole, not a
+				    hit-testing one, so with pointer events on the whole page
+				    (cutout included) would be unclickable. */}
 				<rect
 					x="0"
 					y="0"
 					width="100%"
 					height="100%"
-					fill="rgba(0, 0, 0, 0.7)"
+					fill="rgba(0, 0, 0, 0.5)"
 					mask="url(#ppq-spotlight-mask)"
+					style={{ pointerEvents: 'none' }}
 				/>
 			</svg>
 
-			{/* Highlight border */}
 			<div
-				className={`ppq-spotlight__highlight ${pulse ? 'ppq-spotlight__highlight--pulse' : ''}`}
+				className="ppq-spotlight__highlight ppq-spotlight__highlight--pulse"
 				style={{
 					position: 'fixed',
-					top: targetRect.top,
-					left: targetRect.left,
-					width: targetRect.width,
-					height: targetRect.height,
-					borderRadius: borderRadius,
+					top: cutout.y,
+					left: cutout.x,
+					width: cutout.width,
+					height: cutout.height,
+					borderRadius: cutout.rx,
 					zIndex: 99999,
 					pointerEvents: 'none',
 				}}
 			/>
-
-			{/* Children (Tooltip) with target rect context */}
-			{children && (
-				<div className="ppq-spotlight__content" style={{ zIndex: 100000 }}>
-					{typeof children === 'function' ? children(targetRect) : children}
-				</div>
-			)}
-		</div>
+		</>,
+		document.body
 	);
 
-	// Render as portal to body
-	return createPortal(overlayContent, document.body);
+	return (
+		<>
+			{overlay}
+			{typeof children === 'function' ? children(targetRect) : null}
+		</>
+	);
 };
 
 export default Spotlight;

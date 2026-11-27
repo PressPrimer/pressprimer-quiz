@@ -131,7 +131,7 @@ const Dashboard = ({ initialData = {} }) => {
 					{/* Top Row: Stats Cards (2 cols) + Quick Actions (1 col) */}
 					<div className="ppq-dashboard-top-row">
 						<StatsCards stats={stats} loading={loading} isTeacher={isTeacher} />
-						<QuickActions urls={initialData.urls || {}} onLaunchTour={handleLaunchTour} />
+						<QuickActions urls={initialData.urls || {}} onLaunchTour={dashboardData.canUseTour ? handleLaunchTour : null} />
 					</div>
 
 					{/* Activity Chart */}

@@ -9,7 +9,7 @@ msgstr ""
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"POT-Creation-Date: 2026-11-26T19:06:24+00:00\n"
+"POT-Creation-Date: 2026-11-26T19:58:03+00:00\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "X-Generator: WP-CLI 2.12.0\n"
 "X-Domain: pressprimer-quiz\n"
@@ -61,8 +61,8 @@ msgstr ""
 #: includes/admin/class-ppq-admin-questions.php:243
 #: includes/admin/class-ppq-admin-quizzes.php:262
 #: includes/admin/class-ppq-admin-settings.php:1616
-#: includes/admin/class-ppq-admin.php:561
-#: includes/admin/class-ppq-admin.php:652
+#: includes/admin/class-ppq-admin.php:584
+#: includes/admin/class-ppq-admin.php:675
 #: includes/admin/class-ppq-upgrade-page.php:217
 msgid "You do not have permission to access this page."
 msgstr ""
@@ -73,8 +73,8 @@ msgstr ""
 #: includes/admin/class-ppq-admin-categories.php:75
 #: includes/admin/class-ppq-admin-questions.php:244
 #: includes/admin/class-ppq-admin-settings.php:1617
-#: includes/admin/class-ppq-admin.php:562
-#: includes/admin/class-ppq-admin.php:653
+#: includes/admin/class-ppq-admin.php:585
+#: includes/admin/class-ppq-admin.php:676
 #: includes/admin/class-ppq-upgrade-page.php:218
 msgid "Permission Denied"
 msgstr ""
@@ -83,7 +83,6 @@ msgstr ""
 #: includes/admin/class-ppq-admin.php:134
 #: includes/admin/class-ppq-admin.php:135
 #: src/dashboard/components/StatsCards.jsx:53
-#: src/onboarding/tourSteps.js:102
 #: src/question-editor/components/BankSelector.jsx:131
 #: src/settings-panel/components/StatusTab.jsx:571
 msgid "Question Banks"
@@ -105,7 +104,7 @@ msgstr ""
 #: includes/admin/class-ppq-admin-banks.php:1303
 #: includes/admin/class-ppq-admin-banks.php:1366
 #: includes/admin/class-ppq-admin-banks.php:1427
-#: includes/admin/class-ppq-admin.php:1024
+#: includes/admin/class-ppq-admin.php:1047
 #: includes/api/class-ppq-rest-ai-controller.php:565
 #: includes/api/class-ppq-rest-controller.php:920
 #: includes/api/class-ppq-rest-controller.php:942
@@ -131,7 +130,7 @@ msgstr ""
 #: includes/admin/class-ppq-admin-banks.php:1231
 #: includes/admin/class-ppq-admin-banks.php:1371
 #: includes/admin/class-ppq-admin-banks.php:1432
-#: includes/admin/class-ppq-admin.php:1029
+#: includes/admin/class-ppq-admin.php:1052
 #: includes/api/class-ppq-rest-controller.php:946
 #: includes/api/class-ppq-rest-controller.php:2600
 msgid "You do not have permission to edit this bank."
@@ -341,8 +340,8 @@ msgstr ""
 #: includes/admin/class-ppq-admin-questions.php:1311
 #: includes/admin/class-ppq-admin-quizzes.php:491
 #: includes/admin/class-ppq-admin-quizzes.php:495
-#: includes/admin/class-ppq-admin.php:798
-#: includes/admin/class-ppq-admin.php:941
+#: includes/admin/class-ppq-admin.php:821
+#: includes/admin/class-ppq-admin.php:964
 #: src/ai-generation/utils.js:31
 #: src/editors/QuestionPickerModal.jsx:357
 #: src/question-editor/components/QuestionTypeSelector.jsx:22
@@ -356,8 +355,8 @@ msgstr ""
 #: includes/admin/class-ppq-admin-questions.php:1312
 #: includes/admin/class-ppq-admin-quizzes.php:492
 #: includes/admin/class-ppq-admin-quizzes.php:496
-#: includes/admin/class-ppq-admin.php:799
-#: includes/admin/class-ppq-admin.php:942
+#: includes/admin/class-ppq-admin.php:822
+#: includes/admin/class-ppq-admin.php:965
 #: src/ai-generation/utils.js:32
 #: src/editors/QuestionPickerModal.jsx:358
 #: src/question-editor/components/QuestionTypeSelector.jsx:28
@@ -371,8 +370,8 @@ msgstr ""
 #: includes/admin/class-ppq-admin-questions.php:1313
 #: includes/admin/class-ppq-admin-quizzes.php:493
 #: includes/admin/class-ppq-admin-quizzes.php:497
-#: includes/admin/class-ppq-admin.php:800
-#: includes/admin/class-ppq-admin.php:943
+#: includes/admin/class-ppq-admin.php:823
+#: includes/admin/class-ppq-admin.php:966
 #: src/ai-generation/utils.js:33
 #: src/editors/QuestionPickerModal.jsx:359
 #: src/question-editor/components/QuestionTypeSelector.jsx:34
@@ -394,8 +393,8 @@ msgstr ""
 #: includes/admin/class-ppq-admin-banks.php:1072
 #: includes/admin/class-ppq-admin-questions.php:1075
 #: includes/admin/class-ppq-admin-questions.php:1333
-#: includes/admin/class-ppq-admin.php:806
-#: includes/admin/class-ppq-admin.php:949
+#: includes/admin/class-ppq-admin.php:829
+#: includes/admin/class-ppq-admin.php:972
 #: src/bank-editor/components/BankQuestionsPanel.jsx:158
 #: src/editors/QuestionPickerModal.jsx:374
 #: src/question-editor/components/MetadataPanel.jsx:24
@@ -409,8 +408,8 @@ msgstr ""
 #: includes/admin/class-ppq-admin-banks.php:1073
 #: includes/admin/class-ppq-admin-questions.php:1078
 #: includes/admin/class-ppq-admin-questions.php:1334
-#: includes/admin/class-ppq-admin.php:807
-#: includes/admin/class-ppq-admin.php:950
+#: includes/admin/class-ppq-admin.php:830
+#: includes/admin/class-ppq-admin.php:973
 #: src/bank-editor/components/BankQuestionsPanel.jsx:159
 #: src/editors/QuestionPickerModal.jsx:375
 #: src/question-editor/components/MetadataPanel.jsx:29
@@ -425,8 +424,8 @@ msgstr ""
 #: includes/admin/class-ppq-admin-questions.php:1081
 #: includes/admin/class-ppq-admin-questions.php:1335
 #: includes/admin/class-ppq-admin-settings.php:1834
-#: includes/admin/class-ppq-admin.php:808
-#: includes/admin/class-ppq-admin.php:951
+#: includes/admin/class-ppq-admin.php:831
+#: includes/admin/class-ppq-admin.php:974
 #: src/bank-editor/components/BankQuestionsPanel.jsx:160
 #: src/editors/QuestionPickerModal.jsx:376
 #: src/question-editor/components/MetadataPanel.jsx:34
@@ -441,8 +440,8 @@ msgstr ""
 #: includes/admin/class-ppq-admin-banks.php:1075
 #: includes/admin/class-ppq-admin-questions.php:1084
 #: includes/admin/class-ppq-admin-questions.php:1336
-#: includes/admin/class-ppq-admin.php:809
-#: includes/admin/class-ppq-admin.php:952
+#: includes/admin/class-ppq-admin.php:832
+#: includes/admin/class-ppq-admin.php:975
 #: src/ai-generation/utils.js:45
 #: src/bank-editor/components/BankQuestionsPanel.jsx:161
 #: src/editors/QuestionPickerModal.jsx:377
@@ -523,8 +522,8 @@ msgstr ""
 #: includes/admin/class-ppq-admin-banks.php:1087
 #: includes/admin/class-ppq-admin-categories.php:160
 #: includes/admin/class-ppq-admin-categories.php:301
-#: includes/admin/class-ppq-admin.php:834
-#: includes/admin/class-ppq-admin.php:978
+#: includes/admin/class-ppq-admin.php:857
+#: includes/admin/class-ppq-admin.php:1001
 msgid "None"
 msgstr ""
 
@@ -559,9 +558,9 @@ msgstr[1] ""
 #: includes/admin/class-ppq-admin-settings.php:2371
 #: includes/admin/class-ppq-admin-settings.php:2424
 #: includes/admin/class-ppq-admin-settings.php:2472
-#: includes/admin/class-ppq-admin.php:686
-#: includes/admin/class-ppq-admin.php:861
-#: includes/admin/class-ppq-admin.php:1003
+#: includes/admin/class-ppq-admin.php:709
+#: includes/admin/class-ppq-admin.php:884
+#: includes/admin/class-ppq-admin.php:1026
 #: includes/admin/class-ppq-banks-list-table.php:257
 #: includes/admin/class-ppq-categories-list-table.php:190
 #: includes/frontend/class-ppq-ajax-handler.php:254
@@ -613,7 +612,7 @@ msgid "You can't add one or more of these questions to this bank."
 msgstr ""
 
 #: includes/admin/class-ppq-admin-banks.php:1418
-#: includes/admin/class-ppq-admin.php:1015
+#: includes/admin/class-ppq-admin.php:1038
 msgid "Invalid bank or question ID."
 msgstr ""
 
@@ -730,7 +729,6 @@ msgstr ""
 #: src/bank-editor/components/BankEditor.jsx:419
 #: src/bank-editor/components/BankQuestionsPanel.jsx:336
 #: src/bank-editor/components/BankQuestionsPanel.jsx:349
-#: src/onboarding/tourSteps.js:89
 #: src/quiz-editor/components/QuizEditor.jsx:681
 #: src/reports/components/AttemptDetailModal.jsx:426
 #: src/settings-panel/components/StatusTab.jsx:567
@@ -1819,7 +1817,6 @@ msgstr ""
 #: includes/admin/class-ppq-admin.php:104
 #: includes/admin/class-ppq-admin.php:105
 #: includes/api/class-ppq-rest-controller.php:5192
-#: src/onboarding/tourSteps.js:76
 #: src/settings-panel/components/GeneralTab.jsx:99
 #: src/settings-panel/components/GeneralTab.jsx:340
 msgid "Dashboard"
@@ -1910,9 +1907,9 @@ msgstr ""
 msgid "Welcome to %s! Here's an overview of recent quiz activity."
 msgstr ""
 
-#: includes/admin/class-ppq-admin.php:691
-#: includes/admin/class-ppq-admin.php:866
-#: includes/admin/class-ppq-admin.php:1008
+#: includes/admin/class-ppq-admin.php:714
+#: includes/admin/class-ppq-admin.php:889
+#: includes/admin/class-ppq-admin.php:1031
 #: includes/api/class-ppq-rest-controller.php:855
 #: includes/api/class-ppq-rest-controller.php:901
 #: includes/api/class-ppq-rest-controller.php:1510
@@ -1922,7 +1919,7 @@ msgstr ""
 msgid "You do not have permission."
 msgstr ""
 
-#: includes/admin/class-ppq-admin.php:1040
+#: includes/admin/class-ppq-admin.php:1063
 msgid "Question removed from bank."
 msgstr ""
 
@@ -1955,145 +1952,13 @@ msgstr ""
 msgid "No categories found."
 msgstr ""
 
-#: includes/admin/class-ppq-onboarding.php:361
-#: includes/admin/class-ppq-onboarding.php:407
+#: includes/admin/class-ppq-onboarding.php:617
+#: includes/admin/class-ppq-onboarding.php:678
 msgid "Unauthorized access."
 msgstr ""
 
-#: includes/admin/class-ppq-onboarding.php:392
+#: includes/admin/class-ppq-onboarding.php:663
 msgid "Invalid action."
-msgstr ""
-
-#: includes/admin/class-ppq-onboarding.php:435
-#: src/onboarding/tourSteps.js:51
-msgid "Welcome to PressPrimer Quiz!"
-msgstr ""
-
-#: includes/admin/class-ppq-onboarding.php:436
-msgid "Create powerful quizzes for your WordPress site in minutes. Let us show you around!"
-msgstr ""
-
-#: includes/admin/class-ppq-onboarding.php:437
-msgid "Get Started"
-msgstr ""
-
-#: includes/admin/class-ppq-onboarding.php:438
-msgid "Skip for Now"
-msgstr ""
-
-#: includes/admin/class-ppq-onboarding.php:439
-#: src/onboarding/components/WelcomeModal.jsx:104
-msgid "Don't show this again"
-msgstr ""
-
-#: includes/admin/class-ppq-onboarding.php:440
-#: src/onboarding/components/Onboarding.jsx:205
-#: src/onboarding/components/Onboarding.jsx:238
-msgid "Back"
-msgstr ""
-
-#: includes/admin/class-ppq-onboarding.php:441
-#: includes/frontend/class-ppq-quiz-renderer.php:1043
-#: includes/frontend/class-ppq-shortcodes.php:678
-#: src/onboarding/components/Onboarding.jsx:216
-#: src/onboarding/components/Onboarding.jsx:237
-msgid "Next"
-msgstr ""
-
-#: includes/admin/class-ppq-onboarding.php:442
-msgid "Skip"
-msgstr ""
-
-#: includes/admin/class-ppq-onboarding.php:443
-#: src/onboarding/components/Onboarding.jsx:216
-#: src/onboarding/components/Onboarding.jsx:237
-msgid "Finish"
-msgstr ""
-
-#. translators: 1: current step number, 2: total number of steps
-#: includes/admin/class-ppq-onboarding.php:445
-#, php-format
-msgid "Step %1$d of %2$d"
-msgstr ""
-
-#: includes/admin/class-ppq-onboarding.php:446
-msgid "How PressPrimer Quiz Works"
-msgstr ""
-
-#: includes/admin/class-ppq-onboarding.php:447
-msgid "PressPrimer Quiz follows a simple workflow: create questions, organize them into banks, build quizzes, and track results."
-msgstr ""
-
-#: includes/admin/class-ppq-onboarding.php:448
-msgid "Create Questions"
-msgstr ""
-
-#: includes/admin/class-ppq-onboarding.php:449
-msgid "Start by creating questions. Choose from multiple choice, multiple answer, or true/false formats."
-msgstr ""
-
-#: includes/admin/class-ppq-onboarding.php:450
-msgid "Organize with Banks"
-msgstr ""
-
-#: includes/admin/class-ppq-onboarding.php:451
-msgid "Group related questions into banks. This makes it easy to build dynamic quizzes and reuse questions."
-msgstr ""
-
-#: includes/admin/class-ppq-onboarding.php:452
-msgid "Build Quizzes"
-msgstr ""
-
-#: includes/admin/class-ppq-onboarding.php:453
-msgid "Create quizzes by selecting specific questions or using rules to pull from your banks."
-msgstr ""
-
-#: includes/admin/class-ppq-onboarding.php:454
-#: src/ai-generation/components/AiGenerationPanel.jsx:140
-msgid "AI Question Generation"
-msgstr ""
-
-#: includes/admin/class-ppq-onboarding.php:455
-msgid "Generate questions automatically from your content using AI. Just paste text or upload a document."
-msgstr ""
-
-#: includes/admin/class-ppq-onboarding.php:456
-msgid "Configure your Anthropic or OpenAI API key in Settings to enable AI generation."
-msgstr ""
-
-#: includes/admin/class-ppq-onboarding.php:457
-msgid "Track Results"
-msgstr ""
-
-#: includes/admin/class-ppq-onboarding.php:458
-msgid "Monitor quiz performance, view student attempts, and identify areas for improvement."
-msgstr ""
-
-#: includes/admin/class-ppq-onboarding.php:459
-msgid "You're All Set!"
-msgstr ""
-
-#: includes/admin/class-ppq-onboarding.php:460
-msgid "You've learned the basics of PressPrimer Quiz. Here's what you can do next:"
-msgstr ""
-
-#: includes/admin/class-ppq-onboarding.php:461
-msgid "Create Your First Quiz"
-msgstr ""
-
-#: includes/admin/class-ppq-onboarding.php:462
-#: src/editors/QuestionPickerModal.jsx:324
-#: src/quiz-editor/components/QuestionsPanel.jsx:328
-msgid "Add Questions"
-msgstr ""
-
-#: includes/admin/class-ppq-onboarding.php:463
-msgid "Explore Settings"
-msgstr ""
-
-#: includes/admin/class-ppq-onboarding.php:464
-#: includes/admin/views/upgrade-page.php:140
-msgid "View Documentation"
 msgstr ""
 
 #: includes/admin/class-ppq-premium-catalog.php:98
@@ -2729,6 +2594,10 @@ msgstr ""
 
 #: includes/admin/views/upgrade-page.php:116
 msgid "Most Popular"
+msgstr ""
+
+#: includes/admin/views/upgrade-page.php:140
+msgid "View Documentation"
 msgstr ""
 
 #. translators: %s: tier name (Educator, School, or Enterprise)
@@ -3435,6 +3304,13 @@ msgstr ""
 
 #: includes/frontend/class-ppq-quiz-renderer.php:1042
 msgid "Next question"
+msgstr ""
+
+#: includes/frontend/class-ppq-quiz-renderer.php:1043
+#: includes/frontend/class-ppq-shortcodes.php:678
+#: src/onboarding/components/Onboarding.jsx:286
+#: src/onboarding/components/Tooltip.jsx:244
+msgid "Next"
 msgstr ""
 
 #: includes/frontend/class-ppq-quiz-renderer.php:1051
@@ -5717,6 +5593,10 @@ msgstr ""
 msgid "AI generation couldn’t be loaded. Reload the page to try again."
 msgstr ""
 
+#: src/ai-generation/components/AiGenerationPanel.jsx:140
+msgid "AI Question Generation"
+msgstr ""
+
 #: src/ai-generation/components/AiGenerationPanel.jsx:144
 msgid "Generate quiz questions from your course content with AI, using your own OpenAI or Anthropic key."
 msgstr ""
@@ -6316,7 +6196,7 @@ msgstr ""
 msgid "Quick Actions"
 msgstr ""
 
-#: src/dashboard/components/QuickActions.jsx:84
+#: src/dashboard/components/QuickActions.jsx:85
 msgid "Watch Onboarding Tour"
 msgstr ""
 
@@ -6379,6 +6259,11 @@ msgstr ""
 msgid "Please select at least one question"
 msgstr ""
 
+#: src/editors/QuestionPickerModal.jsx:324
+#: src/quiz-editor/components/QuestionsPanel.jsx:328
+msgid "Add Questions"
+msgstr ""
+
 #: src/editors/QuestionPickerModal.jsx:328
 msgid "Add Selected"
 msgstr ""
@@ -6435,10 +6320,31 @@ msgstr ""
 msgid "Close Tour"
 msgstr ""
 
-#: src/onboarding/components/Onboarding.jsx:192
+#: src/onboarding/components/Onboarding.jsx:256
+#: src/onboarding/components/Tooltip.jsx:181
 #: src/reports/components/AttemptDetailModal.jsx:287
 #: src/settings-panel/components/TemplatesTab.jsx:389
 msgid "Close"
+msgstr ""
+
+#: src/onboarding/components/Onboarding.jsx:272
+#: src/onboarding/components/Tooltip.jsx:203
+msgid "Back"
+msgstr ""
+
+#: src/onboarding/components/Onboarding.jsx:286
+#: src/onboarding/components/Tooltip.jsx:244
+msgid "Finish"
+msgstr ""
+
+#. translators: 1: current step number, 2: total number of steps
+#: src/onboarding/components/Tooltip.jsx:214
+#, js-format
+msgid "Step %1$d of %2$d"
+msgstr ""
+
+#: src/onboarding/components/Tooltip.jsx:227
+msgid "Skip"
 msgstr ""
 
 #: src/onboarding/components/WelcomeModal.jsx:88
@@ -6449,51 +6355,23 @@ msgstr ""
 msgid "Skip Tour"
 msgstr ""
 
-#: src/onboarding/tourSteps.js:52
+#: src/onboarding/components/WelcomeModal.jsx:104
+msgid "Don't show this again"
+msgstr ""
+
+#: src/onboarding/tourSteps.js:85
+msgid "Welcome to PressPrimer Quiz!"
+msgstr ""
+
+#: src/onboarding/tourSteps.js:86
 msgid "Let's take a quick tour to help you get started. We'll show you the key features and how to create your first quiz."
 msgstr ""
 
-#: src/onboarding/tourSteps.js:62
-msgid "PressPrimer Quiz Menu"
-msgstr ""
-
-#: src/onboarding/tourSteps.js:63
-msgid "This is your main menu for PressPrimer Quiz. From here you can access all the key areas: Dashboard, Quizzes, Questions, Question Banks, and Reports."
-msgstr ""
-
-#: src/onboarding/tourSteps.js:77
-msgid "The Dashboard gives you a quick overview of your quiz activity including statistics, recent attempts, and quick actions to get things done."
-msgstr ""
-
-#: src/onboarding/tourSteps.js:90
-msgid "This is where you create and manage your questions. You can create multiple choice, multiple answer, or true/false questions with rich text, images, and feedback."
-msgstr ""
-
-#: src/onboarding/tourSteps.js:103
-msgid "Question Banks help you organize questions by topic, chapter, or skill level. You can then build quizzes that pull questions dynamically from these banks."
-msgstr ""
-
-#: src/onboarding/tourSteps.js:115
-msgid "Quiz Builder"
-msgstr ""
-
-#: src/onboarding/tourSteps.js:116
-msgid "Create quizzes by hand-picking questions (Fixed mode) or setting rules to randomly select from banks (Dynamic mode). Configure time limits, passing scores, and customize feedback."
-msgstr ""
-
-#: src/onboarding/tourSteps.js:128
-msgid "Reports & Analytics"
-msgstr ""
-
-#: src/onboarding/tourSteps.js:129
-msgid "Track quiz performance, view student attempts, and identify areas for improvement. Filter by date, quiz, or user to find exactly what you need."
-msgstr ""
-
-#: src/onboarding/tourSteps.js:141
+#: src/onboarding/tourSteps.js:93
 msgid "You're Ready!"
 msgstr ""
 
-#: src/onboarding/tourSteps.js:142
+#: src/onboarding/tourSteps.js:94
 msgid "You've completed the tour! You now know the basics of PressPrimer Quiz. Start by creating some questions, organize them into banks, and build your first quiz."
 msgstr ""
 

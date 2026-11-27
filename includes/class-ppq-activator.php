@@ -36,14 +36,23 @@ class PressPrimer_Quiz_Activator {
 	 * @param bool $network_wide Whether the plugin is being activated network-wide.
 	 */
 	public static function activate( $network_wide = false ) {
-		// Handle network-wide activation in multisite
+		// Handle network-wide activation in multisite (never redirects).
 		if ( is_multisite() && $network_wide ) {
 			self::activate_for_network();
 			return;
 		}
 
+		// Fresh-install status must be read before activation writes the
+		// version option.
+		$is_fresh_install = false === get_option( 'pressprimer_quiz_version' );
+
 		// Single site activation
 		self::activate_single_site();
+
+		// The one-time redirect to the Dashboard, where the tour opens (3.2).
+		if ( class_exists( 'PressPrimer_Quiz_Onboarding' ) ) {
+			PressPrimer_Quiz_Onboarding::maybe_flag_setup_redirect( $is_fresh_install );
+		}
 	}
 
 	/**

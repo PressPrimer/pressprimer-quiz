@@ -335,6 +335,12 @@
 	color: rgba(255, 255, 255, 0.7);
 }
 
+/* The disabled Next's reason needs a hoverable wrapper (disabled buttons
+   swallow mouse events). */
+.ppq-tooltip__next-wrap {
+	display: inline-block;
+}
+
 /* Override Ant Design button styles in tooltip */
 .ppq-tooltip .ant-btn-text {
 	color: rgba(255, 255, 255, 0.85);
@@ -355,6 +361,15 @@
 	background: rgba(255, 255, 255, 0.9);
 	color: #096dd9;
 	border-color: rgba(255, 255, 255, 0.9);
+}
+
+/* Next waits for the step's action: it must look disabled. */
+.ppq-tooltip .ant-btn-primary:disabled,
+.ppq-tooltip .ant-btn-primary:disabled:hover {
+	background: rgba(255, 255, 255, 0.3);
+	color: rgba(255, 255, 255, 0.75);
+	border-color: transparent;
+	cursor: not-allowed;
 }
 
 /* ==========================================================================
@@ -469,6 +484,20 @@
 .ppq-onboarding-floating__btn--next:hover {
 	background: rgba(255, 255, 255, 0.9);
 	border-color: rgba(255, 255, 255, 0.9);
+}
+
+.ppq-onboarding-floating__btn--next:disabled,
+.ppq-onboarding-floating__btn--next:disabled:hover {
+	background: rgba(255, 255, 255, 0.3);
+	border-color: transparent;
+	color: rgba(255, 255, 255, 0.75);
+	cursor: not-allowed;
+}
+
+.ppq-onboarding-floating__hint {
+	font-size: 13px;
+	color: rgba(255, 255, 255, 0.85);
+	margin: 0 0 12px;
 }
 
 .ppq-onboarding-floating__step {

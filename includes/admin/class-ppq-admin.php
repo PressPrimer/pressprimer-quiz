@@ -386,6 +386,8 @@ class PressPrimer_Quiz_Admin {
 				'pluginName'    => $plugin_name,
 				'dashboardLogo' => $dashboard_logo,
 				'welcomeText'   => $welcome_text,
+				// Quick Actions offers the tour only to users who can run it.
+				'canUseTour'    => class_exists( 'PressPrimer_Quiz_Onboarding' ) && PressPrimer_Quiz_Onboarding::user_can_use_tour(),
 				'urls'          => [
 					'create_quiz'  => admin_url( 'admin.php?page=pressprimer-quiz-quizzes&action=new' ),
 					'add_question' => admin_url( 'admin.php?page=pressprimer-quiz-questions&action=new' ),
@@ -516,7 +518,28 @@ class PressPrimer_Quiz_Admin {
 			return;
 		}
 
+		// Site admins only (3.2): teachers never load the tour.
+		if ( ! PressPrimer_Quiz_Onboarding::user_can_use_tour() ) {
+			return;
+		}
+
 		$onboarding = PressPrimer_Quiz_Onboarding::get_instance();
+
+		// The Dashboard always loads it (the tour opens there, and Quick
+		// Actions relaunches it); the screens a step can be on load it only
+		// while the tour is showing.
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only page check for conditional asset loading.
+		$page         = isset( $_GET['page'] ) ? sanitize_key( wp_unslash( $_GET['page'] ) ) : '';
+		$step_screens = [
+			'pressprimer-quiz-questions',
+			'pressprimer-quiz-banks',
+			'pressprimer-quiz-quizzes',
+			'pressprimer-quiz-reports',
+		];
+
+		if ( 'pressprimer-quiz' !== $page && ! ( in_array( $page, $step_screens, true ) && $onboarding->should_show_onboarding() ) ) {
+			return;
+		}
 
 		$asset = require $asset_file;
 

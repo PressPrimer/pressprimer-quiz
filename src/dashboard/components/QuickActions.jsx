@@ -22,7 +22,7 @@ import {
  *
  * @param {Object} props Component props
  * @param {Object} props.urls URL mappings for actions
- * @param {Function} props.onLaunchTour Callback to launch onboarding tour
+ * @param {Function} props.onLaunchTour Callback to launch onboarding tour (none: no button)
  */
 const QuickActions = ({ urls = {}, onLaunchTour }) => {
 	const actions = [
@@ -74,15 +74,17 @@ const QuickActions = ({ urls = {}, onLaunchTour }) => {
 						{action.label}
 					</Button>
 				))}
-				<Button
-					type="default"
-					icon={<PlayCircleOutlined />}
-					onClick={onLaunchTour}
-					block
-					className="ppq-quick-action-button"
-				>
-					{__('Watch Onboarding Tour', 'pressprimer-quiz')}
-				</Button>
+				{onLaunchTour && (
+					<Button
+						type="default"
+						icon={<PlayCircleOutlined />}
+						onClick={onLaunchTour}
+						block
+						className="ppq-quick-action-button"
+					>
+						{__('Watch Onboarding Tour', 'pressprimer-quiz')}
+					</Button>
+				)}
 			</div>
 		</div>
 	);

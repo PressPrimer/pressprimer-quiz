@@ -1,8 +1,30 @@
 /**
  * Onboarding Tour Steps Configuration
  *
- * Defines the interactive tour steps with selectors and content.
- * Uses resilient selectors that won't break if premium addons add menu items.
+ * The guided first-quiz build (3.2): the admin builds a real quiz in the
+ * real screens. They make a question first (written by hand, or generated
+ * into a new bank when an AI provider is set up), then a quiz around it, a
+ * page for it, and an attempt of their own.
+ *
+ * Each step has:
+ * - id: Step id. The server keeps the same list and rejects unknown ids.
+ * - type: STEP_TYPE.MODAL (renders on any tour screen) or STEP_TYPE.SPOTLIGHT
+ * - paths: The question paths the step belongs to (default: both)
+ * - title, content: Copy
+ * - selector: Spotlight target; comma-separated alternatives
+ * - fallbackSelector: Container framed when the target never appears
+ * - position: Preferred tooltip side (top, bottom, left, right)
+ * - fitContent: Frame the target's children instead of its padded box
+ * - matches: ( URLSearchParams ) => boolean, the screen the step lives on.
+ *   Handle both action=new and action=edit: the URL changes after a first save.
+ * - pageUrl: URL, or ( run ) => URL, that opens the step's screen
+ * - advanceOn: { event, when, record }, the editor event that completes the
+ *   step. record( detail, run ) returns run fields to keep; when( detail, run )
+ *   decides whether the event completes the step (default: always). Next
+ *   stays disabled until it does.
+ * - nextDisabledReason: Shown on the disabled Next
+ * - reloadsAfterAdvance: The screen reloads or redirects right after the
+ *   event, so the advance is marked pending and the next load reconciles it
  *
  * @package PressPrimer_Quiz
  * @since 1.0.0
@@ -19,180 +41,141 @@ export const STEP_TYPE = {
 };
 
 /**
- * Get the admin URL for a page
+ * Question paths
  */
-const getAdminUrl = (page) => {
-	const baseUrl = window.pressprimerQuizOnboardingData?.urls?.[page] || '';
-	if (baseUrl) return baseUrl;
-
-	// Fallback construction
-	return `admin.php?page=pressprimer-quiz${page === 'dashboard' ? '' : '-' + page}`;
+export const TOUR_PATH = {
+	MANUAL: 'manual',
+	AI: 'ai',
 };
 
 /**
- * Tour steps configuration
+ * Get an admin URL from the localized map
  *
- * Each step has:
- * - id: Unique identifier
- * - type: 'modal' or 'spotlight'
- * - title: Step title
- * - content: Step description (can be string or React node)
- * - selector: CSS selector for spotlight target (null for modals)
- * - position: Tooltip position (top, bottom, left, right)
- * - page: Which page this step should be shown on (null = any)
- * - pageUrl: URL to navigate to for this step
- * - fallbackSelector: Alternative selector if primary not found
+ * @param {string} key URL key (dashboard, questions, banks, quizzes, reports, settings).
+ * @return {string} Admin URL.
  */
-export const tourSteps = [
-	// Step 1: Welcome Modal
+export const getAdminUrl = (key) => {
+	const baseUrl = window.pressprimerQuizOnboardingData?.urls?.[key] || '';
+	if (baseUrl) return baseUrl;
+
+	// Fallback construction
+	return `admin.php?page=pressprimer-quiz${key === 'dashboard' ? '' : '-' + key}`;
+};
+
+/**
+ * Build a screen predicate for a step's matches
+ *
+ * @param {string}        page    The admin page slug.
+ * @param {string[]|null} actions Allowed action values ('' for none), or null for any.
+ * @return {Function} ( URLSearchParams ) => boolean.
+ */
+export const onScreen = (page, actions = null) => (urlParams) =>
+	urlParams.get('page') === page && (!actions || actions.includes(urlParams.get('action') || ''));
+
+/**
+ * Tour steps, both paths, in tour order
+ *
+ * Prompt 8.2 adds the build steps between the welcome and the finish.
+ */
+export const TOUR_STEPS = [
+	// Welcome Modal
 	{
 		id: 'welcome',
 		type: STEP_TYPE.MODAL,
 		title: __('Welcome to PressPrimer Quiz!', 'pressprimer-quiz'),
 		content: __("Let's take a quick tour to help you get started. We'll show you the key features and how to create your first quiz.", 'pressprimer-quiz'),
-		selector: null,
-		page: null,
-		pageUrl: null,
 	},
 
-	// Step 2: Main Menu
-	{
-		id: 'menu',
-		type: STEP_TYPE.SPOTLIGHT,
-		title: __('PressPrimer Quiz Menu', 'pressprimer-quiz'),
-		content: __('This is your main menu for PressPrimer Quiz. From here you can access all the key areas: Dashboard, Quizzes, Questions, Question Banks, and Reports.', 'pressprimer-quiz'),
-		// Use the top-level menu item which has a consistent structure
-		selector: '#toplevel_page_pressprimer-quiz',
-		fallbackSelector: '.toplevel_page_pressprimer-quiz',
-		position: 'right',
-		page: null, // Can be shown on any page
-		pageUrl: null,
-	},
-
-	// Step 3: Dashboard Overview
-	{
-		id: 'dashboard',
-		type: STEP_TYPE.SPOTLIGHT,
-		title: __('Dashboard', 'pressprimer-quiz'),
-		content: __('The Dashboard gives you a quick overview of your quiz activity including statistics, recent attempts, and quick actions to get things done.', 'pressprimer-quiz'),
-		selector: '.ppq-dashboard-container',
-		fallbackSelector: '#ppq-dashboard-root',
-		position: 'bottom',
-		page: 'pressprimer-quiz',
-		pageUrl: getAdminUrl('dashboard'),
-	},
-
-	// Step 4: Questions Page
-	{
-		id: 'questions',
-		type: STEP_TYPE.SPOTLIGHT,
-		title: __('Questions', 'pressprimer-quiz'),
-		content: __('This is where you create and manage your questions. You can create multiple choice, multiple answer, or true/false questions with rich text, images, and feedback.', 'pressprimer-quiz'),
-		selector: '.ppq-question-editor-container, .ppq-questions-page',
-		fallbackSelector: '#ppq-question-editor-root',
-		position: 'bottom',
-		page: 'pressprimer-quiz-questions',
-		pageUrl: getAdminUrl('questions'),
-	},
-
-	// Step 5: Question Banks
-	{
-		id: 'banks',
-		type: STEP_TYPE.SPOTLIGHT,
-		title: __('Question Banks', 'pressprimer-quiz'),
-		content: __('Question Banks help you organize questions by topic, chapter, or skill level. You can then build quizzes that pull questions dynamically from these banks.', 'pressprimer-quiz'),
-		selector: '.ppq-bank-editor-container, .ppq-banks-page',
-		fallbackSelector: '#ppq-bank-editor-root',
-		position: 'bottom',
-		page: 'pressprimer-quiz-banks',
-		pageUrl: getAdminUrl('banks'),
-	},
-
-	// Step 6: Quiz Builder
-	{
-		id: 'quizzes',
-		type: STEP_TYPE.SPOTLIGHT,
-		title: __('Quiz Builder', 'pressprimer-quiz'),
-		content: __("Create quizzes by hand-picking questions (Fixed mode) or setting rules to randomly select from banks (Dynamic mode). Configure time limits, passing scores, and customize feedback.", 'pressprimer-quiz'),
-		selector: '.ppq-quiz-editor-container, .ppq-quizzes-page',
-		fallbackSelector: '#ppq-quiz-editor-root',
-		position: 'bottom',
-		page: 'pressprimer-quiz-quizzes',
-		pageUrl: getAdminUrl('quizzes'),
-	},
-
-	// Step 7: Reports
-	{
-		id: 'reports',
-		type: STEP_TYPE.SPOTLIGHT,
-		title: __('Reports & Analytics', 'pressprimer-quiz'),
-		content: __('Track quiz performance, view student attempts, and identify areas for improvement. Filter by date, quiz, or user to find exactly what you need.', 'pressprimer-quiz'),
-		selector: '.ppq-reports-container',
-		fallbackSelector: '#ppq-reports-root',
-		position: 'bottom',
-		page: 'pressprimer-quiz-reports',
-		pageUrl: getAdminUrl('reports'),
-	},
-
-	// Step 8: Completion Modal
+	// Completion Modal
 	{
 		id: 'complete',
 		type: STEP_TYPE.MODAL,
 		title: __("You're Ready!", 'pressprimer-quiz'),
 		content: __("You've completed the tour! You now know the basics of PressPrimer Quiz. Start by creating some questions, organize them into banks, and build your first quiz.", 'pressprimer-quiz'),
-		selector: null,
-		page: null,
-		pageUrl: null,
 	},
 ];
 
 /**
- * Get a step by index (1-based)
+ * The run's question path
+ *
+ * @param {Object} run Run record.
+ * @return {string} TOUR_PATH value.
  */
-export const getStep = (stepNumber) => {
-	return tourSteps[stepNumber - 1] || null;
+export const getPath = (run) => (run && run.path === TOUR_PATH.AI ? TOUR_PATH.AI : TOUR_PATH.MANUAL);
+
+/**
+ * The steps of one path, in order
+ *
+ * @param {string} path TOUR_PATH value.
+ * @return {Object[]} Steps.
+ */
+export const getSequence = (path) => TOUR_STEPS.filter((step) => !step.paths || step.paths.includes(path));
+
+/**
+ * Get a step by id
+ *
+ * @param {string} stepId Step id.
+ * @return {Object|null} Step or null.
+ */
+export const getStepById = (stepId) => TOUR_STEPS.find((step) => step.id === stepId) || null;
+
+/**
+ * A step's 1-based number on a path
+ *
+ * @param {string} stepId Step id.
+ * @param {string} path   TOUR_PATH value.
+ * @return {number} Step number, or 0 when the step isn't on the path.
+ */
+export const getStepNumber = (stepId, path) => getSequence(path).findIndex((step) => step.id === stepId) + 1;
+
+/**
+ * Number of steps on a path
+ *
+ * @param {string} path TOUR_PATH value.
+ * @return {number} Step count.
+ */
+export const getTotalSteps = (path) => getSequence(path).length;
+
+/**
+ * The step before or after another on a path
+ *
+ * @param {string} stepId Step id.
+ * @param {string} path   TOUR_PATH value.
+ * @param {number} offset 1 for the next step, -1 for the previous one.
+ * @return {string|null} Step id, or null past either end.
+ */
+export const getAdjacentStepId = (stepId, path, offset) => {
+	const sequence = getSequence(path);
+	const target = sequence[sequence.findIndex((step) => step.id === stepId) + offset];
+
+	return target ? target.id : null;
 };
 
 /**
- * Get the URL for a step's page
+ * Get the URL that opens a step's screen
+ *
+ * @param {Object} step Step.
+ * @param {Object} run  Run record.
+ * @return {string} URL, or '' for steps without a screen.
  */
-export const getStepUrl = (stepNumber) => {
-	const step = getStep(stepNumber);
-	if (!step) return null;
+export const getStepUrl = (step, run = {}) => {
+	if (!step || !step.pageUrl) return '';
 
-	// For dynamic URL generation, re-call getAdminUrl
-	if (step.pageUrl) return step.pageUrl;
+	return typeof step.pageUrl === 'function' ? step.pageUrl(run) : step.pageUrl;
+};
 
-	switch (step.id) {
-		case 'dashboard':
-			return getAdminUrl('dashboard');
-		case 'questions':
-			return getAdminUrl('questions');
-		case 'banks':
-			return getAdminUrl('banks');
-		case 'quizzes':
-			return getAdminUrl('quizzes');
-		case 'reports':
-			return getAdminUrl('reports');
-		default:
-			return null;
+/**
+ * Check whether the current page hosts a step
+ *
+ * Modal steps render on any tour screen; spotlight steps only on theirs.
+ *
+ * @param {Object} step Step.
+ * @return {boolean} True when the step can render here.
+ */
+export const isOnCorrectPage = (step) => {
+	if (!step || step.type !== STEP_TYPE.SPOTLIGHT || typeof step.matches !== 'function') {
+		return true;
 	}
+
+	return step.matches(new URLSearchParams(window.location.search));
 };
-
-/**
- * Check if we're on the correct page for a step
- */
-export const isOnCorrectPage = (stepNumber) => {
-	const step = getStep(stepNumber);
-	if (!step || !step.page) return true; // Modal steps or no page requirement
-
-	const urlParams = new URLSearchParams(window.location.search);
-	const currentPage = urlParams.get('page');
-
-	return currentPage === step.page;
-};
-
-/**
- * Get total number of steps
- */
-export const getTotalSteps = () => tourSteps.length;
